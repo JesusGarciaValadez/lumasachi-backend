@@ -16,10 +16,21 @@
         "tightenco/ziggy": "^2.4"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.16",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "barryvdh/laravel-ide-helper": "^3.6",
         "fakerphp/faker": "^1.23",
+        "laravel/horizon": "^5.33",
+        "laravel/nightwatch": "^1.11",
+        "laravel/octane": "^2.11",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
-        "laravel/sail": "^1.41",
+        "laravel/pulse": "^1.4",
+        "laravel/reverb": "^1.5",
+        "laravel/sail": "^1.44",
+        "laravel/sanctum": "^4.1",
+        "laravel/telescope": "^5.10",
+        "laravel/wayfinder": "^0.1.6",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^11.5.3"
