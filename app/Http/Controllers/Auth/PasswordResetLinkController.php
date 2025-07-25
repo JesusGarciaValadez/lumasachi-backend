@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +27,7 @@ class PasswordResetLinkController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse | JsonResponse
     {
         $request->validate([
             'email' => 'required|email',
@@ -35,6 +36,10 @@ class PasswordResetLinkController extends Controller
         Password::sendResetLink(
             $request->only('email')
         );
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => __('A reset link will be sent if the account exists.')], 200);
+        }
 
         return back()->with('status', __('A reset link will be sent if the account exists.'));
     }
