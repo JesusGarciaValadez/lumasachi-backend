@@ -5,7 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
+use App\Models\User;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
+use App\Models\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
