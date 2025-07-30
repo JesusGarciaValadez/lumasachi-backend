@@ -3162,7 +3162,7 @@ namespace PHPSTORM_META {
 'password.store','verification.notice','verification.verify','verification.send','password.confirm','logout',
 'storage.local',);
         registerArgumentsSet('views', 
-'app','horizon::layout','laravel-exceptions-renderer::components.card','laravel-exceptions-renderer::components.context','laravel-exceptions-renderer::components.editor',
+'lumasachi::app','horizon::layout','laravel-exceptions-renderer::components.card','laravel-exceptions-renderer::components.context','laravel-exceptions-renderer::components.editor',
 'laravel-exceptions-renderer::components.header','laravel-exceptions-renderer::components.icons.chevron-down','laravel-exceptions-renderer::components.icons.chevron-up','laravel-exceptions-renderer::components.icons.computer-desktop','laravel-exceptions-renderer::components.icons.moon',
 'laravel-exceptions-renderer::components.icons.sun','laravel-exceptions-renderer::components.layout','laravel-exceptions-renderer::components.navigation','laravel-exceptions-renderer::components.theme-switcher','laravel-exceptions-renderer::components.trace',
 'laravel-exceptions-renderer::components.trace-and-editor','laravel-exceptions-renderer::show','laravel-exceptions::401','laravel-exceptions::402','laravel-exceptions::403',

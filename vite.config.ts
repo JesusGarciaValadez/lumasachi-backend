@@ -11,6 +11,14 @@ export default defineConfig({
         },
     },
     server: {
+        host: true, // Escuchar en todas las interfaces de red
+        port: 5173,
+        strictPort: true, // Fallar si el puerto no está disponible
+        cors: true, // Habilitar CORS
+        hmr: {
+            host: 'localhost',
+            port: 5173,
+        },
         watch: {
             usePolling: true,
         },
@@ -25,9 +33,10 @@ export default defineConfig({
                 '@/app/Livewire/**',
                 '@/app/View/Components/**',
                 '@/lang/**',
+                '@/app/View/Components/**',
                 'modules/Lumasachi/resources/lang/**',
                 'modules/Lumasachi/resources/views/**',
-                '@/routes/**',
+                'modules/Lumasachi/routes/**',
             ],
         }),
         tailwindcss(),

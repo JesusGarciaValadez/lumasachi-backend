@@ -5,6 +5,8 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\UserType;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -24,10 +26,19 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => fake()->randomElement(UserRole::cases()),
+            'phone_number' => fake()->phoneNumber(),
+            'address' => fake()->address(),
+            'company' => fake()->company(),
+            'is_active' => fake()->boolean(),
+            'notes' => fake()->text(),
+            'type' => fake()->randomElement(UserType::getTypes()),
+            'preferences' => fake()->text(),
             'remember_token' => Str::random(10),
         ];
     }
