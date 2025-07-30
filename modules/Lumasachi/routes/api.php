@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use Modules\Lumasachi\app\Http\Controllers\OrderController;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::get('/user/{user}', function (Request $request, User $user) {
@@ -25,6 +26,7 @@ Route::group(['prefix' => 'v1'], function () {
         ], 200);
     })->middleware('auth:sanctum');
 
+    // Auth Routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('register', [RegisteredUserController::class, 'store']);
 
@@ -77,6 +79,25 @@ Route::group(['prefix' => 'v1'], function () {
         }
 
         return $user->createToken($request->device_name)->plainTextToken;
+    });
+
+    // Order Routes
+    Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->middleware('can:viewAny,Modules\Lumasachi\app\Models\Order');
+        Route::post('/', [OrderController::class, 'store'])->middleware('can:create,Modules\Lumasachi\app\Models\Order');
+        Route::get('/{order}', [OrderController::class, 'show'])->middleware('can:view,order');
+        Route::put('/{order}', [OrderController::class, 'update'])->middleware('can:update,order');
+        Route::delete('/{order}', [OrderController::class, 'destroy'])->middleware('can:delete,order');
+
+        Route::post('/{order}/status', [OrderController::class, 'updateStatus'])->middleware('can:update,order');
+        Route::post('/{order}/assign', [OrderController::class, 'assign'])->middleware('can:assign,order');
+        Route::get('/{order}/history', [OrderController::class, 'history'])->middleware('can:view,order');
+        Route::get('/{order}/attachments', [OrderController::class, 'attachments'])->middleware('can:view,order');
+        Route::post('/{order}/attachments', [OrderController::class, 'uploadAttachment'])->middleware('can:update,order');
+        Route::delete('/attachments/{attachment}', [OrderController::class, 'deleteAttachment'])->middleware('can:update,order');
+
+        Route::get('/stats/summary', [OrderController::class, 'stats']);
+        Route::get('/stats/by-user/{user}', [OrderController::class, 'userStats']);
     });
 });
 
