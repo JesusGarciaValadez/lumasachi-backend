@@ -10,9 +10,21 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use App\Models\User;
+use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\OrderHistory;
+use Modules\Lumasachi\app\Policies\OrderPolicy;
+use Modules\Lumasachi\app\Policies\UserPolicy;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class LumasachiServiceProvider extends BaseServiceProvider
 {
+    protected $policies = [
+        Order::class => OrderPolicy::class,
+        User::class => UserPolicy::class,
+    ];
+
     /**
      * Bootstrap the application services.
      */
@@ -25,8 +37,13 @@ final class LumasachiServiceProvider extends BaseServiceProvider
         ]);
         $this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'lumasachi');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
-        $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
+
+        \Illuminate\Support\Facades\Route::prefix('api')
+            ->middleware('api')
+            ->group(__DIR__ . '/../../routes/api.php');
+
         $this->registerPolicies();
+        $this->registerRelations();
     }
 
     /**
@@ -101,7 +118,46 @@ final class LumasachiServiceProvider extends BaseServiceProvider
      */
     private function registerPolicies(): void
     {
-        // Gate::policy(Class::class, ClassPolicy::class);
+        // Register the policies
+        foreach ($this->policies as $model => $policy) {
+            Gate::policy($model, $policy);
+        }
+
+        // Gates for general permissions
+        Gate::define(
+            'users.create',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        Gate::define(
+            'users.delete',
+            fn(User $user) =>
+            $user->role === UserRole::SUPER_ADMINISTRATOR
+        );
+
+        Gate::define(
+            'system.settings',
+            fn(User $user) =>
+            $user->role === UserRole::SUPER_ADMINISTRATOR
+        );
+
+        Gate::define(
+            'reports.export',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        Gate::define(
+            'orders.assign',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        // Gate to verify if the user can perform a specific action
+        Gate::define('has-permission', function (User $user, string $permission) {
+            return in_array($permission, $user->role->getPermissions());
+        });
     }
 
     /**
@@ -111,5 +167,13 @@ final class LumasachiServiceProvider extends BaseServiceProvider
     {
         // Base services
         // $this->app->singleton(ServiceInterface::class, Service::class);
+    }
+
+    private function registerRelations(): void
+    {
+        Relation::morphMap([
+            'order' => Order::class,
+            'order_history' => OrderHistory::class,
+        ]);
     }
 }

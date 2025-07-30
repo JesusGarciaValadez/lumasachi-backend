@@ -25,6 +25,7 @@
         "barryvdh/laravel-debugbar": "^3.16",
         "barryvdh/laravel-ide-helper": "^3.6",
         "fakerphp/faker": "^1.23",
+        "friendsofphp/php-cs-fixer": "*",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
         "laravel/sail": "^1.44",
@@ -87,6 +88,15 @@
             "@php artisan ide-helper:generate",
             "@php artisan ide-helper:models --reset --nowrite --write-mixin",
             "@php artisan ide-helper:meta"
+        ],
+        "cs-fixer": [
+            "@php ./vendor/bin/php-cs-fixer fix --config .php-cs-fixer.php --allow-risky=yes"
+        ],
+        "larastan": [
+            "./vendor/bin/phpstan analyse --memory-limit=2G"
+        ],
+        "pint": [
+            "./vendor/bin/pint -v"
         ],
         "lint": "pint",
         "refactor": "rector",
