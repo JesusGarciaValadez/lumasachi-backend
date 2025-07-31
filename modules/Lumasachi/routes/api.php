@@ -14,7 +14,9 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Modules\Lumasachi\app\Http\Controllers\OrderController;
+use Modules\Lumasachi\app\Http\Controllers\OrderHistoryController;
 use Modules\Lumasachi\app\Http\Controllers\AttachmentController;
+use Modules\Lumasachi\app\Http\Controllers\HealthController;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::get('/user/{user}', function (Request $request, User $user) {
@@ -83,6 +85,17 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     // Order Routes
+    Route::middleware('auth:sanctum')->prefix('history')->group(function () {
+        Route::get('/', [OrderHistoryController::class, 'index'])->middleware('can:viewAny,Modules\Lumasachi\app\Models\OrderHistory');
+        Route::post('/', [OrderHistoryController::class, 'store'])->middleware('can:create,Modules\Lumasachi\app\Models\OrderHistory');
+        Route::get('/{orderHistory}', [OrderHistoryController::class, 'show'])->middleware('can:view,orderHistory');
+        Route::delete('/{orderHistory}', [OrderHistoryController::class, 'destroy'])->middleware('can:delete,orderHistory');
+
+        Route::get('/{orderHistory}/order/{order}', [OrderHistoryController::class, 'order'])->middleware('can:view,orderHistory');
+        Route::get('/{orderHistory}/order/{order}/attachments', [OrderHistoryController::class, 'orderAttachments'])->middleware('can:view,orderHistory');
+    });
+
+    // Order Routes
     Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->middleware('can:viewAny,Modules\Lumasachi\app\Models\Order');
         Route::post('/', [OrderController::class, 'store'])->middleware('can:create,Modules\Lumasachi\app\Models\Order');
@@ -95,9 +108,6 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/{order}/history', [OrderController::class, 'history'])->middleware('can:view,order');
         Route::get('/{order}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order');
         Route::post('/{order}/attachments', [AttachmentController::class, 'store'])->middleware('can:update,order');
-
-        Route::get('/stats/summary', [OrderController::class, 'stats']);
-        Route::get('/stats/by-user/{user}', [OrderController::class, 'userStats']);
     });
 
     // Attachment Routes (outside of orders prefix)
@@ -108,5 +118,9 @@ Route::group(['prefix' => 'v1'], function () {
             ->name('attachments.preview');
         Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
     });
+
+    // Health Check Routes
+    Route::get('/up', [HealthController::class, 'up'])->name('health.up');
+    Route::get('/health', [HealthController::class, 'health'])->name('health.check');
 });
 
