@@ -94,10 +94,14 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/{order}/history', [OrderController::class, 'history'])->middleware('can:view,order');
         Route::get('/{order}/attachments', [OrderController::class, 'attachments'])->middleware('can:view,order');
         Route::post('/{order}/attachments', [OrderController::class, 'uploadAttachment'])->middleware('can:update,order');
-        Route::delete('/attachments/{attachment}', [OrderController::class, 'deleteAttachment'])->middleware('can:update,order');
 
         Route::get('/stats/summary', [OrderController::class, 'stats']);
         Route::get('/stats/by-user/{user}', [OrderController::class, 'userStats']);
+    });
+
+    // Attachment Routes (outside of orders prefix)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::delete('/attachments/{attachment}', [OrderController::class, 'deleteAttachment']);
     });
 });
 

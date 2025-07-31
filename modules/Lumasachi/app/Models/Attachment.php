@@ -207,6 +207,27 @@ final class Attachment extends Model
     }
 
     /**
+     * Get allowed file extensions for upload validation
+     *
+     * @return array<string>
+     */
+    public static function getAllowedExtensions(): array
+    {
+        return [
+            // Images
+            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
+            // Documents
+            'pdf', 'doc', 'docx', 'txt',
+            // Spreadsheets
+            'xls', 'xlsx', 'csv',
+            // Presentations
+            'ppt', 'pptx',
+            // Archives
+            'zip', 'rar', '7z'
+        ];
+    }
+
+    /**
      * Delete the model and the physical file
      *
      * @return bool|null
