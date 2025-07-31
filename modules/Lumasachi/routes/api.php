@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Modules\Lumasachi\app\Http\Controllers\OrderController;
+use Modules\Lumasachi\app\Http\Controllers\AttachmentController;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::get('/user/{user}', function (Request $request, User $user) {
@@ -92,16 +93,20 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('/{order}/status', [OrderController::class, 'updateStatus'])->middleware('can:update,order');
         Route::post('/{order}/assign', [OrderController::class, 'assign'])->middleware('can:assign,order');
         Route::get('/{order}/history', [OrderController::class, 'history'])->middleware('can:view,order');
-        Route::get('/{order}/attachments', [OrderController::class, 'attachments'])->middleware('can:view,order');
-        Route::post('/{order}/attachments', [OrderController::class, 'uploadAttachment'])->middleware('can:update,order');
+        Route::get('/{order}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order');
+        Route::post('/{order}/attachments', [AttachmentController::class, 'store'])->middleware('can:update,order');
 
         Route::get('/stats/summary', [OrderController::class, 'stats']);
         Route::get('/stats/by-user/{user}', [OrderController::class, 'userStats']);
     });
 
     // Attachment Routes (outside of orders prefix)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::delete('/attachments/{attachment}', [OrderController::class, 'deleteAttachment']);
+    Route::middleware('auth:sanctum')->prefix('attachments')->group(function () {
+        Route::get('/{attachment}/download', [AttachmentController::class, 'download'])
+            ->name('attachments.download');
+        Route::get('/{attachment}/preview', [AttachmentController::class, 'preview'])
+            ->name('attachments.preview');
+        Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
     });
 });
 
