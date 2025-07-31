@@ -15,6 +15,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Policies\OrderPolicy;
+use Modules\Lumasachi\app\Policies\OrderHistoryPolicy;
 use Modules\Lumasachi\app\Policies\UserPolicy;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
@@ -22,6 +23,7 @@ final class LumasachiServiceProvider extends BaseServiceProvider
 {
     protected $policies = [
         Order::class => OrderPolicy::class,
+        OrderHistory::class => OrderHistoryPolicy::class,
         User::class => UserPolicy::class,
     ];
 

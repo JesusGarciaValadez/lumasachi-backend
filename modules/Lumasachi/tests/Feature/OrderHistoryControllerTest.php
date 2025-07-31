@@ -1,0 +1,148 @@
+<?php
+
+namespace Modules\Lumasachi\tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+use Modules\Lumasachi\app\Models\OrderHistory;
+use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\Attachment;
+use App\Models\User;
+use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+
+class OrderHistoryControllerTest extends TestCase
+{
+    use RefreshDatabase, WithFaker;
+
+    /**
+     * Test listing order histories.
+     */
+    public function testIndexListsOrderHistories()
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $this->actingAs($user);
+
+        OrderHistory::factory()->count(3)->create();
+
+        $response = $this->getJson('/api/v1/history');
+
+        $response->assertStatus(200);
+        
+        // Debug the response
+        $content = $response->json();
+        // dd($content); // Uncomment to see actual response structure
+        
+        // Check if it has the basic pagination structure
+        $this->assertIsArray($content);
+        // Since it's a resource collection on a paginator, check for proper structure
+        if (isset($content['data'])) {
+            $this->assertCount(3, $content['data']);
+        } else {
+            // Direct array response
+            $this->assertCount(3, $content);
+        }
+    }
+
+    /**
+     * Test creating an order history.
+     */
+    public function testStoreCreatesNewOrderHistory()
+    {
+        $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $this->actingAs($user);
+
+        $order = Order::factory()->create(['assigned_to' => $user->id]);
+        $orderHistoryData = [
+            'order_id' => $order->id,
+            'status_from' => null,
+            'status_to' => OrderStatus::DELIVERED->value,
+            'description' => $this->faker->sentence(),
+        ];
+
+        $response = $this->postJson('/api/v1/history', $orderHistoryData);
+
+        $response->assertStatus(201)
+                ->assertJsonStructure([
+                    'data' => ['id', 'order_id', 'status_to', 'description', 'created_by']
+                ]);
+
+        $this->assertDatabaseHas('order_histories', $orderHistoryData);
+    }
+
+    /**
+     * Test showing a specific order history.
+     */
+    public function testShowOrderHistory()
+    {
+        $orderHistory = OrderHistory::factory()->create();
+
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'data' => ['id', 'order_id', 'created_by']
+                ]);
+    }
+
+    /**
+     * Test deleting an order history. Only SUPER_ADMINISTRATOR should delete.
+     */
+    public function testDestroyOrderHistory()
+    {
+        $orderHistory = OrderHistory::factory()->create();
+
+        $user = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
+        $this->actingAs($user);
+
+        $response = $this->deleteJson('/api/v1/history/' . $orderHistory->id);
+
+        $response->assertStatus(204);
+
+        $this->assertModelMissing($orderHistory);
+    }
+
+    /**
+     * Test fetching order related to order history.
+     */
+    public function testOrderForOrderHistory()
+    {
+        $orderHistory = OrderHistory::factory()->create();
+
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id);
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'order' => ['id', 'status']
+                ]);
+    }
+
+    /**
+     * Test fetching attachments for order related to order history.
+     */
+    public function testOrderAttachmentsForOrderHistory()
+    {
+        $orderHistory = OrderHistory::factory()->create();
+        $attachments = Attachment::factory()->count(2)->create(['attachable_id' => $orderHistory->order_id, 'attachable_type' => 'order']);
+
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id . '/attachments');
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'attachments' => [
+                        '*' => ['id', 'file_name', 'url']
+                    ]
+                ]);
+    }
+}
+
