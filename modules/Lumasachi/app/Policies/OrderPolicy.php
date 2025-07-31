@@ -90,4 +90,15 @@ final class OrderPolicy
             default => false
         };
     }
+
+    /**
+     * Determine whether the user can assign the order to another user.
+     */
+    public function assign(User $user, Order $order): bool
+    {
+        return in_array($user->role, [
+            UserRole::SUPER_ADMINISTRATOR,
+            UserRole::ADMINISTRATOR
+        ]);
+    }
 }
