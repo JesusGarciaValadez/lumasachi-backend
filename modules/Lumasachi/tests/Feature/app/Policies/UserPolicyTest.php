@@ -7,7 +7,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\UserType;
+use Modules\Lumasachi\app\Models\Company;
 use Modules\Lumasachi\database\seeders\DatabaseSeeder;
+use PHPUnit\Framework\Attributes\Test;
 
 final class UserPolicyTest extends TestCase
 {
@@ -23,7 +25,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test viewAny users permissions.
      */
-    public function test_view_any_users_permissions()
+    #[Test]
+    public function it_can_view_any_users_permissions()
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -42,7 +45,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test view specific user permissions.
      */
-    public function test_view_specific_user_permissions()
+    #[Test]
+    public function it_can_view_specific_user_permissions()
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -79,7 +83,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test create user permissions.
      */
-    public function test_create_user_permissions()
+    #[Test]
+    public function it_can_create_user_permissions()
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -98,7 +103,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test update user permissions.
      */
-    public function test_update_user_permissions()
+    #[Test]
+    public function it_can_update_user_permissions()
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -131,9 +137,11 @@ final class UserPolicyTest extends TestCase
     }
 
     /**
+     *
      * Test delete user permissions.
      */
-    public function test_delete_user_permissions()
+    #[Test]
+    public function it_can_delete_user_permissions()
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -169,7 +177,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test edge cases with inactive users.
      */
-    public function test_permissions_with_inactive_users()
+    #[Test]
+    public function it_can_permissions_with_inactive_users()
     {
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
         $activeEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
@@ -194,7 +203,8 @@ final class UserPolicyTest extends TestCase
     /**
      * Test permissions with different user types (Individual vs Business).
      */
-    public function test_permissions_with_user_types()
+    #[Test]
+    public function it_can_permissions_with_user_types()
     {
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
         $individualCustomer = User::where('role', UserRole::CUSTOMER)

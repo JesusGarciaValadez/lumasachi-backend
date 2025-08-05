@@ -64,7 +64,7 @@ final class OrderHistoryController extends Controller
     /**
      * Display the specified order history.
      */
-    public function show(Request $request, OrderHistory $orderHistory): JsonResponse
+    public function show(OrderHistory $orderHistory): JsonResponse
     {
         Gate::authorize('view', $orderHistory);
 
@@ -76,7 +76,7 @@ final class OrderHistoryController extends Controller
     /**
      * Remove the specified order history.
      */
-    public function destroy(Request $request, OrderHistory $orderHistory): JsonResponse
+    public function destroy(OrderHistory $orderHistory): JsonResponse
     {
         Gate::authorize('delete', $orderHistory);
 
@@ -88,7 +88,7 @@ final class OrderHistoryController extends Controller
     /**
      * Get the order associated with this history entry.
      */
-    public function order(Request $request, OrderHistory $orderHistory, Order $order): JsonResponse
+    public function order(OrderHistory $orderHistory, Order $order): JsonResponse
     {
         Gate::authorize('view', $orderHistory);
 
@@ -98,6 +98,9 @@ final class OrderHistoryController extends Controller
                 'message' => 'Order history does not belong to the specified order.'
             ], Response::HTTP_NOT_FOUND);
         }
+
+        // Load the order relationship if not already loaded
+        $orderHistory->loadMissing('order');
 
         return response()->json([
             'order' => new \Modules\Lumasachi\app\Http\Resources\OrderResource($orderHistory->order)
@@ -107,7 +110,7 @@ final class OrderHistoryController extends Controller
     /**
      * Get attachments for the order associated with this history entry.
      */
-    public function orderAttachments(Request $request, OrderHistory $orderHistory, Order $order): JsonResponse
+    public function orderAttachments(OrderHistory $orderHistory, Order $order): JsonResponse
     {
         Gate::authorize('view', $orderHistory);
 
@@ -117,6 +120,9 @@ final class OrderHistoryController extends Controller
                 'message' => 'Order history does not belong to the specified order.'
             ], Response::HTTP_NOT_FOUND);
         }
+
+        // Load the order relationship with attachments if not already loaded
+        $orderHistory->loadMissing(['order.attachments']);
 
         $attachments = $orderHistory->order->attachments;
 

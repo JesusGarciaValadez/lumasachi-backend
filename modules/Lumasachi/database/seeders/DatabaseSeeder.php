@@ -11,6 +11,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\UserType;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
+use Modules\Lumasachi\database\seeders\CompanySeeder;
 use Carbon\Carbon;
 
 final class DatabaseSeeder extends Seeder
@@ -20,6 +21,9 @@ final class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed companies first
+        $this->call(CompanySeeder::class);
+
         // Create Super Administrator
         $superAdmin = User::factory()->create([
             'first_name' => 'Super',
@@ -93,7 +97,6 @@ final class DatabaseSeeder extends Seeder
             'role' => UserRole::CUSTOMER,
             'type' => UserType::INDIVIDUAL,
             'phone_number' => '+1234567896',
-            'address' => '123 Main St, New York, NY 10001',
             'is_active' => true,
         ]);
 
@@ -104,7 +107,6 @@ final class DatabaseSeeder extends Seeder
             'role' => UserRole::CUSTOMER,
             'type' => UserType::INDIVIDUAL,
             'phone_number' => '+1234567897',
-            'address' => '456 Oak Ave, Los Angeles, CA 90001',
             'is_active' => true,
         ]);
 
@@ -115,9 +117,7 @@ final class DatabaseSeeder extends Seeder
             'email' => 'robert@techcorp.com',
             'role' => UserRole::CUSTOMER,
             'type' => UserType::BUSINESS,
-            'company' => 'Tech Corp Solutions',
             'phone_number' => '+1234567898',
-            'address' => '789 Business Blvd, San Francisco, CA 94105',
             'is_active' => true,
             'notes' => 'VIP customer - priority service',
         ]);
@@ -128,9 +128,7 @@ final class DatabaseSeeder extends Seeder
             'email' => 'sarah@designstudio.com',
             'role' => UserRole::CUSTOMER,
             'type' => UserType::BUSINESS,
-            'company' => 'Creative Design Studio',
             'phone_number' => '+1234567899',
-            'address' => '321 Art District, Chicago, IL 60601',
             'is_active' => true,
         ]);
 

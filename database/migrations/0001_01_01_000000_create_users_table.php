@@ -14,6 +14,11 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id()->unsigned();
+            $table->foreignUuid('company_id')
+                ->nullable()
+                ->constrained('companies', 'uuid')
+                ->nullOnDelete()
+                ->cascadeOnUpdate();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
@@ -21,8 +26,6 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', array_column(UserRole::cases(), 'value'))->default(UserRole::EMPLOYEE->value);
             $table->string('phone_number')->nullable();
-            $table->string('address')->nullable();
-            $table->string('company')->nullable();
             $table->boolean('is_active');
             $table->text('notes')->nullable();
             $table->string('type')->nullable();

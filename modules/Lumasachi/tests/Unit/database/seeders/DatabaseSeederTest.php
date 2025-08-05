@@ -88,7 +88,8 @@ final class DatabaseSeederTest extends TestCase
         // Test specific business customer
         $techCorp = User::where('email', 'robert@techcorp.com')->first();
         $this->assertNotNull($techCorp);
-        $this->assertEquals('Tech Corp Solutions', $techCorp->company);
+        // Since the seeder doesn't create a company for this user, we should check that it's a business type user
+        $this->assertEquals(UserType::BUSINESS->value, $techCorp->type);
         $this->assertStringContainsString('VIP customer', $techCorp->notes);
 
         // Test individual customers

@@ -4,9 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Modules\Lumasachi\app\Models\Company;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\UserType;
@@ -31,8 +34,7 @@ class User extends Authenticatable
         'password',
         'role',
         'phone_number',
-        'address',
-        'company',
+        'company_id',
         'is_active',
         'notes',
         'type',
@@ -46,7 +48,9 @@ class User extends Authenticatable
      */
     protected $attributes = [
         'role' => UserRole::EMPLOYEE,
+        'is_active' => false,
         'type' => UserType::INDIVIDUAL,
+        'company_id' => null,
     ];
 
     /**
@@ -109,22 +113,27 @@ class User extends Authenticatable
     // Accessors
     public function getFullNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->first_name . " " . $this->last_name;
     }
 
     // Relationships
-    public function createdOrders()
+    public function createdOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'created_by');
     }
 
-    public function assignedOrders()
+    public function assignedOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'assigned_to');
     }
 
-    public function customerOrders()
+    public function customerOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'customer_id');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id', 'uuid');
     }
 }

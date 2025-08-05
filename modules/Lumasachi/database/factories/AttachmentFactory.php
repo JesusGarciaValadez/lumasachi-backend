@@ -73,8 +73,8 @@ final class AttachmentFactory extends Factory
         $extension = $this->faker->randomElement($fileType['extensions']);
         $mimeType = $this->faker->randomElement($fileType['mimeTypes']);
 
-        // Generate file name
-        $fileName = $this->faker->word() . '_' . time() . '.' . $extension;
+        // Generate file name with unique identifier
+        $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $extension;
 
         // Generate file path (simulating folder structure)
         $year = date('Y');
@@ -105,7 +105,7 @@ final class AttachmentFactory extends Factory
         return $this->state(function (array $attributes) {
             $extension = $this->faker->randomElement(['jpg', 'png', 'gif', 'webp']);
             $mimeType = $this->faker->randomElement(Attachment::IMAGE_MIME_TYPES);
-            $fileName = $this->faker->word() . '_' . time() . '.' . $extension;
+            $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $extension;
             $year = date('Y');
             $month = date('m');
 
@@ -124,7 +124,7 @@ final class AttachmentFactory extends Factory
     public function pdf(): static
     {
         return $this->state(function (array $attributes) {
-            $fileName = $this->faker->word() . '_document_' . time() . '.pdf';
+            $fileName = $this->faker->word() . '_document_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.pdf';
             $year = date('Y');
             $month = date('m');
 
@@ -150,7 +150,7 @@ final class AttachmentFactory extends Factory
             ];
 
             $type = $this->faker->randomElement($types);
-            $fileName = $this->faker->word() . '_' . time() . '.' . $type['ext'];
+            $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $type['ext'];
             $year = date('Y');
             $month = date('m');
 
@@ -176,7 +176,7 @@ final class AttachmentFactory extends Factory
             ];
 
             $type = $this->faker->randomElement($types);
-            $fileName = $this->faker->word() . '_data_' . time() . '.' . $type['ext'];
+            $fileName = $this->faker->word() . '_data_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $type['ext'];
             $year = date('Y');
             $month = date('m');
 

@@ -13,6 +13,7 @@ use Modules\Lumasachi\app\Http\Resources\OrderResource;
 use Modules\Lumasachi\app\Http\Resources\OrderHistoryResource;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Models\User;
 
 final class OrderController extends Controller
@@ -22,10 +23,17 @@ final class OrderController extends Controller
      *
      * @return JsonResponse
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $orders = Order::with(['customer', 'assignedTo', 'createdBy'])->get();
-        
+        $user = $request->user();
+
+        // Orders must be filtered by the user's role if isCustomer
+        $orders = Order::with(['customer', 'assignedTo', 'createdBy'])
+            ->when($user->isCustomer(), function ($query) use ($user) {
+                $query->where('customer_id', $user->id);
+            })
+            ->get();
+
         return response()->json(OrderResource::collection($orders));
     }
 
@@ -38,12 +46,12 @@ final class OrderController extends Controller
     public function store(StoreOrderRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        
+
         $order = Order::create(array_merge($validated, [
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id
         ]));
-        
+
         return response()->json([
             'message' => 'Order created successfully.',
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy']))
@@ -73,11 +81,11 @@ final class OrderController extends Controller
     public function update(UpdateOrderRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
-        
+
         $order->update(array_merge($validated, [
             'updated_by' => $request->user()->id
         ]));
-        
+
         return response()->json([
             'message' => 'Order updated successfully.',
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
@@ -93,7 +101,7 @@ final class OrderController extends Controller
     public function destroy(Order $order): JsonResponse
     {
         $order->delete();
-        
+
         return response()->json([
             'message' => 'Order deleted successfully.'
         ]);
@@ -110,7 +118,7 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
         $oldStatus = $order->status;
-        
+
         DB::beginTransaction();
         try {
             // Update order status
@@ -118,7 +126,7 @@ final class OrderController extends Controller
                 'status' => $validated['status'],
                 'updated_by' => $request->user()->id
             ]);
-            
+
             // Create history record
             OrderHistory::create([
                 'order_id' => $order->id,
@@ -130,9 +138,9 @@ final class OrderController extends Controller
                 'notes' => $validated['notes'] ?? "Status changed from {$oldStatus} to {$validated['status']}",
                 'created_by' => $request->user()->id
             ]);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'message' => 'Order status updated successfully.',
                 'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
@@ -157,7 +165,7 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
         $oldAssignee = $order->assigned_to;
-        
+
         DB::beginTransaction();
         try {
             // Update order assignment
@@ -165,13 +173,13 @@ final class OrderController extends Controller
                 'assigned_to' => $validated['assigned_to'],
                 'updated_by' => $request->user()->id
             ]);
-            
+
             // Create history record
             $assignee = User::find($validated['assigned_to']);
-            $description = $oldAssignee 
-                ? 'Order reassigned' 
+            $description = $oldAssignee
+                ? 'Order reassigned'
                 : 'Order assigned';
-            
+
             OrderHistory::create([
                 'order_id' => $order->id,
                 'status_from' => $order->status,
@@ -182,9 +190,9 @@ final class OrderController extends Controller
                 'notes' => $validated['notes'] ?? "Order assigned to {$assignee->full_name}",
                 'created_by' => $request->user()->id
             ]);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'message' => 'Order assigned successfully.',
                 'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
@@ -210,7 +218,7 @@ final class OrderController extends Controller
             ->with(['createdBy', 'attachments'])
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         return response()->json([
             'order_id' => $order->id,
             'history' => OrderHistoryResource::collection($history)
