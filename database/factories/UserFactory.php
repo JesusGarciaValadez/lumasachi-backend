@@ -33,8 +33,6 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'role' => fake()->randomElement(UserRole::cases()),
             'phone_number' => fake()->phoneNumber(),
-            'address' => fake()->address(),
-            'company' => fake()->company(),
             'is_active' => fake()->boolean(),
             'notes' => fake()->text(),
             'type' => fake()->randomElement(UserType::getTypes()),

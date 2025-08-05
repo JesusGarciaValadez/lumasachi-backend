@@ -51,8 +51,6 @@ final class CreateUsersTableTest extends TestCase
             'password',
             'role',
             'phone_number',
-            'address',
-            'company',
             'is_active',
             'notes',
             'type',
@@ -76,7 +74,7 @@ final class CreateUsersTableTest extends TestCase
     public function test_users_table_column_types()
     {
         // Test string columns - PostgreSQL returns 'varchar' for string columns
-        $stringColumns = ['first_name', 'last_name', 'email', 'password', 'phone_number', 'address', 'company', 'type', 'preferences', 'remember_token'];
+        $stringColumns = ['first_name', 'last_name', 'email', 'password', 'phone_number', 'type', 'preferences', 'remember_token'];
         foreach ($stringColumns as $column) {
             $this->assertContains(
                 Schema::getColumnType('users', $column),
@@ -121,8 +119,6 @@ final class CreateUsersTableTest extends TestCase
             // These should accept null
             'email_verified_at' => null,
             'phone_number' => null,
-            'address' => null,
-            'company' => null,
             'notes' => null,
             'type' => null,
             'preferences' => null,
@@ -130,8 +126,6 @@ final class CreateUsersTableTest extends TestCase
 
         $this->assertNull($user->email_verified_at);
         $this->assertNull($user->phone_number);
-        $this->assertNull($user->address);
-        $this->assertNull($user->company);
         $this->assertNull($user->notes);
         $this->assertNull($user->type);
         $this->assertNull($user->preferences);
@@ -319,8 +313,6 @@ final class CreateUsersTableTest extends TestCase
             'password' => bcrypt('password'),
             'role' => UserRole::CUSTOMER->value,
             'phone_number' => '+1234567890',
-            'address' => '123 Main St, City, Country',
-            'company' => 'Acme Inc.',
             'is_active' => true,
             'notes' => 'VIP customer with special requirements',
             'type' => 'premium',
@@ -333,7 +325,6 @@ final class CreateUsersTableTest extends TestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
             'role' => UserRole::CUSTOMER->value,
-            'company' => 'Acme Inc.',
             'is_active' => true,
         ]);
     }
@@ -360,8 +351,6 @@ final class CreateUsersTableTest extends TestCase
 
         // Check that nullable fields are indeed null
         $this->assertNull($user->phone_number);
-        $this->assertNull($user->address);
-        $this->assertNull($user->company);
         $this->assertNull($user->notes);
     }
 }

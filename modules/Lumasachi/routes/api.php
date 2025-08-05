@@ -84,8 +84,8 @@ Route::group(['prefix' => 'v1'], function () {
         return $user->createToken($request->device_name)->plainTextToken;
     });
 
-    // Order Routes
-    Route::middleware('auth:sanctum')->prefix('history')->group(function () {
+    // Order History Routes
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('history')->group(function () {
         Route::get('/', [OrderHistoryController::class, 'index'])->middleware('can:viewAny,Modules\Lumasachi\app\Models\OrderHistory');
         Route::post('/', [OrderHistoryController::class, 'store'])->middleware('can:create,Modules\Lumasachi\app\Models\OrderHistory');
         Route::get('/{orderHistory}', [OrderHistoryController::class, 'show'])->middleware('can:view,orderHistory');
@@ -96,7 +96,7 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     // Order Routes
-    Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->middleware('can:viewAny,Modules\Lumasachi\app\Models\Order');
         Route::post('/', [OrderController::class, 'store'])->middleware('can:create,Modules\Lumasachi\app\Models\Order');
         Route::get('/{order}', [OrderController::class, 'show'])->middleware('can:view,order');
@@ -111,7 +111,7 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     // Attachment Routes (outside of orders prefix)
-    Route::middleware('auth:sanctum')->prefix('attachments')->group(function () {
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('attachments')->group(function () {
         Route::get('/{attachment}/download', [AttachmentController::class, 'download'])
             ->name('attachments.download');
         Route::get('/{attachment}/preview', [AttachmentController::class, 'preview'])

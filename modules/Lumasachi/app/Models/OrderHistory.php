@@ -53,4 +53,14 @@ class OrderHistory extends Model
     public function createdBy(): BelongsTo {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * Get the order(s) related to this order history.
+     * This is an alias for the order() method to maintain compatibility.
+     *
+     * @return BelongsTo
+     */
+    public function orders(): BelongsTo {
+        return $this->order();
+    }
 }
