@@ -15,6 +15,7 @@ use Modules\Lumasachi\app\Models\OrderHistory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 
 final class OrderController extends Controller
 {
@@ -29,6 +30,12 @@ final class OrderController extends Controller
 
         // Orders must be filtered by the user's role if isCustomer
         $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'category'])
+            ->whereIn('status', [
+                OrderStatus::OPEN->value,
+                OrderStatus::IN_PROGRESS->value,
+                OrderStatus::READY_FOR_DELIVERY->value,
+                OrderStatus::NOT_PAID->value,
+            ])
             ->when($user->isCustomer(), function ($query) use ($user) {
                 $query->where('customer_id', $user->id);
             })

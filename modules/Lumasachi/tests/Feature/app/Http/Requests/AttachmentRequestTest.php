@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Http\Requests\AttachmentRequest;
+use PHPUnit\Framework\Attributes\Test;
 
 final class AttachmentRequestTest extends TestCase
 {
@@ -48,7 +49,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_validation_passes_with_valid_data()
+    #[Test]
+    public function it_checks_if_validation_passes_with_valid_data(): void
     {
         $data = [
             'file' => UploadedFile::fake()->create('document.pdf', 2000, 'application/pdf'),
@@ -68,7 +70,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_file_is_required()
+    #[Test]
+    public function it_checks_if_file_is_required(): void
     {
         $data = [
             'name' => 'Test Document',
@@ -89,7 +92,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_file_size_validation()
+    #[Test]
+    public function it_checks_if_file_size_validation(): void
     {
         // Set max file size to 1MB for testing
         Config::set('attachments.max_file_size', 1024 * 1024);
@@ -112,7 +116,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_allowed_file_types()
+    #[Test]
+    public function it_checks_if_allowed_file_types(): void
     {
         $data = [
             'file' => UploadedFile::fake()->create('test.exe', 500, 'application/x-msdownload'),
@@ -131,7 +136,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_attachable_type_validation()
+    #[Test]
+    public function it_checks_if_attachable_type_validation(): void
     {
         // Test missing attachable_type
         $data = [
@@ -164,7 +170,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_attachable_id_validation()
+    #[Test]
+    public function it_checks_if_attachable_id_validation(): void
     {
         // Test missing attachable_id
         $data = [
@@ -197,7 +204,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_optional_fields_validation()
+    #[Test]
+    public function it_checks_if_optional_fields_validation(): void
     {
         // Test valid length
         $data = [
@@ -241,7 +249,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_all_mime_types_have_extensions()
+    #[Test]
+    public function it_checks_if_all_mime_types_have_extensions(): void
     {
         $request = new AttachmentRequest();
         $method = new \ReflectionMethod($request, 'getAllowedExtensions');
@@ -264,7 +273,8 @@ final class AttachmentRequestTest extends TestCase
      *
      * @return void
      */
-    public function test_authorization_checks_create_permission()
+    #[Test]
+    public function it_checks_if_authorization_checks_create_permission(): void
     {
         // User without permission
         $user = User::factory()->create();

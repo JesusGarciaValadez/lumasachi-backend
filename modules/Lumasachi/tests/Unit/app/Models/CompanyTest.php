@@ -5,6 +5,8 @@ namespace Modules\Lumasachi\Tests\Unit\app\Models;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Company;
+use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CompanyTest extends TestCase
 {
@@ -13,7 +15,8 @@ final class CompanyTest extends TestCase
     /**
      * Test that Company model uses required traits.
      */
-    public function test_company_uses_required_traits(): void
+    #[Test]
+    public function it_checks_if_company_uses_required_traits(): void
     {
         $company = new Company();
 
@@ -24,7 +27,8 @@ final class CompanyTest extends TestCase
     /**
      * Test that fillable attributes are set correctly.
      */
-    public function test_fillable_attributes(): void
+    #[Test]
+    public function it_checks_if_fillable_attributes_are_set_correctly(): void
     {
         $company = new Company();
         $fillable = $company->getFillable();
@@ -56,7 +60,8 @@ final class CompanyTest extends TestCase
     /**
      * Test that casts are set correctly.
      */
-    public function test_casts_attributes(): void
+    #[Test]
+    public function it_checks_if_casts_attributes_are_set_correctly(): void
     {
         $company = new Company();
         $casts = $company->getCasts();
@@ -75,7 +80,8 @@ final class CompanyTest extends TestCase
     /**
      * Test model table name.
      */
-    public function test_model_table_name(): void
+    #[Test]
+    public function it_checks_if_model_table_name_is_correct(): void
     {
         $company = new Company();
 
@@ -85,25 +91,30 @@ final class CompanyTest extends TestCase
     /**
      * Test users relationship.
      */
-    public function test_users_relationship(): void
+    #[Test]
+    public function it_checks_if_users_relationship_is_correct(): void
     {
         $company = Company::factory()->create();
 
-        $users = \App\Models\User::factory()->count(3)->create(['company_id' => $company->uuid]);
+        $users = User::factory()->count(3)->create(['company_id' => $company->uuid]);
 
         $this->assertCount(3, $company->users);
-        $this->assertEquals($users->pluck('id')->toArray(), $company->users->pluck('id')->toArray());
+        $this->assertEquals(
+            $users->pluck('id')->sort()->values()->toArray(),
+            $company->users->pluck('id')->sort()->values()->toArray()
+        );
     }
 
     /**
      * Test activeUsers relationship.
      */
-    public function test_active_users_relationship(): void
+    #[Test]
+    public function it_checks_if_active_users_relationship_is_correct(): void
     {
         $company = Company::factory()->create();
 
-        \App\Models\User::factory()->count(2)->create(['company_id' => $company->uuid, 'is_active' => true]);
-        \App\Models\User::factory()->count(1)->create(['company_id' => $company->uuid, 'is_active' => false]);
+        User::factory()->count(2)->create(['company_id' => $company->uuid, 'is_active' => true]);
+        User::factory()->count(1)->create(['company_id' => $company->uuid, 'is_active' => false]);
 
         $this->assertCount(2, $company->activeUsers);
     }
@@ -111,7 +122,8 @@ final class CompanyTest extends TestCase
     /**
      * Test active scope.
      */
-    public function test_active_scope(): void
+    #[Test]
+    public function it_checks_if_active_scope_is_correct(): void
     {
         Company::factory()->count(2)->active()->create();
         Company::factory()->count(1)->inactive()->create();
@@ -122,7 +134,8 @@ final class CompanyTest extends TestCase
     /**
      * Test inactive scope.
      */
-    public function test_inactive_scope(): void
+    #[Test]
+    public function it_checks_if_inactive_scope_is_correct(): void
     {
         Company::factory()->count(2)->active()->create();
         Company::factory()->count(1)->inactive()->create();
@@ -133,7 +146,8 @@ final class CompanyTest extends TestCase
     /**
      * Test full address accessor.
      */
-    public function test_full_address_accessor(): void
+    #[Test]
+    public function it_checks_if_full_address_accessor_is_correct(): void
     {
         $company = Company::factory()->create([
             'address' => '123 Main St',

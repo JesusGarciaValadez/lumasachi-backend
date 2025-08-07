@@ -22,7 +22,7 @@ class OrderHistoryTrackingTest extends TestCase
     #[Test]
     public function tracks_status_changes_when_updating_order()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
