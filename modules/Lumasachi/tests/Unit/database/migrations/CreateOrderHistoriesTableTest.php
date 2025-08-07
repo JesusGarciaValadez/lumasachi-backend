@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 use App\Models\User;
 
 final class CreateOrderHistoriesTableTest extends TestCase
@@ -25,12 +26,10 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $columns = [
             'id',
             'order_id',
-            'status_from',
-            'status_to',
-            'priority_from',
-            'priority_to',
-            'description',
-            'notes',
+            'field_changed',
+            'old_value',
+            'new_value',
+            'comment',
             'created_by',
             'created_at',
             'updated_at',
@@ -58,7 +57,7 @@ final class CreateOrderHistoriesTableTest extends TestCase
         OrderHistory::create([
             'order_id' => $order->id,
             'created_by' => $user->id,
-            // Missing required 'description'
+            // Missing required 'field_changed'
         ]);
     }
 
@@ -73,17 +72,15 @@ final class CreateOrderHistoriesTableTest extends TestCase
         // Test with nullable columns as null
         $history = OrderHistory::create([
             'order_id' => $order->id,
-            'description' => 'Test description',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN,
+            'new_value' => OrderStatus::IN_PROGRESS,
             'created_by' => $user->id,
-            // All nullable fields left as null
+            // Comment is nullable and left as null
         ]);
 
         $this->assertNotNull($history);
-        $this->assertNull($history->status_from);
-        $this->assertNull($history->status_to);
-        $this->assertNull($history->priority_from);
-        $this->assertNull($history->priority_to);
-        $this->assertNull($history->notes);
+        $this->assertNull($history->comment);
     }
 
     /**
@@ -97,9 +94,10 @@ final class CreateOrderHistoriesTableTest extends TestCase
         // Create order history
         $history = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => 'Open',
-            'status_to' => 'In Progress',
-            'description' => 'Status changed',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN,
+            'new_value' => OrderStatus::IN_PROGRESS,
+            'comment' => 'Status changed',
             'created_by' => $user->id,
         ]);
 
@@ -120,26 +118,19 @@ final class CreateOrderHistoriesTableTest extends TestCase
 
         $history = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => 'Open',
-            'status_to' => 'In Progress',
-            'priority_from' => 'Normal',
-            'priority_to' => 'High',
-            'description' => 'Status and priority changed',
-            'notes' => 'Customer requested urgent handling',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status changed - Customer requested urgent handling',
             'created_by' => $user->id,
         ]);
 
         $this->assertInstanceOf(OrderHistory::class, $history);
         $this->assertEquals($order->id, $history->order_id);
-
-        // For enum comparisons, check the value property
-        $this->assertEquals('Open', $history->status_from->value);
-        $this->assertEquals('In Progress', $history->status_to->value);
-        $this->assertEquals('Normal', $history->priority_from->value);
-        $this->assertEquals('High', $history->priority_to->value);
-
-        $this->assertEquals('Status and priority changed', $history->description);
-        $this->assertEquals('Customer requested urgent handling', $history->notes);
+        $this->assertEquals('status', $history->field_changed);
+        $this->assertEquals('Open', $history->old_value->value);
+        $this->assertEquals('In Progress', $history->new_value->value);
+        $this->assertEquals('Status changed - Customer requested urgent handling', $history->comment);
         $this->assertEquals($user->id, $history->created_by);
     }
 
@@ -153,7 +144,9 @@ final class CreateOrderHistoriesTableTest extends TestCase
 
         $history = OrderHistory::create([
             'order_id' => $order->id,
-            'description' => 'Test',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN,
+            'new_value' => OrderStatus::IN_PROGRESS,
             'created_by' => $user->id,
         ]);
 
@@ -181,4 +174,3 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $this->assertFalse(Schema::hasTable('order_histories'));
     }
 }
-

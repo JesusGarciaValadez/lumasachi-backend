@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use PHPUnit\Framework\Attributes\Test;
 
 final class AttachmentTest extends TestCase
 {
@@ -24,7 +26,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test complete attachment lifecycle with an order
      */
-    public function test_complete_attachment_lifecycle_with_order()
+    #[Test]
+    public function it_checks_complete_attachment_lifecycle_with_order()
     {
         // Create users
         $customer = User::factory()->create(['role' => 'Customer']);
@@ -100,7 +103,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test attachments with order history
      */
-    public function test_attachments_with_order_history()
+    #[Test]
+    public function it_checks_attachments_with_order_history()
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -108,10 +112,10 @@ final class AttachmentTest extends TestCase
         // Create order history
         $history = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => Order::STATUS_OPEN,
-            'status_to' => Order::STATUS_IN_PROGRESS,
-            'description' => 'Started working on the order',
-            'notes' => 'Customer approved the design',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Started working on the order - Customer approved the design',
             'created_by' => $user->id,
         ]);
 
@@ -137,7 +141,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test multiple attachments between order and history
      */
-    public function test_multiple_attachments_across_order_and_history()
+    #[Test]
+    public function it_checks_multiple_attachments_across_order_and_history()
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -157,9 +162,10 @@ final class AttachmentTest extends TestCase
         for ($i = 1; $i <= 3; $i++) {
             $history = OrderHistory::create([
                 'order_id' => $order->id,
-                'status_from' => $i == 1 ? Order::STATUS_OPEN : Order::STATUS_IN_PROGRESS,
-                'status_to' => Order::STATUS_IN_PROGRESS,
-                'description' => "Update {$i}",
+                'field_changed' => 'status',
+                'old_value' => $i == 1 ? OrderStatus::OPEN->value : OrderStatus::IN_PROGRESS->value,
+                'new_value' => OrderStatus::IN_PROGRESS->value,
+                'comment' => "Update {$i}",
                 'created_by' => $user->id,
             ]);
 
@@ -195,7 +201,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test error handling and edge cases
      */
-    public function test_edge_cases_and_error_handling()
+    #[Test]
+    public function it_checks_edge_cases_and_error_handling()
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -240,7 +247,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test performance with multiple attachments
      */
-    public function test_performance_with_multiple_attachments()
+    #[Test]
+    public function it_checks_performance_with_multiple_attachments()
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -275,7 +283,9 @@ final class AttachmentTest extends TestCase
     /**
      * Test referential integrity
      */
-    public function test_referential_integrity()
+    #[Test]
+
+    public function it_checks_referential_integrity()
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();

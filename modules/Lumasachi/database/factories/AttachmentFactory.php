@@ -24,14 +24,11 @@ final class AttachmentFactory extends Factory
      */
     public function definition(): array
     {
-        // Define possible attachable models
-        $attachableModels = [
-            Order::class,
-            OrderHistory::class,
-        ];
+        // Define possible attachable types (using morphMap keys)
+        $attachableTypes = ['order', 'order_history'];
 
         // Pick a random attachable type
-        $attachableType = $this->faker->randomElement($attachableModels);
+        $attachableType = $this->faker->randomElement($attachableTypes);
 
         // Define possible file types with their extensions and mime types
         $fileTypes = [
@@ -87,7 +84,9 @@ final class AttachmentFactory extends Factory
         return [
             'attachable_type' => $attachableType,
             'attachable_id' => function () use ($attachableType) {
-                return $attachableType::factory()->create()->id;
+                // Map type to model class for factory creation
+                $modelClass = $attachableType === 'order' ? Order::class : OrderHistory::class;
+                return $modelClass::factory()->create()->id;
             },
             'file_name' => $fileName,
             'file_path' => $filePath,
@@ -220,7 +219,7 @@ final class AttachmentFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($order) {
             return [
-                'attachable_type' => Order::class,
+                'attachable_type' => 'order',
                 'attachable_id' => $order->id,
             ];
         });
@@ -233,7 +232,7 @@ final class AttachmentFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($orderHistory) {
             return [
-                'attachable_type' => OrderHistory::class,
+                'attachable_type' => 'order_history',
                 'attachable_id' => $orderHistory->id,
             ];
         });

@@ -30,21 +30,153 @@ class OrderHistory extends Model
 
     protected $fillable = [
         'order_id',
-        'status_from',
-        'status_to',
-        'priority_from',
-        'priority_to',
-        'description',
-        'notes',
+        'field_changed',
+        'old_value',
+        'new_value',
+        'comment',
         'created_by'
     ];
 
     protected $casts = [
-        'status_from' => OrderStatus::class,
-        'status_to' => OrderStatus::class,
-        'priority_from' => OrderPriority::class,
-        'priority_to' => OrderPriority::class,
+        // Dynamic casting will be handled by accessors/mutators
     ];
+
+    /**
+     * Available fields that can be tracked
+     */
+    const FIELD_STATUS = 'status';
+    const FIELD_PRIORITY = 'priority';
+    const FIELD_ASSIGNED_TO = 'assigned_to';
+    const FIELD_TITLE = 'title';
+    const FIELD_ESTIMATED_COMPLETION = 'estimated_completion';
+    const FIELD_ACTUAL_COMPLETION = 'actual_completion';
+    const FIELD_NOTES = 'notes';
+    const FIELD_CATEGORY = 'category_id';
+
+    /**
+     * Get the old value with proper casting based on field type
+     */
+    public function getOldValueAttribute(mixed $value): mixed
+    {
+        return $this->castFieldValue($this->field_changed, $value, 'old');
+    }
+
+    /**
+     * Get the new value with proper casting based on field type
+     */
+    public function getNewValueAttribute(mixed $value): mixed
+    {
+        return $this->castFieldValue($this->field_changed, $value, 'new');
+    }
+
+    /**
+     * Cast field value based on field type
+     */
+    protected function castFieldValue(string $field, mixed $value, string $type = 'new'): mixed
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        switch ($field) {
+            case self::FIELD_STATUS:
+                if ($value instanceof OrderStatus) {
+                    return $value;
+                }
+                return $value ? OrderStatus::tryFrom($value) : null;
+            case self::FIELD_PRIORITY:
+                if ($value instanceof OrderPriority) {
+                    return $value;
+                }
+                return $value ? OrderPriority::tryFrom($value) : null;
+            case self::FIELD_ESTIMATED_COMPLETION:
+            case self::FIELD_ACTUAL_COMPLETION:
+                if ($value instanceof \Carbon\Carbon) {
+                    return $value;
+                }
+                return $value ? \Carbon\Carbon::parse($value) : null;
+            default:
+                return $value;
+        }
+    }
+
+    /**
+     * Set the old value with proper serialization
+     */
+    public function setOldValueAttribute(mixed $value): void
+    {
+        $this->attributes['old_value'] = $this->serializeFieldValue($this->field_changed, $value);
+    }
+
+    /**
+     * Set the new value with proper serialization
+     */
+    public function setNewValueAttribute(mixed $value): void
+    {
+        $this->attributes['new_value'] = $this->serializeFieldValue($this->field_changed, $value);
+    }
+
+    /**
+     * Serialize field value for storage
+     */
+    protected function serializeFieldValue(string $field, mixed $value): string|null
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+
+        if ($value instanceof \Carbon\Carbon) {
+            return $value->toISOString();
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Get a human-readable description of the change
+     */
+    public function getDescriptionAttribute(): string
+    {
+        $field = str_replace('_', ' ', $this->field_changed);
+        $oldValue = $this->getFormattedValue($this->field_changed, $this->old_value);
+        $newValue = $this->getFormattedValue($this->field_changed, $this->new_value);
+
+        if (is_null($this->old_value)) {
+            return ucfirst($field) . " set to: {$newValue}";
+        }
+
+        if (is_null($this->new_value)) {
+            return ucfirst($field) . " removed (was: {$oldValue})";
+        }
+
+        return ucfirst($field) . " changed from {$oldValue} to {$newValue}";
+    }
+
+    /**
+     * Format value for display
+     */
+    protected function getFormattedValue(string $field, mixed $value): string
+    {
+        if (is_null($value)) {
+            return 'empty';
+        }
+
+        $castedValue = $this->castFieldValue($field, $value);
+
+        if ($castedValue instanceof \BackedEnum) {
+            return method_exists($castedValue, 'getLabel') ? $castedValue->getLabel() : $castedValue->value;
+        }
+
+        if ($castedValue instanceof \Carbon\Carbon) {
+            return $castedValue->format('Y-m-d H:i');
+        }
+
+        return (string) $castedValue;
+    }
 
     public function order(): BelongsTo {
         return $this->belongsTo(Order::class);

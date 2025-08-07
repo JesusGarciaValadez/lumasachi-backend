@@ -24,12 +24,10 @@ class StoreOrderHistoryRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'uuid', 'exists:orders,id'],
-            'status_from' => ['nullable', Rule::enum(OrderStatus::class)],
-            'status_to' => ['nullable', Rule::enum(OrderStatus::class)],
-            'priority_from' => ['nullable', Rule::enum(OrderPriority::class)],
-            'priority_to' => ['nullable', Rule::enum(OrderPriority::class)],
-            'description' => ['required', 'string', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'field_changed' => ['required', 'string', 'in:status,priority,title,category_id,assigned_to,estimated_completion,notes'],
+            'old_value' => ['nullable', 'string'],
+            'new_value' => ['nullable', 'string'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -42,13 +40,9 @@ class StoreOrderHistoryRequest extends FormRequest
             'order_id.required' => 'The order ID is required.',
             'order_id.uuid' => 'The order ID must be a valid UUID.',
             'order_id.exists' => 'The specified order does not exist.',
-            'status_from.enum' => 'The status from value is invalid.',
-            'status_to.enum' => 'The status to value is invalid.',
-            'priority_from.enum' => 'The priority from value is invalid.',
-            'priority_to.enum' => 'The priority to value is invalid.',
-            'description.required' => 'A description is required for the history entry.',
-            'description.max' => 'The description cannot exceed 255 characters.',
-            'notes.max' => 'The notes cannot exceed 1000 characters.',
+            'field_changed.required' => 'The field changed is required.',
+            'field_changed.in' => 'The field changed must be one of: status, priority, title, category_id, assigned_to, estimated_completion, notes.',
+            'comment.max' => 'The comment cannot exceed 1000 characters.',
         ];
     }
 
@@ -58,11 +52,6 @@ class StoreOrderHistoryRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Ensure at least one change is being recorded
-            if (!$this->status_from && !$this->status_to && !$this->priority_from && !$this->priority_to) {
-                $validator->errors()->add('general', 'At least one status or priority change must be specified.');
-            }
-
             // Validate that the user has permission to modify the specific order
             if ($this->order_id) {
                 $order = \Modules\Lumasachi\app\Models\Order::find($this->order_id);

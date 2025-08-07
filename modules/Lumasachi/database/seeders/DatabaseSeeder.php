@@ -12,6 +12,8 @@ use Modules\Lumasachi\app\Enums\UserType;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\database\seeders\CompanySeeder;
+use Modules\Lumasachi\database\seeders\CategorySeeder;
+use Modules\Lumasachi\app\Models\Category;
 use Carbon\Carbon;
 
 final class DatabaseSeeder extends Seeder
@@ -23,6 +25,9 @@ final class DatabaseSeeder extends Seeder
     {
         // Seed companies first
         $this->call(CompanySeeder::class);
+        
+        // Seed categories
+        $this->call(CategorySeeder::class);
 
         // Create Super Administrator
         $superAdmin = User::factory()->create([
@@ -147,7 +152,7 @@ final class DatabaseSeeder extends Seeder
             'description' => 'Complete redesign of company website with modern UI/UX. Must be responsive and include e-commerce functionality.',
             'status' => OrderStatus::IN_PROGRESS->value,
             'priority' => OrderPriority::URGENT->value,
-            'category' => 'Web Development',
+            'category_id' => Category::where('name', 'Desarrollo')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(7),
             'created_by' => $businessCustomer1->id,
             'updated_by' => $employee1->id,
@@ -162,7 +167,7 @@ final class DatabaseSeeder extends Seeder
             'description' => 'Design and print 500 business cards with new company branding.',
             'status' => OrderStatus::READY_FOR_DELIVERY->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category' => 'Print Design',
+            'category_id' => Category::where('name', 'Otros')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(3),
             'created_by' => $customer1->id,
             'updated_by' => $employee2->id,
@@ -176,7 +181,7 @@ final class DatabaseSeeder extends Seeder
             'description' => 'Create new company logo with 3 variations and brand guidelines document.',
             'status' => OrderStatus::PAID->value,
             'priority' => OrderPriority::HIGH->value,
-            'category' => 'Branding',
+            'category_id' => Category::where('name', 'Consultoría')->first()->id,
             'estimated_completion' => Carbon::now()->subDays(5),
             'actual_completion' => Carbon::now()->subDays(7),
             'created_by' => $customer2->id,
@@ -192,7 +197,7 @@ final class DatabaseSeeder extends Seeder
             'description' => 'Design materials for Q4 marketing campaign including posters, flyers, and social media graphics.',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category' => 'Marketing',
+            'category_id' => Category::where('name', 'Consultoría')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(14),
             'created_by' => $businessCustomer2->id,
             'updated_by' => $admin->id,
@@ -206,7 +211,7 @@ final class DatabaseSeeder extends Seeder
             'description' => 'Professional photography session for new product line.',
             'status' => OrderStatus::CANCELLED->value,
             'priority' => OrderPriority::LOW->value,
-            'category' => 'Photography',
+            'category_id' => Category::where('name', 'Otros')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(10),
             'created_by' => $customer1->id,
             'updated_by' => $admin->id,
@@ -222,23 +227,40 @@ final class DatabaseSeeder extends Seeder
         // History for Order 1
         OrderHistory::factory()->create([
             'order_id' => $order1->id,
-            'status_from' => null,
-            'status_to' => OrderStatus::OPEN->value,
-            'priority_from' => null,
-            'priority_to' => OrderPriority::URGENT->value,
-            'description' => 'Order created with urgent priority',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => null,
+            'new_value' => OrderStatus::OPEN->value,
+            'comment' => 'Order created with urgent priority',
             'created_by' => $businessCustomer1->id,
             'created_at' => $order1->created_at,
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $order1->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'priority_from' => OrderPriority::URGENT->value,
-            'priority_to' => OrderPriority::URGENT->value,
-            'description' => 'Work started on the project',
-            'notes' => 'Assigned to Maria Garcia for immediate attention',
+            'field_changed' => OrderHistory::FIELD_PRIORITY,
+            'old_value' => null,
+            'new_value' => OrderPriority::URGENT->value,
+            'comment' => 'Priority set to urgent',
+            'created_by' => $businessCustomer1->id,
+            'created_at' => $order1->created_at,
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order1->id,
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Work started on the project',
+            'created_by' => $admin->id,
+            'created_at' => $order1->created_at->addHours(2),
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order1->id,
+            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+            'old_value' => null,
+            'new_value' => (string) $employee1->id,
+            'comment' => 'Assigned to Maria Garcia for immediate attention',
             'created_by' => $admin->id,
             'created_at' => $order1->created_at->addHours(2),
         ]);
@@ -246,12 +268,10 @@ final class DatabaseSeeder extends Seeder
         // History for Order 2
         OrderHistory::factory()->create([
             'order_id' => $order2->id,
-            'status_from' => OrderStatus::IN_PROGRESS->value,
-            'status_to' => OrderStatus::READY_FOR_DELIVERY->value,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::NORMAL->value,
-            'description' => 'Design completed and sent to print',
-            'notes' => 'Cards will be ready for pickup tomorrow',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::IN_PROGRESS->value,
+            'new_value' => OrderStatus::READY_FOR_DELIVERY->value,
+            'comment' => 'Design completed and sent to print. Cards will be ready for pickup tomorrow',
             'created_by' => $employee2->id,
             'created_at' => Carbon::now()->subDays(1),
         ]);
@@ -259,49 +279,199 @@ final class DatabaseSeeder extends Seeder
         // History for Order 3 (complete lifecycle)
         OrderHistory::factory()->create([
             'order_id' => $order3->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Designer started working on logo concepts',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Designer started working on logo concepts',
             'created_by' => $employee3->id,
             'created_at' => $order3->created_at->addHours(1),
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $order3->id,
-            'status_from' => OrderStatus::IN_PROGRESS->value,
-            'status_to' => OrderStatus::READY_FOR_DELIVERY->value,
-            'description' => 'Logo designs completed and approved by customer',
+            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+            'old_value' => null,
+            'new_value' => (string) $employee3->id,
+            'comment' => 'Assigned to Ana Rodriguez',
+            'created_by' => $admin->id,
+            'created_at' => $order3->created_at->addHours(1),
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order3->id,
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::IN_PROGRESS->value,
+            'new_value' => OrderStatus::READY_FOR_DELIVERY->value,
+            'comment' => 'Logo designs completed and approved by customer',
             'created_by' => $employee3->id,
             'created_at' => $order3->actual_completion->subDays(2),
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $order3->id,
-            'status_from' => OrderStatus::READY_FOR_DELIVERY->value,
-            'status_to' => OrderStatus::DELIVERED->value,
-            'description' => 'Files delivered to customer via email',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::READY_FOR_DELIVERY->value,
+            'new_value' => OrderStatus::DELIVERED->value,
+            'comment' => 'Files delivered to customer via email',
             'created_by' => $employee3->id,
             'created_at' => $order3->actual_completion->subDays(1),
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $order3->id,
-            'status_from' => OrderStatus::DELIVERED->value,
-            'status_to' => OrderStatus::PAID->value,
-            'description' => 'Payment received in full',
-            'notes' => 'Payment via bank transfer',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::DELIVERED->value,
+            'new_value' => OrderStatus::PAID->value,
+            'comment' => 'Payment received in full via bank transfer',
             'created_by' => $admin->id,
+            'created_at' => $order3->actual_completion,
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order3->id,
+            'field_changed' => OrderHistory::FIELD_ACTUAL_COMPLETION,
+            'old_value' => null,
+            'new_value' => $order3->actual_completion->toISOString(),
+            'comment' => 'Order completed',
+            'created_by' => $employee3->id,
             'created_at' => $order3->actual_completion,
         ]);
 
         // History for Order 5 (cancelled)
         OrderHistory::factory()->create([
             'order_id' => $order5->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::CANCELLED->value,
-            'description' => 'Order cancelled by customer',
-            'notes' => 'Customer cited budget constraints',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::CANCELLED->value,
+            'comment' => 'Order cancelled by customer. Customer cited budget constraints',
             'created_by' => $admin->id,
+        ]);
+
+        // Additional diverse history entries for various orders
+        
+        // Title change example
+        OrderHistory::factory()->create([
+            'order_id' => $order1->id,
+            'field_changed' => OrderHistory::FIELD_TITLE,
+            'old_value' => 'Website Development',
+            'new_value' => 'E-commerce Website Development with Payment Integration',
+            'comment' => 'Customer requested to update title to better reflect scope',
+            'created_by' => $businessCustomer1->id,
+            'created_at' => $order1->created_at->addHours(1),
+        ]);
+
+        // Notes change example (replaced description tracking)
+        OrderHistory::factory()->create([
+            'order_id' => $order2->id,
+            'field_changed' => OrderHistory::FIELD_NOTES,
+            'old_value' => 'Standard business card design',
+            'new_value' => 'Professional business cards design for corporate use. Need 500 cards with gold foil accents.',
+            'comment' => 'Added printing specifications as discussed',
+            'created_by' => $customer1->id,
+            'created_at' => Carbon::now()->subDays(5),
+        ]);
+
+        // Estimated completion change example
+        OrderHistory::factory()->create([
+            'order_id' => $order1->id,
+            'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
+            'old_value' => $order1->estimated_completion->toISOString(),
+            'new_value' => $order1->estimated_completion->addDays(3)->toISOString(),
+            'comment' => 'Delayed due to additional requirements for payment gateway integration',
+            'created_by' => $employee1->id,
+            'created_at' => $order1->created_at->addDays(2),
+        ]);
+
+        // Notes update example
+        OrderHistory::factory()->create([
+            'order_id' => $order2->id,
+            'field_changed' => OrderHistory::FIELD_NOTES,
+            'old_value' => null,
+            'new_value' => 'Customer prefers minimalist design with company colors: Blue (#0066CC) and Grey (#666666)',
+            'comment' => 'Design preferences discussed in meeting',
+            'created_by' => $employee2->id,
+            'created_at' => Carbon::now()->subDays(4),
+        ]);
+
+        // Category change example
+        $developmentCategory = Category::where('name', 'Desarrollo')->first();
+        $consultingCategory = Category::where('name', 'Consultoría')->first();
+        
+        if ($developmentCategory && $consultingCategory) {
+            OrderHistory::factory()->create([
+                'order_id' => $order4->id,
+                'field_changed' => OrderHistory::FIELD_CATEGORY,
+                'old_value' => (string) $developmentCategory->id,
+                'new_value' => (string) $consultingCategory->id,
+                'comment' => 'Reclassified from development to consulting based on project scope',
+                'created_by' => $admin->id,
+                'created_at' => $order4->created_at->addHours(3),
+            ]);
+        }
+
+        // Priority change example (downgrade)
+        OrderHistory::factory()->create([
+            'order_id' => $order4->id,
+            'field_changed' => OrderHistory::FIELD_PRIORITY,
+            'old_value' => OrderPriority::HIGH->value,
+            'new_value' => OrderPriority::NORMAL->value,
+            'comment' => 'Customer agreed to extend deadline, reducing priority',
+            'created_by' => $customer2->id,
+            'created_at' => $order4->created_at->addDays(1),
+        ]);
+
+        // Assigned to change (reassignment)
+        OrderHistory::factory()->create([
+            'order_id' => $order2->id,
+            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+            'old_value' => (string) $employee2->id,
+            'new_value' => (string) $employee1->id,
+            'comment' => 'Reassigned due to Carlos being on vacation next week',
+            'created_by' => $admin->id,
+            'created_at' => Carbon::now()->subDays(3),
+        ]);
+
+        // Another assigned to change (back to original)
+        OrderHistory::factory()->create([
+            'order_id' => $order2->id,
+            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+            'old_value' => (string) $employee1->id,
+            'new_value' => (string) $employee2->id,
+            'comment' => 'Carlos returned early, reassigning back to him',
+            'created_by' => $admin->id,
+            'created_at' => Carbon::now()->subDays(2),
+        ]);
+
+        // Multiple field changes for order 4 to show complete tracking
+        OrderHistory::factory()->create([
+            'order_id' => $order4->id,
+            'field_changed' => OrderHistory::FIELD_TITLE,
+            'old_value' => 'Flyer Design',
+            'new_value' => 'Promotional Flyer Design for Summer Sale',
+            'comment' => 'Updated title for clarity',
+            'created_by' => $customer2->id,
+            'created_at' => $order4->created_at->addMinutes(30),
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order4->id,
+            'field_changed' => OrderHistory::FIELD_NOTES,
+            'old_value' => 'Standard flyer design',
+            'new_value' => 'Promotional flyer design with QR code for website.',
+            'comment' => 'Customer requested QR code addition',
+            'created_by' => $customer2->id,
+            'created_at' => $order4->created_at->addHours(4),
+        ]);
+
+        // Notes change with previous value
+        OrderHistory::factory()->create([
+            'order_id' => $order3->id,
+            'field_changed' => OrderHistory::FIELD_NOTES,
+            'old_value' => 'Initial concept approved',
+            'new_value' => 'Initial concept approved. Final files delivered in AI, EPS, PNG, and SVG formats.',
+            'comment' => 'Updated delivery notes',
+            'created_by' => $employee3->id,
+            'created_at' => $order3->actual_completion->subHours(1),
         ]);
 
         // Create Attachments
@@ -342,7 +512,8 @@ final class DatabaseSeeder extends Seeder
 
         // Attachment for Order History (proof of payment)
         $paymentHistory = OrderHistory::where('order_id', $order3->id)
-            ->where('status_to', OrderStatus::PAID->value)
+            ->where('field_changed', OrderHistory::FIELD_STATUS)
+            ->where('new_value', OrderStatus::PAID->value)
             ->first();
 
         if ($paymentHistory) {

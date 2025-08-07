@@ -34,47 +34,66 @@ final class OrderHistoryFactoryTest extends TestCase
      */
     public function test_factory_generates_all_required_fields(): void
     {
-        $orderHistory = OrderHistory::factory()->make();
+        $orderHistory = OrderHistory::factory()->create();
 
         $this->assertNotNull($orderHistory->order_id);
-        $this->assertNotNull($orderHistory->status_from);
-        $this->assertNotNull($orderHistory->status_to);
-        $this->assertNotNull($orderHistory->priority_from);
-        $this->assertNotNull($orderHistory->priority_to);
-        $this->assertNotNull($orderHistory->description);
+        $this->assertNotNull($orderHistory->field_changed);
+        // old_value can be null for initial creation
+        $this->assertNotNull($orderHistory->new_value);
         $this->assertNotNull($orderHistory->created_by);
     }
 
     /**
-     * Test that factory generates valid status values
+     * Test that factory generates valid field changed values
      */
-    public function test_factory_generates_valid_status_values(): void
+    public function test_factory_generates_valid_field_changed_values(): void
     {
-        $validStatuses = array_map(fn($status) => $status->value, OrderStatus::cases());
+        $validFields = [
+            'status',
+            'priority',
+            'assigned_to',
+            'title',
+            'estimated_completion',
+            'actual_completion',
+            'notes',
+            'category_id'
+        ];
 
         $orderHistory = OrderHistory::factory()->make();
 
-        // Check that the enum values are valid
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_from);
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_to);
-        $this->assertContains($orderHistory->status_from->value, $validStatuses);
-        $this->assertContains($orderHistory->status_to->value, $validStatuses);
+        // Check that the field_changed value is valid
+        $this->assertContains($orderHistory->field_changed, $validFields);
     }
 
     /**
-     * Test that factory generates valid priority values
+     * Test that factory generates appropriate values based on field_changed
      */
-    public function test_factory_generates_valid_priority_values(): void
+    public function test_factory_generates_appropriate_values_based_on_field(): void
     {
-        $validPriorities = array_map(fn($priority) => $priority->value, OrderPriority::cases());
+        // Test multiple factory generations to ensure various fields are tested
+        for ($i = 0; $i < 10; $i++) {
+            $orderHistory = OrderHistory::factory()->make();
 
-        $orderHistory = OrderHistory::factory()->make();
-
-        // Check that the enum values are valid
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_from);
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_to);
-        $this->assertContains($orderHistory->priority_from->value, $validPriorities);
-        $this->assertContains($orderHistory->priority_to->value, $validPriorities);
+            if ($orderHistory->field_changed === 'status') {
+                $validStatuses = array_map(fn($status) => $status->value, OrderStatus::cases());
+                // Handle the case where getter returns enum instance
+                $oldValue = $orderHistory->old_value instanceof OrderStatus ? $orderHistory->old_value->value : $orderHistory->old_value;
+                $newValue = $orderHistory->new_value instanceof OrderStatus ? $orderHistory->new_value->value : $orderHistory->new_value;
+                if ($oldValue !== null) {
+                    $this->assertContains($oldValue, $validStatuses);
+                }
+                $this->assertContains($newValue, $validStatuses);
+            } elseif ($orderHistory->field_changed === 'priority') {
+                $validPriorities = array_map(fn($priority) => $priority->value, OrderPriority::cases());
+                // Handle the case where getter returns enum instance
+                $oldValue = $orderHistory->old_value instanceof OrderPriority ? $orderHistory->old_value->value : $orderHistory->old_value;
+                $newValue = $orderHistory->new_value instanceof OrderPriority ? $orderHistory->new_value->value : $orderHistory->new_value;
+                if ($oldValue !== null) {
+                    $this->assertContains($oldValue, $validPriorities);
+                }
+                $this->assertContains($newValue, $validPriorities);
+            }
+        }
     }
 
     /**
@@ -92,29 +111,29 @@ final class OrderHistoryFactoryTest extends TestCase
     }
 
     /**
-     * Test optional notes field
+     * Test optional comment field
      */
-    public function test_optional_notes_field(): void
+    public function test_optional_comment_field(): void
     {
         // Run multiple times to test randomness
-        $hasNotes = false;
-        $hasNoNotes = false;
+        $hasComment = false;
+        $hasNoComment = false;
 
         for ($i = 0; $i < 20; $i++) {
             $orderHistory = OrderHistory::factory()->make();
 
-            if ($orderHistory->notes !== null) {
-                $hasNotes = true;
+            if ($orderHistory->comment !== null) {
+                $hasComment = true;
             } else {
-                $hasNoNotes = true;
+                $hasNoComment = true;
             }
 
-            if ($hasNotes && $hasNoNotes) {
+            if ($hasComment && $hasNoComment) {
                 break;
             }
         }
 
-        $this->assertTrue($hasNotes || $hasNoNotes, 'Notes should sometimes be null and sometimes have value');
+        $this->assertTrue($hasComment || $hasNoComment, 'Comment should sometimes be null and sometimes have value');
     }
 
     /**
@@ -122,22 +141,22 @@ final class OrderHistoryFactoryTest extends TestCase
      */
     public function test_factory_can_override_attributes(): void
     {
-        $customDescription = 'Custom history description';
-        $customNotes = 'Custom notes for this history entry';
-        $customStatusFrom = OrderStatus::OPEN->value;
-        $customStatusTo = OrderStatus::DELIVERED->value;
+        $customComment = 'Custom comment for this history entry';
+        $customFieldChanged = 'status';
+        $customOldValue = OrderStatus::OPEN->value;
+        $customNewValue = OrderStatus::DELIVERED->value;
 
         $orderHistory = OrderHistory::factory()->create([
-            'description' => $customDescription,
-            'notes' => $customNotes,
-            'status_from' => $customStatusFrom,
-            'status_to' => $customStatusTo,
+            'comment' => $customComment,
+            'field_changed' => $customFieldChanged,
+            'old_value' => $customOldValue,
+            'new_value' => $customNewValue,
         ]);
 
-        $this->assertEquals($customDescription, $orderHistory->description);
-        $this->assertEquals($customNotes, $orderHistory->notes);
-        $this->assertEquals($customStatusFrom, $orderHistory->status_from->value);
-        $this->assertEquals($customStatusTo, $orderHistory->status_to->value);
+        $this->assertEquals($customComment, $orderHistory->comment);
+        $this->assertEquals($customFieldChanged, $orderHistory->field_changed);
+        $this->assertEquals($customOldValue, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals($customNewValue, $orderHistory->getRawOriginal('new_value'));
     }
 
     /**
@@ -196,13 +215,21 @@ final class OrderHistoryFactoryTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->make();
 
-        // Description should be a sentence
-        $this->assertGreaterThan(5, strlen($orderHistory->description));
-        $this->assertStringEndsWith('.', $orderHistory->description);
+        // Field changed should be one of the expected values
+        $this->assertContains($orderHistory->field_changed, [
+            'status',
+            'priority',
+            'assigned_to',
+            'title',
+            'estimated_completion',
+            'actual_completion',
+            'notes',
+            'category_id'
+        ]);
 
-        // If notes exist, they should be a paragraph
-        if ($orderHistory->notes !== null) {
-            $this->assertGreaterThan(10, strlen($orderHistory->notes));
+        // If comment exists, it should be meaningful
+        if ($orderHistory->comment !== null) {
+            $this->assertGreaterThan(10, strlen($orderHistory->comment));
         }
     }
 
@@ -233,19 +260,23 @@ final class OrderHistoryFactoryTest extends TestCase
     }
 
     /**
-     * Test that factory respects enum casting
+     * Test that factory respects field types
      */
-    public function test_factory_respects_enum_casting(): void
+    public function test_factory_respects_field_types(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
-        // After retrieval from database, the enums should be cast properly
+        // After retrieval from database, check field types
         $freshOrderHistory = OrderHistory::find($orderHistory->id);
 
-        $this->assertInstanceOf(OrderStatus::class, $freshOrderHistory->status_from);
-        $this->assertInstanceOf(OrderStatus::class, $freshOrderHistory->status_to);
-        $this->assertInstanceOf(OrderPriority::class, $freshOrderHistory->priority_from);
-        $this->assertInstanceOf(OrderPriority::class, $freshOrderHistory->priority_to);
+        $this->assertIsString($freshOrderHistory->field_changed);
+        // Check raw values are strings in the database
+        if ($freshOrderHistory->getRawOriginal('old_value') !== null) {
+            $this->assertIsString($freshOrderHistory->getRawOriginal('old_value'));
+        }
+        if ($freshOrderHistory->getRawOriginal('new_value') !== null) {
+            $this->assertIsString($freshOrderHistory->getRawOriginal('new_value'));
+        }
     }
 
     /**
@@ -276,14 +307,16 @@ final class OrderHistoryFactoryTest extends TestCase
 
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Order processing started'
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Order processing started'
         ]);
 
-        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->status_from->value);
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $orderHistory->status_to->value);
-        $this->assertEquals('Order processing started', $orderHistory->description);
+        $this->assertEquals('status', $orderHistory->field_changed);
+        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $orderHistory->getRawOriginal('new_value'));
+        $this->assertEquals('Order processing started', $orderHistory->comment);
     }
 
     /**
@@ -299,17 +332,15 @@ final class OrderHistoryFactoryTest extends TestCase
 
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
-            'status_from' => null,
-            'status_to' => null,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::URGENT->value,
-            'description' => 'Priority escalated to urgent'
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::URGENT->value,
+            'comment' => 'Priority escalated to urgent'
         ]);
 
-        $this->assertNull($orderHistory->status_from);
-        $this->assertNull($orderHistory->status_to);
-        $this->assertEquals(OrderPriority::NORMAL->value, $orderHistory->priority_from->value);
-        $this->assertEquals(OrderPriority::URGENT->value, $orderHistory->priority_to->value);
+        $this->assertEquals('priority', $orderHistory->field_changed);
+        $this->assertEquals(OrderPriority::NORMAL->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderPriority::URGENT->value, $orderHistory->getRawOriginal('new_value'));
     }
 
     /**

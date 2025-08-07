@@ -42,12 +42,10 @@ final class OrderHistoryTest extends TestCase
 
         $expected = [
             'order_id',
-            'status_from',
-            'status_to',
-            'priority_from',
-            'priority_to',
-            'description',
-            'notes',
+            'field_changed',
+            'old_value',
+            'new_value',
+            'comment',
             'created_by'
         ];
 
@@ -64,17 +62,9 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = new OrderHistory();
         $casts = $orderHistory->getCasts();
 
-        $this->assertArrayHasKey('status_from', $casts);
-        $this->assertEquals(OrderStatus::class, $casts['status_from']);
-
-        $this->assertArrayHasKey('status_to', $casts);
-        $this->assertEquals(OrderStatus::class, $casts['status_to']);
-
-        $this->assertArrayHasKey('priority_from', $casts);
-        $this->assertEquals(OrderPriority::class, $casts['priority_from']);
-
-        $this->assertArrayHasKey('priority_to', $casts);
-        $this->assertEquals(OrderPriority::class, $casts['priority_to']);
+        // The new schema doesn't have specific enum casts for old_value/new_value
+        // as they can contain different types of values
+        $this->assertIsArray($casts);
     }
 
     /**
@@ -120,15 +110,15 @@ final class OrderHistoryTest extends TestCase
     }
 
     /**
-     * Test that OrderHistory status casting works correctly
+     * Test that OrderHistory field tracking works correctly
      *
      * @return void
      */
-    public function test_order_history_status_casting_works_correctly()
+    public function test_order_history_field_tracking_works_correctly()
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -137,40 +127,55 @@ final class OrderHistoryTest extends TestCase
             'created_by' => $user->id
         ]);
 
-        // Create order history
-        $orderHistory = OrderHistory::create([
+        // Create order history for status change
+        $statusHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
-            'description' => 'Status changed to in progress',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status changed to in progress',
             'created_by' => $user->id
         ]);
 
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_from);
-        $this->assertEquals(OrderStatus::OPEN, $orderHistory->status_from);
+        $this->assertEquals('status', $statusHistory->field_changed);
+        $this->assertEquals(OrderStatus::OPEN->value, $statusHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $statusHistory->getRawOriginal('new_value'));
+        // Check that getters return enum instances
+        $this->assertInstanceOf(OrderStatus::class, $statusHistory->old_value);
+        $this->assertInstanceOf(OrderStatus::class, $statusHistory->new_value);
+        $this->assertEquals(OrderStatus::OPEN, $statusHistory->old_value);
+        $this->assertEquals(OrderStatus::IN_PROGRESS, $statusHistory->new_value);
 
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_to);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $orderHistory->status_to);
+        // Create order history for priority change
+        $priorityHistory = OrderHistory::create([
+            'order_id' => $order->id,
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::HIGH->value,
+            'comment' => 'Priority increased',
+            'created_by' => $user->id
+        ]);
 
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_from);
-        $this->assertEquals(OrderPriority::NORMAL, $orderHistory->priority_from);
-
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_to);
-        $this->assertEquals(OrderPriority::HIGH, $orderHistory->priority_to);
+        $this->assertEquals('priority', $priorityHistory->field_changed);
+        $this->assertEquals(OrderPriority::NORMAL->value, $priorityHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
+        // Check that getters return enum instances
+        $this->assertInstanceOf(OrderPriority::class, $priorityHistory->old_value);
+        $this->assertInstanceOf(OrderPriority::class, $priorityHistory->new_value);
+        $this->assertEquals(OrderPriority::NORMAL, $priorityHistory->old_value);
+        $this->assertEquals(OrderPriority::HIGH, $priorityHistory->new_value);
     }
 
     /**
-     * Test that OrderHistory can have null status and priority values
+     * Test that OrderHistory can have null values
      *
      * @return void
      */
-    public function test_order_history_can_have_null_status_and_priority_values()
+    public function test_order_history_can_have_null_values()
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -179,21 +184,22 @@ final class OrderHistoryTest extends TestCase
             'created_by' => $user->id
         ]);
 
-        // Create order history with null values
+        // Create order history with null old_value (for initial creation)
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => null,
-            'status_to' => OrderStatus::OPEN->value,
-            'priority_from' => null,
-            'priority_to' => null,
-            'description' => 'Initial order creation',
+            'field_changed' => 'status',
+            'old_value' => null,
+            'new_value' => OrderStatus::OPEN->value,
+            'comment' => 'Initial order creation',
             'created_by' => $user->id
         ]);
 
-        $this->assertNull($orderHistory->status_from);
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_to);
-        $this->assertNull($orderHistory->priority_from);
-        $this->assertNull($orderHistory->priority_to);
+        $this->assertNull($orderHistory->old_value);
+        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('new_value'));
+        $this->assertEquals('status', $orderHistory->field_changed);
+        // Check that getter returns enum instance
+        $this->assertInstanceOf(OrderStatus::class, $orderHistory->new_value);
+        $this->assertEquals(OrderStatus::OPEN, $orderHistory->new_value);
     }
 
     /**
@@ -205,7 +211,7 @@ final class OrderHistoryTest extends TestCase
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -216,12 +222,10 @@ final class OrderHistoryTest extends TestCase
 
         $data = [
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
-            'description' => 'Order status updated',
-            'notes' => 'Customer requested urgent delivery',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Order status updated - Customer requested urgent delivery',
             'created_by' => $user->id
         ];
 
@@ -229,21 +233,20 @@ final class OrderHistoryTest extends TestCase
 
         $this->assertInstanceOf(OrderHistory::class, $orderHistory);
         $this->assertEquals($order->id, $orderHistory->order_id);
-        $this->assertEquals('Order status updated', $orderHistory->description);
-        $this->assertEquals('Customer requested urgent delivery', $orderHistory->notes);
+        $this->assertEquals('Order status updated - Customer requested urgent delivery', $orderHistory->comment);
         $this->assertEquals($user->id, $orderHistory->created_by);
     }
 
     /**
-     * Test that OrderHistory notes field is nullable
+     * Test that OrderHistory comment field is nullable
      *
      * @return void
      */
-    public function test_order_history_notes_field_is_nullable()
+    public function test_order_history_comment_field_is_nullable()
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -252,16 +255,16 @@ final class OrderHistoryTest extends TestCase
             'created_by' => $user->id
         ]);
 
-        // Create order history without notes
+        // Create order history without comment
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status updated',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
             'created_by' => $user->id
         ]);
 
-        $this->assertNull($orderHistory->notes);
+        $this->assertNull($orderHistory->comment);
     }
 
     /**
@@ -273,7 +276,7 @@ final class OrderHistoryTest extends TestCase
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -284,9 +287,9 @@ final class OrderHistoryTest extends TestCase
 
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status updated',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
             'created_by' => $user->id
         ]);
 
@@ -318,11 +321,11 @@ final class OrderHistoryTest extends TestCase
     {
         // Create users
         $customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         $employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE
+            'role' => UserRole::EMPLOYEE->value
         ]);
 
         // Create an order
@@ -334,9 +337,10 @@ final class OrderHistoryTest extends TestCase
         // Create order history
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Employee started working on order',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Employee started working on order',
             'created_by' => $employee->id
         ]);
 
@@ -356,7 +360,7 @@ final class OrderHistoryTest extends TestCase
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER
+            'role' => UserRole::CUSTOMER->value
         ]);
 
         // Create an order
@@ -368,9 +372,9 @@ final class OrderHistoryTest extends TestCase
         // Create order history
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status updated',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
             'created_by' => $user->id
         ]);
 

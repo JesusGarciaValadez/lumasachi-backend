@@ -7,6 +7,7 @@ use Tests\TestCase;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Models\Order;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class OrderPriorityTest extends TestCase
 {
@@ -15,7 +16,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test that all OrderPriority enum values are correctly defined.
      */
-    public function test_all_order_priority_enum_values_are_defined()
+    #[Test]
+    public function it_checks_all_order_priority_enum_values_are_defined()
     {
         $priorities = OrderPriority::cases();
 
@@ -37,7 +39,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test getPriorities static method returns all priority values.
      */
-    public function test_get_priorities_returns_all_values()
+    #[Test]
+    public function it_checks_get_priorities_returns_all_values()
     {
         $priorities = OrderPriority::getPriorities();
 
@@ -49,20 +52,21 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test getLabel method returns correct labels for each priority.
      */
-    public function test_get_label_returns_correct_labels()
+    #[Test]
+    public function it_checks_get_label_returns_correct_labels()
     {
         $testCases = [
-            ['priority' => OrderPriority::LOW, 'expected' => 'Low'],
-            ['priority' => OrderPriority::NORMAL, 'expected' => 'Normal'],
-            ['priority' => OrderPriority::HIGH, 'expected' => 'High'],
-            ['priority' => OrderPriority::URGENT, 'expected' => 'Urgent'],
+            ['priority' => OrderPriority::LOW->value, 'expected' => 'Low'],
+            ['priority' => OrderPriority::NORMAL->value, 'expected' => 'Normal'],
+            ['priority' => OrderPriority::HIGH->value, 'expected' => 'High'],
+            ['priority' => OrderPriority::URGENT->value, 'expected' => 'Urgent'],
         ];
 
         foreach ($testCases as $testCase) {
             $this->assertEquals(
                 $testCase['expected'],
-                $testCase['priority']->getLabel(),
-                "Priority {$testCase['priority']->name} should have label: {$testCase['expected']}"
+                OrderPriority::from($testCase['priority'])->getLabel(),
+                "Priority {$testCase['priority']} should have label: {$testCase['expected']}"
             );
         }
     }
@@ -70,7 +74,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test that all priority values can be stored in the database.
      */
-    public function test_all_priority_values_can_be_stored_in_database()
+    #[Test]
+    public function it_checks_all_priority_values_can_be_stored_in_database()
     {
         $user = User::factory()->create();
 
@@ -98,7 +103,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test that invalid priority values are rejected by the database.
      */
-    public function test_invalid_priority_values_are_rejected()
+    #[Test]
+    public function it_checks_invalid_priority_values_are_rejected()
     {
         $this->expectException(\Illuminate\Database\QueryException::class);
 
@@ -117,7 +123,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test priority enum value comparison.
      */
-    public function test_priority_enum_value_comparison()
+    #[Test]
+    public function it_checks_priority_enum_value_comparison()
     {
         $lowPriority = OrderPriority::LOW;
         $normalPriority = OrderPriority::NORMAL;
@@ -136,27 +143,28 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test priority enum can be used with match expressions.
      */
-    public function test_priority_enum_with_match_expression()
+    #[Test]
+    public function it_checks_priority_enum_with_match_expression()
     {
         $testCases = [
-            ['priority' => OrderPriority::LOW, 'expectedDays' => 7],
-            ['priority' => OrderPriority::NORMAL, 'expectedDays' => 3],
-            ['priority' => OrderPriority::HIGH, 'expectedDays' => 1],
-            ['priority' => OrderPriority::URGENT, 'expectedDays' => 0],
+            ['priority' => OrderPriority::LOW->value, 'expectedDays' => 7],
+            ['priority' => OrderPriority::NORMAL->value, 'expectedDays' => 3],
+            ['priority' => OrderPriority::HIGH->value, 'expectedDays' => 1],
+            ['priority' => OrderPriority::URGENT->value, 'expectedDays' => 0],
         ];
 
         foreach ($testCases as $testCase) {
             $daysToComplete = match ($testCase['priority']) {
-                OrderPriority::LOW => 7,
-                OrderPriority::NORMAL => 3,
-                OrderPriority::HIGH => 1,
-                OrderPriority::URGENT => 0,
+                OrderPriority::LOW->value => 7,
+                OrderPriority::NORMAL->value => 3,
+                OrderPriority::HIGH->value => 1,
+                OrderPriority::URGENT->value => 0,
             };
 
             $this->assertEquals(
                 $testCase['expectedDays'],
                 $daysToComplete,
-                "Priority {$testCase['priority']->value} should have {$testCase['expectedDays']} days to complete"
+                "Priority {$testCase['priority']} should have {$testCase['expectedDays']} days to complete"
             );
         }
     }
@@ -164,7 +172,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test that OrderPriority enum values are properly serialized to JSON.
      */
-    public function test_priority_enum_json_serialization()
+    #[Test]
+    public function it_checks_priority_enum_json_serialization()
     {
         $user = User::factory()->create();
 
@@ -187,7 +196,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test creating order with each priority using the enum directly.
      */
-    public function test_create_order_with_enum_values()
+    #[Test]
+    public function it_checks_create_order_with_enum_values()
     {
         $user = User::factory()->create();
 
@@ -206,20 +216,10 @@ final class OrderPriorityTest extends TestCase
     }
 
     /**
-     * Test that priority constants in Order model match enum values.
-     */
-    public function test_order_model_priority_constants_match_enum()
-    {
-        $this->assertEquals(OrderPriority::LOW->value, Order::PRIORITY_LOW);
-        $this->assertEquals(OrderPriority::NORMAL->value, Order::PRIORITY_NORMAL);
-        $this->assertEquals(OrderPriority::HIGH->value, Order::PRIORITY_HIGH);
-        $this->assertEquals(OrderPriority::URGENT->value, Order::PRIORITY_URGENT);
-    }
-
-    /**
      * Test that all enum cases have unique values.
      */
-    public function test_all_priority_values_are_unique()
+    #[Test]
+    public function it_checks_all_priority_values_are_unique()
     {
         $values = OrderPriority::getPriorities();
         $uniqueValues = array_unique($values);
@@ -234,7 +234,8 @@ final class OrderPriorityTest extends TestCase
     /**
      * Test priority ordering logic (conceptual test).
      */
-    public function test_priority_ordering_concept()
+    #[Test]
+    public function it_checks_priority_ordering_concept()
     {
         // Define expected priority order (from lowest to highest priority)
         $priorityOrder = [

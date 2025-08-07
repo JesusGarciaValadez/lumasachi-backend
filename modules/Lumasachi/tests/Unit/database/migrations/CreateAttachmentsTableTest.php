@@ -57,10 +57,11 @@ final class CreateAttachmentsTableTest extends TestCase
             $this->assertContains(Schema::getColumnType('attachments', $column), ['string', 'varchar'], "Column '{$column}' is not of type string/varchar");
         }
 
-        // Test UUID columns
+        // Test UUID columns - SQLite uses varchar for UUID
         $uuidColumns = ['id', 'attachable_id'];
         foreach ($uuidColumns as $column) {
-            $this->assertEquals('uuid', Schema::getColumnType('attachments', $column));
+            $columnType = Schema::getColumnType('attachments', $column);
+            $this->assertContains($columnType, ['uuid', 'varchar', 'string'], "Column '{$column}' is not of expected UUID/varchar type");
         }
 
         // Test integer columns - PostgreSQL returns 'int4' for integer columns

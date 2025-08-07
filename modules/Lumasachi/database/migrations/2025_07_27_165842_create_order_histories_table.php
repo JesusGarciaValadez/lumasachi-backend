@@ -20,17 +20,19 @@ return new class extends Migration
                 ->constrained('orders')
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
-            $table->string('status_from')->nullable();
-            $table->string('status_to')->nullable();
-            $table->string('priority_from')->nullable();
-            $table->string('priority_to')->nullable();
-            $table->text('description');
-            $table->text('notes')->nullable();
+            $table->string('field_changed'); // e.g., 'status', 'priority', 'assigned_to', etc.
+            $table->text('old_value')->nullable();
+            $table->text('new_value')->nullable();
+            $table->text('comment')->nullable(); // User comment about the change
             $table->foreignId('created_by')
                 ->index()
                 ->constrained('users')
                 ->cascadeOnUpdate();
             $table->timestamps();
+            
+            // Add index for common queries
+            $table->index(['order_id', 'field_changed']);
+            $table->index(['order_id', 'created_at']);
         });
     }
 

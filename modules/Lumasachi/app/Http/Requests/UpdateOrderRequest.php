@@ -3,7 +3,8 @@
 namespace Modules\Lumasachi\app\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Enums\OrderPriority;
 
 class UpdateOrderRequest extends FormRequest
 {
@@ -27,22 +28,22 @@ class UpdateOrderRequest extends FormRequest
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
             'status' => 'sometimes|required|string|in:' . implode(',', [
-                Order::STATUS_OPEN,
-                Order::STATUS_IN_PROGRESS,
-                Order::STATUS_READY_FOR_DELIVERY,
-                Order::STATUS_DELIVERED,
-                Order::STATUS_PAID,
-                Order::STATUS_RETURNED,
-                Order::STATUS_NOT_PAID,
-                Order::STATUS_CANCELLED
+                OrderStatus::OPEN->value,
+                OrderStatus::IN_PROGRESS->value,
+                OrderStatus::READY_FOR_DELIVERY->value,
+                OrderStatus::DELIVERED->value,
+                OrderStatus::PAID->value,
+                OrderStatus::RETURNED->value,
+                OrderStatus::NOT_PAID->value,
+                OrderStatus::CANCELLED->value
             ]),
             'priority' => 'sometimes|required|string|in:' . implode(',', [
-                Order::PRIORITY_LOW,
-                Order::PRIORITY_NORMAL,
-                Order::PRIORITY_HIGH,
-                Order::PRIORITY_URGENT
+                OrderPriority::LOW->value,
+                OrderPriority::NORMAL->value,
+                OrderPriority::HIGH->value,
+                OrderPriority::URGENT->value
             ]),
-            'category' => 'sometimes|required|string|max:100',
+            'category_id' => 'sometimes|required|exists:categories,id',
             'estimated_completion' => 'nullable|date',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -63,7 +64,8 @@ class UpdateOrderRequest extends FormRequest
             'description.required' => 'The order description is required.',
             'status.in' => 'The selected status is invalid.',
             'priority.in' => 'The selected priority is invalid.',
-            'category.required' => 'The order category is required.',
+            'category_id.required' => 'The order category is required.',
+            'category_id.exists' => 'The selected category does not exist.',
             'assigned_to.exists' => 'The selected employee does not exist.'
         ];
     }

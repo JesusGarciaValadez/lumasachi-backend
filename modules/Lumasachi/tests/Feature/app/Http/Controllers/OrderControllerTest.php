@@ -4,8 +4,11 @@ namespace Modules\Lumasachi\tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderPriority;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 use Tests\TestCase;
 
 class OrderControllerTest extends TestCase
@@ -20,7 +23,7 @@ class OrderControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create users with different roles for testing
         $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
         $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
@@ -70,9 +73,9 @@ class OrderControllerTest extends TestCase
             'customer_id' => $this->customer->id,
             'title' => 'Test Order Title',
             'description' => 'Test order description',
-            'status' => Order::STATUS_OPEN,
-            'priority' => Order::PRIORITY_HIGH,
-            'category' => 'Electronics',
+            'status' => OrderStatus::OPEN->value,
+            'priority' => OrderPriority::HIGH->value,
+            'category_id' => Category::factory()->create()->id,
             'notes' => 'Some notes about the order',
             'assigned_to' => $this->employee->id
         ];
@@ -85,9 +88,9 @@ class OrderControllerTest extends TestCase
                 'order' => [
                     'title' => 'Test Order Title',
                     'description' => 'Test order description',
-                    'status' => Order::STATUS_OPEN,
-                    'priority' => Order::PRIORITY_HIGH,
-                    'category' => 'Electronics'
+                    'status' => OrderStatus::OPEN->value,
+                    'priority' => OrderPriority::HIGH->value,
+                    'category' => Category::find($orderData['category_id'])->name
                 ]
             ]);
 
@@ -109,7 +112,7 @@ class OrderControllerTest extends TestCase
         $response = $this->postJson('/api/v1/orders', []);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'category']);
+            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'category_id']);
     }
 
     /**
@@ -124,8 +127,8 @@ class OrderControllerTest extends TestCase
             'title' => 'Test Order',
             'description' => 'Test description',
             'status' => 'InvalidStatus',
-            'priority' => Order::PRIORITY_NORMAL,
-            'category' => 'Test'
+            'priority' => OrderPriority::NORMAL->value,
+            'category_id' => Category::factory()->create()->id
         ];
 
         $response = $this->postJson('/api/v1/orders', $orderData);
@@ -177,11 +180,11 @@ class OrderControllerTest extends TestCase
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id
         ]);
-        
+
         $updateData = [
             'title' => 'Updated Order Title',
-            'status' => Order::STATUS_IN_PROGRESS,
-            'priority' => Order::PRIORITY_URGENT
+            'status' => OrderStatus::IN_PROGRESS->value,
+            'priority' => OrderPriority::URGENT->value
         ];
 
         $response = $this->putJson('/api/v1/orders/' . $order->id, $updateData);
@@ -191,8 +194,8 @@ class OrderControllerTest extends TestCase
                 'message' => 'Order updated successfully.',
                 'order' => [
                     'title' => 'Updated Order Title',
-                    'status' => Order::STATUS_IN_PROGRESS,
-                    'priority' => Order::PRIORITY_URGENT
+                    'status' => OrderStatus::IN_PROGRESS->value,
+                    'priority' => OrderPriority::URGENT->value
                 ]
             ]);
 
@@ -222,7 +225,7 @@ class OrderControllerTest extends TestCase
         ]);
 
         $response->assertOk();
-        
+
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'title' => 'New Title Only',

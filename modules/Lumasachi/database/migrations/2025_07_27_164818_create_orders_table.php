@@ -25,7 +25,10 @@ return new class extends Migration
             $table->text('description');
             $table->enum('status', OrderStatus::getStatuses());
             $table->enum('priority', OrderPriority::getPriorities());
-            $table->string('category')->nullable();
+            $table->foreignId('category_id')
+                ->nullable()
+                ->constrained('categories')
+                ->nullOnDelete();
             $table->timestamp('estimated_completion')->nullable();
             $table->timestamp('actual_completion')->nullable();
             $table->text('notes')->nullable();

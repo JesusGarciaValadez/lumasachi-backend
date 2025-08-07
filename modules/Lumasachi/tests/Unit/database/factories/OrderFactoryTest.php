@@ -7,6 +7,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Lumasachi\app\Models\Order;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Enums\OrderPriority;
+use PHPUnit\Framework\Attributes\Test;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 
@@ -17,7 +20,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that the factory creates a valid order
      */
-    public function test_factory_creates_valid_order(): void
+    #[Test]
+    public function it_checks_factory_creates_valid_order(): void
     {
         $order = Order::factory()->create();
 
@@ -31,7 +35,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that factory generates all required fields
      */
-    public function test_factory_generates_all_required_fields(): void
+    #[Test]
+    public function it_checks_factory_generates_all_required_fields(): void
     {
         $order = Order::factory()->make();
 
@@ -49,14 +54,15 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that factory generates valid status values
      */
-    public function test_factory_generates_valid_status(): void
+    #[Test]
+    public function it_checks_factory_generates_valid_status(): void
     {
         $validStatuses = [
-            Order::STATUS_OPEN,
-            Order::STATUS_IN_PROGRESS,
-            Order::STATUS_READY_FOR_DELIVERY,
-            Order::STATUS_DELIVERED,
-            Order::STATUS_PAID,
+            OrderStatus::OPEN->value,
+            OrderStatus::IN_PROGRESS->value,
+            OrderStatus::READY_FOR_DELIVERY->value,
+            OrderStatus::DELIVERED->value,
+            OrderStatus::PAID->value,
         ];
 
         $order = Order::factory()->make();
@@ -67,13 +73,14 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that factory generates valid priority values
      */
-    public function test_factory_generates_valid_priority(): void
+    #[Test]
+    public function it_checks_factory_generates_valid_priority(): void
     {
         $validPriorities = [
-            Order::PRIORITY_LOW,
-            Order::PRIORITY_NORMAL,
-            Order::PRIORITY_HIGH,
-            Order::PRIORITY_URGENT,
+            OrderPriority::LOW->value,
+            OrderPriority::NORMAL->value,
+            OrderPriority::HIGH->value,
+            OrderPriority::URGENT->value,
         ];
 
         $order = Order::factory()->make();
@@ -84,7 +91,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that factory creates associated users
      */
-    public function test_factory_creates_associated_users(): void
+    #[Test]
+    public function it_checks_factory_creates_associated_users(): void
     {
         $order = Order::factory()->create();
 
@@ -96,11 +104,12 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test completed state
      */
-    public function test_completed_state(): void
+    #[Test]
+    public function it_checks_completed_state(): void
     {
         $order = Order::factory()->completed()->create();
 
-        $this->assertEquals(Order::STATUS_DELIVERED, $order->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status);
         $this->assertNotNull($order->actual_completion);
         $this->assertInstanceOf(CarbonImmutable::class, $order->actual_completion);
         $this->assertLessThanOrEqual(Carbon::now(), $order->actual_completion);
@@ -110,18 +119,20 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test open state
      */
-    public function test_open_state(): void
+    #[Test]
+    public function it_checks_open_state(): void
     {
         $order = Order::factory()->open()->create();
 
-        $this->assertEquals(Order::STATUS_OPEN, $order->status);
+        $this->assertEquals(OrderStatus::OPEN->value, $order->status);
         $this->assertNull($order->actual_completion);
     }
 
     /**
      * Test that estimated completion is in the future
      */
-    public function test_estimated_completion_is_in_future(): void
+    #[Test]
+    public function it_checks_estimated_completion_is_in_future(): void
     {
         $order = Order::factory()->make();
 
@@ -133,7 +144,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test optional fields
      */
-    public function test_optional_fields(): void
+    #[Test]
+    public function it_checks_optional_fields(): void
     {
         // Run multiple times to test randomness
         $hasNotes = false;
@@ -168,11 +180,12 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that factory can override attributes
      */
-    public function test_factory_can_override_attributes(): void
+    #[Test]
+    public function it_checks_factory_can_override_attributes(): void
     {
         $customTitle = 'Custom Order Title';
-        $customStatus = Order::STATUS_PAID;
-        $customPriority = Order::PRIORITY_URGENT;
+        $customStatus = OrderStatus::PAID->value;
+        $customPriority = OrderPriority::URGENT->value;
 
         $order = Order::factory()->create([
             'title' => $customTitle,
@@ -188,7 +201,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test factory with specific customer
      */
-    public function test_factory_with_specific_customer(): void
+    #[Test]
+    public function it_checks_factory_with_specific_customer(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
 
@@ -203,7 +217,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test factory with specific assigned employee
      */
-    public function test_factory_with_specific_assigned_employee(): void
+    #[Test]
+    public function it_checks_factory_with_specific_assigned_employee(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
 
@@ -218,7 +233,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test multiple orders can be created
      */
-    public function test_multiple_orders_can_be_created(): void
+    #[Test]
+    public function it_checks_multiple_orders_can_be_created(): void
     {
         $orders = Order::factory()->count(5)->create();
 
@@ -233,7 +249,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test factory generates realistic data
      */
-    public function test_factory_generates_realistic_data(): void
+    #[Test]
+    public function it_checks_factory_generates_realistic_data(): void
     {
         $order = Order::factory()->make();
 
@@ -245,28 +262,31 @@ final class OrderFactoryTest extends TestCase
         // Description should be a paragraph
         $this->assertGreaterThan(10, strlen($order->description));
 
-        // Category should be a single word
-        $this->assertEquals(1, str_word_count($order->category));
+        // Category should be loaded and have a name
+        $this->assertNotNull($order->category);
+        $this->assertNotNull($order->category->name);
     }
 
     /**
      * Test chaining states
      */
-    public function test_chaining_states(): void
+    #[Test]
+    public function it_checks_chaining_states(): void
     {
         $order = Order::factory()
             ->completed()
-            ->create(['priority' => Order::PRIORITY_URGENT]);
+            ->create(['priority' => OrderPriority::URGENT->value]);
 
-        $this->assertEquals(Order::STATUS_DELIVERED, $order->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status);
         $this->assertNotNull($order->actual_completion);
-        $this->assertEquals(Order::PRIORITY_URGENT, $order->priority);
+        $this->assertEquals(OrderPriority::URGENT->value, $order->priority);
     }
 
     /**
      * Test factory relationships are properly set
      */
-    public function test_factory_relationships(): void
+    #[Test]
+    public function it_checks_factory_relationships(): void
     {
         // Create users with specific roles to ensure relationships work
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
@@ -301,7 +321,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test that actual_completion is null by default
      */
-    public function test_actual_completion_null_by_default(): void
+    #[Test]
+    public function it_checks_actual_completion_null_by_default(): void
     {
         $order = Order::factory()->make();
 
@@ -311,7 +332,8 @@ final class OrderFactoryTest extends TestCase
     /**
      * Test date casting works correctly
      */
-    public function test_date_casting(): void
+    #[Test]
+    public function it_checks_date_casting(): void
     {
         $order = Order::factory()->create();
 

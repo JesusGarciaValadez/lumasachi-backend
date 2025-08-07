@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Storage;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Models\Attachment;
-use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use App\Models\User;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class AttachmentControllerTest extends TestCase
 {
@@ -27,36 +29,37 @@ class AttachmentControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         Storage::fake('public');
-        
+
         // Create users with different roles
-        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
-        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
-        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $this->employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
-        
+        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
+        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $this->employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+
         // Create test orders
         $this->order = Order::factory()->create([
             'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
-            'status' => Order::STATUS_OPEN
+            'status' => OrderStatus::OPEN->value
         ]);
-        
+
         $this->otherOrder = Order::factory()->create([
-            'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER])->id,
+            'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
             'created_by' => $this->employee2->id,
             'assigned_to' => $this->employee2->id,
-            'status' => Order::STATUS_OPEN
+            'status' => OrderStatus::OPEN->value
         ]);
     }
 
     /**
      * Test viewing order attachments
      */
-    public function test_view_order_attachments()
+    #[Test]
+    public function it_checks_view_order_attachments()
     {
         $this->actingAs($this->employee);
 
@@ -101,7 +104,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test customer can view attachments for their order
      */
-    public function test_customer_can_view_own_order_attachments()
+    #[Test]
+    public function it_checks_customer_can_view_own_order_attachments()
     {
         $this->actingAs($this->customer);
 
@@ -113,7 +117,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test customer cannot view attachments for other orders
      */
-    public function test_customer_cannot_view_other_order_attachments()
+    #[Test]
+    public function it_checks_customer_cannot_view_other_order_attachments()
     {
         $this->actingAs($this->customer);
 
@@ -125,7 +130,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test uploading attachment to order
      */
-    public function test_upload_attachment_to_order()
+    #[Test]
+    public function it_checks_upload_attachment_to_order()
     {
         $this->actingAs($this->employee);
 
@@ -156,17 +162,21 @@ class AttachmentControllerTest extends TestCase
             'file_name' => 'Important Document'
         ]);
 
-        // Check history
-        $this->assertDatabaseHas('order_histories', [
-            'order_id' => $this->order->id,
-            'description' => 'Attachment uploaded'
-        ]);
+        // Check history was created (description is a computed attribute, not a DB field)
+        $history = OrderHistory::where('order_id', $this->order->id)
+            ->where('field_changed', 'attachments')
+            ->latest()
+            ->first();
+
+        $this->assertNotNull($history);
+        $this->assertStringContainsString('Important Document', $history->description);
     }
 
     /**
      * Test upload validates file type
      */
-    public function test_upload_validates_file_type()
+    #[Test]
+    public function it_checks_upload_validates_file_type()
     {
         $this->actingAs($this->employee);
 
@@ -183,7 +193,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test upload validates file size
      */
-    public function test_upload_validates_file_size()
+    #[Test]
+    public function it_checks_upload_validates_file_size()
     {
         $this->actingAs($this->employee);
 
@@ -201,7 +212,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test customer cannot upload attachments
      */
-    public function test_customer_cannot_upload_attachments()
+    #[Test]
+    public function it_checks_customer_cannot_upload_attachments()
     {
         $this->actingAs($this->customer);
 
@@ -217,14 +229,15 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test downloading attachment
      */
-    public function test_download_attachment()
+    #[Test]
+    public function it_checks_download_attachment()
     {
         $this->actingAs($this->employee);
 
         // Create an attachment with a real file
         $filePath = 'orders/test-file.pdf';
         Storage::disk('public')->put($filePath, 'test content');
-        
+
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
@@ -243,7 +256,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test download attachment requires authorization
      */
-    public function test_download_attachment_requires_authorization()
+    #[Test]
+    public function it_checks_download_attachment_requires_authorization()
     {
         $this->actingAs($this->customer);
 
@@ -264,7 +278,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test download non-existent file
      */
-    public function test_download_non_existent_file()
+    #[Test]
+    public function it_checks_download_non_existent_file()
     {
         $this->actingAs($this->employee);
 
@@ -285,14 +300,15 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test previewing image attachment
      */
-    public function test_preview_image_attachment()
+    #[Test]
+    public function it_checks_preview_image_attachment()
     {
         $this->actingAs($this->employee);
 
         // Create an image attachment
         $filePath = 'orders/test-image.jpg';
         Storage::disk('public')->put($filePath, 'fake image content');
-        
+
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
@@ -311,14 +327,15 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test previewing PDF attachment
      */
-    public function test_preview_pdf_attachment()
+    #[Test]
+    public function it_checks_preview_pdf_attachment()
     {
         $this->actingAs($this->employee);
 
         // Create a PDF attachment
         $filePath = 'orders/test-document.pdf';
         Storage::disk('public')->put($filePath, 'fake pdf content');
-        
+
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
@@ -337,7 +354,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test cannot preview non-previewable file types
      */
-    public function test_cannot_preview_non_previewable_files()
+    #[Test]
+    public function it_checks_cannot_preview_non_previewable_files()
     {
         $this->actingAs($this->employee);
 
@@ -359,7 +377,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test preview requires authorization
      */
-    public function test_preview_requires_authorization()
+    #[Test]
+    public function it_checks_preview_requires_authorization()
     {
         $this->actingAs($this->customer);
 
@@ -381,7 +400,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test deleting attachment
      */
-    public function test_delete_attachment()
+    #[Test]
+    public function it_checks_delete_attachment()
     {
         $this->actingAs($this->employee);
 
@@ -410,17 +430,21 @@ class AttachmentControllerTest extends TestCase
             'id' => $attachment->id
         ]);
 
-        // Check history
-        $this->assertDatabaseHas('order_histories', [
-            'order_id' => $this->order->id,
-            'description' => 'Attachment deleted'
-        ]);
+        // Check history was created (description is a computed attribute, not a DB field)
+        $history = OrderHistory::where('order_id', $this->order->id)
+            ->where('field_changed', 'attachments')
+            ->latest()
+            ->first();
+
+        $this->assertNotNull($history);
+        $this->assertStringContainsString('Attachments removed', $history->description);
     }
 
     /**
      * Test cannot delete attachment from different type
      */
-    public function test_cannot_delete_non_order_attachment()
+    #[Test]
+    public function it_checks_cannot_delete_non_order_attachment()
     {
         $this->actingAs($this->employee);
 
@@ -441,7 +465,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test attachment deletion requires authorization
      */
-    public function test_attachment_deletion_requires_authorization()
+    #[Test]
+    public function it_checks_attachment_deletion_requires_authorization()
     {
         $this->actingAs($this->customer);
 
@@ -458,7 +483,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test employee cannot delete attachment from order they don't manage
      */
-    public function test_employee_cannot_delete_attachment_from_unassigned_order()
+    #[Test]
+    public function it_checks_employee_cannot_delete_attachment_from_unassigned_order()
     {
         $this->actingAs($this->employee);
 
@@ -478,7 +504,8 @@ class AttachmentControllerTest extends TestCase
     /**
      * Test admin can delete any attachment
      */
-    public function test_admin_can_delete_any_attachment()
+    #[Test]
+    public function it_checks_admin_can_delete_any_attachment()
     {
         $this->actingAs($this->admin);
 
@@ -496,5 +523,12 @@ class AttachmentControllerTest extends TestCase
             ->assertJson([
                 'message' => 'Attachment deleted successfully.'
             ]);
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up any test files created during tests
+        Storage::fake('public');
+        parent::tearDown();
     }
 }

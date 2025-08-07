@@ -281,6 +281,7 @@ final class CreateUsersTableTest extends TestCase
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
         Schema::dropIfExists('orders');
+        Schema::dropIfExists('categories');
 
         // Run down method
         $migration = include database_path('migrations/0001_01_01_000000_create_users_table.php');

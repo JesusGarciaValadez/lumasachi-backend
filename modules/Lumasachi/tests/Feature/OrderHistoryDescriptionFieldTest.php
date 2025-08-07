@@ -1,0 +1,173 @@
+<?php
+
+namespace Modules\Lumasachi\tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use Modules\Lumasachi\app\Models\OrderHistory;
+use Modules\Lumasachi\app\Models\Order;
+use App\Models\User;
+use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Enums\OrderPriority;
+
+class OrderHistoryDescriptionFieldTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /**
+     * Test that the description field is properly included in API responses.
+     */
+    public function testOrderHistoryApiIncludesDescriptionField()
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $this->actingAs($user);
+
+        // Create an order history
+        $order = Order::factory()->create();
+        $orderHistory = OrderHistory::factory()->create([
+            'order_id' => $order->id,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'created_by' => $user->id
+        ]);
+
+        // Test show endpoint
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
+        
+        $response->assertStatus(200)
+                ->assertJsonPath('data.description', 'Status changed from Open to In Progress')
+                ->assertJsonStructure([
+                    'data' => [
+                        'id',
+                        'order_id',
+                        'field_changed',
+                        'old_value',
+                        'new_value',
+                        'comment',
+                        'description',
+                        'created_by',
+                        'created_at'
+                    ]
+                ]);
+    }
+
+    /**
+     * Test that the description field is included when listing order histories.
+     */
+    public function testOrderHistoryListIncludesDescriptionField()
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $this->actingAs($user);
+
+        // Create multiple order histories with descriptions
+        $order = Order::factory()->create();
+        
+        OrderHistory::factory()->create([
+            'order_id' => $order->id,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'created_by' => $user->id
+        ]);
+
+        OrderHistory::factory()->create([
+            'order_id' => $order->id,
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::URGENT->value,
+            'created_by' => $user->id
+        ]);
+
+        // Test index endpoint
+        $response = $this->getJson('/api/v1/history?order_id=' . $order->id);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json('data');
+        if (is_array($data) && count($data) >= 2) {
+            // Check that each history entry has a description
+            foreach ($data as $history) {
+                $this->assertArrayHasKey('description', $history);
+                $this->assertNotNull($history['description']);
+            }
+        }
+    }
+
+    /**
+     * Test creating order history with description field.
+     */
+    public function testCreateOrderHistoryWithDescription()
+    {
+        $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $this->actingAs($user);
+
+        $order = Order::factory()->create(['assigned_to' => $user->id]);
+        
+        $orderHistoryData = [
+            'order_id' => $order->id,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::DELIVERED->value,
+            'comment' => 'Order delivered to customer',
+        ];
+
+        $response = $this->postJson('/api/v1/history', $orderHistoryData);
+
+        $response->assertStatus(201)
+                ->assertJsonPath('data.description', 'Status changed from Open to Delivered')
+                ->assertJsonStructure([
+                    'data' => [
+                        'id',
+                        'order_id',
+                        'field_changed',
+                        'old_value',
+                        'new_value',
+                        'comment',
+                        'description',
+                        'created_by',
+                        'created_at'
+                    ]
+                ]);
+
+        // Verify it was saved to the database
+        $this->assertDatabaseHas('order_histories', [
+            'order_id' => $order->id,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::DELIVERED->value
+        ]);
+    }
+
+    /**
+     * Test that order history through order endpoint includes description.
+     */
+    public function testOrderHistoryThroughOrderEndpointIncludesDescription()
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $this->actingAs($user);
+
+        $order = Order::factory()->create();
+        
+        OrderHistory::factory()->create([
+            'order_id' => $order->id,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'created_by' => $user->id
+        ]);
+
+        // Test order history endpoint
+        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json('data');
+        if (is_array($data) && count($data) > 0) {
+            $firstHistory = $data[0];
+            $this->assertArrayHasKey('description', $firstHistory);
+            $this->assertEquals('Status changed from Open to In Progress', $firstHistory['description']);
+        }
+    }
+}

@@ -24,17 +24,17 @@ class OrderHistoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create test users
-        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
-        
+        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+
         // Create test order
         $this->order = Order::factory()->create([
             'customer_id' => $this->customer->id,
             'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::OPEN,
-            'priority' => OrderPriority::NORMAL
+            'status' => OrderStatus::OPEN->value,
+            'priority' => OrderPriority::NORMAL->value
         ]);
     }
 
@@ -45,12 +45,10 @@ class OrderHistoryTest extends TestCase
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
-            'description' => 'Status changed to in progress',
-            'notes' => 'Customer requested urgent processing',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status changed to in progress - Customer requested urgent processing',
             'created_by' => $this->employee->id
         ]);
 
@@ -58,9 +56,10 @@ class OrderHistoryTest extends TestCase
         $this->assertDatabaseHas('order_histories', [
             'id' => $orderHistory->id,
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status changed to in progress'
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status changed to in progress - Customer requested urgent processing'
         ]);
     }
 
@@ -84,39 +83,39 @@ class OrderHistoryTest extends TestCase
     }
 
     /**
-     * Test enum casting for status fields
+     * Test tracking status changes
      */
-    public function test_enum_casting_for_status_fields(): void
+    public function test_tracking_status_changes(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::DELIVERED->value,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::DELIVERED->value,
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_from);
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->status_to);
-        $this->assertEquals(OrderStatus::OPEN, $orderHistory->status_from);
-        $this->assertEquals(OrderStatus::DELIVERED, $orderHistory->status_to);
+        $this->assertEquals('status', $orderHistory->field_changed);
+        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::DELIVERED->value, $orderHistory->getRawOriginal('new_value'));
     }
 
     /**
-     * Test enum casting for priority fields
+     * Test tracking priority changes
      */
-    public function test_enum_casting_for_priority_fields(): void
+    public function test_tracking_priority_changes(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'priority_from' => OrderPriority::LOW->value,
-            'priority_to' => OrderPriority::URGENT->value,
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::LOW->value,
+            'new_value' => OrderPriority::URGENT->value,
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_from);
-        $this->assertInstanceOf(OrderPriority::class, $orderHistory->priority_to);
-        $this->assertEquals(OrderPriority::LOW, $orderHistory->priority_from);
-        $this->assertEquals(OrderPriority::URGENT, $orderHistory->priority_to);
+        $this->assertEquals('priority', $orderHistory->field_changed);
+        $this->assertEquals(OrderPriority::LOW->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderPriority::URGENT->value, $orderHistory->getRawOriginal('new_value'));
     }
 
     /**
@@ -126,16 +125,14 @@ class OrderHistoryTest extends TestCase
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status changed',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
             'created_by' => $this->employee->id
-            // priority_from, priority_to, and notes are nullable
+            // comment is nullable
         ]);
 
-        $this->assertNull($orderHistory->priority_from);
-        $this->assertNull($orderHistory->priority_to);
-        $this->assertNull($orderHistory->notes);
+        $this->assertNull($orderHistory->comment);
     }
 
     /**
@@ -144,7 +141,7 @@ class OrderHistoryTest extends TestCase
     public function test_order_history_with_attachments(): void
     {
         Storage::fake('public');
-        
+
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id
@@ -161,22 +158,23 @@ class OrderHistoryTest extends TestCase
     }
 
     /**
-     * Test tracking status changes
+     * Test tracking multiple status changes
      */
-    public function test_tracking_status_changes(): void
+    public function test_tracking_multiple_status_changes(): void
     {
         // Create multiple history entries for status changes
         $statusChanges = [
-            ['from' => OrderStatus::OPEN, 'to' => OrderStatus::IN_PROGRESS],
-            ['from' => OrderStatus::IN_PROGRESS, 'to' => OrderStatus::DELIVERED],
+            ['from' => OrderStatus::OPEN->value, 'to' => OrderStatus::IN_PROGRESS->value],
+            ['from' => OrderStatus::IN_PROGRESS->value, 'to' => OrderStatus::DELIVERED->value],
         ];
 
         foreach ($statusChanges as $change) {
             OrderHistory::create([
                 'order_id' => $this->order->id,
-                'status_from' => $change['from']->value,
-                'status_to' => $change['to']->value,
-                'description' => "Status changed from {$change['from']->value} to {$change['to']->value}",
+                'field_changed' => 'status',
+                'old_value' => $change['from'],
+                'new_value' => $change['to'],
+                'comment' => "Status changed from {$change['from']} to {$change['to']}",
                 'created_by' => $this->employee->id
             ]);
         }
@@ -186,29 +184,29 @@ class OrderHistoryTest extends TestCase
             ->get();
 
         $this->assertCount(2, $histories);
-        $this->assertEquals(OrderStatus::OPEN, $histories[0]->status_from);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $histories[0]->status_to);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $histories[1]->status_from);
-        $this->assertEquals(OrderStatus::DELIVERED, $histories[1]->status_to);
+        $this->assertEquals(OrderStatus::OPEN->value, $histories[0]->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $histories[0]->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $histories[1]->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::DELIVERED->value, $histories[1]->getRawOriginal('new_value'));
     }
 
     /**
-     * Test tracking priority changes
+     * Test tracking priority changes with comment
      */
-    public function test_tracking_priority_changes(): void
+    public function test_tracking_priority_changes_with_comment(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::URGENT->value,
-            'description' => 'Priority escalated due to customer request',
-            'notes' => 'Customer called and requested urgent processing',
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::URGENT->value,
+            'comment' => 'Priority escalated due to customer request - Customer called and requested urgent processing',
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertEquals(OrderPriority::NORMAL, $orderHistory->priority_from);
-        $this->assertEquals(OrderPriority::URGENT, $orderHistory->priority_to);
-        $this->assertNotNull($orderHistory->notes);
+        $this->assertEquals(OrderPriority::NORMAL->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderPriority::URGENT->value, $orderHistory->getRawOriginal('new_value'));
+        $this->assertNotNull($orderHistory->comment);
     }
 
     /**
@@ -248,26 +246,26 @@ class OrderHistoryTest extends TestCase
      */
     public function test_order_history_with_different_users(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
-        $employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
 
         // Create history entries by different users
         $history1 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id,
-            'description' => 'Initial assignment'
+            'comment' => 'Initial assignment'
         ]);
 
         $history2 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $admin->id,
-            'description' => 'Admin review'
+            'comment' => 'Admin review'
         ]);
 
         $history3 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $employee2->id,
-            'description' => 'Reassigned to another employee'
+            'comment' => 'Reassigned to another employee'
         ]);
 
         // Verify different users created entries
@@ -277,43 +275,43 @@ class OrderHistoryTest extends TestCase
     }
 
     /**
-     * Test filtering order history by status changes
+     * Test filtering order history by field changes
      */
-    public function test_filtering_order_history_by_status_changes(): void
+    public function test_filtering_order_history_by_field_changes(): void
     {
         // Create mixed history entries
         OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
             'created_by' => $this->employee->id
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'status_from' => null,
-            'status_to' => null,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::HIGH->value,
             'created_by' => $this->employee->id
         ]);
 
         OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::IN_PROGRESS->value,
-            'status_to' => OrderStatus::DELIVERED->value,
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::IN_PROGRESS->value,
+            'new_value' => OrderStatus::DELIVERED->value,
             'created_by' => $this->employee->id
         ]);
 
         // Filter only status changes
         $statusChanges = OrderHistory::where('order_id', $this->order->id)
-            ->whereNotNull('status_to')
+            ->where('field_changed', 'status')
             ->get();
 
         $this->assertCount(2, $statusChanges);
         foreach ($statusChanges as $change) {
-            $this->assertNotNull($change->status_from);
-            $this->assertNotNull($change->status_to);
+            $this->assertEquals('status', $change->field_changed);
         }
     }
 
@@ -343,12 +341,10 @@ class OrderHistoryTest extends TestCase
     {
         $data = [
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
-            'description' => 'Test description',
-            'notes' => 'Test notes',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Test comment',
             'created_by' => $this->employee->id,
             'created_at' => now()->subDays(10), // Should be ignored
             'updated_at' => now()->subDays(10), // Should be ignored
@@ -358,8 +354,8 @@ class OrderHistoryTest extends TestCase
 
         // Verify fillable fields were set
         $this->assertEquals($data['order_id'], $orderHistory->order_id);
-        $this->assertEquals($data['description'], $orderHistory->description);
-        
+        $this->assertEquals($data['comment'], $orderHistory->comment);
+
         // Verify timestamps were not overridden
         $this->assertNotEquals($data['created_at'], $orderHistory->created_at);
         $this->assertNotEquals($data['updated_at'], $orderHistory->updated_at);
@@ -375,57 +371,59 @@ class OrderHistoryTest extends TestCase
         $this->assertInstanceOf(OrderHistory::class, $orderHistory);
         $this->assertNotNull($orderHistory->order_id);
         $this->assertNotNull($orderHistory->created_by);
-        $this->assertNotNull($orderHistory->description);
-        
+        $this->assertNotNull($orderHistory->field_changed);
+
         // Test factory with specific attributes
         $specificHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Custom description'
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Custom comment'
         ]);
 
         $this->assertEquals($this->order->id, $specificHistory->order_id);
-        $this->assertEquals(OrderStatus::OPEN, $specificHistory->status_from);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $specificHistory->status_to);
-        $this->assertEquals('Custom description', $specificHistory->description);
+        $this->assertEquals('status', $specificHistory->field_changed);
+        $this->assertEquals(OrderStatus::OPEN->value, $specificHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $specificHistory->getRawOriginal('new_value'));
+        $this->assertEquals('Custom comment', $specificHistory->comment);
     }
 
     /**
-     * Test order history with only status change (no priority change)
+     * Test order history with only status change
      */
     public function test_order_history_with_only_status_change(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
-            'status_from' => OrderStatus::OPEN->value,
-            'status_to' => OrderStatus::IN_PROGRESS->value,
-            'description' => 'Status change only',
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status change only',
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertNotNull($orderHistory->status_from);
-        $this->assertNotNull($orderHistory->status_to);
-        $this->assertNull($orderHistory->priority_from);
-        $this->assertNull($orderHistory->priority_to);
+        $this->assertEquals('status', $orderHistory->field_changed);
+        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $orderHistory->getRawOriginal('new_value'));
     }
 
     /**
-     * Test order history with only priority change (no status change)
+     * Test order history with only priority change
      */
     public function test_order_history_with_only_priority_change(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
-            'priority_from' => OrderPriority::NORMAL->value,
-            'priority_to' => OrderPriority::HIGH->value,
-            'description' => 'Priority change only',
+            'field_changed' => 'priority',
+            'old_value' => OrderPriority::NORMAL->value,
+            'new_value' => OrderPriority::HIGH->value,
+            'comment' => 'Priority change only',
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertNull($orderHistory->status_from);
-        $this->assertNull($orderHistory->status_to);
-        $this->assertNotNull($orderHistory->priority_from);
-        $this->assertNotNull($orderHistory->priority_to);
+        $this->assertEquals('priority', $orderHistory->field_changed);
+        $this->assertEquals(OrderPriority::NORMAL->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderPriority::HIGH->value, $orderHistory->getRawOriginal('new_value'));
     }
 }

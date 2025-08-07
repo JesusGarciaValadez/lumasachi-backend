@@ -17,13 +17,13 @@ class OrderHistoryResource extends JsonResource
         return [
             'id' => $this->id,
             'order_id' => $this->order_id,
-            'status_from' => $this->status_from,
-            'status_to' => $this->status_to,
-            'priority_from' => $this->priority_from,
-            'priority_to' => $this->priority_to,
+            'field_changed' => $this->field_changed,
+            'old_value' => $this->old_value,
+            'new_value' => $this->new_value,
+            'comment' => $this->comment,
             'description' => $this->description,
-            'notes' => $this->notes,
-            'created_by' => new UserResource($this->whenLoaded('createdBy')),
+            'created_by' => $this->created_by,
+            'creator' => new UserResource($this->whenLoaded('createdBy')),
             'created_at' => $this->created_at,
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments'))
         ];
