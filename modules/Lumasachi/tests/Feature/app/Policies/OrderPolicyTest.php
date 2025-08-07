@@ -10,6 +10,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\database\seeders\DatabaseSeeder;
+use PHPUnit\Framework\Attributes\Test;
 
 final class OrderPolicyTest extends TestCase
 {
@@ -25,7 +26,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test viewAny policy for different user roles.
      */
-    public function test_view_any_orders_permissions()
+    #[Test]
+    public function it_checks_if_view_any_orders_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -46,7 +48,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test view policy for specific orders.
      */
-    public function test_view_specific_order_permissions()
+    #[Test]
+    public function it_checks_if_view_specific_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -105,7 +108,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test create order permissions.
      */
-    public function test_create_order_permissions()
+    #[Test]
+    public function it_checks_if_create_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -124,7 +128,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test update order permissions.
      */
-    public function test_update_order_permissions()
+    #[Test]
+    public function it_checks_if_update_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -166,7 +171,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test delete order permissions.
      */
-    public function test_delete_order_permissions()
+    #[Test]
+    public function it_checks_if_delete_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -189,7 +195,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test restore order permissions.
      */
-    public function test_restore_order_permissions()
+    #[Test]
+    public function it_checks_if_restore_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -234,7 +241,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test force delete order permissions.
      */
-    public function test_force_delete_order_permissions()
+    #[Test]
+    public function it_checks_if_force_delete_order_permissions(): void
     {
         $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
@@ -279,7 +287,8 @@ final class OrderPolicyTest extends TestCase
     /**
      * Test complex scenarios with order status transitions.
      */
-    public function test_order_permissions_with_status_transitions()
+    #[Test]
+    public function it_checks_if_order_permissions_with_status_transitions(): void
     {
         $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
         $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();

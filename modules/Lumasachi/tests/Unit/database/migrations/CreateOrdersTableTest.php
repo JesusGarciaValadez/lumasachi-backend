@@ -10,6 +10,7 @@ use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CreateOrdersTableTest extends TestCase
 {
@@ -18,7 +19,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test that orders table exists after migration.
      */
-    public function test_orders_table_exists()
+    #[Test]
+    public function it_checks_if_orders_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('orders'));
     }
@@ -26,7 +28,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test that the orders table has all required columns.
      */
-    public function test_orders_table_has_all_required_columns()
+    #[Test]
+    public function it_checks_if_orders_table_has_all_required_columns(): void
     {
         $expectedColumns = [
             'id',
@@ -57,7 +60,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test column types and properties.
      */
-    public function test_orders_table_column_types()
+    #[Test]
+    public function it_checks_if_orders_table_column_types(): void
     {
         // Test UUID columns
         $this->assertEquals('uuid', Schema::getColumnType('orders', 'id'));
@@ -71,7 +75,7 @@ final class CreateOrdersTableTest extends TestCase
                 "Column '{$column}' is not of type string/varchar"
             );
         }
-        
+
         // Test foreign key columns - category_id is bigint
         $this->assertContains(
             Schema::getColumnType('orders', 'category_id'),
@@ -108,7 +112,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test index and foreign key constraints.
      */
-    public function test_index_and_foreign_key_constraints()
+    #[Test]
+    public function it_checks_if_index_and_foreign_key_constraints(): void
     {
         // Test indexes
         $indexes = [
@@ -131,7 +136,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test migration can be rolled back and rerun.
      */
-    public function test_migration_can_be_rolled_back_and_rerun()
+    #[Test]
+    public function it_checks_if_migration_can_be_rolled_back_and_rerun(): void
     {
         // Table should exist after migration
         $this->assertTrue(Schema::hasTable('orders'));
@@ -157,7 +163,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test data insertion with the Order model.
      */
-    public function test_data_insertion_with_order_model()
+    #[Test]
+    public function it_checks_if_data_insertion_with_order_model(): void
     {
         $user = User::factory()->create();
         $order = Order::create([
@@ -182,7 +189,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test nullable columns can accept null values.
      */
-    public function test_nullable_columns_accept_null()
+    #[Test]
+    public function it_checks_if_nullable_columns_accept_null(): void
     {
         $customer = User::factory()->create();
         $creator = User::factory()->create();
@@ -213,7 +221,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test required columns do not accept null.
      */
-    public function test_required_columns_do_not_accept_null()
+    #[Test]
+    public function it_checks_if_required_columns_do_not_accept_null(): void
     {
         $requiredFields = [
             'customer_id',
@@ -253,7 +262,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test foreign key constraints work correctly.
      */
-    public function test_foreign_key_constraints_work_correctly()
+    #[Test]
+    public function it_checks_if_foreign_key_constraints_work_correctly(): void
     {
         $customer = User::factory()->create();
         $employee = User::factory()->create();
@@ -291,7 +301,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test all enum values for status field.
      */
-    public function test_all_status_enum_values_accepted()
+    #[Test]
+    public function it_checks_if_all_status_enum_values_accepted(): void
     {
         $user = User::factory()->create();
         $statuses = OrderStatus::getStatuses();
@@ -316,7 +327,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test all enum values for priority field.
      */
-    public function test_all_priority_enum_values_accepted()
+    #[Test]
+    public function it_checks_if_all_priority_enum_values_accepted(): void
     {
         $user = User::factory()->create();
         $priorities = OrderPriority::getPriorities();
@@ -341,7 +353,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test indexes improve query performance.
      */
-    public function test_indexes_exist_on_correct_columns()
+    #[Test]
+    public function it_checks_if_indexes_exist_on_correct_columns(): void
     {
         // Get all indexes on the orders table
         $indexes = collect(Schema::getIndexes('orders'));
@@ -368,7 +381,8 @@ final class CreateOrdersTableTest extends TestCase
     /**
      * Test foreign key behaviors.
      */
-    public function test_foreign_key_behaviors()
+    #[Test]
+    public function it_checks_if_foreign_key_behaviors(): void
     {
         $customer = User::factory()->create([
             'role' => \Modules\Lumasachi\app\Enums\UserRole::CUSTOMER

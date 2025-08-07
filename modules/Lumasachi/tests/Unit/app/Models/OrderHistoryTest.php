@@ -12,6 +12,7 @@ use App\Models\User;
 use Modules\Lumasachi\database\factories\OrderHistoryFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Lumasachi\app\Enums\UserRole;
+use PHPUnit\Framework\Attributes\Test;
 
 final class OrderHistoryTest extends TestCase
 {
@@ -22,7 +23,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_uses_required_traits()
+    #[Test]
+    public function it_checks_if_order_history_uses_required_traits(): void
     {
         $uses = class_uses(OrderHistory::class);
 
@@ -36,7 +38,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_has_correct_fillable_attributes()
+    #[Test]
+    public function it_checks_if_order_history_has_correct_fillable_attributes(): void
     {
         $orderHistory = new OrderHistory();
 
@@ -57,7 +60,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_has_correct_casts()
+    #[Test]
+    public function it_checks_if_order_history_has_correct_casts(): void
     {
         $orderHistory = new OrderHistory();
         $casts = $orderHistory->getCasts();
@@ -72,7 +76,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_belongs_to_order()
+    #[Test]
+    public function it_checks_if_order_history_belongs_to_order(): void
     {
         $orderHistory = new OrderHistory();
         $relation = $orderHistory->order();
@@ -87,7 +92,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_belongs_to_user_as_created_by()
+    #[Test]
+    public function it_checks_if_order_history_belongs_to_user_as_created_by(): void
     {
         $orderHistory = new OrderHistory();
         $relation = $orderHistory->createdBy();
@@ -102,7 +108,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_can_be_created_with_factory()
+    #[Test]
+    public function it_checks_if_order_history_can_be_created_with_factory(): void
     {
         $factory = OrderHistory::factory();
 
@@ -114,7 +121,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_field_tracking_works_correctly()
+    #[Test]
+    public function it_checks_if_order_history_field_tracking_works_correctly(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
@@ -171,7 +179,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_can_have_null_values()
+    #[Test]
+    public function it_checks_if_order_history_can_have_null_values(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
@@ -207,7 +216,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_can_be_created_through_mass_assignment()
+    #[Test]
+    public function it_checks_if_order_history_can_be_created_through_mass_assignment(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
@@ -242,7 +252,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_comment_field_is_nullable()
+    #[Test]
+    public function it_checks_if_order_history_comment_field_is_nullable(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
@@ -272,7 +283,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_generates_uuid()
+    #[Test]
+    public function it_checks_if_order_history_generates_uuid(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
@@ -305,7 +317,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_has_correct_table_name()
+    #[Test]
+    public function it_checks_if_order_history_has_correct_table_name(): void
     {
         $orderHistory = new OrderHistory();
 
@@ -317,7 +330,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_relationships_load_correctly()
+    #[Test]
+    public function it_checks_if_order_history_relationships_load_correctly(): void
     {
         // Create users
         $customer = User::factory()->create([
@@ -356,7 +370,8 @@ final class OrderHistoryTest extends TestCase
      *
      * @return void
      */
-    public function test_order_history_cascades_on_order_delete()
+    #[Test]
+    public function it_checks_if_order_history_cascades_on_order_delete(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([

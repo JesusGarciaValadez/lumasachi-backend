@@ -11,6 +11,7 @@ use Modules\Lumasachi\app\Models\Attachment;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderStatus;
+use PHPUnit\Framework\Attributes\Test;
 
 class OrderHistoryControllerTest extends TestCase
 {
@@ -19,7 +20,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test listing order histories.
      */
-    public function testIndexListsOrderHistories()
+    #[Test]
+    public function it_checks_if_index_lists_order_histories(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
@@ -29,11 +31,11 @@ class OrderHistoryControllerTest extends TestCase
         $response = $this->getJson('/api/v1/history');
 
         $response->assertStatus(200);
-        
+
         // Debug the response
         $content = $response->json();
         // dd($content); // Uncomment to see actual response structure
-        
+
         // Check if it has the basic pagination structure
         $this->assertIsArray($content);
         // Since it's a resource collection on a paginator, check for proper structure
@@ -48,7 +50,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test creating an order history.
      */
-    public function testStoreCreatesNewOrderHistory()
+    #[Test]
+    public function it_checks_if_store_creates_new_order_history(): void
     {
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($user);
@@ -71,7 +74,7 @@ class OrderHistoryControllerTest extends TestCase
 
         // Verify database has the correct data (without description since it's a calculated field)
         $this->assertDatabaseHas('order_histories', $orderHistoryData);
-        
+
         // Verify the description accessor works correctly in the response
         $responseData = $response->json('data');
         $this->assertEquals('Status set to: Delivered', $responseData['description']);
@@ -80,7 +83,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test showing a specific order history.
      */
-    public function testShowOrderHistory()
+    #[Test]
+    public function it_checks_if_show_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -98,7 +102,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test deleting an order history. Only SUPER_ADMINISTRATOR should delete.
      */
-    public function testDestroyOrderHistory()
+    #[Test]
+    public function it_checks_if_destroy_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -115,7 +120,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test fetching order related to order history.
      */
-    public function testOrderForOrderHistory()
+    #[Test]
+    public function it_checks_if_order_for_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -133,7 +139,8 @@ class OrderHistoryControllerTest extends TestCase
     /**
      * Test fetching attachments for order related to order history.
      */
-    public function testOrderAttachmentsForOrderHistory()
+    #[Test]
+    public function it_checks_if_order_attachments_for_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
         $attachments = Attachment::factory()->count(2)->create(['attachable_id' => $orderHistory->order_id, 'attachable_type' => 'order']);

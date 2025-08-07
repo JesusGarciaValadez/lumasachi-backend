@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
+use PHPUnit\Framework\Attributes\Test;
 
 final class HasAttachmentsTest extends TestCase
 {
@@ -36,7 +37,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test attachments relationship
      */
-    public function test_attachments_relationship()
+    #[Test]
+    public function it_checks_if_attachments_relationship(): void
     {
         $attachment = Attachment::create([
             'attachable_type' => 'order',
@@ -56,7 +58,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test attach method
      */
-    public function test_attach_method()
+    #[Test]
+    public function it_checks_if_attach_method(): void
     {
         $file = UploadedFile::fake()->image('photo.jpg', 100, 100);
 
@@ -78,7 +81,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test attach method with custom disk
      */
-    public function test_attach_method_with_custom_disk()
+    #[Test]
+    public function it_checks_if_attach_method_with_custom_disk(): void
     {
         Storage::fake('local');
 
@@ -92,7 +96,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test detach method
      */
-    public function test_detach_method()
+    #[Test]
+    public function it_checks_if_detach_method(): void
     {
         $file = UploadedFile::fake()->image('photo.jpg');
         $attachment = $this->order->attach($file, $this->user->id);
@@ -113,7 +118,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test detach method with non-existent attachment
      */
-    public function test_detach_method_with_non_existent_attachment()
+    #[Test]
+    public function it_checks_if_detach_method_with_non_existent_attachment(): void
     {
         // Use a valid UUID format that doesn't exist
         $result = $this->order->detach('00000000-0000-0000-0000-000000000000');
@@ -124,7 +130,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test hasAttachments method
      */
-    public function test_has_attachments_method()
+    #[Test]
+    public function it_checks_if_has_attachments_method(): void
     {
         $this->assertFalse($this->order->hasAttachments());
 
@@ -137,7 +144,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getAttachmentsByType method
      */
-    public function test_get_attachments_by_type_method()
+    #[Test]
+    public function it_checks_if_get_attachments_by_type_method(): void
     {
         // Create various attachments
         $image = UploadedFile::fake()->image('photo.jpg');
@@ -166,7 +174,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getImageAttachments method
      */
-    public function test_get_image_attachments_method()
+    #[Test]
+    public function it_checks_if_get_image_attachments_method(): void
     {
         $image1 = UploadedFile::fake()->image('photo1.jpg');
         $image2 = UploadedFile::fake()->image('photo2.png');
@@ -187,7 +196,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getDocumentAttachments method
      */
-    public function test_get_document_attachments_method()
+    #[Test]
+    public function it_checks_if_get_document_attachments_method(): void
     {
         $image = UploadedFile::fake()->image('photo.jpg');
         $pdf = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
@@ -208,7 +218,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getTotalAttachmentsSize method
      */
-    public function test_get_total_attachments_size_method()
+    #[Test]
+    public function it_checks_if_get_total_attachments_size_method(): void
     {
         $this->assertEquals(0, $this->order->getTotalAttachmentsSize());
 
@@ -240,7 +251,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getTotalAttachmentsSizeFormatted method
      */
-    public function test_get_total_attachments_size_formatted_method()
+    #[Test]
+    public function it_checks_if_get_total_attachments_size_formatted_method(): void
     {
         // Test with no attachments
         $this->assertEquals('0 B', $this->order->getTotalAttachmentsSizeFormatted());
@@ -279,7 +291,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test detachAll method
      */
-    public function test_detach_all_method()
+    #[Test]
+    public function it_checks_if_detach_all_method(): void
     {
         // Create multiple attachments
         $files = [
@@ -315,7 +328,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test attachment file name uniqueness
      */
-    public function test_attachment_file_name_uniqueness()
+    #[Test]
+    public function it_checks_if_attachment_file_name_uniqueness(): void
     {
         $file1 = UploadedFile::fake()->image('photo.jpg');
         $file2 = UploadedFile::fake()->image('photo.jpg');
@@ -338,7 +352,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test with Order model
      */
-    public function test_trait_with_order_model()
+    #[Test]
+    public function it_checks_if_trait_with_order_model(): void
     {
         $order = Order::factory()->create();
 
@@ -360,7 +375,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test with OrderHistory model
      */
-    public function test_trait_with_order_history_model()
+    #[Test]
+    public function it_checks_if_trait_with_order_history_model(): void
     {
         $order = Order::factory()->create();
         $orderHistory = OrderHistory::create([

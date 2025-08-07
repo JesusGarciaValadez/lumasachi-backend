@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Attachment;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CreateAttachmentsTableTest extends TestCase
 {
@@ -15,7 +16,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test that attachments table exists after migration.
      */
-    public function test_attachments_table_exists()
+    #[Test]
+    public function it_checks_if_attachments_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('attachments'));
     }
@@ -23,7 +25,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test that the attachments table has all required columns.
      */
-    public function test_attachments_table_has_all_required_columns()
+    #[Test]
+    public function it_checks_if_attachments_table_has_all_required_columns(): void
     {
         $expectedColumns = [
             'id',
@@ -49,7 +52,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test column types and properties.
      */
-    public function test_attachments_table_column_types()
+    #[Test]
+    public function it_checks_if_attachments_table_column_types(): void
     {
         // Test string columns
         $stringColumns = ['attachable_type', 'file_name', 'file_path', 'mime_type'];
@@ -71,7 +75,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test that attachments table can be dropped and recreated.
      */
-    public function test_migration_can_be_rolled_back_and_rerun()
+    #[Test]
+    public function it_checks_if_migration_can_be_rolled_back_and_rerun(): void
     {
         // Table should exist after migration
         $this->assertTrue(Schema::hasTable('attachments'));
@@ -93,7 +98,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test timestamp columns.
      */
-    public function test_timestamp_columns_types()
+    #[Test]
+    public function it_checks_if_timestamp_columns_types(): void
     {
         $timestampColumns = ['created_at', 'updated_at'];
         foreach ($timestampColumns as $column) {
@@ -108,7 +114,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test indexes exist on the table.
      */
-    public function test_indexes_exist()
+    #[Test]
+    public function it_checks_if_indexes_exist(): void
     {
         // Check for composite index on polymorphic columns
         $indexes = collect(Schema::getIndexes('attachments'));
@@ -129,7 +136,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test foreign key constraint on uploaded_by column.
      */
-    public function test_foreign_key_constraint()
+    #[Test]
+    public function it_checks_if_foreign_key_constraint(): void
     {
         // Create a user
         $user = User::factory()->create();
@@ -167,7 +175,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test cascade on update for uploaded_by foreign key.
      */
-    public function test_cascade_on_update_uploaded_by()
+    #[Test]
+    public function it_checks_if_cascade_on_update_uploaded_by(): void
     {
         // Create a user
         $user = User::factory()->create();
@@ -195,7 +204,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test creating attachment with all fields.
      */
-    public function test_can_create_attachment_with_all_fields()
+    #[Test]
+    public function it_checks_if_can_create_attachment_with_all_fields(): void
     {
         $user = User::factory()->create();
 
@@ -219,7 +229,8 @@ final class CreateAttachmentsTableTest extends TestCase
     /**
      * Test that all columns are not nullable (none should accept null).
      */
-    public function test_required_columns_do_not_accept_null()
+    #[Test]
+    public function it_checks_if_required_columns_do_not_accept_null(): void
     {
         $user = User::factory()->create();
 

@@ -5,6 +5,7 @@ namespace Modules\Lumasachi\Tests\Unit\database\migrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CreateCompanyTableTest extends TestCase
 {
@@ -13,7 +14,8 @@ final class CreateCompanyTableTest extends TestCase
     /**
      * Test that the companies table exists after migration.
      */
-    public function test_companies_table_exists(): void
+    #[Test]
+    public function it_checks_if_companies_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('companies'));
     }
@@ -21,7 +23,8 @@ final class CreateCompanyTableTest extends TestCase
     /**
      * Test that the companies table has all required columns.
      */
-    public function test_companies_table_has_all_required_columns(): void
+    #[Test]
+    public function it_checks_if_companies_table_has_all_required_columns(): void
     {
         $expectedColumns = [
             'uuid',

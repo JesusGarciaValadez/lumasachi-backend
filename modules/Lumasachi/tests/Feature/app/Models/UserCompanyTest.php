@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Modules\Lumasachi\Tests\Feature\app\Models;
 
 use Tests\TestCase;
 use App\Models\User;
@@ -9,7 +9,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 
-class UserCompanyRelationshipTest extends TestCase
+class UserCompanyTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -17,7 +17,7 @@ class UserCompanyRelationshipTest extends TestCase
      * Test complete user-company workflow
      */
     #[Test]
-    public function it_checks_complete_user_company_workflow()
+    public function it_checks_if_complete_user_company_workflow(): void
     {
         // Create a company
         $company = Company::factory()->create([
@@ -83,7 +83,7 @@ class UserCompanyRelationshipTest extends TestCase
      * Test active users relationship
      */
     #[Test]
-    public function it_checks_company_active_users_relationship()
+    public function it_checks_if_company_active_users_relationship(): void
     {
         $company = Company::factory()->create();
 
@@ -120,7 +120,7 @@ class UserCompanyRelationshipTest extends TestCase
      * Test querying companies through users
      */
     #[Test]
-    public function it_checks_querying_companies_through_users()
+    public function it_checks_if_querying_companies_through_users(): void
     {
         // Create multiple companies
         $techCompany = Company::factory()->create([
@@ -169,7 +169,7 @@ class UserCompanyRelationshipTest extends TestCase
      * Test complex queries with company relationship
      */
     #[Test]
-    public function it_checks_complex_queries_with_company_relationship()
+    public function it_checks_if_complex_queries_with_company_relationship(): void
     {
         // Create companies with different statuses
         $activeCompany = Company::factory()->create([
@@ -226,10 +226,10 @@ class UserCompanyRelationshipTest extends TestCase
             ->get();
 
         $this->assertCount(2, $usersPerCompany);
-        
+
         $activeCompanyUserCount = $usersPerCompany->where('company_id', $activeCompany->uuid)->first();
         $inactiveCompanyUserCount = $usersPerCompany->where('company_id', $inactiveCompany->uuid)->first();
-        
+
         $this->assertEquals(5, $activeCompanyUserCount->user_count);
         $this->assertEquals(2, $inactiveCompanyUserCount->user_count);
     }
@@ -238,7 +238,7 @@ class UserCompanyRelationshipTest extends TestCase
      * Test JSON responses include company data
      */
     #[Test]
-    public function it_checks_json_response_includes_company_data()
+    public function it_checks_if_json_response_includes_company_data(): void
     {
         $company = Company::factory()->create([
             'name' => 'Test Company',

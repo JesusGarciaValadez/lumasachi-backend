@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Modules\Lumasachi\Tests\Feature\app\Models;
 
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Category;
@@ -9,12 +9,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 
-class CategoryOrderIntegrationTest extends TestCase
+class CategoryOrderTest extends TestCase
 {
     use RefreshDatabase;
 
     #[Test]
-    public function category_workflow_with_orders()
+    public function it_checks_if_category_workflow_with_orders(): void
     {
         // Create users
         $admin = User::factory()->create();
@@ -108,10 +108,10 @@ class CategoryOrderIntegrationTest extends TestCase
     }
 
     #[Test]
-    public function orders_can_exist_without_category()
+    public function it_checks_if_orders_can_exist_without_category(): void
     {
         $user = User::factory()->create();
-        
+
         $order = Order::factory()->create([
             'category_id' => null,
             'customer_id' => $user->id,
@@ -126,7 +126,7 @@ class CategoryOrderIntegrationTest extends TestCase
     }
 
     #[Test]
-    public function deleting_category_sets_order_category_to_null()
+    public function it_checks_if_deleting_category_sets_order_category_to_null(): void
     {
         $category = Category::factory()->create();
         $order = Order::factory()->create(['category_id' => $category->id]);

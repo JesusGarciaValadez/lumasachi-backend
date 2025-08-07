@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Models;
+namespace Modules\Lumasachi\Tests\Unit\app\Models;
 
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Category;
@@ -16,7 +16,7 @@ class CategoryTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function it_can_create_a_category()
+    public function it_checks_if_can_create_a_category(): void
     {
         $user = User::factory()->create();
 
@@ -32,7 +32,7 @@ class CategoryTest extends TestCase
     }
 
     #[Test]
-    public function it_belongs_to_creator()
+    public function it_checks_if_belongs_to_creator(): void
     {
         $user = User::factory()->create();
         $category = Category::factory()->create(['created_by' => $user->id]);
@@ -42,7 +42,7 @@ class CategoryTest extends TestCase
     }
 
     #[Test]
-    public function it_has_many_orders()
+    public function it_checks_if_has_many_orders(): void
     {
         $category = Category::factory()->create();
         Order::factory()->create(['category_id' => $category->id]);
@@ -52,7 +52,7 @@ class CategoryTest extends TestCase
     }
 
     #[Test]
-    public function it_can_scope_active_categories()
+    public function it_checks_if_can_scope_active_categories(): void
     {
         Category::factory()->count(2)->create(['is_active' => true]);
         Category::factory()->count(3)->create(['is_active' => false]);
@@ -63,7 +63,7 @@ class CategoryTest extends TestCase
     }
 
     #[Test]
-    public function it_can_scope_ordered_categories()
+    public function it_checks_if_can_scope_ordered_categories(): void
     {
         $category1 = Category::factory()->create(['name' => 'Category A', 'sort_order' => 2]);
         $category2 = Category::factory()->create(['name' => 'Category B', 'sort_order' => 1]);

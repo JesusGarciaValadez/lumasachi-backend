@@ -10,6 +10,7 @@ use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Enums\UserRole;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class OrderHistoryFactoryTest extends TestCase
 {
@@ -18,7 +19,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that the factory creates a valid order history
      */
-    public function test_factory_creates_valid_order_history(): void
+    #[Test]
+    public function it_checks_if_factory_creates_valid_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -32,7 +34,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory generates all required fields
      */
-    public function test_factory_generates_all_required_fields(): void
+    #[Test]
+    public function it_checks_if_factory_generates_all_required_fields(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -46,7 +49,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory generates valid field changed values
      */
-    public function test_factory_generates_valid_field_changed_values(): void
+    #[Test]
+    public function it_checks_if_factory_generates_valid_field_changed_values(): void
     {
         $validFields = [
             'status',
@@ -68,7 +72,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory generates appropriate values based on field_changed
      */
-    public function test_factory_generates_appropriate_values_based_on_field(): void
+    #[Test]
+    public function it_checks_if_factory_generates_appropriate_values_based_on_field(): void
     {
         // Test multiple factory generations to ensure various fields are tested
         for ($i = 0; $i < 10; $i++) {
@@ -99,7 +104,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory creates associated models
      */
-    public function test_factory_creates_associated_models(): void
+    #[Test]
+    public function it_checks_if_factory_creates_associated_models(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -113,7 +119,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test optional comment field
      */
-    public function test_optional_comment_field(): void
+    #[Test]
+    public function it_checks_if_optional_comment_field(): void
     {
         // Run multiple times to test randomness
         $hasComment = false;
@@ -139,7 +146,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory can override attributes
      */
-    public function test_factory_can_override_attributes(): void
+    #[Test]
+    public function it_checks_if_factory_can_override_attributes(): void
     {
         $customComment = 'Custom comment for this history entry';
         $customFieldChanged = 'status';
@@ -162,7 +170,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory with specific order
      */
-    public function test_factory_with_specific_order(): void
+    #[Test]
+    public function it_checks_if_factory_with_specific_order(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->create([
@@ -181,7 +190,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory with specific user
      */
-    public function test_factory_with_specific_user(): void
+    #[Test]
+    public function it_checks_if_factory_with_specific_user(): void
     {
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
 
@@ -196,7 +206,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test multiple order histories can be created
      */
-    public function test_multiple_order_histories_can_be_created(): void
+    #[Test]
+    public function it_checks_if_multiple_order_histories_can_be_created(): void
     {
         $orderHistories = OrderHistory::factory()->count(5)->create();
 
@@ -211,7 +222,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory generates realistic data
      */
-    public function test_factory_generates_realistic_data(): void
+    #[Test]
+    public function it_checks_if_factory_generates_realistic_data(): void
     {
         $orderHistory = OrderHistory::factory()->make();
 
@@ -236,7 +248,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory relationships are properly set
      */
-    public function test_factory_relationships(): void
+    #[Test]
+    public function it_checks_if_factory_relationships(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
@@ -262,7 +275,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory respects field types
      */
-    public function test_factory_respects_field_types(): void
+    #[Test]
+    public function it_checks_if_factory_respects_field_types(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -282,7 +296,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory generates UUID
      */
-    public function test_factory_generates_uuid(): void
+    #[Test]
+    public function it_checks_if_factory_generates_uuid(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -296,7 +311,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory can create order history for specific order status transition
      */
-    public function test_factory_can_create_specific_status_transition(): void
+    #[Test]
+    public function it_checks_if_factory_can_create_specific_status_transition(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->create([
@@ -322,7 +338,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test that factory can create order history for priority change only
      */
-    public function test_factory_can_create_priority_change_only(): void
+    #[Test]
+    public function it_checks_if_factory_can_create_priority_change_only(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->create([
@@ -346,7 +363,8 @@ final class OrderHistoryFactoryTest extends TestCase
     /**
      * Test factory creates histories for same order
      */
-    public function test_factory_creates_histories_for_same_order(): void
+    #[Test]
+    public function it_checks_if_factory_creates_histories_for_same_order(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->create([

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Modules\Lumasachi\app\Enums\UserRole;
+use PHPUnit\Framework\Attributes\Test;
 
 class OrderHistoryTest extends TestCase
 {
@@ -41,7 +42,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history creation with valid data
      */
-    public function test_can_create_order_history_with_valid_data(): void
+    #[Test]
+    public function it_checks_if_can_create_order_history_with_valid_data(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
@@ -66,7 +68,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history relationships
      */
-    public function test_order_history_relationships(): void
+    #[Test]
+    public function it_checks_if_order_history_relationships(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
@@ -85,7 +88,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test tracking status changes
      */
-    public function test_tracking_status_changes(): void
+    #[Test]
+    public function it_checks_if_tracking_status_changes(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
@@ -103,7 +107,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test tracking priority changes
      */
-    public function test_tracking_priority_changes(): void
+    #[Test]
+    public function it_checks_if_tracking_priority_changes(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
@@ -121,7 +126,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test nullable fields
      */
-    public function test_nullable_fields(): void
+    #[Test]
+    public function it_checks_if_nullable_fields(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
@@ -138,7 +144,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history with attachments using HasAttachments trait
      */
-    public function test_order_history_with_attachments(): void
+    #[Test]
+    public function it_checks_if_order_history_with_attachments(): void
     {
         Storage::fake('public');
 
@@ -160,7 +167,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test tracking multiple status changes
      */
-    public function test_tracking_multiple_status_changes(): void
+    #[Test]
+    public function it_checks_if_tracking_multiple_status_changes(): void
     {
         // Create multiple history entries for status changes
         $statusChanges = [
@@ -193,7 +201,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test tracking priority changes with comment
      */
-    public function test_tracking_priority_changes_with_comment(): void
+    #[Test]
+    public function it_checks_if_tracking_priority_changes_with_comment(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
@@ -212,7 +221,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history chronological ordering
      */
-    public function test_order_history_chronological_ordering(): void
+    #[Test]
+    public function it_checks_if_order_history_chronological_ordering(): void
     {
         // Create history entries with different timestamps
         $history1 = OrderHistory::factory()->create([
@@ -244,7 +254,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history with different users
      */
-    public function test_order_history_with_different_users(): void
+    #[Test]
+    public function it_checks_if_order_history_with_different_users(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
@@ -277,7 +288,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test filtering order history by field changes
      */
-    public function test_filtering_order_history_by_field_changes(): void
+    #[Test]
+    public function it_checks_if_filtering_order_history_by_field_changes(): void
     {
         // Create mixed history entries
         OrderHistory::factory()->create([
@@ -318,7 +330,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test UUID primary key functionality
      */
-    public function test_uuid_primary_key(): void
+    #[Test]
+    public function it_checks_if_uuid_primary_key(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
@@ -337,7 +350,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test mass assignment protection
      */
-    public function test_mass_assignment_protection(): void
+    #[Test]
+    public function it_checks_if_mass_assignment_protection(): void
     {
         $data = [
             'order_id' => $this->order->id,
@@ -364,7 +378,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test OrderHistory factory
      */
-    public function test_order_history_factory(): void
+    #[Test]
+    public function it_checks_if_order_history_factory(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -392,7 +407,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history with only status change
      */
-    public function test_order_history_with_only_status_change(): void
+    #[Test]
+    public function it_checks_if_order_history_with_only_status_change(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,
@@ -411,7 +427,8 @@ class OrderHistoryTest extends TestCase
     /**
      * Test order history with only priority change
      */
-    public function test_order_history_with_only_priority_change(): void
+    #[Test]
+    public function it_checks_if_order_history_with_only_priority_change(): void
     {
         $orderHistory = OrderHistory::create([
             'order_id' => $this->order->id,

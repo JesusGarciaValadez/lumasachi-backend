@@ -20,7 +20,7 @@ class OrderHistoryTrackingTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function tracks_status_changes_when_updating_order()
+    public function it_checks_if_tracks_status_changes_when_updating_order(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -50,7 +50,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function tracks_priority_changes_when_updating_order()
+    public function it_checks_if_tracks_priority_changes_when_updating_order(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -80,7 +80,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function tracks_multiple_field_changes_in_single_update()
+    public function it_checks_if_tracks_multiple_field_changes_in_single_update(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -132,7 +132,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function tracks_assignment_changes()
+    public function it_checks_if_tracks_assignment_changes(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $employee = User::factory()->create();
@@ -162,7 +162,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function tracks_estimated_completion_date_changes()
+    public function it_checks_if_tracks_estimated_completion_date_changes(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -199,7 +199,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function does_not_create_history_when_no_changes_made()
+    public function it_checks_if_does_not_create_history_when_no_changes_made(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -230,7 +230,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function tracks_setting_field_to_null()
+    public function it_checks_if_tracks_setting_field_to_null(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $employee = User::factory()->create();
@@ -270,7 +270,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function order_history_index_returns_paginated_results()
+    public function it_checks_if_order_history_index_returns_paginated_results(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -314,7 +314,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function order_history_index_filters_by_field()
+    public function it_checks_if_order_history_index_filters_by_field(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
@@ -345,7 +345,7 @@ class OrderHistoryTrackingTest extends TestCase
     }
 
     #[Test]
-    public function order_history_shows_human_readable_descriptions()
+    public function it_checks_if_order_history_shows_human_readable_descriptions(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);

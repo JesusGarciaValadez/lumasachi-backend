@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Enums\UserRole;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CreateUsersTableTest extends TestCase
 {
@@ -16,7 +17,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that users table exists after migration.
      */
-    public function test_users_table_exists()
+    #[Test]
+    public function it_checks_if_users_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('users'));
     }
@@ -24,7 +26,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that password_reset_tokens table exists after migration.
      */
-    public function test_password_reset_tokens_table_exists()
+    #[Test]
+    public function it_checks_if_password_reset_tokens_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('password_reset_tokens'));
     }
@@ -32,7 +35,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that sessions table exists after migration.
      */
-    public function test_sessions_table_exists()
+    #[Test]
+    public function it_checks_if_sessions_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('sessions'));
     }
@@ -40,7 +44,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test if the users table has all required columns.
      */
-    public function test_users_table_has_all_required_columns()
+    #[Test]
+    public function it_checks_if_users_table_has_all_required_columns(): void
     {
         $expectedColumns = [
             'id',
@@ -71,7 +76,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test column types and properties.
      */
-    public function test_users_table_column_types()
+    #[Test]
+    public function it_checks_if_users_table_column_types(): void
     {
         // Test string columns - PostgreSQL returns 'varchar' for string columns
         $stringColumns = ['first_name', 'last_name', 'email', 'password', 'phone_number', 'type', 'preferences', 'remember_token'];
@@ -106,7 +112,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test nullable columns.
      */
-    public function test_users_table_nullable_columns()
+    #[Test]
+    public function it_checks_if_users_table_nullable_columns(): void
     {
         // Test by attempting to insert null values
         $user = User::create([
@@ -134,7 +141,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test required (not nullable) columns.
      */
-    public function test_users_table_required_columns()
+    #[Test]
+    public function it_checks_if_users_table_required_columns(): void
     {
         // Test by attempting to create user without required fields
         $this->expectException(\Illuminate\Database\QueryException::class);
@@ -148,7 +156,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test unique constraints.
      */
-    public function test_users_table_unique_constraints()
+    #[Test]
+    public function it_checks_if_users_table_unique_constraints(): void
     {
         // Create a user
         User::create([
@@ -176,7 +185,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that the role enum accepts all valid values.
      */
-    public function test_users_table_role_enum_accepts_valid_values()
+    #[Test]
+    public function it_checks_if_users_table_role_enum_accepts_valid_values(): void
     {
         $roles = array_column(UserRole::cases(), 'value');
 
@@ -202,7 +212,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that the role enum has correct default value.
      */
-    public function test_users_table_role_has_correct_default()
+    #[Test]
+    public function it_checks_if_users_table_role_has_correct_default(): void
     {
         $user = User::create([
             'first_name' => 'Test',
@@ -220,7 +231,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test password_reset_tokens table structure.
      */
-    public function test_password_reset_tokens_table_structure()
+    #[Test]
+    public function it_checks_if_password_reset_tokens_table_structure(): void
     {
         $this->assertTrue(Schema::hasColumns('password_reset_tokens', [
             'email',
@@ -243,7 +255,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test sessions table structure.
      */
-    public function test_sessions_table_structure()
+    #[Test]
+    public function it_checks_if_sessions_table_structure(): void
     {
         $expectedColumns = [
             'id',
@@ -270,7 +283,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test that tables can be dropped and recreated.
      */
-    public function test_migration_can_be_rolled_back_and_rerun()
+    #[Test]
+    public function it_checks_if_migration_can_be_rolled_back_and_rerun(): void
     {
         // Tables should exist after migration
         $this->assertTrue(Schema::hasTable('users'));
@@ -304,7 +318,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test creating users with all possible field combinations.
      */
-    public function test_can_create_user_with_all_fields()
+    #[Test]
+    public function it_checks_if_can_create_user_with_all_fields(): void
     {
         $user = User::create([
             'first_name' => 'John',
@@ -333,7 +348,8 @@ final class CreateUsersTableTest extends TestCase
     /**
      * Test creating user with minimal required fields.
      */
-    public function test_can_create_user_with_minimal_fields()
+    #[Test]
+    public function it_checks_if_can_create_user_with_minimal_fields(): void
     {
         $user = User::create([
             'first_name' => 'Jane',

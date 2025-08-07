@@ -36,7 +36,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates correct user hierarchy
      */
     #[Test]
-    public function it_checks_seeder_creates_correct_user_hierarchy(): void
+    public function it_checks_if_seeder_creates_correct_user_hierarchy(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -78,7 +78,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates customers with correct types
      */
     #[Test]
-    public function it_checks_seeder_creates_customers_with_correct_types(): void
+    public function it_checks_if_seeder_creates_customers_with_correct_types(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -106,7 +106,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates orders with various statuses
      */
     #[Test]
-    public function it_checks_seeder_creates_orders_with_various_statuses(): void
+    public function it_checks_if_seeder_creates_orders_with_various_statuses(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -144,7 +144,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates proper order history tracking
      */
     #[Test]
-    public function it_checks_seeder_creates_proper_order_history(): void
+    public function it_checks_if_seeder_creates_proper_order_history(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -173,7 +173,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates appropriate attachments
      */
     #[Test]
-    public function it_checks_seeder_creates_appropriate_attachments(): void
+    public function it_checks_if_seeder_creates_appropriate_attachments(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -201,7 +201,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates relationships correctly
      */
     #[Test]
-    public function it_checks_seeder_creates_relationships_correctly(): void
+    public function it_checks_if_seeder_creates_relationships_correctly(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -232,7 +232,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that seeder creates data with business logic integrity
      */
     #[Test]
-    public function it_checks_seeder_maintains_business_logic_integrity(): void
+    public function it_checks_if_seeder_maintains_business_logic_integrity(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -282,7 +282,7 @@ final class DatabaseSeederTest extends TestCase
      * Test that the seeder creates diverse OrderHistory field changes
      */
     #[Test]
-    public function it_checks_seeder_creates_diverse_order_history_field_changes(): void
+    public function it_checks_if_seeder_creates_diverse_order_history_field_changes(): void
     {
         $this->seed(DatabaseSeeder::class);
 

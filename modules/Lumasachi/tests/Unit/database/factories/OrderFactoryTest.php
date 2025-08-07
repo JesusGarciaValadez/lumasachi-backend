@@ -21,7 +21,7 @@ final class OrderFactoryTest extends TestCase
      * Test that the factory creates a valid order
      */
     #[Test]
-    public function it_checks_factory_creates_valid_order(): void
+    public function it_checks_if_factory_creates_valid_order(): void
     {
         $order = Order::factory()->create();
 
@@ -36,7 +36,7 @@ final class OrderFactoryTest extends TestCase
      * Test that factory generates all required fields
      */
     #[Test]
-    public function it_checks_factory_generates_all_required_fields(): void
+    public function it_checks_if_factory_generates_all_required_fields(): void
     {
         $order = Order::factory()->make();
 
@@ -55,7 +55,7 @@ final class OrderFactoryTest extends TestCase
      * Test that factory generates valid status values
      */
     #[Test]
-    public function it_checks_factory_generates_valid_status(): void
+    public function it_checks_if_factory_generates_valid_status(): void
     {
         $validStatuses = [
             OrderStatus::OPEN->value,
@@ -74,7 +74,7 @@ final class OrderFactoryTest extends TestCase
      * Test that factory generates valid priority values
      */
     #[Test]
-    public function it_checks_factory_generates_valid_priority(): void
+    public function it_checks_if_factory_generates_valid_priority(): void
     {
         $validPriorities = [
             OrderPriority::LOW->value,
@@ -92,7 +92,7 @@ final class OrderFactoryTest extends TestCase
      * Test that factory creates associated users
      */
     #[Test]
-    public function it_checks_factory_creates_associated_users(): void
+    public function it_checks_if_factory_creates_associated_users(): void
     {
         $order = Order::factory()->create();
 
@@ -105,7 +105,7 @@ final class OrderFactoryTest extends TestCase
      * Test completed state
      */
     #[Test]
-    public function it_checks_completed_state(): void
+    public function it_checks_if_completed_state(): void
     {
         $order = Order::factory()->completed()->create();
 
@@ -120,7 +120,7 @@ final class OrderFactoryTest extends TestCase
      * Test open state
      */
     #[Test]
-    public function it_checks_open_state(): void
+    public function it_checks_if_open_state(): void
     {
         $order = Order::factory()->open()->create();
 
@@ -132,7 +132,7 @@ final class OrderFactoryTest extends TestCase
      * Test that estimated completion is in the future
      */
     #[Test]
-    public function it_checks_estimated_completion_is_in_future(): void
+    public function it_checks_if_estimated_completion_is_in_future(): void
     {
         $order = Order::factory()->make();
 
@@ -145,7 +145,7 @@ final class OrderFactoryTest extends TestCase
      * Test optional fields
      */
     #[Test]
-    public function it_checks_optional_fields(): void
+    public function it_checks_if_optional_fields(): void
     {
         // Run multiple times to test randomness
         $hasNotes = false;
@@ -181,7 +181,7 @@ final class OrderFactoryTest extends TestCase
      * Test that factory can override attributes
      */
     #[Test]
-    public function it_checks_factory_can_override_attributes(): void
+    public function it_checks_if_factory_can_override_attributes(): void
     {
         $customTitle = 'Custom Order Title';
         $customStatus = OrderStatus::PAID->value;
@@ -202,7 +202,7 @@ final class OrderFactoryTest extends TestCase
      * Test factory with specific customer
      */
     #[Test]
-    public function it_checks_factory_with_specific_customer(): void
+    public function it_checks_if_factory_with_specific_customer(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
 
@@ -218,7 +218,7 @@ final class OrderFactoryTest extends TestCase
      * Test factory with specific assigned employee
      */
     #[Test]
-    public function it_checks_factory_with_specific_assigned_employee(): void
+    public function it_checks_if_factory_with_specific_assigned_employee(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
 
@@ -234,7 +234,7 @@ final class OrderFactoryTest extends TestCase
      * Test multiple orders can be created
      */
     #[Test]
-    public function it_checks_multiple_orders_can_be_created(): void
+    public function it_checks_if_multiple_orders_can_be_created(): void
     {
         $orders = Order::factory()->count(5)->create();
 
@@ -250,7 +250,7 @@ final class OrderFactoryTest extends TestCase
      * Test factory generates realistic data
      */
     #[Test]
-    public function it_checks_factory_generates_realistic_data(): void
+    public function it_checks_if_factory_generates_realistic_data(): void
     {
         $order = Order::factory()->make();
 
@@ -271,7 +271,7 @@ final class OrderFactoryTest extends TestCase
      * Test chaining states
      */
     #[Test]
-    public function it_checks_chaining_states(): void
+    public function it_checks_if_chaining_states(): void
     {
         $order = Order::factory()
             ->completed()
@@ -286,7 +286,7 @@ final class OrderFactoryTest extends TestCase
      * Test factory relationships are properly set
      */
     #[Test]
-    public function it_checks_factory_relationships(): void
+    public function it_checks_if_factory_relationships(): void
     {
         // Create users with specific roles to ensure relationships work
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
@@ -322,7 +322,7 @@ final class OrderFactoryTest extends TestCase
      * Test that actual_completion is null by default
      */
     #[Test]
-    public function it_checks_actual_completion_null_by_default(): void
+    public function it_checks_if_actual_completion_null_by_default(): void
     {
         $order = Order::factory()->make();
 
@@ -333,7 +333,7 @@ final class OrderFactoryTest extends TestCase
      * Test date casting works correctly
      */
     #[Test]
-    public function it_checks_date_casting(): void
+    public function it_checks_if_date_casting(): void
     {
         $order = Order::factory()->create();
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 
 final class FileValidationTest extends TestCase
 {
@@ -23,7 +24,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test file type validation by MIME type
      */
-    public function test_file_type_detection()
+    #[Test]
+    public function it_checks_if_file_type_detection(): void
     {
         $testCases = [
             // Images
@@ -55,7 +57,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test maximum file size validation
      */
-    public function test_file_size_validation()
+    #[Test]
+    public function it_checks_if_file_size_validation(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -78,7 +81,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test MIME type constants are correctly defined
      */
-    public function test_mime_type_constants()
+    #[Test]
+    public function it_checks_if_mime_type_constants(): void
     {
         // Test individual MIME type constants
         $this->assertEquals('application/pdf', Attachment::MIME_PDF);
@@ -93,7 +97,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test MIME type groups contain correct types
      */
-    public function test_mime_type_groups()
+    #[Test]
+    public function it_checks_if_mime_type_groups(): void
     {
         // Test IMAGE_MIME_TYPES
         $this->assertContains('image/jpeg', Attachment::IMAGE_MIME_TYPES);
@@ -127,7 +132,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test file extension extraction
      */
-    public function test_file_extension_extraction()
+    #[Test]
+    public function it_checks_if_file_extension_extraction(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -159,7 +165,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test that different file types are correctly stored with their MIME types
      */
-    public function test_mime_type_storage()
+    #[Test]
+    public function it_checks_if_mime_type_storage(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -183,7 +190,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test file name sanitization
      */
-    public function test_file_name_handling()
+    #[Test]
+    public function it_checks_if_file_name_handling(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -213,7 +221,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test handling of empty or zero-byte files
      */
-    public function test_empty_file_handling()
+    #[Test]
+    public function it_checks_if_empty_file_handling(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -231,7 +240,8 @@ final class FileValidationTest extends TestCase
     /**
      * Test attachment type detection for various file formats
      */
-    public function test_comprehensive_file_type_detection()
+    #[Test]
+    public function it_checks_if_comprehensive_file_type_detection(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();

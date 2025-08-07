@@ -9,6 +9,7 @@ use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CreateOrderHistoriesTableTest extends TestCase
 {
@@ -17,7 +18,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test that the order_histories table is created with all expected columns
      */
-    public function test_order_histories_table_is_created_with_all_columns()
+    #[Test]
+    public function it_checks_if_order_histories_table_is_created_with_all_columns(): void
     {
         // Check if the table exists
         $this->assertTrue(Schema::hasTable('order_histories'));
@@ -46,7 +48,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test nullable and required columns
      */
-    public function test_nullable_and_required_columns()
+    #[Test]
+    public function it_checks_if_nullable_and_required_columns(): void
     {
         // Create necessary related records
         $user = User::factory()->create();
@@ -64,7 +67,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test that nullable columns can be null
      */
-    public function test_nullable_columns_can_be_null()
+    #[Test]
+    public function it_checks_if_nullable_columns_can_be_null(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -86,7 +90,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test foreign key constraints
      */
-    public function test_foreign_key_constraints()
+    #[Test]
+    public function it_checks_if_foreign_key_constraints(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -111,7 +116,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test creating order history with all fields
      */
-    public function test_can_create_order_history_with_all_fields()
+    #[Test]
+    public function it_checks_if_can_create_order_history_with_all_fields(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -137,7 +143,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test UUID primary key
      */
-    public function test_uuid_primary_key()
+    #[Test]
+    public function it_checks_if_uuid_primary_key(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -160,7 +167,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
     /**
      * Test the migration down method
      */
-    public function test_migration_rollback()
+    #[Test]
+    public function it_checks_if_migration_rollback(): void
     {
         // First ensure the table exists
         $this->assertTrue(Schema::hasTable('order_histories'));
