@@ -1,10 +1,11 @@
 <?php
 
-namespace Tests\Feature;
+namespace Modules\Lumasachi\tests\Feature\app\Models;
 
 use Modules\Lumasachi\app\Models\Company;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class CompanyTest extends TestCase
 {
@@ -15,7 +16,8 @@ class CompanyTest extends TestCase
      *
      * @return void
      */
-    public function test_create_company()
+    #[Test]
+    public function it_checks_if_create_company(): void
     {
         $companyData = [
             'name' => 'Test Company',
@@ -51,13 +53,14 @@ class CompanyTest extends TestCase
      *
      * @return void
      */
-    public function test_read_company()
+    #[Test]
+    public function it_checks_if_read_company(): void
     {
         $company = Company::factory()->create();
 
         // Test finding by UUID
         $foundCompany = Company::find($company->uuid);
-        
+
         $this->assertInstanceOf(Company::class, $foundCompany);
         $this->assertEquals($company->uuid, $foundCompany->uuid);
         $this->assertEquals($company->name, $foundCompany->name);
@@ -69,7 +72,8 @@ class CompanyTest extends TestCase
      *
      * @return void
      */
-    public function test_update_company()
+    #[Test]
+    public function it_checks_if_update_company(): void
     {
         $company = Company::factory()->create([
             'name' => 'Original Name'
@@ -97,7 +101,8 @@ class CompanyTest extends TestCase
      *
      * @return void
      */
-    public function test_delete_company()
+    #[Test]
+    public function it_checks_if_delete_company(): void
     {
         $company = Company::factory()->create();
         $companyUuid = $company->uuid;
@@ -107,7 +112,7 @@ class CompanyTest extends TestCase
 
         // Verify it's deleted from database
         $this->assertDatabaseMissing('companies', ['uuid' => $companyUuid]);
-        
+
         // Try to find the deleted company
         $deletedCompany = Company::find($companyUuid);
         $this->assertNull($deletedCompany);

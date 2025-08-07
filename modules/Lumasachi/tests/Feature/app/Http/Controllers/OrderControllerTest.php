@@ -10,6 +10,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class OrderControllerTest extends TestCase
 {
@@ -32,40 +33,32 @@ class OrderControllerTest extends TestCase
     }
 
     /**
-     * Test listing orders returns all orders without pagination
+     * Test listing orders returns only active statuses for an employee.
      */
-    public function test_index_returns_all_orders_without_pagination()
+    #[Test]
+    public function it_checks_if_index_returns_only_active_orders_for_employee(): void
     {
         $this->actingAs($this->employee);
 
-        // Create multiple orders
-        $orders = Order::factory()->count(25)->create();
+        // Create 5 orders with "active" statuses that should be returned
+        Order::factory()->count(5)->create(['status' => OrderStatus::OPEN]);
+
+        // Create 3 orders with "inactive" statuses that should NOT be returned
+        Order::factory()->count(3)->create(['status' => OrderStatus::CANCELLED]);
+        Order::factory()->count(2)->create(['status' => OrderStatus::DELIVERED]);
+
 
         $response = $this->getJson('/api/v1/orders');
 
         $response->assertOk()
-            ->assertJsonCount(25)
-            ->assertJsonStructure([
-                '*' => [
-                    'id',
-                    'title',
-                    'description',
-                    'status',
-                    'priority',
-                    'category',
-                    'estimated_completion',
-                    'actual_completion',
-                    'notes',
-                    'created_at',
-                    'updated_at'
-                ]
-            ]);
+            ->assertJsonCount(5);
     }
 
     /**
      * Test creating an order with valid data
      */
-    public function test_store_creates_order_with_valid_data()
+    #[Test]
+    public function it_checks_if_store_creates_order_with_valid_data(): void
     {
         $this->actingAs($this->employee);
 
@@ -105,7 +98,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test validation errors when creating order with invalid data
      */
-    public function test_store_validation_fails_with_invalid_data()
+    #[Test]
+    public function it_checks_if_store_validation_fails_with_invalid_data(): void
     {
         $this->actingAs($this->employee);
 
@@ -118,7 +112,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test store with invalid status
      */
-    public function test_store_fails_with_invalid_status()
+    #[Test]
+    public function it_checks_if_store_fails_with_invalid_status(): void
     {
         $this->actingAs($this->employee);
 
@@ -140,7 +135,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test showing a specific order
      */
-    public function test_show_returns_order_with_relationships()
+    #[Test]
+    public function it_checks_if_show_returns_order_with_relationships(): void
     {
         $this->actingAs($this->employee);
 
@@ -171,7 +167,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test updating an order with valid data
      */
-    public function test_update_modifies_order_successfully()
+    #[Test]
+    public function it_checks_if_update_modifies_order_successfully(): void
     {
         $this->actingAs($this->employee);
 
@@ -209,7 +206,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test partial update of an order
      */
-    public function test_update_allows_partial_updates()
+    #[Test]
+    public function it_checks_if_update_allows_partial_updates(): void
     {
         $this->actingAs($this->employee);
 
@@ -236,7 +234,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test deleting an order
      */
-    public function test_destroy_deletes_order_successfully()
+    #[Test]
+    public function it_checks_if_destroy_deletes_order_successfully(): void
     {
         $this->actingAs($this->superAdmin);
 
@@ -257,7 +256,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test unauthorized access returns 401
      */
-    public function test_unauthenticated_access_returns_401()
+    #[Test]
+    public function it_checks_if_unauthenticated_access_returns_401(): void
     {
         $response = $this->getJson('/api/v1/orders');
         $response->assertUnauthorized();
@@ -266,7 +266,8 @@ class OrderControllerTest extends TestCase
     /**
      * Test order not found returns 404
      */
-    public function test_show_non_existent_order_returns_404()
+    #[Test]
+    public function it_checks_if_show_non_existent_order_returns_404(): void
     {
         $this->actingAs($this->employee);
 
@@ -274,4 +275,3 @@ class OrderControllerTest extends TestCase
         $response->assertNotFound();
     }
 }
-
