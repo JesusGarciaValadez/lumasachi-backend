@@ -28,7 +28,7 @@ final class OrderController extends Controller
         $user = $request->user();
 
         // Orders must be filtered by the user's role if isCustomer
-        $orders = Order::with(['customer', 'assignedTo', 'createdBy'])
+        $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'category'])
             ->when($user->isCustomer(), function ($query) use ($user) {
                 $query->where('customer_id', $user->id);
             })
@@ -54,7 +54,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order created successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'category']))
         ], 201);
     }
 
@@ -67,7 +67,7 @@ final class OrderController extends Controller
     public function show(Order $order): JsonResponse
     {
         return response()->json(
-            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
+            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
         );
     }
 
@@ -88,7 +88,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
         ]);
     }
 
@@ -117,41 +117,17 @@ final class OrderController extends Controller
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
-        $oldStatus = $order->status;
 
-        DB::beginTransaction();
-        try {
-            // Update order status
-            $order->update([
-                'status' => $validated['status'],
-                'updated_by' => $request->user()->id
-            ]);
+        // Update order status (observer will handle history tracking)
+        $order->update([
+            'status' => $validated['status'],
+            'updated_by' => $request->user()->id
+        ]);
 
-            // Create history record
-            OrderHistory::create([
-                'order_id' => $order->id,
-                'status_from' => $oldStatus,
-                'status_to' => $validated['status'],
-                'priority_from' => $order->priority,
-                'priority_to' => $order->priority,
-                'description' => 'Status changed',
-                'notes' => $validated['notes'] ?? "Status changed from {$oldStatus} to {$validated['status']}",
-                'created_by' => $request->user()->id
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Order status updated successfully.',
-                'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to update order status.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Order status updated successfully.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+        ]);
     }
 
     /**
@@ -164,65 +140,41 @@ final class OrderController extends Controller
     public function assign(AssignOrderRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
-        $oldAssignee = $order->assigned_to;
 
-        DB::beginTransaction();
-        try {
-            // Update order assignment
-            $order->update([
-                'assigned_to' => $validated['assigned_to'],
-                'updated_by' => $request->user()->id
-            ]);
+        // Update order assignment (observer will handle history tracking)
+        $order->update([
+            'assigned_to' => $validated['assigned_to'],
+            'updated_by' => $request->user()->id
+        ]);
 
-            // Create history record
-            $assignee = User::find($validated['assigned_to']);
-            $description = $oldAssignee
-                ? 'Order reassigned'
-                : 'Order assigned';
-
-            OrderHistory::create([
-                'order_id' => $order->id,
-                'status_from' => $order->status,
-                'status_to' => $order->status,
-                'priority_from' => $order->priority,
-                'priority_to' => $order->priority,
-                'description' => $description,
-                'notes' => $validated['notes'] ?? "Order assigned to {$assignee->full_name}",
-                'created_by' => $request->user()->id
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Order assigned successfully.',
-                'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy']))
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to assign order.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Order assigned successfully.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+        ]);
     }
 
     /**
      * Get the history of an order.
      *
+     * @param Request $request
      * @param Order $order
-     * @return JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function history(Order $order): JsonResponse
+    public function history(Request $request, Order $order)
     {
-        $history = $order->orderHistories()
-            ->with(['createdBy', 'attachments'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = $order->orderHistories()
+            ->with(['createdBy', 'attachments']);
 
-        return response()->json([
-            'order_id' => $order->id,
-            'history' => OrderHistoryResource::collection($history)
-        ]);
+        // Filter by field if provided
+        if ($request->has('field')) {
+            $query->where('field_changed', $request->input('field'));
+        }
+
+        // Paginate results
+        $history = $query->orderBy('created_at', 'desc')
+            ->paginate($request->input('per_page', 15));
+
+        return OrderHistoryResource::collection($history);
     }
 
 }

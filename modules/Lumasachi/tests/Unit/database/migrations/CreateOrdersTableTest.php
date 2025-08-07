@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
@@ -34,7 +35,7 @@ final class CreateOrdersTableTest extends TestCase
             'description',
             'status',
             'priority',
-            'category',
+            'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',
@@ -62,7 +63,7 @@ final class CreateOrdersTableTest extends TestCase
         $this->assertEquals('uuid', Schema::getColumnType('orders', 'id'));
 
         // Test string columns - PostgreSQL returns 'varchar' for string columns
-        $stringColumns = ['title', 'category'];
+        $stringColumns = ['title'];
         foreach ($stringColumns as $column) {
             $this->assertContains(
                 Schema::getColumnType('orders', $column),
@@ -70,6 +71,13 @@ final class CreateOrdersTableTest extends TestCase
                 "Column '{$column}' is not of type string/varchar"
             );
         }
+        
+        // Test foreign key columns - category_id is bigint
+        $this->assertContains(
+            Schema::getColumnType('orders', 'category_id'),
+            ['bigint', 'int8'],
+            "Column 'category_id' is not of type bigint/int8"
+        );
 
         // Test text columns
         $textColumns = ['description', 'notes'];
@@ -158,7 +166,7 @@ final class CreateOrdersTableTest extends TestCase
             'description' => 'This is a test order.',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::LOW->value,
-            'category' => 'Test Category',
+            'category_id' => Category::factory()->create()->id,
             'estimated_completion' => now(),
             'actual_completion' => now(),
             'notes' => 'Test notes.',
@@ -185,7 +193,7 @@ final class CreateOrdersTableTest extends TestCase
             'description' => 'Testing nullable fields',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category' => null,
+            'category_id' => null,
             'estimated_completion' => null,
             'actual_completion' => null,
             'notes' => null,
@@ -194,7 +202,7 @@ final class CreateOrdersTableTest extends TestCase
             'assigned_to' => null
         ]);
 
-        $this->assertNull($order->category);
+        $this->assertNull($order->category_id);
         $this->assertNull($order->estimated_completion);
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);

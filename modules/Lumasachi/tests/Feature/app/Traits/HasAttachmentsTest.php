@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 
 final class HasAttachmentsTest extends TestCase
@@ -364,9 +365,10 @@ final class HasAttachmentsTest extends TestCase
         $order = Order::factory()->create();
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => 'Open',
-            'status_to' => 'In Progress',
-            'description' => 'Status changed',
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'comment' => 'Status changed',
             'created_by' => $this->user->id
         ]);
 

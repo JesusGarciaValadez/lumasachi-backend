@@ -14,6 +14,7 @@ use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
+use Modules\Lumasachi\app\Observers\OrderObserver;
 use Modules\Lumasachi\app\Policies\OrderPolicy;
 use Modules\Lumasachi\app\Policies\OrderHistoryPolicy;
 use Modules\Lumasachi\app\Policies\UserPolicy;
@@ -46,6 +47,7 @@ final class LumasachiServiceProvider extends BaseServiceProvider
 
         $this->registerPolicies();
         $this->registerRelations();
+        $this->registerObservers();
     }
 
     /**
@@ -177,5 +179,13 @@ final class LumasachiServiceProvider extends BaseServiceProvider
             'order' => Order::class,
             'order_history' => OrderHistory::class,
         ]);
+    }
+
+    /**
+     * Register the module's observers.
+     */
+    private function registerObservers(): void
+    {
+        Order::observe(OrderObserver::class);
     }
 }

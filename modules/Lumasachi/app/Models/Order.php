@@ -10,17 +10,22 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Models\Attachment;
 use Modules\Lumasachi\app\Traits\HasAttachments;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Lumasachi\database\factories\OrderFactory;
 
 final class Order extends Model
 {
     use HasFactory, HasUuids, HasAttachments;
+
     protected $fillable = [
         'customer_id',
         'title',
         'description',
         'status',
         'priority',
-        'category',
+        'category_id',
         'estimated_completion',
         'actual_completion',
         'notes',
@@ -34,47 +39,36 @@ final class Order extends Model
         'actual_completion' => 'datetime'
     ];
 
-    // Enums
-    const STATUS_OPEN = 'Open';
-    const STATUS_IN_PROGRESS = 'In Progress';
-    const STATUS_READY_FOR_DELIVERY = 'Ready for delivery';
-    const STATUS_DELIVERED = 'Delivered';
-    const STATUS_PAID = 'Paid';
-    const STATUS_RETURNED = 'Returned';
-    const STATUS_NOT_PAID = 'Not paid';
-    const STATUS_CANCELLED = 'Cancelled';
-
-    const PRIORITY_LOW = 'Low';
-    const PRIORITY_NORMAL = 'Normal';
-    const PRIORITY_HIGH = 'High';
-    const PRIORITY_URGENT = 'Urgent';
-
     // Relationships - Updated for unified architecture
-    public function customer()
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id')
             ->where('role', UserRole::CUSTOMER);
     }
 
-    public function createdBy()
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updatedBy()
+    public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function assignedTo()
+    public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_to')
-            ->where('role', UserRole::EMPLOYEE);
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    public function orderHistories()
+    public function orderHistories(): HasMany
     {
         return $this->hasMany(OrderHistory::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /**
@@ -82,7 +76,7 @@ final class Order extends Model
      *
      * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
      */
-    protected static function newFactory()
+    protected static function newFactory(): Factory
     {
         return \Modules\Lumasachi\database\factories\OrderFactory::new();
     }

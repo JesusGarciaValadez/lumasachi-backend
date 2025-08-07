@@ -81,9 +81,10 @@ final class AttachmentTest extends TestCase
         $order = Order::factory()->create();
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
-            'status_from' => 'Open',
-            'status_to' => 'In Progress',
-            'description' => 'Status changed',
+            'field_changed' => 'status',
+            'old_value' => 'Open',
+            'new_value' => 'In Progress',
+            'comment' => 'Status changed',
             'created_by' => $user->id
         ]);
 

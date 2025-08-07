@@ -107,9 +107,9 @@ final class AttachmentFactoryTest extends TestCase
         $attachment = Attachment::factory()->create();
 
         // Check that the attachable model exists (could be Order or OrderHistory)
-        if ($attachment->attachable_type === Order::class) {
+        if ($attachment->attachable_type === 'order') {
             $this->assertDatabaseHas('orders', ['id' => $attachment->attachable_id]);
-        } elseif ($attachment->attachable_type === OrderHistory::class) {
+        } elseif ($attachment->attachable_type === 'order_history') {
             $this->assertDatabaseHas('order_histories', ['id' => $attachment->attachable_id]);
         }
 
@@ -126,7 +126,7 @@ final class AttachmentFactoryTest extends TestCase
 
         $attachment = Attachment::factory()->forOrder($order)->create();
 
-        $this->assertEquals(Order::class, $attachment->attachable_type);
+        $this->assertEquals('order', $attachment->attachable_type);
         $this->assertEquals($order->id, $attachment->attachable_id);
         $this->assertEquals($order->id, $attachment->attachable->id);
     }
@@ -140,7 +140,7 @@ final class AttachmentFactoryTest extends TestCase
 
         $attachment = Attachment::factory()->forOrderHistory($orderHistory)->create();
 
-        $this->assertEquals(OrderHistory::class, $attachment->attachable_type);
+        $this->assertEquals('order_history', $attachment->attachable_type);
         $this->assertEquals($orderHistory->id, $attachment->attachable_id);
         $this->assertEquals($orderHistory->id, $attachment->attachable->id);
     }
@@ -261,7 +261,7 @@ final class AttachmentFactoryTest extends TestCase
 
         // Test attachable relationship
         $this->assertNotNull($attachment->attachable);
-        $this->assertContains($attachment->attachable_type, [Order::class, OrderHistory::class]);
+        $this->assertContains($attachment->attachable_type, ['order', 'order_history']);
 
         // Test uploadedBy relationship
         $this->assertInstanceOf(User::class, $attachment->uploadedBy);

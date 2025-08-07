@@ -21,7 +21,7 @@ class OrderHistoryControllerTest extends TestCase
      */
     public function testIndexListsOrderHistories()
     {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         OrderHistory::factory()->count(3)->create();
@@ -50,25 +50,31 @@ class OrderHistoryControllerTest extends TestCase
      */
     public function testStoreCreatesNewOrderHistory()
     {
-        $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($user);
 
         $order = Order::factory()->create(['assigned_to' => $user->id]);
         $orderHistoryData = [
             'order_id' => $order->id,
-            'status_from' => null,
-            'status_to' => OrderStatus::DELIVERED->value,
-            'description' => $this->faker->sentence(),
+            'field_changed' => 'status',
+            'old_value' => null,
+            'new_value' => OrderStatus::DELIVERED->value,
+            'comment' => $this->faker->sentence(),
         ];
 
         $response = $this->postJson('/api/v1/history', $orderHistoryData);
 
         $response->assertStatus(201)
                 ->assertJsonStructure([
-                    'data' => ['id', 'order_id', 'status_to', 'description', 'created_by']
+                    'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at']
                 ]);
 
+        // Verify database has the correct data (without description since it's a calculated field)
         $this->assertDatabaseHas('order_histories', $orderHistoryData);
+        
+        // Verify the description accessor works correctly in the response
+        $responseData = $response->json('data');
+        $this->assertEquals('Status set to: Delivered', $responseData['description']);
     }
 
     /**
@@ -78,14 +84,14 @@ class OrderHistoryControllerTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create();
 
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'data' => ['id', 'order_id', 'created_by']
+                    'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at']
                 ]);
     }
 
@@ -96,7 +102,7 @@ class OrderHistoryControllerTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create();
 
-        $user = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
+        $user = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         $response = $this->deleteJson('/api/v1/history/' . $orderHistory->id);
@@ -113,7 +119,7 @@ class OrderHistoryControllerTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create();
 
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id);
@@ -132,7 +138,7 @@ class OrderHistoryControllerTest extends TestCase
         $orderHistory = OrderHistory::factory()->create();
         $attachments = Attachment::factory()->count(2)->create(['attachable_id' => $orderHistory->order_id, 'attachable_type' => 'order']);
 
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id . '/attachments');

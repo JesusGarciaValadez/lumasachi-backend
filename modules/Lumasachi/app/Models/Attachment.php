@@ -232,7 +232,7 @@ final class Attachment extends Model
      *
      * @return bool|null
      */
-    public function delete()
+    public function delete(): bool
     {
         // Delete the physical file
         if (Storage::disk('public')->exists($this->file_path)) {

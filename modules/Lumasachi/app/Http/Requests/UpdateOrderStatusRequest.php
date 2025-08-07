@@ -3,7 +3,7 @@
 namespace Modules\Lumasachi\app\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 
 class UpdateOrderStatusRequest extends FormRequest
 {
@@ -27,14 +27,14 @@ class UpdateOrderStatusRequest extends FormRequest
                 'required',
                 'string',
                 'in:' . implode(',', [
-                    Order::STATUS_OPEN,
-                    Order::STATUS_IN_PROGRESS,
-                    Order::STATUS_READY_FOR_DELIVERY,
-                    Order::STATUS_DELIVERED,
-                    Order::STATUS_PAID,
-                    Order::STATUS_RETURNED,
-                    Order::STATUS_NOT_PAID,
-                    Order::STATUS_CANCELLED
+                    OrderStatus::OPEN->value,
+                    OrderStatus::IN_PROGRESS->value,
+                    OrderStatus::READY_FOR_DELIVERY->value,
+                    OrderStatus::DELIVERED->value,
+                    OrderStatus::PAID->value,
+                    OrderStatus::RETURNED->value,
+                    OrderStatus::NOT_PAID->value,
+                    OrderStatus::CANCELLED->value
                 ])
             ],
             'notes' => 'nullable|string|max:500'
@@ -66,11 +66,11 @@ class UpdateOrderStatusRequest extends FormRequest
         $validator->after(function ($validator) {
             $order = $this->route('order');
             $newStatus = $this->status;
-            
+
             // Validate status transitions
             if ($order && $newStatus) {
                 if (!$this->isValidStatusTransition($order->status, $newStatus)) {
-                    $validator->errors()->add('status', 
+                    $validator->errors()->add('status',
                         "Cannot transition from {$order->status} to {$newStatus}."
                     );
                 }
@@ -89,38 +89,38 @@ class UpdateOrderStatusRequest extends FormRequest
     {
         // Define valid transitions
         $validTransitions = [
-            Order::STATUS_OPEN => [
-                Order::STATUS_IN_PROGRESS,
-                Order::STATUS_CANCELLED
+            OrderStatus::OPEN->value => [
+                OrderStatus::IN_PROGRESS->value,
+                OrderStatus::CANCELLED->value
             ],
-            Order::STATUS_IN_PROGRESS => [
-                Order::STATUS_READY_FOR_DELIVERY,
-                Order::STATUS_CANCELLED
+            OrderStatus::IN_PROGRESS->value => [
+                OrderStatus::READY_FOR_DELIVERY->value,
+                OrderStatus::CANCELLED->value
             ],
-            Order::STATUS_READY_FOR_DELIVERY => [
-                Order::STATUS_DELIVERED,
-                Order::STATUS_CANCELLED
+            OrderStatus::READY_FOR_DELIVERY->value => [
+                OrderStatus::DELIVERED->value,
+                OrderStatus::CANCELLED->value
             ],
-            Order::STATUS_DELIVERED => [
-                Order::STATUS_PAID,
-                Order::STATUS_RETURNED,
-                Order::STATUS_NOT_PAID
+            OrderStatus::DELIVERED->value => [
+                OrderStatus::PAID->value,
+                OrderStatus::RETURNED->value,
+                OrderStatus::NOT_PAID->value
             ],
-            Order::STATUS_RETURNED => [
-                Order::STATUS_CANCELLED
+            OrderStatus::RETURNED->value => [
+                OrderStatus::CANCELLED->value
             ],
-            Order::STATUS_NOT_PAID => [
-                Order::STATUS_PAID,
-                Order::STATUS_CANCELLED
+            OrderStatus::NOT_PAID->value => [
+                OrderStatus::PAID->value,
+                OrderStatus::CANCELLED->value
             ]
         ];
 
         // Cannot transition from final states
-        if (in_array($currentStatus, [Order::STATUS_PAID, Order::STATUS_CANCELLED])) {
+        if (in_array($currentStatus, [OrderStatus::PAID->value, OrderStatus::CANCELLED->value])) {
             return false;
         }
 
-        return isset($validTransitions[$currentStatus]) && 
+        return isset($validTransitions[$currentStatus]) &&
                in_array($newStatus, $validTransitions[$currentStatus]);
     }
 }

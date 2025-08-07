@@ -3,8 +3,11 @@
 namespace Modules\Lumasachi\database\factories;
 
 use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Enums\OrderPriority;
 
 final class OrderFactory extends Factory
 {
@@ -17,19 +20,19 @@ final class OrderFactory extends Factory
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
             'status' => $this->faker->randomElement([
-                Order::STATUS_OPEN,
-                Order::STATUS_IN_PROGRESS,
-                Order::STATUS_READY_FOR_DELIVERY,
-                Order::STATUS_DELIVERED,
-                Order::STATUS_PAID,
+                OrderStatus::OPEN->value,
+                OrderStatus::IN_PROGRESS->value,
+                OrderStatus::READY_FOR_DELIVERY->value,
+                OrderStatus::DELIVERED->value,
+                OrderStatus::PAID->value,
             ]),
             'priority' => $this->faker->randomElement([
-                Order::PRIORITY_LOW,
-                Order::PRIORITY_NORMAL,
-                Order::PRIORITY_HIGH,
-                Order::PRIORITY_URGENT,
+                OrderPriority::LOW->value,
+                OrderPriority::NORMAL->value,
+                OrderPriority::HIGH->value,
+                OrderPriority::URGENT->value,
             ]),
-            'category' => $this->faker->word(),
+            'category_id' => Category::factory(),
             'estimated_completion' => $this->faker->dateTimeBetween('now', '+30 days'),
             'actual_completion' => null,
             'notes' => $this->faker->optional()->paragraph(),
@@ -43,7 +46,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => Order::STATUS_DELIVERED,
+                'status' => OrderStatus::DELIVERED->value,
                 'actual_completion' => $this->faker->dateTimeBetween('-7 days', 'now'),
             ];
         });
@@ -53,7 +56,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => Order::STATUS_OPEN,
+                'status' => OrderStatus::OPEN->value,
                 'actual_completion' => null,
             ];
         });

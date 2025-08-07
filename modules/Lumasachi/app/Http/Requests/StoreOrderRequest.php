@@ -5,6 +5,8 @@ namespace Modules\Lumasachi\app\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Enums\OrderPriority;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -28,22 +30,22 @@ class StoreOrderRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'status' => 'required|string|in:' . implode(',', [
-                Order::STATUS_OPEN,
-                Order::STATUS_IN_PROGRESS,
-                Order::STATUS_READY_FOR_DELIVERY,
-                Order::STATUS_DELIVERED,
-                Order::STATUS_PAID,
-                Order::STATUS_RETURNED,
-                Order::STATUS_NOT_PAID,
-                Order::STATUS_CANCELLED
+                OrderStatus::OPEN->value,
+                OrderStatus::IN_PROGRESS->value,
+                OrderStatus::READY_FOR_DELIVERY->value,
+                OrderStatus::DELIVERED->value,
+                OrderStatus::PAID->value,
+                OrderStatus::RETURNED->value,
+                OrderStatus::NOT_PAID->value,
+                OrderStatus::CANCELLED->value
             ]),
             'priority' => 'required|string|in:' . implode(',', [
-                Order::PRIORITY_LOW,
-                Order::PRIORITY_NORMAL,
-                Order::PRIORITY_HIGH,
-                Order::PRIORITY_URGENT
+                OrderPriority::LOW->value,
+                OrderPriority::NORMAL->value,
+                OrderPriority::HIGH->value,
+                OrderPriority::URGENT->value
             ]),
-            'category' => 'required|string|max:100',
+            'category_id' => 'required|exists:categories,id',
             'estimated_completion' => 'nullable|date|after:today',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -67,7 +69,8 @@ class StoreOrderRequest extends FormRequest
             'status.in' => 'The selected status is invalid.',
             'priority.required' => 'The order priority is required.',
             'priority.in' => 'The selected priority is invalid.',
-            'category.required' => 'The order category is required.',
+            'category_id.required' => 'The order category is required.',
+            'category_id.exists' => 'The selected category does not exist.',
             'estimated_completion.after' => 'The estimated completion date must be in the future.',
             'assigned_to.exists' => 'The selected employee does not exist.'
         ];
@@ -81,14 +84,14 @@ class StoreOrderRequest extends FormRequest
         // Set default status if not provided
         if (!$this->has('status')) {
             $this->merge([
-                'status' => Order::STATUS_OPEN
+                'status' => OrderStatus::OPEN->value
             ]);
         }
 
         // Set default priority if not provided
         if (!$this->has('priority')) {
             $this->merge([
-                'priority' => Order::PRIORITY_NORMAL
+                'priority' => OrderPriority::NORMAL->value
             ]);
         }
     }
