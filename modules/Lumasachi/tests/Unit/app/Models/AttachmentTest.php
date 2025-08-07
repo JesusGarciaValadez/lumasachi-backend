@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 
 final class AttachmentTest extends TestCase
 {
@@ -24,7 +25,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test basic attachment creation
      */
-    public function test_can_create_attachment()
+    #[Test]
+    public function it_checks_if_can_create_attachment(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -49,7 +51,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test polymorphic relationships with Order
      */
-    public function test_polymorphic_relationship_with_order()
+    #[Test]
+    public function it_checks_if_polymorphic_relationship_with_order(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -75,7 +78,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test polymorphic relationships with OrderHistory
      */
-    public function test_polymorphic_relationship_with_order_history()
+    #[Test]
+    public function it_checks_if_polymorphic_relationship_with_order_history(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -109,7 +113,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test relationship with user
      */
-    public function test_uploaded_by_relationship()
+    #[Test]
+    public function it_checks_if_uploaded_by_relationship(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -131,7 +136,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - getUrl
      */
-    public function test_get_url_method()
+    #[Test]
+    public function it_checks_if_get_url_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -153,7 +159,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - getHumanReadableSize
      */
-    public function test_get_human_readable_size_method()
+    #[Test]
+    public function it_checks_if_get_human_readable_size_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -185,7 +192,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - isImage
      */
-    public function test_is_image_method()
+    #[Test]
+    public function it_checks_if_is_image_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -217,7 +225,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - isDocument
      */
-    public function test_is_document_method()
+    #[Test]
+    public function it_checks_if_is_document_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -260,7 +269,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - isPdf
      */
-    public function test_is_pdf_method()
+    #[Test]
+    public function it_checks_if_is_pdf_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -292,7 +302,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test helper methods - getExtension
      */
-    public function test_get_extension_method()
+    #[Test]
+    public function it_checks_if_get_extension_method(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -322,7 +333,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test scopes - images
      */
-    public function test_images_scope()
+    #[Test]
+    public function it_checks_if_images_scope(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -370,7 +382,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test scopes - documents
      */
-    public function test_documents_scope()
+    #[Test]
+    public function it_checks_if_documents_scope(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -418,7 +431,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test deletion of files and records
      */
-    public function test_delete_removes_file_and_record()
+    #[Test]
+    public function it_checks_if_delete_removes_file_and_record(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -453,7 +467,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test that delete works even if the physical file does not exist
      */
-    public function test_delete_handles_missing_physical_file()
+    #[Test]
+    public function it_checks_if_delete_handles_missing_physical_file(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create();
@@ -481,7 +496,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test MIME type constants
      */
-    public function test_mime_type_constants()
+    #[Test]
+    public function it_checks_if_mime_type_constants(): void
     {
         $this->assertEquals('application/pdf', Attachment::MIME_PDF);
         $this->assertEquals('image/jpeg', Attachment::MIME_JPG);
@@ -492,7 +508,8 @@ final class AttachmentTest extends TestCase
     /**
      * Test MIME type groups
      */
-    public function test_mime_type_groups()
+    #[Test]
+    public function it_checks_if_mime_type_groups(): void
     {
         $this->assertContains('image/jpeg', Attachment::IMAGE_MIME_TYPES);
         $this->assertContains('image/png', Attachment::IMAGE_MIME_TYPES);

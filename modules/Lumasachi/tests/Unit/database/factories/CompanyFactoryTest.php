@@ -5,6 +5,7 @@ namespace Modules\Lumasachi\Tests\Unit\database\factories;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Company;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CompanyFactoryTest extends TestCase
 {
@@ -13,7 +14,8 @@ final class CompanyFactoryTest extends TestCase
     /**
      * Test that the factory creates a valid company.
      */
-    public function test_factory_creates_valid_company(): void
+    #[Test]
+    public function it_checks_if_factory_creates_valid_company(): void
     {
         $company = Company::factory()->create();
 
@@ -27,7 +29,8 @@ final class CompanyFactoryTest extends TestCase
     /**
      * Test that factory generates all required fields.
      */
-    public function test_factory_generates_all_required_fields(): void
+    #[Test]
+    public function it_checks_if_factory_generates_all_required_fields(): void
     {
         $company = Company::factory()->make();
 
@@ -44,7 +47,8 @@ final class CompanyFactoryTest extends TestCase
     /**
      * Test optional fields.
      */
-    public function test_optional_fields(): void
+    #[Test]
+    public function it_checks_if_optional_fields(): void
     {
         $optionalFields = [
             'description',
@@ -95,7 +99,8 @@ final class CompanyFactoryTest extends TestCase
     /**
      * Test that optional field probabilities are roughly correct.
      */
-    public function test_optional_field_probabilities(): void
+    #[Test]
+    public function it_checks_if_optional_field_probabilities(): void
     {
         $expectedProbabilities = [
             'description' => 0.8,
@@ -147,7 +152,8 @@ final class CompanyFactoryTest extends TestCase
     /**
      * Test factory state methods for optional fields.
      */
-    public function test_factory_state_methods_for_optional_fields(): void
+    #[Test]
+    public function it_checks_if_factory_state_methods_for_optional_fields(): void
     {
         // Test withoutWebsite state
         $companyWithoutWebsite = Company::factory()->withoutWebsite()->make();

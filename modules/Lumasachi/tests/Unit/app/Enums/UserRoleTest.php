@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Enums\UserRole;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
 final class UserRoleTest extends TestCase
 {
@@ -15,7 +16,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test that all UserRole enum values are valid in the database.
      */
-    public function test_all_user_role_enum_values_are_valid()
+    #[Test]
+    public function it_checks_if_all_user_role_enum_values_are_valid(): void
     {
         $enumValues = array_column(UserRole::cases(), 'value');
 
@@ -45,7 +47,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test that invalid role values are rejected.
      */
-    public function test_invalid_role_values_are_rejected()
+    #[Test]
+    public function it_checks_if_invalid_role_values_are_rejected(): void
     {
         $this->expectException(\ValueError::class);
 
@@ -62,7 +65,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test that the default role is correctly applied.
      */
-    public function test_default_role_is_employee()
+    #[Test]
+    public function it_checks_if_default_role_is_employee(): void
     {
         // Create user without specifying role
         $user = User::create([
@@ -81,7 +85,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test role permissions mapping.
      */
-    public function test_user_role_permissions_mapping()
+    #[Test]
+    public function it_checks_if_user_role_permissions_mapping(): void
     {
         $testCases = [
             [
@@ -167,7 +172,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test role labels.
      */
-    public function test_user_role_labels()
+    #[Test]
+    public function it_checks_if_user_role_labels(): void
     {
         $testCases = [
             ['role' => UserRole::SUPER_ADMINISTRATOR, 'expected' => 'Super Administrator'],
@@ -188,7 +194,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test that role enum values match constants in User model.
      */
-    public function test_role_enum_consistency()
+    #[Test]
+    public function it_checks_if_role_enum_consistency(): void
     {
         // Get all role values from enum
         $enumRoles = array_column(UserRole::cases(), 'value');
@@ -213,7 +220,8 @@ final class UserRoleTest extends TestCase
     /**
      * Test role queries and filtering.
      */
-    public function test_users_can_be_filtered_by_role()
+    #[Test]
+    public function it_checks_if_users_can_be_filtered_by_role(): void
     {
         // Create users with different roles
         $roles = [

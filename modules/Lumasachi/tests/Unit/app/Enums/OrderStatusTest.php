@@ -17,7 +17,7 @@ final class OrderStatusTest extends TestCase
      * Test that all OrderStatus enum values are correctly defined.
      */
     #[Test]
-    public function all_order_status_enum_values_are_defined()
+    public function it_checks_if_all_order_status_enum_values_are_defined(): void
     {
         $statuses = OrderStatus::cases();
 
@@ -44,7 +44,7 @@ final class OrderStatusTest extends TestCase
      * Test getStatuses static method returns all status values.
      */
     #[Test]
-    public function get_statuses_returns_all_values()
+    public function it_checks_if_get_statuses_returns_all_values(): void
     {
         $statuses = OrderStatus::getStatuses();
 
@@ -57,7 +57,7 @@ final class OrderStatusTest extends TestCase
      * Test getLabel method returns correct labels for each status.
      */
     #[Test]
-    public function get_label_returns_correct_labels()
+    public function it_checks_if_get_label_returns_correct_labels(): void
     {
         $testCases = [
             ['status' => OrderStatus::OPEN, 'expected' => 'Open'],
@@ -83,7 +83,7 @@ final class OrderStatusTest extends TestCase
      * Test that all status values can be stored in the database.
      */
     #[Test]
-    public function all_status_values_can_be_stored_in_database()
+    public function it_checks_if_all_status_values_can_be_stored_in_database(): void
     {
         $user = User::factory()->create();
 
@@ -112,7 +112,7 @@ final class OrderStatusTest extends TestCase
      * Test that invalid status values are rejected by the database.
      */
     #[Test]
-    public function invalid_status_values_are_rejected()
+    public function it_checks_if_invalid_status_values_are_rejected(): void
     {
         $this->expectException(\Illuminate\Database\QueryException::class);
 
@@ -132,7 +132,7 @@ final class OrderStatusTest extends TestCase
      * Test status enum value comparison.
      */
     #[Test]
-    public function status_enum_value_comparison()
+    public function it_checks_if_status_enum_value_comparison(): void
     {
         $openStatus = OrderStatus::OPEN;
         $inProgressStatus = OrderStatus::IN_PROGRESS;
@@ -151,7 +151,7 @@ final class OrderStatusTest extends TestCase
      * Test status enum can be used with match expressions.
      */
     #[Test]
-    public function status_enum_with_match_expression()
+    public function it_checks_if_status_enum_with_match_expression(): void
     {
         $testCases = [
             ['status' => OrderStatus::OPEN, 'expectedHours' => 48],
@@ -181,7 +181,7 @@ final class OrderStatusTest extends TestCase
      * Test that OrderStatus enum values are properly serialized to JSON.
      */
     #[Test]
-    public function status_enum_json_serialization()
+    public function it_checks_if_status_enum_json_serialization(): void
     {
         $user = User::factory()->create();
 
@@ -205,7 +205,7 @@ final class OrderStatusTest extends TestCase
      * Test creating order with each status using the enum directly.
      */
     #[Test]
-    public function create_order_with_enum_values()
+    public function it_checks_if_create_order_with_enum_values(): void
     {
         $user = User::factory()->create();
 
@@ -227,7 +227,7 @@ final class OrderStatusTest extends TestCase
      * Test that all enum cases have unique values.
      */
     #[Test]
-    public function all_status_values_are_unique()
+    public function it_checks_if_all_status_values_are_unique(): void
     {
         $values = OrderStatus::getStatuses();
         $uniqueValues = array_unique($values);

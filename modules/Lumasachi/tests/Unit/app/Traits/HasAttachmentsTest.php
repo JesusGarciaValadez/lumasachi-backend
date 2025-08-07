@@ -5,6 +5,7 @@ namespace Modules\Lumasachi\Tests\Unit\app\Traits;
 use PHPUnit\Framework\TestCase;
 use Modules\Lumasachi\app\Traits\HasAttachments;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 
 // Test class to verify formatting logic
 class HasAttachmentsFormattingTest
@@ -29,7 +30,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test that trait has all required methods
      */
-    public function test_trait_has_required_methods(): void
+    #[Test]
+    public function it_checks_if_trait_has_required_methods(): void
     {
         $reflection = new \ReflectionClass(HasAttachments::class);
         $methods = $reflection->getMethods();
@@ -58,7 +60,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getTotalAttachmentsSizeFormatted with various sizes
      */
-    public function test_get_total_attachments_size_formatted_various_sizes(): void
+    #[Test]
+    public function it_checks_if_get_total_attachments_size_formatted_various_sizes(): void
     {
         $testObject = new HasAttachmentsFormattingTest();
 
@@ -90,7 +93,8 @@ final class HasAttachmentsTest extends TestCase
     /**
      * Test getTotalAttachmentsSizeFormatted edge cases
      */
-    public function test_get_total_attachments_size_formatted_edge_cases(): void
+    #[Test]
+    public function it_checks_if_get_total_attachments_size_formatted_edge_cases(): void
     {
         $testObject = new HasAttachmentsFormattingTest();
 

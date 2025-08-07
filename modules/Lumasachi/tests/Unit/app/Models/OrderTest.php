@@ -5,6 +5,7 @@ namespace Modules\Lumasachi\Tests\Unit\app\Models;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Lumasachi\app\Models\Order;
+use Modules\Lumasachi\app\Models\Category;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
@@ -12,6 +13,7 @@ use Modules\Lumasachi\app\Enums\UserRole;
 use App\Models\User;
 use Carbon\Carbon;
 use PHPUnit\Framework\Attributes\Test;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class OrderTest extends TestCase
 {
@@ -21,7 +23,7 @@ final class OrderTest extends TestCase
      * Test that Order model uses required traits
      */
     #[Test]
-    public function it_checks_order_uses_required_traits(): void
+    public function it_checks_if_order_uses_required_traits(): void
     {
         $order = new Order();
 
@@ -39,7 +41,7 @@ final class OrderTest extends TestCase
      * Test that fillable attributes are set correctly
      */
     #[Test]
-    public function it_checks_fillable_attributes(): void
+    public function it_checks_if_fillable_attributes_are_set_correctly(): void
     {
         $order = new Order();
         $fillable = $order->getFillable();
@@ -66,7 +68,7 @@ final class OrderTest extends TestCase
      * Test that casts are set correctly
      */
     #[Test]
-    public function it_checks_casts_attributes(): void
+    public function it_checks_if_casts_attributes_are_set_correctly(): void
     {
         $order = new Order();
         $casts = $order->getCasts();
@@ -81,7 +83,7 @@ final class OrderTest extends TestCase
      * Test customer relationship
      */
     #[Test]
-    public function it_checks_customer_relationship(): void
+    public function it_checks_if_customer_relationship_is_correct(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->create(['customer_id' => $customer->id]);
@@ -95,7 +97,7 @@ final class OrderTest extends TestCase
      * Test customer relationship returns null for non-customer users
      */
     #[Test]
-    public function it_checks_customer_relationship_returns_null_for_non_customers(): void
+    public function it_checks_if_customer_relationship_returns_null_for_non_customers(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $order = Order::factory()->create(['customer_id' => $employee->id]);
@@ -107,7 +109,7 @@ final class OrderTest extends TestCase
      * Test createdBy relationship
      */
     #[Test]
-    public function it_checks_created_by_relationship(): void
+    public function it_checks_if_created_by_relationship_is_correct(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create(['created_by' => $user->id]);
@@ -120,7 +122,7 @@ final class OrderTest extends TestCase
      * Test updatedBy relationship
      */
     #[Test]
-    public function it_checks_updated_by_relationship(): void
+    public function it_checks_if_updated_by_relationship_is_correct(): void
     {
         $user = User::factory()->create();
         $order = Order::factory()->create(['updated_by' => $user->id]);
@@ -133,7 +135,7 @@ final class OrderTest extends TestCase
      * Test assignedTo relationship
      */
     #[Test]
-    public function it_checks_assigned_to_relationship(): void
+    public function it_checks_if_assigned_to_relationship_is_correct(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $order = Order::factory()->create(['assigned_to' => $employee->id]);
@@ -147,7 +149,7 @@ final class OrderTest extends TestCase
      * Test orderHistories relationship
      */
     #[Test]
-    public function it_checks_order_histories_relationship(): void
+    public function it_checks_if_order_histories_relationship_is_correct(): void
     {
         $order = Order::factory()->create();
 
@@ -175,10 +177,58 @@ final class OrderTest extends TestCase
     }
 
     /**
+     * Test can create an order
+     */
+    #[Test]
+    public function it_checks_if_can_create_an_order(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+
+        $order = Order::factory()->create([
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+            'category_id' => $category->id,
+        ]);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'created_by' => $user->id,
+            'category_id' => $category->id,
+        ]);
+    }
+
+    /**
+     * Test belongs to a category
+     */
+    #[Test]
+    public function it_checks_if_belongs_to_a_category(): void
+    {
+        $category = Category::factory()->create();
+        $order = Order::factory()->create(['category_id' => $category->id]);
+
+        $this->assertInstanceOf(BelongsTo::class, $order->category());
+        $this->assertEquals($category->id, $order->category->id);
+    }
+
+    /**
+     * Test belongs to a creator
+     */
+    #[Test]
+    public function it_checks_if_belongs_to_a_creator(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['created_by' => $user->id]);
+
+        $this->assertInstanceOf(BelongsTo::class, $order->createdBy());
+        $this->assertEquals($user->id, $order->createdBy->id);
+    }
+
+    /**
      * Test date casting for estimated_completion
      */
     #[Test]
-    public function it_checks_estimated_completion_date_casting(): void
+    public function it_checks_if_estimated_completion_date_casting_is_correct(): void
     {
         $date = now()->addDays(5);
         $order = Order::factory()->create([
@@ -193,7 +243,7 @@ final class OrderTest extends TestCase
      * Test date casting for actual_completion
      */
     #[Test]
-    public function it_checks_actual_completion_date_casting(): void
+    public function it_checks_if_actual_completion_date_casting_is_correct(): void
     {
         $date = now()->subDays(2);
         $order = Order::factory()->create([
@@ -208,7 +258,7 @@ final class OrderTest extends TestCase
      * Test actual_completion can be null
      */
     #[Test]
-    public function it_checks_actual_completion_can_be_null(): void
+    public function it_checks_if_actual_completion_can_be_null(): void
     {
         $order = Order::factory()->create([
             'actual_completion' => null
@@ -221,7 +271,7 @@ final class OrderTest extends TestCase
      * Test mass assignment
      */
     #[Test]
-    public function it_checks_mass_assignment(): void
+    public function it_checks_if_mass_assignment_is_correct(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $creator = User::factory()->create();
@@ -253,7 +303,7 @@ final class OrderTest extends TestCase
      * Test order can be created with minimum required fields
      */
     #[Test]
-    public function it_checks_order_can_be_created_with_minimum_fields(): void
+    public function it_checks_if_order_can_be_created_with_minimum_fields(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $creator = User::factory()->create();
@@ -281,7 +331,7 @@ final class OrderTest extends TestCase
      * Test that newFactory returns correct factory instance
      */
     #[Test]
-    public function it_checks_new_factory_returns_correct_instance(): void
+    public function it_checks_if_new_factory_returns_correct_instance(): void
     {
         $factory = Order::factory();
 
@@ -292,7 +342,7 @@ final class OrderTest extends TestCase
      * Test UUID generation
      */
     #[Test]
-    public function it_checks_uuid_generation(): void
+    public function it_checks_if_uuid_generation_is_correct(): void
     {
         $order = Order::factory()->create();
 
@@ -307,7 +357,7 @@ final class OrderTest extends TestCase
      * Test model table name
      */
     #[Test]
-    public function it_checks_model_table_name(): void
+    public function it_checks_if_model_table_name_is_correct(): void
     {
         $order = new Order();
 
@@ -318,7 +368,7 @@ final class OrderTest extends TestCase
      * Test all status values are unique
      */
     #[Test]
-    public function it_checks_all_status_values_are_unique(): void
+    public function it_checks_if_all_status_values_are_unique(): void
     {
         $reflection = new \ReflectionClass(Order::class);
         $constants = $reflection->getConstants();
@@ -337,7 +387,7 @@ final class OrderTest extends TestCase
      * Test all priority values are unique
      */
     #[Test]
-    public function it_checks_all_priority_values_are_unique(): void
+    public function it_checks_if_all_priority_values_are_unique(): void
     {
         $reflection = new \ReflectionClass(Order::class);
         $constants = $reflection->getConstants();

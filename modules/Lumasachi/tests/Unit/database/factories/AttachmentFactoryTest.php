@@ -8,6 +8,7 @@ use Modules\Lumasachi\app\Models\Attachment;
 use App\Models\User;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\OrderHistory;
+use PHPUnit\Framework\Attributes\Test;
 
 final class AttachmentFactoryTest extends TestCase
 {
@@ -16,7 +17,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that the factory creates a valid attachment
      */
-    public function test_factory_creates_valid_attachment(): void
+    #[Test]
+    public function it_checks_if_factory_creates_valid_attachment(): void
     {
         $attachment = Attachment::factory()->create();
 
@@ -30,7 +32,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test all required fields are present
      */
-    public function test_factory_generates_all_required_fields(): void
+    #[Test]
+    public function it_checks_if_factory_generates_all_required_fields(): void
     {
         $attachment = Attachment::factory()->make();
 
@@ -46,7 +49,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory can create an image attachment
      */
-    public function test_factory_creates_image_attachment(): void
+    #[Test]
+    public function it_checks_if_factory_creates_image_attachment(): void
     {
         $attachment = Attachment::factory()->image()->create();
 
@@ -57,7 +61,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory can create a PDF attachment
      */
-    public function test_factory_creates_pdf_attachment(): void
+    #[Test]
+    public function it_checks_if_factory_creates_pdf_attachment(): void
     {
         $attachment = Attachment::factory()->pdf()->create();
 
@@ -68,7 +73,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory can create a document attachment
      */
-    public function test_factory_creates_document_attachment(): void
+    #[Test]
+    public function it_checks_if_factory_creates_document_attachment(): void
     {
         $attachment = Attachment::factory()->document()->create();
 
@@ -79,7 +85,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory can create a spreadsheet attachment
      */
-    public function test_factory_creates_spreadsheet_attachment(): void
+    #[Test]
+    public function it_checks_if_factory_creates_spreadsheet_attachment(): void
     {
         $attachment = Attachment::factory()->spreadsheet()->create();
 
@@ -89,7 +96,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory can override attributes
      */
-    public function test_factory_can_override_attributes(): void
+    #[Test]
+    public function it_checks_if_factory_can_override_attributes(): void
     {
         $customFileName = 'custom_file_name.pdf';
         $attachment = Attachment::factory()->create([
@@ -102,7 +110,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test that factory creates associated models
      */
-    public function test_factory_creates_associated_models(): void
+    #[Test]
+    public function it_checks_if_factory_creates_associated_models(): void
     {
         $attachment = Attachment::factory()->create();
 
@@ -120,7 +129,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory creates attachments for specific order
      */
-    public function test_factory_creates_attachments_for_specific_order(): void
+    #[Test]
+    public function it_checks_if_factory_creates_attachments_for_specific_order(): void
     {
         $order = Order::factory()->create();
 
@@ -134,7 +144,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory creates attachments for specific order history
      */
-    public function test_factory_creates_attachments_for_specific_order_history(): void
+    #[Test]
+    public function it_checks_if_factory_creates_attachments_for_specific_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
 
@@ -148,7 +159,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory generates UUID
      */
-    public function test_factory_generates_uuid(): void
+    #[Test]
+    public function it_checks_if_factory_generates_uuid(): void
     {
         $attachment = Attachment::factory()->create();
 
@@ -162,7 +174,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory generates realistic data
      */
-    public function test_factory_generates_realistic_data(): void
+    #[Test]
+    public function it_checks_if_factory_generates_realistic_data(): void
     {
         $attachment = Attachment::factory()->make();
 
@@ -174,7 +187,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory can create small files
      */
-    public function test_factory_creates_small_files(): void
+    #[Test]
+    public function it_checks_if_factory_creates_small_files(): void
     {
         $attachment = Attachment::factory()->small()->create();
 
@@ -185,7 +199,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory can create large files
      */
-    public function test_factory_creates_large_files(): void
+    #[Test]
+    public function it_checks_if_factory_creates_large_files(): void
     {
         $attachment = Attachment::factory()->large()->create();
 
@@ -196,7 +211,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test file path includes date-based directory structure
      */
-    public function test_file_path_includes_date_structure(): void
+    #[Test]
+    public function it_checks_if_file_path_includes_date_structure(): void
     {
         $attachment = Attachment::factory()->create();
         $year = date('Y');
@@ -208,7 +224,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test multiple attachments can be created
      */
-    public function test_multiple_attachments_can_be_created(): void
+    #[Test]
+    public function it_checks_if_multiple_attachments_can_be_created(): void
     {
         $attachments = Attachment::factory()->count(5)->create();
 
@@ -223,7 +240,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory generates unique file names
      */
-    public function test_factory_generates_unique_file_names(): void
+    #[Test]
+    public function it_checks_if_factory_generates_unique_file_names(): void
     {
         $attachments = Attachment::factory()->count(10)->make();
         $fileNames = $attachments->pluck('file_name')->toArray();
@@ -235,7 +253,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory generates valid MIME types
      */
-    public function test_factory_generates_valid_mime_types(): void
+    #[Test]
+    public function it_checks_if_factory_generates_valid_mime_types(): void
     {
         $allValidMimeTypes = array_merge(
             Attachment::IMAGE_MIME_TYPES,
@@ -255,7 +274,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory relationships work correctly
      */
-    public function test_factory_relationships_work_correctly(): void
+    #[Test]
+    public function it_checks_if_factory_relationships_work_correctly(): void
     {
         $attachment = Attachment::factory()->create();
 
@@ -271,7 +291,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test human readable file size method
      */
-    public function test_human_readable_file_size(): void
+    #[Test]
+    public function it_checks_if_human_readable_file_size(): void
     {
         $testCases = [
             ['size' => 512, 'expected' => '512 B'],
@@ -290,7 +311,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test file extension is properly detected
      */
-    public function test_file_extension_detection(): void
+    #[Test]
+    public function it_checks_if_file_extension_detection(): void
     {
         $testCases = [
             'document.pdf' => 'pdf',
@@ -308,7 +330,8 @@ final class AttachmentFactoryTest extends TestCase
     /**
      * Test factory with specific user
      */
-    public function test_factory_with_specific_user(): void
+    #[Test]
+    public function it_checks_if_factory_with_specific_user(): void
     {
         $user = User::factory()->create();
 

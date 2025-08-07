@@ -10,6 +10,7 @@ use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
+use PHPUnit\Framework\Attributes\Test;
 
 class OrderHistoryDescriptionFieldTest extends TestCase
 {
@@ -18,7 +19,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
     /**
      * Test that the description field is properly included in API responses.
      */
-    public function testOrderHistoryApiIncludesDescriptionField()
+    #[Test]
+    public function it_checks_if_order_history_api_includes_description_field(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
@@ -35,7 +37,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
 
         // Test show endpoint
         $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
-        
+
         $response->assertStatus(200)
                 ->assertJsonPath('data.description', 'Status changed from Open to In Progress')
                 ->assertJsonStructure([
@@ -56,14 +58,15 @@ class OrderHistoryDescriptionFieldTest extends TestCase
     /**
      * Test that the description field is included when listing order histories.
      */
-    public function testOrderHistoryListIncludesDescriptionField()
+    #[Test]
+    public function it_checks_if_order_history_list_includes_description_field(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         // Create multiple order histories with descriptions
         $order = Order::factory()->create();
-        
+
         OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
@@ -82,9 +85,9 @@ class OrderHistoryDescriptionFieldTest extends TestCase
 
         // Test index endpoint
         $response = $this->getJson('/api/v1/history?order_id=' . $order->id);
-        
+
         $response->assertStatus(200);
-        
+
         $data = $response->json('data');
         if (is_array($data) && count($data) >= 2) {
             // Check that each history entry has a description
@@ -98,13 +101,14 @@ class OrderHistoryDescriptionFieldTest extends TestCase
     /**
      * Test creating order history with description field.
      */
-    public function testCreateOrderHistoryWithDescription()
+    #[Test]
+    public function it_checks_if_create_order_history_with_description(): void
     {
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($user);
 
         $order = Order::factory()->create(['assigned_to' => $user->id]);
-        
+
         $orderHistoryData = [
             'order_id' => $order->id,
             'field_changed' => 'status',
@@ -143,13 +147,14 @@ class OrderHistoryDescriptionFieldTest extends TestCase
     /**
      * Test that order history through order endpoint includes description.
      */
-    public function testOrderHistoryThroughOrderEndpointIncludesDescription()
+    #[Test]
+    public function it_checks_if_order_history_through_order_endpoint_includes_description(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
         $order = Order::factory()->create();
-        
+
         OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
@@ -160,9 +165,9 @@ class OrderHistoryDescriptionFieldTest extends TestCase
 
         // Test order history endpoint
         $response = $this->getJson("/api/v1/orders/{$order->id}/history");
-        
+
         $response->assertStatus(200);
-        
+
         $data = $response->json('data');
         if (is_array($data) && count($data) > 0) {
             $firstHistory = $data[0];

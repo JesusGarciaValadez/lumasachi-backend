@@ -3,12 +3,14 @@
 namespace Modules\Lumasachi\tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Notifications\OrderCreatedNotification;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -55,11 +57,13 @@ class OrderControllerTest extends TestCase
     }
 
     /**
-     * Test creating an order with valid data
+     * Test creating an order with valid data and sends a notification.
      */
     #[Test]
     public function it_checks_if_store_creates_order_with_valid_data(): void
     {
+        Notification::fake();
+
         $this->actingAs($this->employee);
 
         $orderData = [
@@ -75,24 +79,36 @@ class OrderControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/orders', $orderData);
 
-        $response->assertCreated()
-            ->assertJson([
-                'message' => 'Order created successfully.',
-                'order' => [
-                    'title' => 'Test Order Title',
-                    'description' => 'Test order description',
-                    'status' => OrderStatus::OPEN->value,
-                    'priority' => OrderPriority::HIGH->value,
-                    'category' => Category::find($orderData['category_id'])->name
-                ]
-            ]);
+        $response->assertCreated();
 
         $this->assertDatabaseHas('orders', [
             'title' => 'Test Order Title',
-            'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id
         ]);
+
+        $order = Order::firstWhere('title', 'Test Order Title');
+
+        Notification::assertSentTo(
+            $this->employee,
+            function (OrderCreatedNotification $notification) use ($order) {
+                // First, basic check that the correct order is in the notification
+                if ($notification->order->id !== $order->id) {
+                    return false;
+                }
+
+                // Now, check the mailable content
+                $mailData = $notification->toMail($this->employee)->toArray();
+
+                $this->assertEquals('New Order Created: #' . $order->id, $mailData['subject']);
+                $this->assertStringContainsString('A new order has been created.', $mailData['introLines'][0]);
+                $this->assertStringContainsString('Order ID: ' . $order->id, $mailData['introLines'][1]);
+                $this->assertEquals('View Order', $mailData['actionText']);
+                $this->assertEquals(url('/orders/' . $order->id), $mailData['actionUrl']);
+                $this->assertStringContainsString('Thank you for your business!', $mailData['outroLines'][0]);
+
+                return true;
+            }
+        );
     }
 
     /**

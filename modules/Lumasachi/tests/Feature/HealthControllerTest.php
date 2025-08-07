@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Test;
 
 class HealthControllerTest extends TestCase
 {
@@ -17,7 +18,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_up_endpoint_returns_operational_status()
+    #[Test]
+    public function it_checks_if_up_endpoint_returns_operational_status(): void
     {
         // Act: Call the /up endpoint
         $response = $this->getJson('/api/v1/up');
@@ -48,7 +50,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_endpoint_returns_healthy_status_when_all_checks_pass()
+    #[Test]
+    public function it_checks_if_health_endpoint_returns_healthy_status_when_all_checks_pass(): void
     {
         // Act: Call the /health endpoint
         $response = $this->getJson('/api/v1/health');
@@ -107,7 +110,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_database_component()
+    #[Test]
+    public function it_checks_if_health_check_database_component(): void
     {
         // Ensure database is accessible
         DB::select('SELECT 1');
@@ -118,7 +122,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check database component
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('database', $data['checks']);
         $this->assertTrue($data['checks']['database']['healthy']);
         $this->assertEquals('Database is responsive', $data['checks']['database']['message']);
@@ -130,7 +134,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_cache_component()
+    #[Test]
+    public function it_checks_if_health_check_cache_component(): void
     {
         // Act: Call the health endpoint
         $response = $this->getJson('/api/v1/health');
@@ -138,7 +143,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check cache component
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('cache', $data['checks']);
         $this->assertTrue($data['checks']['cache']['healthy']);
         $this->assertEquals('Cache is operational', $data['checks']['cache']['message']);
@@ -150,7 +155,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_storage_component()
+    #[Test]
+    public function it_checks_if_health_check_storage_component(): void
     {
         // Ensure storage is writable
         Storage::fake('local');
@@ -162,7 +168,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check storage component
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('storage', $data['checks']);
         $this->assertArrayHasKey('disks', $data['checks']['storage']);
     }
@@ -172,7 +178,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_memory_component()
+    #[Test]
+    public function it_checks_if_health_check_memory_component(): void
     {
         // Act: Call the health endpoint
         $response = $this->getJson('/api/v1/health');
@@ -180,7 +187,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check memory component
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('memory', $data['checks']);
         $this->assertIsNumeric($data['checks']['memory']['usage_mb']);
         $this->assertIsNumeric($data['checks']['memory']['limit_mb']);
@@ -193,7 +200,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_disk_space_component()
+    #[Test]
+    public function it_checks_if_health_check_disk_space_component(): void
     {
         // Act: Call the health endpoint
         $response = $this->getJson('/api/v1/health');
@@ -201,7 +209,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check disk space component
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('disk', $data['checks']);
         $this->assertIsNumeric($data['checks']['disk']['free_gb']);
         $this->assertIsNumeric($data['checks']['disk']['total_gb']);
@@ -214,14 +222,15 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_health_check_returns_unhealthy_when_component_fails()
+    #[Test]
+    public function it_checks_if_health_check_returns_unhealthy_when_component_fails(): void
     {
         // Get the current database connection name
         $currentConnection = config('database.default');
-        
+
         // Store the original database config
         $originalConfig = config("database.connections.{$currentConnection}");
-        
+
         // Mock a database failure by setting invalid connection parameters
         if ($currentConnection === 'pgsql') {
             // For PostgreSQL, set an invalid host
@@ -231,7 +240,7 @@ class HealthControllerTest extends TestCase
             // For SQLite or other databases
             config(["database.connections.{$currentConnection}.database" => '/invalid/path/database.sqlite']);
         }
-        
+
         // Clear the database instance to force reconnection with new config
         DB::purge($currentConnection);
 
@@ -245,7 +254,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check response indicates unhealthy status
         $response->assertStatus(503);
         $data = $response->json();
-        
+
         $this->assertEquals('unhealthy', $data['status']);
         $this->assertFalse($data['checks']['database']['healthy']);
         $this->assertEquals('Database connection failed', $data['checks']['database']['message']);
@@ -256,7 +265,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_queue_check_included_when_queue_not_sync()
+    #[Test]
+    public function it_checks_if_queue_check_included_when_queue_not_sync(): void
     {
         // Arrange: Set queue driver to database
         config(['queue.default' => 'database']);
@@ -292,7 +302,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check queue component is included
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayHasKey('queue', $data['checks']);
         $this->assertTrue($data['checks']['queue']['healthy']);
         $this->assertEquals('Queue is operational', $data['checks']['queue']['message']);
@@ -305,7 +315,8 @@ class HealthControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_queue_check_not_included_when_queue_is_sync()
+    #[Test]
+    public function it_checks_if_queue_check_not_included_when_queue_is_sync(): void
     {
         // Arrange: Ensure queue driver is sync
         config(['queue.default' => 'sync']);
@@ -316,7 +327,7 @@ class HealthControllerTest extends TestCase
         // Assert: Check queue component is not included
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         $this->assertArrayNotHasKey('queue', $data['checks']);
     }
 }

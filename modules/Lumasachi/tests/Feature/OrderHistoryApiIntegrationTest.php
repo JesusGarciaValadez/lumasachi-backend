@@ -10,6 +10,7 @@ use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Enums\OrderPriority;
+use PHPUnit\Framework\Attributes\Test;
 
 class OrderHistoryApiIntegrationTest extends TestCase
 {
@@ -18,13 +19,14 @@ class OrderHistoryApiIntegrationTest extends TestCase
     /**
      * Test that all OrderHistory API endpoints properly include the description field
      */
-    public function testAllOrderHistoryEndpointsIncludeDescriptionField()
+    #[Test]
+    public function it_checks_if_all_order_history_endpoints_include_description_field(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($admin);
 
         $order = Order::factory()->create();
-        
+
         // Create order history
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
@@ -58,7 +60,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'new_value' => OrderPriority::URGENT->value,
             'comment' => 'Customer escalation'
         ]);
-        
+
         $response->assertStatus(201)
             ->assertJsonPath('data.description', 'Priority changed from Normal to Urgent');
 
@@ -75,14 +77,15 @@ class OrderHistoryApiIntegrationTest extends TestCase
     /**
      * Test that the OrderHistoryResource properly formats all fields including description
      */
-    public function testOrderHistoryResourceFormat()
+    #[Test]
+    public function it_checks_if_order_history_resource_format(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($admin);
 
         $order = Order::factory()->create();
-        
+
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'assigned_to',
@@ -93,7 +96,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         ]);
 
         $response = $this->getJson("/api/v1/history/{$orderHistory->id}");
-        
+
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
@@ -121,7 +124,8 @@ class OrderHistoryApiIntegrationTest extends TestCase
     /**
      * Test automatic description generation when creating order history through order updates
      */
-    public function testAutomaticDescriptionGenerationOnOrderUpdate()
+    #[Test]
+    public function it_checks_if_automatic_description_generation_on_order_update(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($admin);
@@ -145,11 +149,11 @@ class OrderHistoryApiIntegrationTest extends TestCase
 
         $this->assertNotNull($history);
         $this->assertNotNull($history->description);
-        
+
         // Verify the history is returned with description via API
         $response = $this->getJson("/api/v1/orders/{$order->id}/history");
         $response->assertStatus(200);
-        
+
         $data = $response->json('data');
         if (is_array($data) && count($data) > 0) {
             $statusHistory = collect($data)->firstWhere('field_changed', 'status');
@@ -162,13 +166,14 @@ class OrderHistoryApiIntegrationTest extends TestCase
     /**
      * Test filtering order history by field and ensuring description is included
      */
-    public function testOrderHistoryFilteringIncludesDescription()
+    #[Test]
+    public function it_checks_if_order_history_filtering_includes_description(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($admin);
 
         $order = Order::factory()->create();
-        
+
         // Create multiple history entries
         OrderHistory::factory()->create([
             'order_id' => $order->id,
@@ -188,10 +193,10 @@ class OrderHistoryApiIntegrationTest extends TestCase
 
         // Filter by status changes
         $response = $this->getJson("/api/v1/orders/{$order->id}/history?field=status");
-        
+
         $response->assertStatus(200);
         $data = $response->json('data');
-        
+
         if (is_array($data) && count($data) > 0) {
             foreach ($data as $history) {
                 $this->assertEquals('status', $history['field_changed']);

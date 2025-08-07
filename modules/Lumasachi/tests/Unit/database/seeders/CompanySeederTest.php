@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Models\Company;
 use Modules\Lumasachi\database\seeders\CompanySeeder;
+use PHPUnit\Framework\Attributes\Test;
 
 final class CompanySeederTest extends TestCase
 {
@@ -14,7 +15,8 @@ final class CompanySeederTest extends TestCase
     /**
      * Test that the seeder creates companies correctly.
      */
-    public function test_seeder_creates_companies(): void
+    #[Test]
+    public function it_checks_if_seeder_creates_companies(): void
     {
         $this->seed(CompanySeeder::class);
 

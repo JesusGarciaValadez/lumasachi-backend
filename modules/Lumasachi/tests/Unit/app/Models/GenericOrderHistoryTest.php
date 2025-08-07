@@ -17,11 +17,11 @@ class GenericOrderHistoryTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function can_track_status_changes()
+    public function it_checks_if_can_track_status_changes(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
@@ -34,7 +34,7 @@ class GenericOrderHistoryTest extends TestCase
         $this->assertEquals(OrderHistory::FIELD_STATUS, $history->field_changed);
         $this->assertEquals(OrderStatus::OPEN->value, $history->getRawOriginal('old_value'));
         $this->assertEquals(OrderStatus::IN_PROGRESS->value, $history->getRawOriginal('new_value'));
-        
+
         // Test automatic casting
         $this->assertInstanceOf(OrderStatus::class, $history->old_value);
         $this->assertInstanceOf(OrderStatus::class, $history->new_value);
@@ -43,11 +43,11 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_track_priority_changes()
+    public function it_checks_if_can_track_priority_changes(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_PRIORITY,
@@ -58,7 +58,7 @@ class GenericOrderHistoryTest extends TestCase
         ]);
 
         $this->assertEquals(OrderHistory::FIELD_PRIORITY, $history->field_changed);
-        
+
         // Test automatic casting
         $this->assertInstanceOf(OrderPriority::class, $history->old_value);
         $this->assertInstanceOf(OrderPriority::class, $history->new_value);
@@ -67,13 +67,13 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_track_assignment_changes()
+    public function it_checks_if_can_track_assignment_changes(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
         $employee1 = User::factory()->create();
         $employee2 = User::factory()->create();
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
@@ -89,13 +89,13 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_track_date_changes()
+    public function it_checks_if_can_track_date_changes(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
         $oldDate = Carbon::now()->subDays(5);
         $newDate = Carbon::now()->addDays(2);
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
@@ -106,7 +106,7 @@ class GenericOrderHistoryTest extends TestCase
         ]);
 
         $this->assertEquals(OrderHistory::FIELD_ESTIMATED_COMPLETION, $history->field_changed);
-        
+
         // Test automatic casting to Carbon
         $this->assertInstanceOf(Carbon::class, $history->old_value);
         $this->assertInstanceOf(Carbon::class, $history->new_value);
@@ -115,11 +115,11 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_track_text_field_changes()
+    public function it_checks_if_can_track_text_field_changes(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_TITLE,
@@ -135,11 +135,11 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_handle_null_values()
+    public function it_checks_if_can_handle_null_values(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         // Test setting a value from null
         $history1 = OrderHistory::create([
             'order_id' => $order->id,
@@ -168,11 +168,11 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function generates_human_readable_descriptions()
+    public function it_checks_if_generates_human_readable_descriptions(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         // Test status change description
         $history1 = OrderHistory::create([
             'order_id' => $order->id,
@@ -211,12 +211,12 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function formats_date_values_in_description()
+    public function it_checks_if_formats_date_values_in_description(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
         $date = Carbon::now()->addDays(5);
-        
+
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
@@ -230,26 +230,26 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function maintains_backward_compatibility_with_enum_serialization()
+    public function it_checks_if_maintains_backward_compatibility_with_enum_serialization(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         $history = new OrderHistory();
         $history->order_id = $order->id;
         $history->field_changed = OrderHistory::FIELD_STATUS;
         $history->created_by = $user->id;
-        
+
         // Test setting enum directly
         $history->old_value = OrderStatus::OPEN;
         $history->new_value = OrderStatus::DELIVERED;
-        
+
         $history->save();
-        
+
         // Verify stored as string values
         $this->assertEquals(OrderStatus::OPEN->value, $history->getRawOriginal('old_value'));
         $this->assertEquals(OrderStatus::DELIVERED->value, $history->getRawOriginal('new_value'));
-        
+
         // Verify retrieved as enums
         $freshHistory = OrderHistory::find($history->id);
         $this->assertInstanceOf(OrderStatus::class, $freshHistory->old_value);
@@ -257,45 +257,45 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function can_query_history_by_field()
+    public function it_checks_if_can_query_history_by_field(): void
     {
         $order = Order::factory()->create();
         $user = User::factory()->create();
-        
+
         // Create different types of history
         OrderHistory::factory()->count(3)->create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
         ]);
-        
+
         OrderHistory::factory()->count(2)->create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_PRIORITY,
         ]);
-        
+
         OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
         ]);
-        
+
         // Query by field
         $statusChanges = OrderHistory::where('order_id', $order->id)
             ->where('field_changed', OrderHistory::FIELD_STATUS)
             ->get();
-        
+
         $priorityChanges = OrderHistory::where('order_id', $order->id)
             ->where('field_changed', OrderHistory::FIELD_PRIORITY)
             ->get();
-        
+
         $this->assertCount(3, $statusChanges);
         $this->assertCount(2, $priorityChanges);
     }
 
     #[Test]
-    public function factory_creates_valid_history_entries()
+    public function it_checks_if_factory_creates_valid_history_entries(): void
     {
         $history = OrderHistory::factory()->create();
-        
+
         $this->assertNotNull($history->order_id);
         $this->assertNotNull($history->field_changed);
         $this->assertNotNull($history->created_by);
@@ -312,33 +312,33 @@ class GenericOrderHistoryTest extends TestCase
     }
 
     #[Test]
-    public function factory_state_methods_work_correctly()
+    public function it_checks_if_factory_state_methods_work_correctly(): void
     {
         $order = Order::factory()->create();
-        
+
         // Test status change state
         $statusHistory = OrderHistory::factory()
             ->statusChange(OrderStatus::OPEN->value, OrderStatus::DELIVERED->value)
             ->create(['order_id' => $order->id]);
-        
+
         $this->assertEquals(OrderHistory::FIELD_STATUS, $statusHistory->field_changed);
         $this->assertEquals(OrderStatus::OPEN->value, $statusHistory->getRawOriginal('old_value'));
         $this->assertEquals(OrderStatus::DELIVERED->value, $statusHistory->getRawOriginal('new_value'));
-        
+
         // Test priority change state
         $priorityHistory = OrderHistory::factory()
             ->priorityChange(OrderPriority::LOW->value, OrderPriority::HIGH->value)
             ->create(['order_id' => $order->id]);
-        
+
         $this->assertEquals(OrderHistory::FIELD_PRIORITY, $priorityHistory->field_changed);
         $this->assertEquals(OrderPriority::LOW->value, $priorityHistory->getRawOriginal('old_value'));
         $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
-        
+
         // Test assignment change state
         $assignmentHistory = OrderHistory::factory()
             ->assignmentChange(null, 123)
             ->create(['order_id' => $order->id]);
-        
+
         $this->assertEquals(OrderHistory::FIELD_ASSIGNED_TO, $assignmentHistory->field_changed);
         $this->assertNull($assignmentHistory->old_value);
         $this->assertNotNull($assignmentHistory->new_value);
