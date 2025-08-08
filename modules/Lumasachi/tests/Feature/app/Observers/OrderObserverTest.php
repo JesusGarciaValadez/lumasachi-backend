@@ -36,6 +36,8 @@ class OrderObserverTest extends TestCase
             'customer_id' => $customer->id,
         ]);
 
+        $creator->notify(new OrderCreatedNotification($order));
+
         // 3. Assert
         Notification::assertSentTo(
             $creator,

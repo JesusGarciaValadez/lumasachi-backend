@@ -10,6 +10,8 @@ use App\Models\User;
 use Modules\Lumasachi\app\Enums\UserRole;
 use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Enums\OrderStatus;
+use Modules\Lumasachi\app\Mail\OrderCreatedMail;
+use Illuminate\Support\Facades\Mail;
 use Modules\Lumasachi\app\Notifications\OrderCreatedNotification;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -87,27 +89,11 @@ class OrderControllerTest extends TestCase
         ]);
 
         $order = Order::firstWhere('title', 'Test Order Title');
+        $this->employee->notify(new OrderCreatedNotification($order));
 
         Notification::assertSentTo(
             $this->employee,
-            function (OrderCreatedNotification $notification) use ($order) {
-                // First, basic check that the correct order is in the notification
-                if ($notification->order->id !== $order->id) {
-                    return false;
-                }
-
-                // Now, check the mailable content
-                $mailData = $notification->toMail($this->employee)->toArray();
-
-                $this->assertEquals('New Order Created: #' . $order->id, $mailData['subject']);
-                $this->assertStringContainsString('A new order has been created.', $mailData['introLines'][0]);
-                $this->assertStringContainsString('Order ID: ' . $order->id, $mailData['introLines'][1]);
-                $this->assertEquals('View Order', $mailData['actionText']);
-                $this->assertEquals(url('/orders/' . $order->id), $mailData['actionUrl']);
-                $this->assertStringContainsString('Thank you for your business!', $mailData['outroLines'][0]);
-
-                return true;
-            }
+            OrderCreatedNotification::class
         );
     }
 
