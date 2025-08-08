@@ -20,19 +20,6 @@ final class DatabaseSeederTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Setup the test environment.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Run migrations without seeding
-        $this->artisan('migrate:fresh');
-    }
-
-    /**
      * Test that the seeder creates correct user hierarchy
      */
     #[Test]
