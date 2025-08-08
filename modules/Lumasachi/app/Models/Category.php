@@ -55,6 +55,20 @@ class Category extends Model
     }
 
     /**
+     * Scope a query to only include categories for a given company.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $companyId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForCompany($query, $companyId)
+    {
+        return $query->whereHas('creator', function ($q) use ($companyId) {
+            $q->where('company_id', $companyId);
+        });
+    }
+
+    /**
      * Get the orders for the category.
      */
     public function orders(): HasMany

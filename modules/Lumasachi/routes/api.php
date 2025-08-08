@@ -13,12 +13,17 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use Modules\Lumasachi\app\Http\Controllers\CategoryController;
 use Modules\Lumasachi\app\Http\Controllers\OrderController;
 use Modules\Lumasachi\app\Http\Controllers\OrderHistoryController;
 use Modules\Lumasachi\app\Http\Controllers\AttachmentController;
 use Modules\Lumasachi\app\Http\Controllers\HealthController;
 
 Route::group(['prefix' => 'v1'], function () {
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->middleware('auth:sanctum')
+        ->name('logout');
+
     Route::get('/user/{user}', function (Request $request, User $user) {
         return response()->json([
             'user_id' => $user->id,
@@ -55,9 +60,6 @@ Route::group(['prefix' => 'v1'], function () {
             ->name('verification.send');
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
-        Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-            ->name('logout');
     });
 
     Route::post('/sanctum/token', function (Request $request) {
@@ -82,6 +84,13 @@ Route::group(['prefix' => 'v1'], function () {
         }
 
         return $user->createToken($request->device_name)->plainTextToken;
+    });
+
+    // Category Routes
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::post('/bulk', [CategoryController::class, 'storeBulk']);
+        Route::delete('/{category}', [CategoryController::class, 'destroy'])->middleware('can:delete,category');
     });
 
     // Order History Routes
