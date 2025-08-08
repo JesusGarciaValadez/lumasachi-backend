@@ -4,7 +4,7 @@ namespace Modules\Lumasachi\app\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
+use Modules\Lumasachi\app\Mail\OrderCreatedMail;
 use Illuminate\Notifications\Notification;
 use Modules\Lumasachi\app\Models\Order;
 
@@ -33,14 +33,10 @@ class OrderCreatedNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(object $notifiable): OrderCreatedMail
     {
-        return (new MailMessage)
-            ->subject('New Order Created: #' . $this->order->id)
-            ->line('A new order has been created.')
-            ->line('Order ID: ' . $this->order->id)
-            ->action('View Order', url('/orders/' . $this->order->id))
-            ->line('Thank you for your business!');
+        return (new OrderCreatedMail($this->order))
+            ->to($notifiable->email);
     }
 
     /**

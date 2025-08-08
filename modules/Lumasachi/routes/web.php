@@ -13,3 +13,9 @@ Route::get('dashboard', function () {
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('orders/{order}', function (Modules\Lumasachi\app\Models\Order $order) {
+        return $order->toArray();
+    })->name('orders.show');
+});
