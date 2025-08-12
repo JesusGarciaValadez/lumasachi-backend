@@ -13,9 +13,9 @@ class OrderObserver
      */
     public function created(Order $order): void
     {
-        // Notify the user who created the order
-        if ($order->createdBy) {
-            $order->createdBy->notify(new OrderCreatedNotification($order));
+        // Notify the customer of the order
+        if ($order->customer) {
+            $order->customer->notify(new OrderCreatedNotification($order));
         }
     }
 

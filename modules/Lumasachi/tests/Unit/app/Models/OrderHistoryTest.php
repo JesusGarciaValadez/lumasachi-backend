@@ -345,7 +345,8 @@ final class OrderHistoryTest extends TestCase
         // Create an order
         $order = Order::factory()->create([
             'customer_id' => $customer->id,
-            'created_by' => $customer->id
+            'created_by' => $customer->id,
+            'assigned_to' => $employee->id
         ]);
 
         // Create order history

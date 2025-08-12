@@ -15,30 +15,21 @@ final class OrderFactory extends Factory
 
     public function definition()
     {
+        $userId = User::factory()->create()->id;
+
         return [
             'customer_id' => User::factory(),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
-            'status' => $this->faker->randomElement([
-                OrderStatus::OPEN->value,
-                OrderStatus::IN_PROGRESS->value,
-                OrderStatus::READY_FOR_DELIVERY->value,
-                OrderStatus::DELIVERED->value,
-                OrderStatus::PAID->value,
-            ]),
-            'priority' => $this->faker->randomElement([
-                OrderPriority::LOW->value,
-                OrderPriority::NORMAL->value,
-                OrderPriority::HIGH->value,
-                OrderPriority::URGENT->value,
-            ]),
+            'status' => $this->faker->randomElement(OrderStatus::cases()),
+            'priority' => $this->faker->randomElement(OrderPriority::cases()),
             'category_id' => Category::factory(),
             'estimated_completion' => $this->faker->dateTimeBetween('now', '+30 days'),
             'actual_completion' => null,
             'notes' => $this->faker->optional()->paragraph(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
-            'assigned_to' => $this->faker->optional()->randomElement([User::factory()]),
+            'created_by' => $userId,
+            'updated_by' => $userId,
+            'assigned_to' => $userId,
         ];
     }
 

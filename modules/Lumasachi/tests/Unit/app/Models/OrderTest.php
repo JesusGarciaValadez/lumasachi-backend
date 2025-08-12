@@ -286,15 +286,16 @@ final class OrderTest extends TestCase
             'estimated_completion' => now()->addDays(7),
             'notes' => 'Test notes',
             'created_by' => $creator->id,
-            'updated_by' => $creator->id
+            'updated_by' => $creator->id,
+            'assigned_to' => $creator->id,
         ];
 
         $order = Order::create($data);
 
         $this->assertEquals($data['title'], $order->title);
         $this->assertEquals($data['description'], $order->description);
-        $this->assertEquals($data['status'], $order->status);
-        $this->assertEquals($data['priority'], $order->priority);
+        $this->assertEquals($data['status']->value, $order->status->value);
+        $this->assertEquals($data['priority']->value, $order->priority->value);
         $this->assertEquals($data['category_id'], $order->category_id);
         $this->assertEquals($data['notes'], $order->notes);
     }
@@ -317,14 +318,15 @@ final class OrderTest extends TestCase
             'category_id' => \Modules\Lumasachi\app\Models\Category::factory()->create()->id,
             'estimated_completion' => now()->addDays(3),
             'created_by' => $creator->id,
-            'updated_by' => $creator->id
+            'updated_by' => $creator->id,
+            'assigned_to' => $creator->id,
         ]);
 
         $this->assertInstanceOf(Order::class, $order);
         $this->assertNotNull($order->id);
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);
-        $this->assertNull($order->assigned_to);
+        $this->assertEquals($creator->id, $order->assigned_to);
     }
 
     /**

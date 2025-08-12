@@ -29,19 +29,21 @@ final class OrderController extends Controller
         $user = $request->user();
 
         // Orders must be filtered by the user's role if isCustomer
-        $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'category'])
-            ->whereIn('status', [
-                OrderStatus::OPEN->value,
-                OrderStatus::IN_PROGRESS->value,
-                OrderStatus::READY_FOR_DELIVERY->value,
-                OrderStatus::NOT_PAID->value,
-            ])
+        $ordersQuery = Order::with(['customer', 'assignedTo', 'createdBy', 'category'])
             ->when($user->isCustomer(), function ($query) use ($user) {
                 $query->where('customer_id', $user->id);
             })
+            ->when($user->isEmployee(), function ($query) use ($user) {
+                $query->where('assigned_to', $user->id)
+                    ->orWhere('created_by', $user->id);
+            })
+            ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) use ($user) {
+                // Get all the orders
+                $query->get();
+            })
             ->get();
 
-        return response()->json(OrderResource::collection($orders));
+        return response()->json(OrderResource::collection($ordersQuery));
     }
 
     /**

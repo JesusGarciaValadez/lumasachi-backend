@@ -42,6 +42,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse | JsonResponse
     {
+        if ($request->expectsJson()) {
+            $request->user()->tokens()->delete();
+
+            return response()->json(['message' => 'Logout successful'], 200);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

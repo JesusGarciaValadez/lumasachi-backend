@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\UserType;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -331,7 +332,7 @@ final class CreateUsersTableTest extends TestCase
             'phone_number' => '+1234567890',
             'is_active' => true,
             'notes' => 'VIP customer with special requirements',
-            'type' => 'premium',
+            'type' => UserType::INDIVIDUAL->value,
             'preferences' => 'email_notifications',
             'remember_token' => 'test_token_123',
         ]);

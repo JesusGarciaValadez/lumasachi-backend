@@ -47,7 +47,7 @@ class UpdateOrderRequest extends FormRequest
             'estimated_completion' => 'nullable|date',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
-            'assigned_to' => 'nullable|exists:users,id'
+            'assigned_to' => 'sometimes|exists:users,id'
         ];
     }
 

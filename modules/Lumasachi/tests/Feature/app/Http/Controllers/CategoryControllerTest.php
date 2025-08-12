@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Lumasachi\Tests\Feature\App\Http\Controllers;
+namespace Modules\Lumasachi\tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -42,7 +42,11 @@ class CategoryControllerTest extends TestCase
 
         // Categories for another company
         $otherCompany = Company::factory()->create();
-        $otherUser = User::factory()->create(['company_id' => $otherCompany->id]);
+        $otherUser = User::factory()->create([
+            'company_id' => $otherCompany->id,
+            'role' => UserRole::EMPLOYEE->value,
+            'is_active' => true,
+        ]);
         Category::factory()->count(2)->create([
             'created_by' => $otherUser->id,
             'updated_by' => $otherUser->id,
@@ -61,7 +65,11 @@ class CategoryControllerTest extends TestCase
 
         // Categories for another company
         $otherCompany = Company::factory()->create();
-        $otherUser = User::factory()->create(['company_id' => $otherCompany->id]);
+        $otherUser = User::factory()->create([
+            'company_id' => $otherCompany->id,
+            'role' => UserRole::EMPLOYEE,
+            'is_active' => true,
+        ]);
         Category::factory()->count(5)->create([
             'created_by' => $otherUser->id,
             'updated_by' => $otherUser->id,

@@ -64,7 +64,7 @@ final class OrderPolicyTest extends TestCase
         ]);
 
         $orderCreatedByEmployee = Order::factory()->create([
-            'assigned_to' => null,
+            'assigned_to' => $employee->id,
             'customer_id' => $customer->id,
             'created_by' => $employee->id,
         ]);
@@ -213,7 +213,7 @@ final class OrderPolicyTest extends TestCase
         $deletedOrderAssignedToEmployee->delete();
 
         $deletedOrderCreatedByEmployee = Order::factory()->create([
-            'assigned_to' => null,
+            'assigned_to' => $employee1->id,
             'customer_id' => $customer->id,
             'created_by' => $employee1->id,
         ]);
@@ -259,7 +259,7 @@ final class OrderPolicyTest extends TestCase
         $deletedOrderAssignedToEmployee->delete();
 
         $deletedOrderCreatedByEmployee = Order::factory()->create([
-            'assigned_to' => null,
+            'assigned_to' => $employee1->id,
             'customer_id' => $customer->id,
             'created_by' => $employee1->id,
         ]);
@@ -297,7 +297,7 @@ final class OrderPolicyTest extends TestCase
         // Create an order that goes through different statuses
         $order = Order::factory()->create([
             'status' => OrderStatus::OPEN->value,
-            'assigned_to' => null,
+            'assigned_to' => $admin->id,
             'customer_id' => $customer->id,
             'created_by' => $admin->id,
         ]);

@@ -24,7 +24,7 @@ namespace App\Models{
  * @property string|null $phone_number
  * @property bool $is_active
  * @property string|null $notes
- * @property string|null $type
+ * @property \Modules\Lumasachi\app\Enums\UserType|null $type
  * @property string|null $preferences
  * @property string|null $remember_token
  * @property \Carbon\CarbonImmutable|null $created_at

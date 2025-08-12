@@ -37,6 +37,7 @@ final class LumasachiServiceProvider extends BaseServiceProvider
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'lumasachi');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views/vendor/mail/html', 'mail');
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
         $this->commands([
             //

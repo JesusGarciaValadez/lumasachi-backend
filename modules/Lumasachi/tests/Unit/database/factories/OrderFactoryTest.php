@@ -63,11 +63,16 @@ final class OrderFactoryTest extends TestCase
             OrderStatus::READY_FOR_DELIVERY->value,
             OrderStatus::DELIVERED->value,
             OrderStatus::PAID->value,
+            OrderStatus::RETURNED->value,
+            OrderStatus::NOT_PAID->value,
+            OrderStatus::CANCELLED->value,
+            OrderStatus::ON_HOLD->value,
+            OrderStatus::COMPLETED->value,
         ];
 
         $order = Order::factory()->make();
 
-        $this->assertContains($order->status, $validStatuses);
+        $this->assertContains($order->status->value, $validStatuses);
     }
 
     /**
@@ -85,7 +90,7 @@ final class OrderFactoryTest extends TestCase
 
         $order = Order::factory()->make();
 
-        $this->assertContains($order->priority, $validPriorities);
+        $this->assertContains($order->priority->value, $validPriorities);
     }
 
     /**
@@ -109,7 +114,7 @@ final class OrderFactoryTest extends TestCase
     {
         $order = Order::factory()->completed()->create();
 
-        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
         $this->assertNotNull($order->actual_completion);
         $this->assertInstanceOf(CarbonImmutable::class, $order->actual_completion);
         $this->assertLessThanOrEqual(Carbon::now(), $order->actual_completion);
@@ -124,7 +129,7 @@ final class OrderFactoryTest extends TestCase
     {
         $order = Order::factory()->open()->create();
 
-        $this->assertEquals(OrderStatus::OPEN->value, $order->status);
+        $this->assertEquals(OrderStatus::OPEN->value, $order->status->value);
         $this->assertNull($order->actual_completion);
     }
 
@@ -194,8 +199,8 @@ final class OrderFactoryTest extends TestCase
         ]);
 
         $this->assertEquals($customTitle, $order->title);
-        $this->assertEquals($customStatus, $order->status);
-        $this->assertEquals($customPriority, $order->priority);
+        $this->assertEquals($customStatus, $order->status->value);
+        $this->assertEquals($customPriority, $order->priority->value);
     }
 
     /**
@@ -277,9 +282,9 @@ final class OrderFactoryTest extends TestCase
             ->completed()
             ->create(['priority' => OrderPriority::URGENT->value]);
 
-        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
         $this->assertNotNull($order->actual_completion);
-        $this->assertEquals(OrderPriority::URGENT->value, $order->priority);
+        $this->assertEquals(OrderPriority::URGENT->value, $order->priority->value);
     }
 
     /**

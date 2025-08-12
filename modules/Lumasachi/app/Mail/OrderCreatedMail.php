@@ -8,7 +8,10 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Support\Facades\Log;
 use Modules\Lumasachi\app\Models\Order;
+use Spatie\Ray\Ray;
 
 class OrderCreatedMail extends Mailable implements ShouldQueue
 {
@@ -21,7 +24,6 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
         public readonly Order $order
     )
     {
-        //
     }
 
     /**
@@ -29,8 +31,10 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        ray('OrderCreatedMail', ['order' => $this->order]);
         return new Envelope(
             subject: 'New Order Created: #' . $this->order->id,
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 

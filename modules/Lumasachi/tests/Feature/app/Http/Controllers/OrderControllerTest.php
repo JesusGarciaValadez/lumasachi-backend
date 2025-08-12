@@ -4,6 +4,7 @@ namespace Modules\Lumasachi\tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Modules\Lumasachi\app\Models\Company;
 use Modules\Lumasachi\app\Models\Order;
 use Modules\Lumasachi\app\Models\Category;
 use App\Models\User;
@@ -20,20 +21,32 @@ class OrderControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $superAdmin;
-    protected $admin;
-    protected $employee;
-    protected $customer;
+    protected Company $company;
+    protected User $superAdmin;
+    protected User $admin;
+    protected User $employee;
+    protected User $customer;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->company = Company::factory()->create([
+            'name' => 'Test Company',
+            'email' => 'test@company.com',
+            'phone' => '1234567890',
+            'address' => '123 Main St, Anytown, USA',
+            'city' => 'Anytown',
+            'state' => 'CA',
+            'postal_code' => '12345',
+            'country' => 'USA',
+            'is_active' => true,
+        ]);
         // Create users with different roles for testing
-        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
-        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
-        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
+        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'company_id' => $this->company->id]);
+        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'company_id' => $this->company->id]);
+        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'company_id' => $this->company->id]);
+        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
     }
 
     /**
@@ -45,17 +58,25 @@ class OrderControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         // Create 5 orders with "active" statuses that should be returned
-        Order::factory()->count(5)->create(['status' => OrderStatus::OPEN]);
+        Order::factory()->count(5)->create([
+            'customer_id' => $this->customer->id,
+            'status' => OrderStatus::OPEN->value,
+            'assigned_to' => $this->employee->id,
+            'created_by' => $this->admin->id,
+        ]);
 
-        // Create 3 orders with "inactive" statuses that should NOT be returned
-        Order::factory()->count(3)->create(['status' => OrderStatus::CANCELLED]);
-        Order::factory()->count(2)->create(['status' => OrderStatus::DELIVERED]);
-
+        // Create orders for another employee that should not be returned
+        $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        Order::factory()->count(5)->create([
+            'status' => OrderStatus::COMPLETED->value,
+            'assigned_to' => $otherEmployee->id,
+            'created_by' => $this->admin->id,
+        ]);
 
         $response = $this->getJson('/api/v1/orders');
 
         $response->assertOk()
-            ->assertJsonCount(5);
+            ->assertJsonCount(10);
     }
 
     /**

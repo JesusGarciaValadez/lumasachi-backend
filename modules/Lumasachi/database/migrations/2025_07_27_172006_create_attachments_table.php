@@ -14,8 +14,8 @@ return new class extends Migration
     {
         Schema::create('attachments', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('attachable_type')->index();
-            $table->uuid('attachable_id');
+            $table->uuidMorphs('attachable');
+            $table->index(['attachable_type', 'attachable_id'], 'attachable_index');
             $table->string('file_name');
             $table->string('file_path');
             $table->integer('file_size');
@@ -25,8 +25,6 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnUpdate();
             $table->timestamps();
-
-            $table->index(['attachable_type', 'attachable_id'], 'attachable_index');
         });
     }
 
