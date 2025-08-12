@@ -177,7 +177,8 @@ final class CreateOrdersTableTest extends TestCase
             'estimated_completion' => now(),
             'actual_completion' => now(),
             'notes' => 'Test notes.',
-            'created_by' => $user->id
+            'created_by' => $user->id,
+            'assigned_to' => $user->id,
         ]);
 
         $this->assertDatabaseHas('orders', [
@@ -207,7 +208,7 @@ final class CreateOrdersTableTest extends TestCase
             'notes' => null,
             'created_by' => $creator->id,
             'updated_by' => null,
-            'assigned_to' => null
+            'assigned_to' => $creator->id,
         ]);
 
         $this->assertNull($order->category_id);
@@ -215,7 +216,7 @@ final class CreateOrdersTableTest extends TestCase
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);
         $this->assertNull($order->updated_by);
-        $this->assertNull($order->assigned_to);
+        $this->assertEquals($creator->id, $order->assigned_to);
     }
 
     /**
@@ -230,7 +231,8 @@ final class CreateOrdersTableTest extends TestCase
             'description',
             'status',
             'priority',
-            'created_by'
+            'created_by',
+            'assigned_to',
         ];
 
         $user = User::factory()->create();
@@ -243,7 +245,8 @@ final class CreateOrdersTableTest extends TestCase
                     'description' => 'Test Description',
                     'status' => OrderStatus::OPEN->value,
                     'priority' => OrderPriority::NORMAL->value,
-                    'created_by' => $user->id
+                    'created_by' => $user->id,
+                    'assigned_to' => $user->id,
                 ];
 
                 // Set the current field to null
@@ -314,7 +317,8 @@ final class CreateOrdersTableTest extends TestCase
                 'description' => 'Testing status value: ' . $status,
                 'status' => $status,
                 'priority' => OrderPriority::NORMAL->value,
-                'created_by' => $user->id
+                'created_by' => $user->id,
+                'assigned_to' => $user->id,
             ]);
 
             $this->assertDatabaseHas('orders', [
@@ -340,7 +344,8 @@ final class CreateOrdersTableTest extends TestCase
                 'description' => 'Testing priority value: ' . $priority,
                 'status' => OrderStatus::OPEN->value,
                 'priority' => $priority,
-                'created_by' => $user->id
+                'created_by' => $user->id,
+                'assigned_to' => $user->id,
             ]);
 
             $this->assertDatabaseHas('orders', [
@@ -397,7 +402,8 @@ final class CreateOrdersTableTest extends TestCase
             'description' => 'Testing foreign key cascade behaviors',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
-            'created_by' => $employee->id
+            'created_by' => $employee->id,
+            'assigned_to' => $employee->id
         ]);
 
         // The migration specifies nullOnDelete for customer_id

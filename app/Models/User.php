@@ -47,9 +47,9 @@ class User extends Authenticatable
      * @var array
      */
     protected $attributes = [
-        'role' => UserRole::EMPLOYEE,
+        'role' => UserRole::EMPLOYEE->value,
         'is_active' => false,
-        'type' => UserType::INDIVIDUAL,
+        'type' => UserType::INDIVIDUAL->value,
         'company_id' => null,
     ];
 
@@ -75,39 +75,40 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'role' => UserRole::class,
+            'type' => UserType::class,
         ];
     }
 
     // Scopes for easy queries
     public function scopeCustomers($query)
     {
-        return $query->where('role', UserRole::CUSTOMER);
+        return $query->whereHas('role', static fn($query) => $query->where('role', UserRole::CUSTOMER->value));
     }
 
     public function scopeEmployees($query)
     {
-        return $query->where('role', UserRole::EMPLOYEE);
+        return $query->whereHas('role', static fn($query) => $query->where('role', UserRole::EMPLOYEE->value));
     }
 
     // Convenience methods
     public function isCustomer(): bool
     {
-        return $this->role === UserRole::CUSTOMER;
+        return $this->role === UserRole::CUSTOMER->value;
     }
 
     public function isEmployee(): bool
     {
-        return $this->role === UserRole::EMPLOYEE;
+        return $this->role === UserRole::EMPLOYEE->value;
     }
 
     public function isAdministrator(): bool
     {
-        return $this->role === UserRole::ADMINISTRATOR;
+        return $this->role === UserRole::ADMINISTRATOR->value;
     }
 
     public function isSuperAdministrator(): bool
     {
-        return $this->role === UserRole::SUPER_ADMINISTRATOR;
+        return $this->role === UserRole::SUPER_ADMINISTRATOR->value;
     }
 
     // Accessors

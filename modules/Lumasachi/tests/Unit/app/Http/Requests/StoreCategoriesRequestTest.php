@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Lumasachi\Tests\Unit\App\Http\Requests;
+namespace Modules\Lumasachi\tests\Unit\app\Http\Requests;
 
 use Illuminate\Support\Facades\Validator;
 use Modules\Lumasachi\app\Http\Requests\StoreCategoriesRequest;

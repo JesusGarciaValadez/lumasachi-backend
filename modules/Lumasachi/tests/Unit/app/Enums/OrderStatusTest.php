@@ -8,6 +8,7 @@ use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Models\Order;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use ValueError;
 
 final class OrderStatusTest extends TestCase
 {
@@ -21,7 +22,7 @@ final class OrderStatusTest extends TestCase
     {
         $statuses = OrderStatus::cases();
 
-        $this->assertCount(8, $statuses);
+        $this->assertCount(10, $statuses);
 
         $expectedStatuses = [
             'OPEN' => 'Open',
@@ -31,7 +32,9 @@ final class OrderStatusTest extends TestCase
             'PAID' => 'Paid',
             'RETURNED' => 'Returned',
             'NOT_PAID' => 'Not paid',
-            'CANCELLED' => 'Cancelled'
+            'CANCELLED' => 'Cancelled',
+            'ON_HOLD' => 'On hold',
+            'COMPLETED' => 'Completed',
         ];
 
         foreach ($statuses as $status) {
@@ -49,8 +52,8 @@ final class OrderStatusTest extends TestCase
         $statuses = OrderStatus::getStatuses();
 
         $this->assertIsArray($statuses);
-        $this->assertCount(8, $statuses);
-        $this->assertEquals(['Open', 'In Progress', 'Ready for delivery', 'Delivered', 'Paid', 'Returned', 'Not paid', 'Cancelled'], $statuses);
+        $this->assertCount(10, $statuses);
+        $this->assertEquals(['Open', 'In Progress', 'Ready for delivery', 'Completed', 'Delivered', 'Paid', 'Returned', 'Not paid', 'On hold', 'Cancelled'], $statuses);
     }
 
     /**
@@ -92,13 +95,14 @@ final class OrderStatusTest extends TestCase
                 'customer_id' => $user->id,
                 'title' => 'Test Order with ' . $status->value . ' status',
                 'description' => 'Testing status: ' . $status->value,
-                'status' => $status->value,
+                'status' => $status,
                 'priority' => 'Normal',
-                'created_by' => $user->id
+                'created_by' => $user->id,
+                'assigned_to' => $user->id
             ]);
 
             $this->assertNotNull($order);
-            $this->assertEquals($status->value, $order->status);
+            $this->assertEquals($status->value, $order->status->value);
 
             // Verify it's stored correctly in the database
             $this->assertDatabaseHas('orders', [
@@ -114,7 +118,7 @@ final class OrderStatusTest extends TestCase
     #[Test]
     public function it_checks_if_invalid_status_values_are_rejected(): void
     {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(ValueError::class);
 
         $user = User::factory()->create();
 
@@ -124,7 +128,8 @@ final class OrderStatusTest extends TestCase
             'description' => 'This should fail',
             'status' => 'InvalidStatus', // This should fail
             'priority' => 'Normal',
-            'created_by' => $user->id
+            'created_by' => $user->id,
+            'assigned_to' => $user->id
         ]);
     }
 
@@ -139,12 +144,12 @@ final class OrderStatusTest extends TestCase
         $deliveredStatus = OrderStatus::DELIVERED;
 
         // Test same status comparison
-        $this->assertTrue($openStatus === OrderStatus::OPEN);
-        $this->assertTrue($inProgressStatus === OrderStatus::IN_PROGRESS);
+        $this->assertTrue($openStatus->value === OrderStatus::OPEN->value);
+        $this->assertTrue($inProgressStatus->value === OrderStatus::IN_PROGRESS->value);
 
         // Test different status comparison
-        $this->assertFalse($openStatus === $deliveredStatus);
-        $this->assertFalse($inProgressStatus === $deliveredStatus);
+        $this->assertFalse($openStatus->value === $deliveredStatus->value);
+        $this->assertFalse($inProgressStatus->value === $deliveredStatus->value);
     }
 
     /**
@@ -189,9 +194,10 @@ final class OrderStatusTest extends TestCase
             'customer_id' => $user->id,
             'title' => 'Test Order for JSON',
             'description' => 'Testing JSON serialization',
-            'status' => OrderStatus::PAID->value,
+            'status' => OrderStatus::PAID,
             'priority' => 'Normal',
-            'created_by' => $user->id
+            'created_by' => $user->id,
+            'assigned_to' => $user->id
         ]);
 
         $jsonData = $order->toJson();
@@ -214,12 +220,13 @@ final class OrderStatusTest extends TestCase
             $order->customer_id = $user->id;
             $order->title = 'Order with ' . $status->value;
             $order->description = 'Testing enum value assignment';
-            $order->status = $status->value;
+            $order->status = $status;
             $order->priority = 'Normal';
             $order->created_by = $user->id;
+            $order->assigned_to = $user->id;
             $order->save();
 
-            $this->assertEquals($status->value, $order->fresh()->status);
+            $this->assertEquals($status->value, $order->fresh()->status->value);
         }
     }
 
@@ -239,4 +246,3 @@ final class OrderStatusTest extends TestCase
         );
     }
 }
-

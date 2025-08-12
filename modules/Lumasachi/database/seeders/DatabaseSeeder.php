@@ -25,7 +25,7 @@ final class DatabaseSeeder extends Seeder
     {
         // Seed companies first
         $this->call(CompanySeeder::class);
-        
+
         // Seed categories
         $this->call(CategorySeeder::class);
 
@@ -201,7 +201,7 @@ final class DatabaseSeeder extends Seeder
             'estimated_completion' => Carbon::now()->addDays(14),
             'created_by' => $businessCustomer2->id,
             'updated_by' => $admin->id,
-            'assigned_to' => null,
+            'assigned_to' => $admin->id,
         ]);
 
         // Order 5: Cancelled order
@@ -215,12 +215,14 @@ final class DatabaseSeeder extends Seeder
             'estimated_completion' => Carbon::now()->addDays(10),
             'created_by' => $customer1->id,
             'updated_by' => $admin->id,
-            'assigned_to' => null, // Cancelled orders shouldn't have assigned employees
+            'assigned_to' => $admin->id, // Cancelled orders shouldn't have assigned employees
             'notes' => 'Customer cancelled due to budget constraints',
         ]);
 
         // Create more random orders
-        Order::factory()->count(10)->create();
+        Order::factory()->count(10)->create([
+            'assigned_to' => User::factory(),
+        ]);
 
         // Create Order History entries
 
@@ -348,7 +350,7 @@ final class DatabaseSeeder extends Seeder
         ]);
 
         // Additional diverse history entries for various orders
-        
+
         // Title change example
         OrderHistory::factory()->create([
             'order_id' => $order1->id,
@@ -396,7 +398,7 @@ final class DatabaseSeeder extends Seeder
         // Category change example
         $developmentCategory = Category::where('name', 'Desarrollo')->first();
         $consultingCategory = Category::where('name', 'Consultoría')->first();
-        
+
         if ($developmentCategory && $consultingCategory) {
             OrderHistory::factory()->create([
                 'order_id' => $order4->id,
@@ -477,35 +479,35 @@ final class DatabaseSeeder extends Seeder
         // Create Attachments
 
         // Attachments for Order 1
-        Attachment::factory()->pdf()->forOrder($order1)->create([
+        Attachment::factory()->pdf()->for($order1, 'attachable')->create([
             'file_name' => 'website_requirements.pdf',
             'uploaded_by' => $businessCustomer1->id,
         ]);
 
-        Attachment::factory()->image()->forOrder($order1)->create([
+        Attachment::factory()->image()->for($order1, 'attachable')->create([
             'file_name' => 'design_mockup_v1.png',
             'uploaded_by' => $employee1->id,
         ]);
 
         // Attachments for Order 2
-        Attachment::factory()->pdf()->forOrder($order2)->create([
+        Attachment::factory()->pdf()->for($order2, 'attachable')->create([
             'file_name' => 'business_card_design_final.pdf',
             'uploaded_by' => $employee2->id,
         ]);
 
         // Attachments for Order 3
-        Attachment::factory()->image()->forOrder($order3)->create([
+        Attachment::factory()->image()->for($order3, 'attachable')->create([
             'file_name' => 'logo_final.png',
             'uploaded_by' => $employee3->id,
         ]);
 
-        Attachment::factory()->pdf()->forOrder($order3)->create([
+        Attachment::factory()->pdf()->for($order3, 'attachable')->create([
             'file_name' => 'brand_guidelines.pdf',
             'file_size' => 2097152, // 2MB
             'uploaded_by' => $employee3->id,
         ]);
 
-        Attachment::factory()->spreadsheet()->forOrder($order3)->create([
+        Attachment::factory()->spreadsheet()->for($order3, 'attachable')->create([
             'file_name' => 'color_specifications.xlsx',
             'uploaded_by' => $employee3->id,
         ]);
@@ -517,7 +519,7 @@ final class DatabaseSeeder extends Seeder
             ->first();
 
         if ($paymentHistory) {
-            Attachment::factory()->pdf()->forOrderHistory($paymentHistory)->create([
+            Attachment::factory()->pdf()->for($paymentHistory, 'attachable')->create([
                 'file_name' => 'payment_receipt.pdf',
                 'uploaded_by' => $admin->id,
             ]);
@@ -528,7 +530,7 @@ final class DatabaseSeeder extends Seeder
         foreach ($randomOrders as $order) {
             Attachment::factory()
                 ->count(rand(1, 3))
-                ->forOrder($order)
+                ->for($order, 'attachable')
                 ->create();
         }
 

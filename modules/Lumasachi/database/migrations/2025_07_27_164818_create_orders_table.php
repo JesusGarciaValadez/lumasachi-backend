@@ -21,14 +21,17 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
-            $table->string('title');
-            $table->text('description');
-            $table->enum('status', OrderStatus::getStatuses());
-            $table->enum('priority', OrderPriority::getPriorities());
             $table->foreignId('category_id')
                 ->nullable()
                 ->constrained('categories')
                 ->nullOnDelete();
+            $table->foreignId('assigned_to')
+                ->constrained('users')
+                ->cascadeOnUpdate();
+            $table->string('title');
+            $table->text('description');
+            $table->enum('status', OrderStatus::getStatuses());
+            $table->enum('priority', OrderPriority::getPriorities());
             $table->timestamp('estimated_completion')->nullable();
             $table->timestamp('actual_completion')->nullable();
             $table->text('notes')->nullable();
@@ -36,10 +39,6 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnUpdate();
             $table->foreignId('updated_by')
-                ->nullable()
-                ->constrained('users')
-                ->cascadeOnUpdate();
-            $table->foreignId('assigned_to')
                 ->nullable()
                 ->constrained('users')
                 ->cascadeOnUpdate();

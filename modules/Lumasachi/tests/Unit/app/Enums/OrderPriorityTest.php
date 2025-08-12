@@ -8,6 +8,7 @@ use Modules\Lumasachi\app\Enums\OrderPriority;
 use Modules\Lumasachi\app\Models\Order;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use ValueError;
 
 final class OrderPriorityTest extends TestCase
 {
@@ -85,12 +86,13 @@ final class OrderPriorityTest extends TestCase
                 'title' => 'Test Order with ' . $priority->value . ' priority',
                 'description' => 'Testing priority: ' . $priority->value,
                 'status' => 'Open',
-                'priority' => $priority->value,
-                'created_by' => $user->id
+                'priority' => $priority,
+                'created_by' => $user->id,
+                'assigned_to' => $user->id
             ]);
 
             $this->assertNotNull($order);
-            $this->assertEquals($priority->value, $order->priority);
+            $this->assertEquals($priority->value, $order->priority->value);
 
             // Verify it's stored correctly in the database
             $this->assertDatabaseHas('orders', [
@@ -106,7 +108,7 @@ final class OrderPriorityTest extends TestCase
     #[Test]
     public function it_checks_invalid_priority_values_are_rejected()
     {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(ValueError::class);
 
         $user = User::factory()->create();
 
@@ -116,7 +118,8 @@ final class OrderPriorityTest extends TestCase
             'description' => 'This should fail',
             'status' => 'Open',
             'priority' => 'InvalidPriority', // This should fail
-            'created_by' => $user->id
+            'created_by' => $user->id,
+            'assigned_to' => $user->id
         ]);
     }
 
@@ -182,8 +185,9 @@ final class OrderPriorityTest extends TestCase
             'title' => 'Test Order for JSON',
             'description' => 'Testing JSON serialization',
             'status' => 'Open',
-            'priority' => OrderPriority::HIGH->value,
-            'created_by' => $user->id
+            'priority' => OrderPriority::HIGH,
+            'created_by' => $user->id,
+            'assigned_to' => $user->id
         ]);
 
         $jsonData = $order->toJson();
@@ -207,11 +211,12 @@ final class OrderPriorityTest extends TestCase
             $order->title = 'Order with ' . $priority->value;
             $order->description = 'Testing enum value assignment';
             $order->status = 'Open';
-            $order->priority = $priority->value;
+            $order->priority = $priority;
             $order->created_by = $user->id;
+            $order->assigned_to = $user->id;
             $order->save();
 
-            $this->assertEquals($priority->value, $order->fresh()->priority);
+            $this->assertEquals($priority->value, $order->fresh()->priority->value);
         }
     }
 

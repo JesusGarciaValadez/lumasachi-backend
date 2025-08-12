@@ -35,7 +35,7 @@ class UserFactory extends Factory
             'phone_number' => fake()->phoneNumber(),
             'is_active' => fake()->boolean(),
             'notes' => fake()->text(),
-            'type' => fake()->randomElement(UserType::getTypes()),
+            'type' => fake()->randomElement(UserType::cases()),
             'preferences' => fake()->text(),
             'remember_token' => Str::random(10),
         ];

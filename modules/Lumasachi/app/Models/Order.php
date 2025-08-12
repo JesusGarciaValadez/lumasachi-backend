@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Modules\Lumasachi\app\Enums\UserRole;
+use Modules\Lumasachi\app\Enums\OrderPriority;
+use Modules\Lumasachi\app\Enums\OrderStatus;
 use Modules\Lumasachi\app\Models\OrderHistory;
 use Modules\Lumasachi\app\Models\Attachment;
 use Modules\Lumasachi\app\Traits\HasAttachments;
@@ -36,14 +38,15 @@ final class Order extends Model
 
     protected $casts = [
         'estimated_completion' => 'datetime',
-        'actual_completion' => 'datetime'
+        'actual_completion' => 'datetime',
+        'priority' => OrderPriority::class,
+        'status' => OrderStatus::class,
     ];
 
     // Relationships - Updated for unified architecture
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'customer_id')
-            ->where('role', UserRole::CUSTOMER);
+        return $this->belongsTo(User::class, 'customer_id')->where('role', UserRole::CUSTOMER->value);
     }
 
     public function createdBy(): BelongsTo

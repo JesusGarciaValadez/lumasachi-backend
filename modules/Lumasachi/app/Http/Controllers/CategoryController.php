@@ -21,7 +21,11 @@ final class CategoryController extends Controller
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $categories = Category::forCompany($user->company_id)->get();
+        $categories = Category::forCompany($user->company_id)
+            ->active()
+            ->orderBy('name', 'asc')
+            ->orderBy('description', 'asc')
+            ->get();
         return response()->json($categories);
     }
 

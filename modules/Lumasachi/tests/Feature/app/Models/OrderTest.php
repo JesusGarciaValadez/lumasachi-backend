@@ -63,14 +63,14 @@ class OrderTest extends TestCase
     #[Test]
     public function it_checks_order_status_transitions()
     {
-        $order = Order::factory()->create(['status' => OrderStatus::OPEN]);
-        $order->update(['status' => OrderStatus::IN_PROGRESS]);
+        $order = Order::factory()->create(['status' => OrderStatus::OPEN->value]);
+        $order->update(['status' => OrderStatus::IN_PROGRESS->value]);
 
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $order->status);
+        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $order->status->value);
 
-        $order->update(['status' => OrderStatus::DELIVERED]);
+        $order->update(['status' => OrderStatus::DELIVERED->value]);
 
-        $this->assertEquals(OrderStatus::DELIVERED, $order->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
     }
 
     /**
@@ -134,13 +134,19 @@ class OrderTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
 
         // Create order with employee ID as customer_id (shouldn't work with relationship)
-        $order = Order::factory()->create(['customer_id' => $employee->id]);
+        $order = Order::factory()->create([
+            'customer_id' => $employee->id,
+            'assigned_to' => User::factory()->create()->id,
+        ]);
 
         // The customer relationship should return null because employee is not a customer
         $this->assertNull($order->customer);
 
         // Create order with actual customer
-        $order2 = Order::factory()->create(['customer_id' => $customer->id]);
+        $order2 = Order::factory()->create([
+            'customer_id' => $customer->id,
+            'assigned_to' => User::factory()->create()->id,
+        ]);
         $this->assertNotNull($order2->customer);
         $this->assertEquals($customer->id, $order2->customer->id);
     }
@@ -176,12 +182,12 @@ class OrderTest extends TestCase
     {
         // Test completed state
         $completedOrder = Order::factory()->completed()->create();
-        $this->assertEquals(OrderStatus::DELIVERED->value, $completedOrder->status);
+        $this->assertEquals(OrderStatus::DELIVERED->value, $completedOrder->status->value);
         $this->assertNotNull($completedOrder->actual_completion);
 
         // Test open state
         $openOrder = Order::factory()->open()->create();
-        $this->assertEquals(OrderStatus::OPEN->value, $openOrder->status);
+        $this->assertEquals(OrderStatus::OPEN->value, $openOrder->status->value);
         $this->assertNull($openOrder->actual_completion);
     }
 
@@ -324,7 +330,7 @@ class OrderTest extends TestCase
 
         foreach ($priorities as $priority) {
             $order = Order::factory()->create(['priority' => $priority]);
-            $this->assertEquals($priority, $order->priority);
+            $this->assertEquals($priority, $order->priority->value);
         }
     }
 
@@ -342,12 +348,14 @@ class OrderTest extends TestCase
             OrderStatus::PAID->value,
             OrderStatus::RETURNED->value,
             OrderStatus::NOT_PAID->value,
-            OrderStatus::CANCELLED->value
+            OrderStatus::CANCELLED->value,
+            OrderStatus::ON_HOLD->value,
+            OrderStatus::COMPLETED->value,
         ];
 
         foreach ($statuses as $status) {
             $order = Order::factory()->create(['status' => $status]);
-            $this->assertEquals($status, $order->status);
+            $this->assertEquals($status, $order->status->value);
         }
     }
 
@@ -360,12 +368,12 @@ class OrderTest extends TestCase
         $order = Order::factory()->create([
             'actual_completion' => null,
             'notes' => null,
-            'assigned_to' => null
+            'assigned_to' => User::factory()->create()->id
         ]);
 
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);
-        $this->assertNull($order->assigned_to);
-        $this->assertNull($order->assignedTo); // relationship should also be null
+        $this->assertNotNull($order->assigned_to);
+        $this->assertNotNull($order->assignedTo);
     }
 }

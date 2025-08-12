@@ -34,7 +34,9 @@ class UpdateOrderStatusRequest extends FormRequest
                     OrderStatus::PAID->value,
                     OrderStatus::RETURNED->value,
                     OrderStatus::NOT_PAID->value,
-                    OrderStatus::CANCELLED->value
+                    OrderStatus::CANCELLED->value,
+                    OrderStatus::ON_HOLD->value,
+                    OrderStatus::COMPLETED->value,
                 ])
             ],
             'notes' => 'nullable|string|max:500'
@@ -65,62 +67,44 @@ class UpdateOrderStatusRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $order = $this->route('order');
-            $newStatus = $this->status;
+            $newStatus = OrderStatus::tryFrom($this->status);
 
-            // Validate status transitions
             if ($order && $newStatus) {
+                // Check if the status transition is valid
                 if (!$this->isValidStatusTransition($order->status, $newStatus)) {
-                    $validator->errors()->add('status',
-                        "Cannot transition from {$order->status} to {$newStatus}."
-                    );
+                    $validator->errors()->add('status', 'Invalid status transition.');
+                }
+
+                // Check for completion date if status is COMPLETED
+                if ($newStatus->value === OrderStatus::COMPLETED->value && empty($this->actual_completion)) {
+                    $validator->errors()->add('actual_completion', 'The actual completion date is required when the status is completed.');
                 }
             }
         });
     }
 
     /**
-     * Check if the status transition is valid
+     * Checks if the transition from the current status to the new status is valid.
      *
-     * @param string $currentStatus
-     * @param string $newStatus
+     * @param OrderStatus $currentStatus
+     * @param OrderStatus $newStatus
      * @return bool
      */
-    private function isValidStatusTransition(string $currentStatus, string $newStatus): bool
+    protected function isValidStatusTransition(OrderStatus $currentStatus, OrderStatus $newStatus)
     {
-        // Define valid transitions
-        $validTransitions = [
-            OrderStatus::OPEN->value => [
-                OrderStatus::IN_PROGRESS->value,
-                OrderStatus::CANCELLED->value
-            ],
-            OrderStatus::IN_PROGRESS->value => [
-                OrderStatus::READY_FOR_DELIVERY->value,
-                OrderStatus::CANCELLED->value
-            ],
-            OrderStatus::READY_FOR_DELIVERY->value => [
-                OrderStatus::DELIVERED->value,
-                OrderStatus::CANCELLED->value
-            ],
-            OrderStatus::DELIVERED->value => [
-                OrderStatus::PAID->value,
-                OrderStatus::RETURNED->value,
-                OrderStatus::NOT_PAID->value
-            ],
-            OrderStatus::RETURNED->value => [
-                OrderStatus::CANCELLED->value
-            ],
-            OrderStatus::NOT_PAID->value => [
-                OrderStatus::PAID->value,
-                OrderStatus::CANCELLED->value
-            ]
+        $allowedTransitions = [
+            OrderStatus::OPEN->value => [OrderStatus::IN_PROGRESS, OrderStatus::CANCELLED, OrderStatus::ON_HOLD],
+            OrderStatus::IN_PROGRESS->value => [OrderStatus::READY_FOR_DELIVERY, OrderStatus::COMPLETED, OrderStatus::CANCELLED, OrderStatus::ON_HOLD],
+            OrderStatus::ON_HOLD->value => [OrderStatus::IN_PROGRESS, OrderStatus::CANCELLED],
+            OrderStatus::READY_FOR_DELIVERY->value => [OrderStatus::DELIVERED, OrderStatus::CANCELLED],
+            OrderStatus::DELIVERED->value => [OrderStatus::PAID, OrderStatus::RETURNED, OrderStatus::NOT_PAID],
+            OrderStatus::PAID->value => [],
+            OrderStatus::RETURNED->value => [OrderStatus::CANCELLED],
+            OrderStatus::NOT_PAID->value => [OrderStatus::PAID, OrderStatus::CANCELLED],
+            OrderStatus::CANCELLED->value => [],
+            OrderStatus::COMPLETED->value => [],
         ];
 
-        // Cannot transition from final states
-        if (in_array($currentStatus, [OrderStatus::PAID->value, OrderStatus::CANCELLED->value])) {
-            return false;
-        }
-
-        return isset($validTransitions[$currentStatus]) &&
-               in_array($newStatus, $validTransitions[$currentStatus]);
+        return in_array($newStatus->value, array_map(fn($enum) => $enum->value, $allowedTransitions[$currentStatus->value] ?? []));
     }
 }

@@ -14,11 +14,11 @@ final class OrderPolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR,
-            UserRole::EMPLOYEE,
-            UserRole::CUSTOMER
+        return in_array($user->role->value, [
+            UserRole::SUPER_ADMINISTRATOR->value,
+            UserRole::ADMINISTRATOR->value,
+            UserRole::EMPLOYEE->value,
+            UserRole::CUSTOMER->value
         ]);
     }
 
@@ -27,10 +27,10 @@ final class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
-        return match ($user->role) {
-            UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR => true,
-            UserRole::EMPLOYEE => $order->assigned_to === $user->id || $order->created_by === $user->id,
-            UserRole::CUSTOMER => $order->customer_id === $user->id,
+        return match ($user->role->value) {
+            UserRole::SUPER_ADMINISTRATOR->value, UserRole::ADMINISTRATOR->value => true,
+            UserRole::EMPLOYEE->value => $order->assigned_to === $user->id || $order->created_by === $user->id,
+            UserRole::CUSTOMER->value => $order->customer_id === $user->id,
             default => false
         };
     }
@@ -40,10 +40,10 @@ final class OrderPolicy
      */
     public function create(User $user): bool
     {
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR,
-            UserRole::EMPLOYEE
+        return in_array($user->role->value, [
+            UserRole::SUPER_ADMINISTRATOR->value,
+            UserRole::ADMINISTRATOR->value,
+            UserRole::EMPLOYEE->value
         ]);
     }
 
@@ -52,9 +52,9 @@ final class OrderPolicy
      */
     public function update(User $user, Order $order): bool
     {
-        return match ($user->role) {
-            UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR => true,
-            UserRole::EMPLOYEE => $order->assigned_to === $user->id || $order->created_by === $user->id,
+        return match ($user->role->value) {
+            UserRole::SUPER_ADMINISTRATOR->value, UserRole::ADMINISTRATOR->value => true,
+            UserRole::EMPLOYEE->value => $order->assigned_to === $user->id || $order->created_by === $user->id,
             default => false
         };
     }
@@ -64,7 +64,12 @@ final class OrderPolicy
      */
     public function delete(User $user, Order $order): bool
     {
-        return $user->role === UserRole::SUPER_ADMINISTRATOR;
+        return match ($user->role->value) {
+            UserRole::SUPER_ADMINISTRATOR->value => true,
+            UserRole::ADMINISTRATOR->value => false,
+            UserRole::EMPLOYEE->value => false,
+            default => false
+        };
     }
 
     /**
@@ -72,9 +77,9 @@ final class OrderPolicy
      */
     public function restore(User $user, Order $order): bool
     {
-        return match ($user->role) {
-            UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR => true,
-            UserRole::EMPLOYEE => $order->assigned_to === $user->id || $order->created_by === $user->id,
+        return match ($user->role->value) {
+            UserRole::SUPER_ADMINISTRATOR->value, UserRole::ADMINISTRATOR->value => true,
+            UserRole::EMPLOYEE->value => $order->assigned_to === $user->id || $order->created_by === $user->id,
             default => false
         };
     }
@@ -84,9 +89,9 @@ final class OrderPolicy
      */
     public function forceDelete(User $user, Order $order): bool
     {
-        return match ($user->role) {
-            UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR => true,
-            UserRole::EMPLOYEE => $order->assigned_to === $user->id || $order->created_by === $user->id,
+        return match ($user->role->value) {
+            UserRole::SUPER_ADMINISTRATOR->value, UserRole::ADMINISTRATOR->value => true,
+            UserRole::EMPLOYEE->value => $order->assigned_to === $user->id || $order->created_by === $user->id,
             default => false
         };
     }
@@ -96,9 +101,9 @@ final class OrderPolicy
      */
     public function assign(User $user, Order $order): bool
     {
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+        return in_array($user->role->value, [
+            UserRole::SUPER_ADMINISTRATOR->value,
+            UserRole::ADMINISTRATOR->value
         ]);
     }
 }

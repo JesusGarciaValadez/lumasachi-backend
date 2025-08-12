@@ -8,6 +8,6 @@ Order ID: {{ $order->id }}
 View Order
 @endcomponent
 
-Thank you for your business!
+Thank you for your order!
 @endcomponent
 

@@ -34,9 +34,11 @@ class StoreOrderRequest extends FormRequest
                 OrderStatus::IN_PROGRESS->value,
                 OrderStatus::READY_FOR_DELIVERY->value,
                 OrderStatus::DELIVERED->value,
+                OrderStatus::COMPLETED->value,
                 OrderStatus::PAID->value,
                 OrderStatus::RETURNED->value,
                 OrderStatus::NOT_PAID->value,
+                OrderStatus::ON_HOLD->value,
                 OrderStatus::CANCELLED->value
             ]),
             'priority' => 'required|string|in:' . implode(',', [
@@ -49,7 +51,7 @@ class StoreOrderRequest extends FormRequest
             'estimated_completion' => 'nullable|date|after:today',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
-            'assigned_to' => 'nullable|exists:users,id'
+            'assigned_to' => 'required|exists:users,id'
         ];
     }
 

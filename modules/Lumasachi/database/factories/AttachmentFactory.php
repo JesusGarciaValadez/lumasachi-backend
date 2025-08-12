@@ -3,237 +3,71 @@
 namespace Modules\Lumasachi\database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Modules\Lumasachi\app\Models\Attachment;
-use Modules\Lumasachi\app\Models\Order;
-use Modules\Lumasachi\app\Models\OrderHistory;
+use Illuminate\Support\Str;
 use App\Models\User;
+use Modules\Lumasachi\app\Models\Order;
 
-final class AttachmentFactory extends Factory
+class AttachmentFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
      *
      * @var string
      */
-    protected $model = Attachment::class;
+    protected $model = \Modules\Lumasachi\app\Models\Attachment::class;
 
     /**
      * Define the model's default state.
      *
-     * @return array<string, mixed>
+     * @return array
      */
-    public function definition(): array
+    public function definition()
     {
-        // Define possible attachable types (using morphMap keys)
-        $attachableTypes = ['order', 'order_history'];
-
-        // Pick a random attachable type
-        $attachableType = $this->faker->randomElement($attachableTypes);
-
-        // Define possible file types with their extensions and mime types
-        $fileTypes = [
-            'image' => [
-                'extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
-                'mimeTypes' => Attachment::IMAGE_MIME_TYPES,
-            ],
-            'document' => [
-                'extensions' => ['doc', 'docx', 'txt'],
-                'mimeTypes' => [
-                    Attachment::MIME_DOC,
-                    Attachment::MIME_DOCX,
-                    Attachment::MIME_TXT,
-                ],
-            ],
-            'pdf' => [
-                'extensions' => ['pdf'],
-                'mimeTypes' => [Attachment::MIME_PDF],
-            ],
-            'spreadsheet' => [
-                'extensions' => ['xls', 'xlsx', 'csv'],
-                'mimeTypes' => Attachment::SPREADSHEET_MIME_TYPES,
-            ],
-            'presentation' => [
-                'extensions' => ['ppt', 'pptx'],
-                'mimeTypes' => Attachment::PRESENTATION_MIME_TYPES,
-            ],
-            'archive' => [
-                'extensions' => ['zip', 'rar'],
-                'mimeTypes' => [Attachment::MIME_ZIP, Attachment::MIME_RAR],
-            ],
-        ];
-
-        // Pick a random file type
-        $fileTypeKey = $this->faker->randomElement(array_keys($fileTypes));
-        $fileType = $fileTypes[$fileTypeKey];
-
-        // Pick random extension and mime type
-        $extension = $this->faker->randomElement($fileType['extensions']);
-        $mimeType = $this->faker->randomElement($fileType['mimeTypes']);
-
-        // Generate file name with unique identifier
-        $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $extension;
-
-        // Generate file path (simulating folder structure)
-        $year = date('Y');
-        $month = date('m');
-        $filePath = "attachments/{$year}/{$month}/" . $fileName;
-
-        // Generate file size (between 1KB and 10MB)
-        $fileSize = $this->faker->numberBetween(1024, 10485760);
+        $attachable = Order::factory()->create();
 
         return [
-            'attachable_type' => $attachableType,
-            'attachable_id' => function () use ($attachableType) {
-                // Map type to model class for factory creation
-                $modelClass = $attachableType === 'order' ? Order::class : OrderHistory::class;
-                return $modelClass::factory()->create()->id;
-            },
-            'file_name' => $fileName,
-            'file_path' => $filePath,
-            'file_size' => $fileSize,
-            'mime_type' => $mimeType,
+            'attachable_id' => $attachable->id,
+            'attachable_type' => $attachable->getMorphClass(),
+            'file_name' => $this->faker->word . '.' . $this->faker->fileExtension,
+            'file_path' => 'attachments/' . date('Y/m/d') . '/' . Str::random(40) . '.' . $this->faker->fileExtension,
+            'file_size' => $this->faker->numberBetween(100, 10000),
+            'mime_type' => $this->faker->randomElement([
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'text/plain',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]),
             'uploaded_by' => User::factory(),
         ];
     }
 
-    /**
-     * Configure the factory to create an image attachment
-     */
-    public function image(): static
-    {
-        return $this->state(function (array $attributes) {
-            $extension = $this->faker->randomElement(['jpg', 'png', 'gif', 'webp']);
-            $mimeType = $this->faker->randomElement(Attachment::IMAGE_MIME_TYPES);
-            $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $extension;
-            $year = date('Y');
-            $month = date('m');
-
-            return [
-                'file_name' => $fileName,
-                'file_path' => "attachments/{$year}/{$month}/" . $fileName,
-                'mime_type' => $mimeType,
-                'file_size' => $this->faker->numberBetween(10240, 5242880), // 10KB to 5MB
-            ];
-        });
-    }
-
-    /**
-     * Configure the factory to create a PDF attachment
-     */
-    public function pdf(): static
-    {
-        return $this->state(function (array $attributes) {
-            $fileName = $this->faker->word() . '_document_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.pdf';
-            $year = date('Y');
-            $month = date('m');
-
-            return [
-                'file_name' => $fileName,
-                'file_path' => "attachments/{$year}/{$month}/" . $fileName,
-                'mime_type' => Attachment::MIME_PDF,
-                'file_size' => $this->faker->numberBetween(51200, 10485760), // 50KB to 10MB
-            ];
-        });
-    }
-
-    /**
-     * Configure the factory to create a document attachment
-     */
-    public function document(): static
-    {
-        return $this->state(function (array $attributes) {
-            $types = [
-                ['ext' => 'docx', 'mime' => Attachment::MIME_DOCX],
-                ['ext' => 'doc', 'mime' => Attachment::MIME_DOC],
-                ['ext' => 'txt', 'mime' => Attachment::MIME_TXT],
-            ];
-
-            $type = $this->faker->randomElement($types);
-            $fileName = $this->faker->word() . '_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $type['ext'];
-            $year = date('Y');
-            $month = date('m');
-
-            return [
-                'file_name' => $fileName,
-                'file_path' => "attachments/{$year}/{$month}/" . $fileName,
-                'mime_type' => $type['mime'],
-                'file_size' => $this->faker->numberBetween(5120, 2097152), // 5KB to 2MB
-            ];
-        });
-    }
-
-    /**
-     * Configure the factory to create a spreadsheet attachment
-     */
-    public function spreadsheet(): static
-    {
-        return $this->state(function (array $attributes) {
-            $types = [
-                ['ext' => 'xlsx', 'mime' => Attachment::MIME_XLSX],
-                ['ext' => 'xls', 'mime' => Attachment::MIME_XLS],
-                ['ext' => 'csv', 'mime' => Attachment::MIME_CSV],
-            ];
-
-            $type = $this->faker->randomElement($types);
-            $fileName = $this->faker->word() . '_data_' . time() . '_' . $this->faker->unique()->randomNumber(5) . '.' . $type['ext'];
-            $year = date('Y');
-            $month = date('m');
-
-            return [
-                'file_name' => $fileName,
-                'file_path' => "attachments/{$year}/{$month}/" . $fileName,
-                'mime_type' => $type['mime'],
-                'file_size' => $this->faker->numberBetween(10240, 5242880), // 10KB to 5MB
-            ];
-        });
-    }
-
-    /**
-     * Configure the factory to create a small file
-     */
-    public function small(): static
+    public function pdf()
     {
         return $this->state(function (array $attributes) {
             return [
-                'file_size' => $this->faker->numberBetween(1024, 102400), // 1KB to 100KB
+                'mime_type' => 'application/pdf',
+                'file_name' => $this->faker->word . '.pdf',
             ];
         });
     }
 
-    /**
-     * Configure the factory to create a large file
-     */
-    public function large(): static
+    public function image()
     {
         return $this->state(function (array $attributes) {
             return [
-                'file_size' => $this->faker->numberBetween(10485760, 52428800), // 10MB to 50MB
+                'mime_type' => 'image/png',
+                'file_name' => $this->faker->word . '.png',
             ];
         });
     }
 
-    /**
-     * Configure the factory for a specific attachable model
-     */
-    public function forOrder(Order $order): static
+    public function spreadsheet()
     {
-        return $this->state(function (array $attributes) use ($order) {
+        return $this->state(function (array $attributes) {
             return [
-                'attachable_type' => 'order',
-                'attachable_id' => $order->id,
-            ];
-        });
-    }
-
-    /**
-     * Configure the factory for a specific attachable model
-     */
-    public function forOrderHistory(OrderHistory $orderHistory): static
-    {
-        return $this->state(function (array $attributes) use ($orderHistory) {
-            return [
-                'attachable_type' => 'order_history',
-                'attachable_id' => $orderHistory->id,
+                'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_name' => $this->faker->word . '.xlsx',
             ];
         });
     }

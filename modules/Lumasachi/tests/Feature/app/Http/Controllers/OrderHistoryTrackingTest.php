@@ -140,7 +140,7 @@ class OrderHistoryTrackingTest extends TestCase
 
         $category = Category::factory()->create();
         $order = Order::factory()->create([
-            'assigned_to' => null,
+            'assigned_to' => $user->id,
             'category_id' => $category->id,
             'created_by' => $user->id,
         ]);
@@ -157,7 +157,7 @@ class OrderHistoryTrackingTest extends TestCase
             ->first();
 
         $this->assertNotNull($history);
-        $this->assertNull($history->old_value);
+        $this->assertEquals($user->id, $history->old_value);
         $this->assertEquals($employee->id, $history->new_value);
     }
 
@@ -233,31 +233,19 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_setting_field_to_null(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $employee = User::factory()->create();
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
         $order = Order::factory()->create([
-            'assigned_to' => $employee->id,
             'notes' => 'Some important notes',
             'category_id' => $category->id,
         ]);
 
         $response = $this->putJson("/api/v1/orders/{$order->id}", [
-            'assigned_to' => null,
             'notes' => null,
         ]);
 
         $response->assertOk();
-
-        // Check assignment removal history
-        $assignmentHistory = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_ASSIGNED_TO)
-            ->first();
-
-        $this->assertNotNull($assignmentHistory);
-        $this->assertEquals($employee->id, $assignmentHistory->old_value);
-        $this->assertNull($assignmentHistory->new_value);
 
         // Check notes removal history
         $notesHistory = OrderHistory::where('order_id', $order->id)
@@ -267,6 +255,24 @@ class OrderHistoryTrackingTest extends TestCase
         $this->assertNotNull($notesHistory);
         $this->assertEquals('Some important notes', $notesHistory->old_value);
         $this->assertNull($notesHistory->new_value);
+    }
+
+    #[Test]
+    public function it_checks_if_assigned_to_field_cannot_be_set_to_null(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        Sanctum::actingAs($user);
+
+        $order = Order::factory()->create([
+            'assigned_to' => User::factory()->create()->id,
+        ]);
+
+        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+            'assigned_to' => null,
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['assigned_to']);
     }
 
     #[Test]

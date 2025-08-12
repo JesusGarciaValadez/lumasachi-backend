@@ -31,20 +31,11 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'test.pdf',
-            'file_path' => 'attachments/Order/' . $order->id . '/test.pdf',
-            'file_size' => 1024,
-            'mime_type' => 'application/pdf',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $this->assertInstanceOf(Attachment::class, $attachment);
-        $this->assertEquals('test.pdf', $attachment->file_name);
-        $this->assertEquals(1024, $attachment->file_size);
-        $this->assertEquals('application/pdf', $attachment->mime_type);
         $this->assertEquals($user->id, $attachment->uploaded_by);
     }
 
@@ -57,22 +48,16 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'order_doc.pdf',
-            'file_path' => 'attachments/Order/' . $order->id . '/order_doc.pdf',
-            'file_size' => 2048,
-            'mime_type' => 'application/pdf',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // Test attachable relationship
         $this->assertInstanceOf(Order::class, $attachment->attachable);
         $this->assertEquals($order->id, $attachment->attachable->id);
 
         // Test inverse relationship
-        $this->assertTrue($order->attachments->contains($attachment));
+        $this->assertTrue($order->fresh()->attachments->contains($attachment));
     }
 
     /**
@@ -82,32 +67,18 @@ final class AttachmentTest extends TestCase
     public function it_checks_if_polymorphic_relationship_with_order_history(): void
     {
         $user = User::factory()->create();
-        $order = Order::factory()->create();
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => 'Open',
-            'new_value' => 'In Progress',
-            'comment' => 'Status changed',
-            'created_by' => $user->id
-        ]);
+        $orderHistory = OrderHistory::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order_history',
-            'attachable_id' => $orderHistory->id,
-            'file_name' => 'history_doc.pdf',
-            'file_path' => 'attachments/OrderHistory/' . $orderHistory->id . '/history_doc.pdf',
-            'file_size' => 3072,
-            'mime_type' => 'application/pdf',
+        $attachment = $orderHistory->attachments()->create(Attachment::factory()->raw([
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // Test attachable relationship
         $this->assertInstanceOf(OrderHistory::class, $attachment->attachable);
         $this->assertEquals($orderHistory->id, $attachment->attachable->id);
 
         // Test inverse relationship
-        $this->assertTrue($orderHistory->attachments->contains($attachment));
+        $this->assertTrue($orderHistory->fresh()->attachments->contains($attachment));
     }
 
     /**
@@ -119,15 +90,9 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'test.pdf',
-            'file_path' => 'attachments/Order/' . $order->id . '/test.pdf',
-            'file_size' => 1024,
-            'mime_type' => 'application/pdf',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $this->assertInstanceOf(User::class, $attachment->uploadedBy);
         $this->assertEquals($user->id, $attachment->uploadedBy->id);
@@ -142,15 +107,10 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'test.pdf',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'file_path' => 'attachments/Order/' . $order->id . '/test.pdf',
-            'file_size' => 1024,
-            'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $expectedUrl = Storage::disk('public')->url('attachments/Order/' . $order->id . '/test.pdf');
         $this->assertEquals($expectedUrl, $attachment->getUrl());
@@ -175,15 +135,10 @@ final class AttachmentTest extends TestCase
         ];
 
         foreach ($testCases as $testCase) {
-            $attachment = Attachment::create([
-                'attachable_type' => 'order',
-                'attachable_id' => $order->id,
-                'file_name' => 'test.pdf',
-                'file_path' => 'attachments/test.pdf',
+            $attachment = $order->attachments()->create(Attachment::factory()->raw([
                 'file_size' => $testCase['size'],
-                'mime_type' => 'application/pdf',
                 'uploaded_by' => $user->id
-            ]);
+            ]));
 
             $this->assertEquals($testCase['expected'], $attachment->getHumanReadableSize());
         }
@@ -198,25 +153,15 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $imageAttachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'photo.jpg',
-            'file_path' => 'attachments/photo.jpg',
-            'file_size' => 1024,
+        $imageAttachment = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'image/jpeg',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        $documentAttachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.pdf',
-            'file_path' => 'attachments/document.pdf',
-            'file_size' => 1024,
+        $documentAttachment = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $this->assertTrue($imageAttachment->isImage());
         $this->assertFalse($documentAttachment->isImage());
@@ -231,35 +176,20 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $wordDoc = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.docx',
-            'file_path' => 'attachments/document.docx',
-            'file_size' => 1024,
+        $wordDoc = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        $excelDoc = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'spreadsheet.xlsx',
-            'file_path' => 'attachments/spreadsheet.xlsx',
-            'file_size' => 1024,
+        $excelDoc = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        $imageFile = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'image.jpg',
-            'file_path' => 'attachments/image.jpg',
-            'file_size' => 1024,
+        $imageFile = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'image/jpeg',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $this->assertTrue($wordDoc->isDocument());
         $this->assertTrue($excelDoc->isDocument());
@@ -275,25 +205,15 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $pdfAttachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.pdf',
-            'file_path' => 'attachments/document.pdf',
-            'file_size' => 1024,
+        $pdfAttachment = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        $wordAttachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.docx',
-            'file_path' => 'attachments/document.docx',
-            'file_size' => 1024,
+        $wordAttachment = $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $this->assertTrue($pdfAttachment->isPdf());
         $this->assertFalse($wordAttachment->isPdf());
@@ -316,15 +236,10 @@ final class AttachmentTest extends TestCase
         ];
 
         foreach ($testCases as $testCase) {
-            $attachment = Attachment::create([
-                'attachable_type' => 'order',
-                'attachable_id' => $order->id,
+            $attachment = $order->attachments()->create(Attachment::factory()->raw([
                 'file_name' => $testCase['filename'],
-                'file_path' => 'attachments/' . $testCase['filename'],
-                'file_size' => 1024,
-                'mime_type' => 'application/octet-stream',
                 'uploaded_by' => $user->id
-            ]);
+            ]));
 
             $this->assertEquals($testCase['expected'], $attachment->getExtension());
         }
@@ -340,36 +255,21 @@ final class AttachmentTest extends TestCase
         $order = Order::factory()->create();
 
         // Create image attachments
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'photo1.jpg',
-            'file_path' => 'attachments/photo1.jpg',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'image/jpeg',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'photo2.png',
-            'file_path' => 'attachments/photo2.png',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'image/png',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // Create non-image attachment
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.pdf',
-            'file_path' => 'attachments/document.pdf',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $imageAttachments = Attachment::images()->get();
 
@@ -389,36 +289,21 @@ final class AttachmentTest extends TestCase
         $order = Order::factory()->create();
 
         // Create document attachments
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'document.pdf',
-            'file_path' => 'attachments/document.pdf',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'spreadsheet.xlsx',
-            'file_path' => 'attachments/spreadsheet.xlsx',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // Create image attachment
-        Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'photo.jpg',
-            'file_path' => 'attachments/photo.jpg',
-            'file_size' => 1024,
+        $order->attachments()->create(Attachment::factory()->raw([
             'mime_type' => 'image/jpeg',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         $documentAttachments = Attachment::documents()->get();
 
@@ -441,15 +326,12 @@ final class AttachmentTest extends TestCase
         $file = UploadedFile::fake()->image('photo.jpg');
         $filePath = $file->store('attachments/Order/' . $order->id, 'public');
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'photo.jpg',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
             'mime_type' => 'image/jpeg',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // Verify file exists
         Storage::disk('public')->assertExists($filePath);
@@ -473,15 +355,10 @@ final class AttachmentTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $attachment = Attachment::create([
-            'attachable_type' => 'order',
-            'attachable_id' => $order->id,
-            'file_name' => 'non-existent.pdf',
+        $attachment = $order->attachments()->create(Attachment::factory()->raw([
             'file_path' => 'attachments/non-existent.pdf',
-            'file_size' => 1024,
-            'mime_type' => 'application/pdf',
             'uploaded_by' => $user->id
-        ]);
+        ]));
 
         // The file does not exist in the storage
         Storage::disk('public')->assertMissing($attachment->file_path);

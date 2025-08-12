@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Lumasachi\Tests\Unit\database\factories;
+namespace Modules\Lumasachi\tests\Feature\database\factories;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
