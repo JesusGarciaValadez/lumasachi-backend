@@ -38,9 +38,8 @@ final class OrderController extends Controller
                     ->orWhere('created_by', $user->id);
             })
             ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) use ($user) {
-                // Get all the orders
-                $query->get();
-            })
+                // No additional query modification needed for administrators
+        })
             ->get();
 
         return response()->json(OrderResource::collection($ordersQuery));

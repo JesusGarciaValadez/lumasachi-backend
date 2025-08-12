@@ -82,12 +82,12 @@ class User extends Authenticatable
     // Scopes for easy queries
     public function scopeCustomers($query)
     {
-        return $query->whereHas('role', static fn($query) => $query->where('role', UserRole::CUSTOMER->value));
+        return $query->where('role', UserRole::CUSTOMER->value);
     }
 
     public function scopeEmployees($query)
     {
-        return $query->whereHas('role', static fn($query) => $query->where('role', UserRole::EMPLOYEE->value));
+        return $query->where('role', UserRole::EMPLOYEE->value);
     }
 
     // Convenience methods
