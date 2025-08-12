@@ -105,6 +105,6 @@ class UpdateOrderStatusRequest extends FormRequest
             OrderStatus::COMPLETED->value => [],
         ];
 
-        return in_array($newStatus->value, array_map(fn($enum) => $enum->value, $allowedTransitions[$currentStatus->value] ?? []));
+        return in_array($newStatus, $allowedTransitions[$currentStatus->value] ?? []);
     }
 }
