@@ -43,15 +43,12 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/",
-            "Modules\\": "modules/",
-            "Modules\\Lumasachi\\": "modules/Lumasachi/"
+            "Database\\Seeders\\": "database/seeders/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/",
-            "Modules\\Lumasachi\\Tests\\": "modules/Lumasachi/tests/"
+            "Tests\\": "tests/"
         }
     },
     "scripts": {

@@ -7,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./modules/Lumasachi/resources/js', import.meta.url)),
+            '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
     server: {
@@ -26,18 +26,10 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                '@/app.ts',
+                'resources/js/app.ts'
             ],
-            ssr: '@/ssr.ts',
-            refresh: [
-                '@/app/Livewire/**',
-                '@/app/View/Components/**',
-                '@/lang/**',
-                '@/app/View/Components/**',
-                'modules/Lumasachi/resources/lang/**',
-                'modules/Lumasachi/resources/views/**',
-                'modules/Lumasachi/routes/**',
-            ],
+            ssr: 'resources/js/ssr.ts',
+            refresh: true,
         }),
         tailwindcss(),
         vue({
