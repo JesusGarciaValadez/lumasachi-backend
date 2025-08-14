@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Modules\Lumasachi\app\Models\Company;
-use Modules\Lumasachi\app\Models\Order;
-use Modules\Lumasachi\app\Enums\UserRole;
-use Modules\Lumasachi\app\Enums\UserType;
+use App\Models\Company;
+use App\Models\Order;
+use App\Enums\UserRole;
+use App\Enums\UserType;
 
 /**
  * @mixin IdeHelperUser

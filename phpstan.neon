@@ -17,10 +17,10 @@ parameters:
         - '#PHPDoc tag @var#'
         -
             identifier: method.nonObject
-            path: ./modules/Lumasachi/app/database/factories/*
+            path: ./app/database/factories/*
         -
             identifier: method.nonObject
-            path: ./modules/Lumasachi/app/Models/*
+            path: ./app/Models/*
 
     reportUnmatchedIgnoredErrors: false
 

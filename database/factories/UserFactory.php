@@ -5,8 +5,8 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\Lumasachi\app\Enums\UserRole;
-use Modules\Lumasachi\app\Enums\UserType;
+use App\Enums\UserRole;
+use App\Enums\UserType;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>

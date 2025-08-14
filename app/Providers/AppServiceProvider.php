@@ -2,11 +2,35 @@
 
 namespace App\Providers;
 
-use App\Providers\TelescopeServiceProvider;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
+use App\Enums\UserRole;
+use App\Models\User;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\Category;
+use App\Observers\OrderObserver;
+use App\Policies\OrderPolicy;
+use App\Policies\OrderHistoryPolicy;
+use App\Policies\UserPolicy;
+use App\Policies\CategoryPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
+    protected $policies = [
+        Order::class => OrderPolicy::class,
+        OrderHistory::class => OrderHistoryPolicy::class,
+        User::class => UserPolicy::class,
+        Category::class => CategoryPolicy::class,
+    ];
+
     /**
      * Register any application services.
      */
@@ -16,6 +40,14 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
             $this->app->register(TelescopeServiceProvider::class);
         }
+
+        $this->registerRepositories();
+        $this->registerServices();
+        $this->configureCommands();
+        $this->configureModels();
+        $this->configureDates();
+        $this->configureUrls();
+        $this->configureVite();
     }
 
     /**
@@ -23,6 +55,125 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->loadViewsFrom(base_path('resources/views/mail'), 'mail');
+        $this->registerPolicies();
+        $this->registerRelations();
+    }
+
+    /**
+     * Configure the application's commands.
+     */
+    private function configureCommands(): void
+    {
+        DB::prohibitDestructiveCommands(
+            $this->app->isProduction(),
+        );
+    }
+
+    /**
+     * Configure the application's dates.
+     */
+    private function configureDates(): void
+    {
+        Date::use(CarbonImmutable::class);
+    }
+
+    /**
+     * Configure the application's models.
+     */
+    private function configureModels(): void
+    {
+        Model::unguard();
+
+        Model::shouldBeStrict();
+    }
+
+    /**
+     * Configure the application's URLs.
+     */
+    private function configureUrls(): void
+    {
+        URL::forceScheme('http');
+    }
+
+    /**
+     * Configure the application's Vite instance.
+     */
+    private function configureVite(): void
+    {
+        Vite::prefetch(concurrency: 3);
+        Vite::useAggressivePrefetching();
+    }
+
+    /**
+     * Register repositories.
+     */
+    private function registerRepositories(): void
+    {
+        // $this->app->singleton(ClassRepositoryInterface::class, ClassRepository::class);
+    }
+
+    /**
+     * Register the module's policies.
+     */
+    private function registerPolicies(): void
+    {
+        // Register the policies
+        foreach ($this->policies as $model => $policy) {
+            Gate::policy($model, $policy);
+        }
+
+        // Gates for general permissions
+        Gate::define(
+            'users.create',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        Gate::define(
+            'users.delete',
+            fn(User $user) =>
+            $user->role === UserRole::SUPER_ADMINISTRATOR
+        );
+
+        Gate::define(
+            'system.settings',
+            fn(User $user) =>
+            $user->role === UserRole::SUPER_ADMINISTRATOR
+        );
+
+        Gate::define(
+            'reports.export',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        Gate::define(
+            'orders.assign',
+            fn(User $user) =>
+            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+        );
+
+        // Gate to verify if the user can perform a specific action
+        Gate::define('has-permission', function (User $user, string $permission) {
+            return in_array($permission, $user->role->getPermissions());
+        });
+    }
+
+    /**
+     * Register services.
+     */
+    private function registerServices(): void
+    {
+        // Base services
+        // $this->app->singleton(ServiceInterface::class, Service::class);
+    }
+
+    private function registerRelations(): void
+    {
+        Relation::morphMap([
+            'order' => Order::class,
+            'order_history' => OrderHistory::class,
+        ]);
     }
 }
