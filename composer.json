@@ -18,7 +18,7 @@
         "laravel/nightwatch": "^1.11",
         "laravel/octane": "^2.12",
         "laravel/sanctum": "^4.2",
-        "laravel/telescope": "^5.10",
+        "laravel/telescope": "^5.11",
         "laravel/tinker": "^2.10.1",
         "tightenco/ziggy": "^2.4"
     },
@@ -117,9 +117,7 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": [
-                "laravel/telescope"
-            ]
+            "dont-discover": []
         }
     },
     "config": {

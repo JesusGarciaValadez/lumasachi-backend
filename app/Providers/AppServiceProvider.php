@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
 use App\Enums\UserRole;
 use App\Models\User;
@@ -38,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerRepositories();
         $this->registerServices();
+        $this->registerViews();
         $this->configureCommands();
         $this->configureModels();
         $this->configureDates();
@@ -170,5 +172,13 @@ class AppServiceProvider extends ServiceProvider
             'order' => Order::class,
             'order_history' => OrderHistory::class,
         ]);
+    }
+
+    private function registerViews(): void
+    {
+        // Load the views
+        $this->loadViewsFrom(resource_path('views/vendor/mail'), 'mail');
+        $this->loadViewsFrom(resource_path('views/vendor/mail/html'), 'mail');
+        $this->loadViewsFrom(resource_path('views/vendor/mail/text'), 'mail');
     }
 }
