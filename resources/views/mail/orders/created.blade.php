@@ -1,4 +1,4 @@
-@component('mail::html.message')
+@component('mail::message')
 # New Order Created: #{{ $order->id }}
 
 A new order has been created.
@@ -11,7 +11,7 @@ A new order has been created.
 - Status: {{ $order->status->value }}
 - Priority: {{ $order->priority->value }}
 
-@component('mail::html.button', ['url' => route('orders.show', $order)])
+@component('mail::button', ['url' => route('orders.show', $order)])
 View Order
 @endcomponent
 
