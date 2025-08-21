@@ -1,21 +1,22 @@
-@component('mail::message')
-# New Order Created: #{{ $order->id }}
+<x-mail::message>
+    # New Order Created
 
-A new order has been created.
+<x-mail::subcopy>
+    A new order has been created.
+</x-mail::subcopy>
 
-**Order Details:**
-- Order ID: {{ $order->id }}
-- Title: {{ $order->title }}
-- Customer: {{ $order->customer->full_name }}
-- Assigned to: {{ $order->assignedTo->full_name ?? 'Unassigned' }}
-- Status: {{ $order->status->value }}
-- Priority: {{ $order->priority->value }}
+    Order Details:
+<x-mail::panel>
+- Order ID: __{{ $order->id }}__
+- Title: __{{ $order->title }}__
+- Customer: __{{ $order->customer->full_name }}__
+- Assigned to: __{{ $order->assignedTo->full_name ?? 'Unassigned' }}__
+- Status: __{{ $order->status->value }}__
+- Priority: __{{ $order->priority->value }}__
+</x-mail::panel>
 
-@component('mail::button', ['url' => route('orders.show', $order)])
-View Order
-@endcomponent
+<x-mail::button url="{{ route('orders.show', $order) }}" color="red">View Order</x-mail::button>
 
-Thank you,<br>
-{{ config('app.name') }}
-@endcomponent
-
+    Thank you,
+    {{ config('app.name') }}
+</x-mail::message>
