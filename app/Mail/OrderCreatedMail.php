@@ -41,8 +41,7 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            html: 'mail.orders.created',
-            text: 'mail.orders.created-text',
+            markdown: 'mail.orders.created',
             with: [
                 'order' => $this->order,
             ],
