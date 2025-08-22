@@ -5,6 +5,7 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Routing\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Str;
+use Dedoc\Scramble\Scramble;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Order;
@@ -55,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
         $this->loadViewsFrom(base_path('resources/views/mail'), 'mail');
         $this->registerPolicies();
         $this->registerRelations();
+        $this->configureDocumentation();
     }
 
     /**
@@ -180,5 +184,17 @@ class AppServiceProvider extends ServiceProvider
         $this->loadViewsFrom(resource_path('views/vendor/mail'), 'mail');
         $this->loadViewsFrom(resource_path('views/vendor/mail/html'), 'mail');
         $this->loadViewsFrom(resource_path('views/vendor/mail/text'), 'mail');
+    }
+
+    private function configureDocumentation(): void
+    {
+        Scramble::configure()
+            ->routes(function (Route $route) {
+                return Str::startsWith($route->uri, 'api/');
+            });
+
+        Gate::define('viewApiDocs', function (User $user) {
+            return in_array($user->email, [env('APP_MAINTEINER_EMAIL')]);
+        });
     }
 }
