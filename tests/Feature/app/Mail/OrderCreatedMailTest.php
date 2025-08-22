@@ -89,7 +89,7 @@ class OrderCreatedMailTest extends TestCase
 
                 // Verify the mail content includes the correct view and data
                 $content = $mail->content();
-                $this->assertEquals('mail.orders.created', $content->html);
+                $this->assertEquals('mail.orders.created', $content->markdown);
                 $this->assertEquals($order->id, $content->with['order']->id);
 
                 return true;
