@@ -24,7 +24,7 @@ Route::group(['prefix' => 'v1'], function () {
         ->middleware('auth:sanctum')
         ->name('logout');
 
-    Route::get('/user/{user}', function (Request $request, User $user) {
+    Route::get('/user/{user:email}', function (Request $request, User $user) {
         return response()->json([
             'user_id' => $user->id,
             'user_found' => true,
