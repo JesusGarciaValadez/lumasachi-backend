@@ -16,8 +16,8 @@ class UserResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'company_uuid' => $this->whenNotNull($this->whenLoaded('company', fn($query) => $query->uuid)),
-            'company_name' => $this->whenNotNull($this->whenLoaded('company', fn($query) => $query->name)),
+            'company_uuid' => $this->whenNotNull($this->whenLoaded('company', fn($company) => $company->uuid)),
+            'company_name' => $this->whenNotNull($this->whenLoaded('company', fn($company) => $company->name)),
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'full_name' => $this->full_name,
