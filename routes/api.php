@@ -18,6 +18,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\HealthController;
+use App\Http\Resources\UserResource;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
@@ -25,17 +26,11 @@ Route::group(['prefix' => 'v1'], function () {
         ->name('logout');
 
     Route::get('/user/{user:email}', function (Request $request, User $user) {
-        return response()->json([
-            'user_id' => $user->id,
-            'user_found' => true,
-            'user_data' => $user->toArray(),
-            'user_exists' => $user->exists,
-            'all_attributes' => $user->getAttributes()
-        ], 200);
+        return UserResource::make($user->load('company'));
     })->middleware('auth:sanctum');
 
     // Auth Routes
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::group([], function () {
         Route::post('register', [RegisteredUserController::class, 'store']);
 
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
@@ -45,9 +40,7 @@ Route::group(['prefix' => 'v1'], function () {
 
         Route::post('reset-password', [NewPasswordController::class, 'store'])
             ->name('password.store');
-    });
 
-    Route::middleware('auth:sanctum')->group(function () {
         Route::get('verify-email', EmailVerificationPromptController::class)
             ->name('verification.notice');
 
