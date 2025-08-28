@@ -30,7 +30,7 @@ Route::group(['prefix' => 'v1'], function () {
     })->middleware('auth:sanctum');
 
     // Auth Routes
-    Route::group([], function () {
+    Route::group(['middleware' => ['throttle:5,1']], function () {
         Route::post('register', [RegisteredUserController::class, 'store']);
 
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
