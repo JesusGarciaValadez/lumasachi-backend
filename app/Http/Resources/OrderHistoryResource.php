@@ -52,13 +52,17 @@ class OrderHistoryResource extends JsonResource
             // For deletion events, old_value contains the filename
             $filename = $this->new_value ?: $this->old_value;
             
-            if ($filename) {
-                $attachment = $this->order->attachments()
+            if ($filename && isset($this->order->attachments)) {
+                // Filter the already-loaded attachments collection instead of querying database
+                $attachment = $this->order->attachments
                     ->where('file_name', $filename)
-                    ->whereBetween('created_at', [
-                        $historyTime->copy()->subSeconds($timeBuffer),
-                        $historyTime->copy()->addSeconds($timeBuffer)
-                    ])
+                    ->filter(function ($attachment) use ($historyTime, $timeBuffer) {
+                        $attachmentTime = $attachment->created_at;
+                        return $attachmentTime->between(
+                            $historyTime->copy()->subSeconds($timeBuffer),
+                            $historyTime->copy()->addSeconds($timeBuffer)
+                        );
+                    })
                     ->first();
                 
                 if ($attachment) {
