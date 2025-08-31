@@ -24,7 +24,7 @@ final class OrderHistoryController extends Controller
     {
         Gate::authorize('viewAny', OrderHistory::class);
 
-        $query = OrderHistory::with(['createdBy', 'order', 'attachments']);
+        $query = OrderHistory::with(['createdBy', 'order.attachments']);
 
         // Filter by order_id if provided
         if ($request->has('order_id')) {
@@ -54,7 +54,7 @@ final class OrderHistoryController extends Controller
             ['created_by' => $request->user()->id]
         ));
 
-        $orderHistory->load(['createdBy', 'order', 'attachments']);
+        $orderHistory->load(['createdBy', 'order.attachments']);
 
         return response()->json(
             ['data' => new OrderHistoryResource($orderHistory)],
@@ -69,7 +69,7 @@ final class OrderHistoryController extends Controller
     {
         Gate::authorize('view', $orderHistory);
 
-        $orderHistory->load(['createdBy', 'order', 'attachments']);
+        $orderHistory->load(['createdBy', 'order.attachments']);
 
         return response()->json(['data' => new OrderHistoryResource($orderHistory)]);
     }
