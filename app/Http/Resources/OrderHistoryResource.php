@@ -25,7 +25,48 @@ class OrderHistoryResource extends JsonResource
             'created_by' => $this->created_by,
             'creator' => new UserResource($this->whenLoaded('createdBy')),
             'created_at' => $this->created_at,
-            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments'))
+            'attachments' => $this->getRelatedAttachments()
         ];
+    }
+
+    /**
+     * Get attachments related to this history entry.
+     * Only returns attachments for attachment-related history entries.
+     * 
+     * @return array
+     */
+    private function getRelatedAttachments(): array
+    {
+        // Only return attachments for attachment-related history entries
+        if ($this->field_changed !== 'attachments') {
+            return [];
+        }
+
+        // If this is an attachment-related history entry, find the related attachment
+        if ($this->relationLoaded('order') && $this->order) {
+            // Look for attachment created within 1 minute of this history entry
+            $historyTime = $this->created_at;
+            $timeBuffer = 60; // 60 seconds buffer
+            
+            // For upload events, new_value contains the filename
+            // For deletion events, old_value contains the filename
+            $filename = $this->new_value ?: $this->old_value;
+            
+            if ($filename) {
+                $attachment = $this->order->attachments()
+                    ->where('file_name', $filename)
+                    ->whereBetween('created_at', [
+                        $historyTime->copy()->subSeconds($timeBuffer),
+                        $historyTime->copy()->addSeconds($timeBuffer)
+                    ])
+                    ->first();
+                
+                if ($attachment) {
+                    return [new AttachmentResource($attachment->load('uploadedBy'))];
+                }
+            }
+        }
+
+        return [];
     }
 }
