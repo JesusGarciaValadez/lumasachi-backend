@@ -171,7 +171,7 @@ final class OrderController extends Controller
     public function history(Request $request, Order $order)
     {
         $query = $order->orderHistories()
-            ->with(['createdBy', 'attachments']);
+            ->with(['createdBy', 'order.attachments']);
 
         // Filter by field if provided
         if ($request->has('field')) {
