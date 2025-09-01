@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Models\User;
 use Database\Factories\AttachmentFactory;
 
@@ -30,9 +31,19 @@ final class Attachment extends Model
      *
      * @return array
      */
-    public function uniqueIds()
+    public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    /**
+     * Generate a new UUID for the model.
+     *
+     * @return string
+     */
+    public function newUniqueId(): string
+    {
+        return (string) Str::uuid();
     }
 
     /**
@@ -131,7 +142,7 @@ final class Attachment extends Model
      */
     public function getIdAttribute(): ?string
     {
-        return $this->attributes['uuid'] ?? null;
+        return $this->getKey();
     }
 
     // Polymorphic relationships
