@@ -343,7 +343,7 @@ final class AttachmentTest extends TestCase
         Storage::disk('public')->assertMissing($filePath);
 
         // Verify record is deleted
-        $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
+        $this->assertDatabaseMissing('attachments', ['uuid' => $attachment->uuid]);
     }
 
     /**
@@ -367,7 +367,7 @@ final class AttachmentTest extends TestCase
         $result = $attachment->delete();
 
         $this->assertTrue($result);
-        $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
+        $this->assertDatabaseMissing('attachments', ['uuid' => $attachment->uuid]);
     }
 
     /**

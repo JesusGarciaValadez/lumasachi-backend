@@ -13,7 +13,7 @@
 
 namespace App\Models{
 /**
- * @property string $id
+ * @property string $uuid
  * @property string $attachable_type
  * @property string $attachable_id
  * @property string $file_name
@@ -37,7 +37,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFileName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFilePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFileSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUuid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereMimeType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUploadedBy($value)

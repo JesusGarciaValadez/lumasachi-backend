@@ -107,12 +107,12 @@ final class HasAttachmentsTest extends TestCase
         Storage::disk('public')->assertExists($attachment->file_path);
 
         // Detach the attachment
-        $result = $this->order->detach($attachment->id);
+        $result = $this->order->detach($attachment->uuid);
 
         $this->assertTrue($result);
         $this->assertCount(0, $this->order->fresh()->attachments);
         Storage::disk('public')->assertMissing($attachment->file_path);
-        $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
+        $this->assertDatabaseMissing('attachments', ['uuid' => $attachment->uuid]);
     }
 
     /**

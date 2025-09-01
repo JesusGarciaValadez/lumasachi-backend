@@ -24,7 +24,7 @@ final class AttachmentFactoryTest extends TestCase
 
         $this->assertInstanceOf(Attachment::class, $attachment);
         $this->assertDatabaseHas('attachments', [
-            'id' => $attachment->id,
+            'uuid' => $attachment->uuid,
             'file_name' => $attachment->file_name,
         ]);
     }
@@ -152,10 +152,10 @@ final class AttachmentFactoryTest extends TestCase
     {
         $attachment = Attachment::factory()->create();
 
-        $this->assertNotNull($attachment->id);
+        $this->assertNotNull($attachment->uuid);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $attachment->id
+            $attachment->uuid
         );
     }
 
@@ -196,7 +196,7 @@ final class AttachmentFactoryTest extends TestCase
 
         foreach ($attachments as $attachment) {
             $this->assertInstanceOf(Attachment::class, $attachment);
-            $this->assertDatabaseHas('attachments', ['id' => $attachment->id]);
+            $this->assertDatabaseHas('attachments', ['uuid' => $attachment->uuid]);
         }
     }
 
