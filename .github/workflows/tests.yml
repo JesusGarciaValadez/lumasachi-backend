@@ -34,17 +34,20 @@ jobs:
       - name: Install Node Dependencies
         run: npm ci
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-suggest
 
       - name: Copy Environment File
-        run: cp .env.example .env
+        run: cp .env.example .env.testing
 
       - name: Generate Application Key
-        run: php artisan key:generate
+        run: php artisan key:generate --env=testing
 
       - name: Publish Ziggy Configuration
         run: php artisan ziggy:generate
+
+      - name: Migrate testing DB
+        run: php artisan migrate --env=testing --force
 
       - name: Build Assets
         run: npm run build
