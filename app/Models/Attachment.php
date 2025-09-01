@@ -27,13 +27,27 @@ final class Attachment extends Model
     protected $primaryKey = 'uuid';
 
     /**
+     * Indicates if the primary key is incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
      * Get the columns that should receive a unique identifier.
      *
      * @return array
      */
     public function uniqueIds(): array
     {
-        return ['uuid'];
+        return [$this->getKeyName()];
     }
 
     /**
@@ -134,14 +148,32 @@ final class Attachment extends Model
         'file_size' => 'integer'
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = $model->newUniqueId();
+            }
+        });
+    }
+
     /**
      * Get the id attribute (for backward compatibility).
-     * Returns the value from the uuid column.
+     * Returns the value from the uuid column (primary key).
      *
      * @return string|null
      */
     public function getIdAttribute(): ?string
     {
+        // Explicitly get the uuid attribute value
+        $uuid = $this->attributes['uuid'] ?? null;
+        if ($uuid !== null) {
+            return $uuid;
+        }
+        
+        // Fallback to getKey() method
         return $this->getKey();
     }
 
