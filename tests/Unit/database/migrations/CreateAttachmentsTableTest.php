@@ -29,7 +29,7 @@ final class CreateAttachmentsTableTest extends TestCase
     public function it_checks_if_attachments_table_has_all_required_columns(): void
     {
         $expectedColumns = [
-            'id',
+            'uuid',
             'attachable_type',
             'attachable_id',
             'file_name',

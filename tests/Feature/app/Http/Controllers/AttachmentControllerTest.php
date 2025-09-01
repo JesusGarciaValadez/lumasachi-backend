@@ -427,7 +427,7 @@ class AttachmentControllerTest extends TestCase
 
         // Check database record was deleted
         $this->assertDatabaseMissing('attachments', [
-            'id' => $attachment->id
+            'uuid' => $attachment->uuid
         ]);
 
         // Check history was created (description is a computed attribute, not a DB field)
