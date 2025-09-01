@@ -26,6 +26,16 @@ final class Attachment extends Model
     protected $primaryKey = 'uuid';
 
     /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds()
+    {
+        return ['uuid'];
+    }
+
+    /**
      * Create a new factory instance for the model.
      *
      * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
@@ -112,6 +122,17 @@ final class Attachment extends Model
     protected $casts = [
         'file_size' => 'integer'
     ];
+
+    /**
+     * Get the id attribute (for backward compatibility).
+     * Returns the value from the uuid column.
+     *
+     * @return string|null
+     */
+    public function getIdAttribute(): ?string
+    {
+        return $this->attributes['uuid'] ?? null;
+    }
 
     // Polymorphic relationships
     public function attachable(): MorphTo
