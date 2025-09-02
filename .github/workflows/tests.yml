@@ -31,7 +31,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Copy CI env
-        run: cp .env.example .env.testing
+        run: |
+          cp .env.example .env
+          cp .env.example .env.testing
+
+      - name: Configure .env
+        run: |
+          kv() { key="$1"; val="$2"; if grep -qE "^[#\s]*${key}=" .env; then sed -i "s|^[#\s]*${key}=.*|${key}=${val}|" .env; else echo "${key}=${val}" >> .env; fi; }
+          kv APP_ENV local
+          kv APP_DEBUG true
+          kv DB_CONNECTION pgsql
+          kv DB_HOST pgsql
+          kv DB_PORT 5432
+          kv DB_DATABASE laravel
+          kv DB_USERNAME sail
+          kv DB_PASSWORD password
 
       - name: Configure .env.testing
         run: |
@@ -73,18 +87,22 @@ jobs:
         run: ./vendor/bin/sail yarn run build
 
       - name: Generate Application Key
-        run: ./vendor/bin/sail artisan key:generate --env=testing
+        run: |
+          ./vendor/bin/sail artisan key:generate
+          ./vendor/bin/sail artisan key:generate --env=testing
 
       - name: Publish Ziggy Configuration
-        run: ./vendor/bin/sail artisan ziggy:generate --env=testing
+        run: |
+          ./vendor/bin/sail artisan ziggy:generate
+          ./vendor/bin/sail artisan ziggy:generate --env=testing
 
       # - name: Create SQLite database file
       #   run: touch database/testing.sqlite
 
       - name: Migrate testing DB
         run: |
-          ./vendor/bin/sail artisan migrate --force --env=testing
+          ./vendor/bin/sail artisan migrate --force
 
       - name: Tests
         run: |
-          ./vendor/bin/sail artisan test --parallel --processes=auto --env=testing
+          ./vendor/bin/sail artisan test --parallel --processes=auto
