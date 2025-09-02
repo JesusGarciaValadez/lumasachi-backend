@@ -66,14 +66,14 @@ final class CreateOrdersTableTest extends TestCase
     public function it_checks_if_orders_table_column_types(): void
     {
         // Test UUID columns
-        if (env('DB_CONNECTION') === 'pgsql') {
+        if (config('database.default') === 'pgsql') {
             // PostgreSQL returns 'uuid' for UUID columns
             $this->assertEquals('uuid', Schema::getColumnType('orders', 'id'));
             $this->assertEquals('uuid', Schema::getColumnType('orders', 'customer_id'));
             $this->assertEquals('uuid', Schema::getColumnType('orders', 'created_by'));
             $this->assertEquals('uuid', Schema::getColumnType('orders', 'updated_by'));
             $this->assertEquals('uuid', Schema::getColumnType('orders', 'assigned_to'));
-        } if (env('DB_CONNECTION') === 'sqlite') {
+        } if (config('database.default') === 'sqlite') {
             // SQLite returns 'varchar' for UUID columns
             $this->assertEquals('varchar', Schema::getColumnType('orders', 'id'));
             $this->assertEquals('varchar', Schema::getColumnType('orders', 'customer_id'));
