@@ -66,7 +66,28 @@ final class CreateOrdersTableTest extends TestCase
     public function it_checks_if_orders_table_column_types(): void
     {
         // Test UUID columns
-        $this->assertEquals('uuid', Schema::getColumnType('orders', 'id'));
+        if (env('DB_CONNECTION') === 'pgsql') {
+            // PostgreSQL returns 'uuid' for UUID columns
+            $this->assertEquals('uuid', Schema::getColumnType('orders', 'id'));
+            $this->assertEquals('uuid', Schema::getColumnType('orders', 'customer_id'));
+            $this->assertEquals('uuid', Schema::getColumnType('orders', 'created_by'));
+            $this->assertEquals('uuid', Schema::getColumnType('orders', 'updated_by'));
+            $this->assertEquals('uuid', Schema::getColumnType('orders', 'assigned_to'));
+        } if (env('DB_CONNECTION') === 'sqlite') {
+            // SQLite returns 'varchar' for UUID columns
+            $this->assertEquals('varchar', Schema::getColumnType('orders', 'id'));
+            $this->assertEquals('varchar', Schema::getColumnType('orders', 'customer_id'));
+            $this->assertEquals('varchar', Schema::getColumnType('orders', 'created_by'));
+            $this->assertEquals('varchar', Schema::getColumnType('orders', 'updated_by'));
+            $this->assertEquals('varchar', Schema::getColumnType('orders', 'assigned_to'));
+        } else {
+            // MySQL returns 'char' for UUID columns
+            $this->assertEquals('char', Schema::getColumnType('orders', 'id'));
+            $this->assertEquals('char', Schema::getColumnType('orders', 'customer_id'));
+            $this->assertEquals('char', Schema::getColumnType('orders', 'created_by'));
+            $this->assertEquals('char', Schema::getColumnType('orders', 'updated_by'));
+            $this->assertEquals('char', Schema::getColumnType('orders', 'assigned_to'));
+        }
 
         // Test string columns - PostgreSQL returns 'varchar' for string columns
         $stringColumns = ['title'];
