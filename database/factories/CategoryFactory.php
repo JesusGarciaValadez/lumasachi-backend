@@ -25,7 +25,7 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'uuid' => Str::uuid(),
+            'uuid' => Str::uuid7(),
             'name' => $this->faker->word(),
             'description' => $this->faker->paragraph(),
             'is_active' => $this->faker->boolean(80),

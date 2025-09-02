@@ -42,7 +42,7 @@ class AttachmentControllerTest extends TestCase
 
         // Create test orders
         $this->order = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
@@ -50,7 +50,7 @@ class AttachmentControllerTest extends TestCase
         ]);
 
         $this->otherOrder = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
             'created_by' => $this->employee2->id,
             'assigned_to' => $this->employee2->id,

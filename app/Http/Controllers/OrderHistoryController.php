@@ -53,7 +53,7 @@ final class OrderHistoryController extends Controller
         $orderHistory = OrderHistory::create(array_merge(
             $request->validated(),
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'created_by' => $request->user()->id
             ]
         ));

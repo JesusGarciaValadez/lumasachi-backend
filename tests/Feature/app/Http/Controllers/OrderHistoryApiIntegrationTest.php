@@ -86,11 +86,11 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $this->actingAs($admin);
 
         $order = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'assigned_to',
             'old_value' => null,
@@ -136,7 +136,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $this->actingAs($admin);
 
         $order = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value
         ]);
@@ -179,12 +179,12 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $this->actingAs($admin);
 
         $order = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
         ]);
 
         // Create multiple history entries
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'status',
             'old_value' => OrderStatus::OPEN->value,
@@ -193,7 +193,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,

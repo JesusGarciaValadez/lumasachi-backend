@@ -149,7 +149,7 @@ class DatabaseSeeder extends Seeder
 
         // Order 1: Urgent order in progress
         $order1 = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $businessCustomer1->id,
             'title' => 'Urgent Website Redesign',
             'description' => 'Complete redesign of company website with modern UI/UX. Must be responsive and include e-commerce functionality.',
@@ -165,7 +165,7 @@ class DatabaseSeeder extends Seeder
 
         // Order 2: Normal priority order ready for delivery
         $order2 = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $customer1->id,
             'title' => 'Business Card Design',
             'description' => 'Design and print 500 business cards with new company branding.',
@@ -180,7 +180,7 @@ class DatabaseSeeder extends Seeder
 
         // Order 3: Completed and paid order
         $order3 = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $customer2->id,
             'title' => 'Logo Design Project',
             'description' => 'Create new company logo with 3 variations and brand guidelines document.',
@@ -197,7 +197,7 @@ class DatabaseSeeder extends Seeder
 
         // Order 4: Open order not yet assigned
         $order4 = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $businessCustomer2->id,
             'title' => 'Marketing Campaign Materials',
             'description' => 'Design materials for Q4 marketing campaign including posters, flyers, and social media graphics.',
@@ -212,7 +212,7 @@ class DatabaseSeeder extends Seeder
 
         // Order 5: Cancelled order
         $order5 = Order::factory()->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'customer_id' => $customer1->id,
             'title' => 'Product Photography',
             'description' => 'Professional photography session for new product line.',
@@ -228,7 +228,7 @@ class DatabaseSeeder extends Seeder
 
         // Create more random orders
         Order::factory()->count(10)->createQuietly([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'assigned_to' => User::factory(),
         ]);
 
@@ -236,7 +236,7 @@ class DatabaseSeeder extends Seeder
 
         // History for Order 1
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => null,
@@ -247,7 +247,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_PRIORITY,
             'old_value' => null,
@@ -258,7 +258,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::OPEN->value,
@@ -269,7 +269,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => null,
@@ -281,7 +281,7 @@ class DatabaseSeeder extends Seeder
 
         // History for Order 2
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::IN_PROGRESS->value,
@@ -293,7 +293,7 @@ class DatabaseSeeder extends Seeder
 
         // History for Order 3 (complete lifecycle)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::OPEN->value,
@@ -304,7 +304,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => null,
@@ -315,7 +315,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::IN_PROGRESS->value,
@@ -326,7 +326,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::READY_FOR_DELIVERY->value,
@@ -337,7 +337,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::DELIVERED->value,
@@ -348,7 +348,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_ACTUAL_COMPLETION,
             'old_value' => null,
@@ -360,7 +360,7 @@ class DatabaseSeeder extends Seeder
 
         // History for Order 5 (cancelled)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order5->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
             'old_value' => OrderStatus::OPEN->value,
@@ -373,7 +373,7 @@ class DatabaseSeeder extends Seeder
 
         // Title change example
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_TITLE,
             'old_value' => 'Website Development',
@@ -385,7 +385,7 @@ class DatabaseSeeder extends Seeder
 
         // Notes change example (replaced description tracking)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
             'field_changed' => OrderHistory::FIELD_NOTES,
             'old_value' => 'Standard business card design',
@@ -397,7 +397,7 @@ class DatabaseSeeder extends Seeder
 
         // Estimated completion change example
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
             'old_value' => $order1->estimated_completion->toISOString(),
@@ -409,7 +409,7 @@ class DatabaseSeeder extends Seeder
 
         // Notes update example
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
             'field_changed' => OrderHistory::FIELD_NOTES,
             'old_value' => null,
@@ -425,7 +425,7 @@ class DatabaseSeeder extends Seeder
 
         if ($developmentCategory && $consultingCategory) {
             OrderHistory::factory()->create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'order_id' => $order4->id,
                 'field_changed' => OrderHistory::FIELD_CATEGORY,
                 'old_value' => (string) $developmentCategory->id,
@@ -438,7 +438,7 @@ class DatabaseSeeder extends Seeder
 
         // Priority change example (downgrade)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order4->id,
             'field_changed' => OrderHistory::FIELD_PRIORITY,
             'old_value' => OrderPriority::HIGH->value,
@@ -450,7 +450,7 @@ class DatabaseSeeder extends Seeder
 
         // Assigned to change (reassignment)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => (string) $employee2->id,
@@ -462,7 +462,7 @@ class DatabaseSeeder extends Seeder
 
         // Another assigned to change (back to original)
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => (string) $employee1->id,
@@ -474,7 +474,7 @@ class DatabaseSeeder extends Seeder
 
         // Multiple field changes for order 4 to show complete tracking
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order4->id,
             'field_changed' => OrderHistory::FIELD_TITLE,
             'old_value' => 'Flyer Design',
@@ -485,7 +485,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order4->id,
             'field_changed' => OrderHistory::FIELD_NOTES,
             'old_value' => 'Standard flyer design',
@@ -497,7 +497,7 @@ class DatabaseSeeder extends Seeder
 
         // Notes change with previous value
         OrderHistory::factory()->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_NOTES,
             'old_value' => 'Initial concept approved',
@@ -511,40 +511,40 @@ class DatabaseSeeder extends Seeder
 
         // Attachments for Order 1
         Attachment::factory()->pdf()->for($order1, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'website_requirements.pdf',
             'uploaded_by' => $businessCustomer1->id,
         ]);
 
         Attachment::factory()->image()->for($order1, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'design_mockup_v1.png',
             'uploaded_by' => $employee1->id,
         ]);
 
         // Attachments for Order 2
         Attachment::factory()->pdf()->for($order2, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'business_card_design_final.pdf',
             'uploaded_by' => $employee2->id,
         ]);
 
         // Attachments for Order 3
         Attachment::factory()->image()->for($order3, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'logo_final.png',
             'uploaded_by' => $employee3->id,
         ]);
 
         Attachment::factory()->pdf()->for($order3, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'brand_guidelines.pdf',
             'file_size' => 2097152, // 2MB
             'uploaded_by' => $employee3->id,
         ]);
 
         Attachment::factory()->spreadsheet()->for($order3, 'attachable')->create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'file_name' => 'color_specifications.xlsx',
             'uploaded_by' => $employee3->id,
         ]);
@@ -557,7 +557,7 @@ class DatabaseSeeder extends Seeder
 
         if ($paymentHistory) {
             Attachment::factory()->pdf()->for($paymentHistory, 'attachable')->create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'file_name' => 'payment_receipt.pdf',
                 'uploaded_by' => $admin->id,
             ]);

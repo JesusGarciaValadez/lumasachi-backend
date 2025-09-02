@@ -57,7 +57,7 @@ final class AttachmentController extends Controller
 
             // Create attachment record
             $attachment = $order->attachments()->create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'file_name' => $fileName,
                 'file_path' => $path,
                 'mime_type' => $file->getMimeType(),
@@ -67,7 +67,7 @@ final class AttachmentController extends Controller
 
             // Create history record
             OrderHistory::create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'order_id' => $order->id,
                 'field_changed' => 'attachments',
                 'old_value' => null,
@@ -222,7 +222,7 @@ final class AttachmentController extends Controller
             // Create history record
             if ($order) {
                 OrderHistory::create([
-                    'uuid' => Str::uuid()->toString(),
+                    'uuid' => Str::uuid7()->toString(),
                     'order_id' => $order->id,
                     'field_changed' => 'attachments',
                     'old_value' => $attachment->file_name,

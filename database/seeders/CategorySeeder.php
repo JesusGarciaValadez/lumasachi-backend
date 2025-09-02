@@ -80,7 +80,7 @@ class CategorySeeder extends Seeder
 
         foreach ($categories as $categoryData) {
             Category::create(array_merge($categoryData, [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid7(),
                 'is_active' => true,
                 'created_by' => $user->id,
                 'updated_by' => $user->id,

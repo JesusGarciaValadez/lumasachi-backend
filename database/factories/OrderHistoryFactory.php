@@ -46,7 +46,7 @@ class OrderHistoryFactory extends Factory
         }
 
         return [
-            'uuid' => Str::uuid(),
+            'uuid' => Str::uuid7(),
             'order_id' => Order::factory()->createQuietly(),
             'field_changed' => $field,
             'old_value' => $oldValue,
