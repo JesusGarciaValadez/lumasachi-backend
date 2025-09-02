@@ -56,7 +56,7 @@ jobs:
         run: ./vendor/bin/sail composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Generate Application Key
-        run: ./vendor/bin/sail artisan key:generate --env=staging
+        run: ./vendor/bin/sail artisan key:generate
 
       - name: Publish Ziggy Configuration
         run: ./vendor/bin/sail artisan ziggy:generate
@@ -70,7 +70,7 @@ jobs:
       #   run: touch database/testing.sqlite
 
       - name: Migrate testing DB
-        run: ./vendor/bin/sail artisan migrate --env=staging --force
+        run: ./vendor/bin/sail artisan migrate --force
 
       - name: Tests
         run: ./vendor/bin/sail artisan test
