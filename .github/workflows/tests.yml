@@ -52,8 +52,8 @@ jobs:
       - name: Publish Ziggy Configuration
         run: php artisan ziggy:generate
 
-      - name: Prepare SQLite file DB
-        run: mkdir -p database && touch database/testing.sqlite
+      - name: Create SQLite database file
+        run: touch database/testing.sqlite
 
       - name: Migrate testing DB
         run: php artisan migrate --env=testing --force
