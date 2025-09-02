@@ -36,6 +36,9 @@ jobs:
       - name: Copy CI env
         run: cp .env.ci .env
 
+      - name: Wait for containers to be ready
+        run: composer require laravel/sail --dev
+
       - name: Build containers
         run: ./vendor/bin/sail build --no-cache
 
