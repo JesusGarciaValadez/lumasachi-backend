@@ -104,7 +104,11 @@ final class CreateUsersTableTest extends TestCase
         }
 
         // Test boolean column - PostgreSQL returns 'bool'
-        $this->assertContains(Schema::getColumnType('users', 'is_active'), ['boolean', 'bool']);
+        if (env('DB_CONNECTION') === 'pgsql') {
+            $this->assertEquals('bool', Schema::getColumnType('users', 'is_active'));
+        } else {
+            $this->assertContains(Schema::getColumnType('users', 'is_active'), ['boolean', 'bool']);
+        }
 
         // Test enum column
         $this->assertContains(Schema::getColumnType('users', 'role'), ['string', 'varchar']); // Enums are stored as strings in most databases

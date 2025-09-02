@@ -53,4 +53,4 @@ jobs:
         run: php artisan migrate --env=staging --force
 
       - name: Tests
-        run: php artisan test --env=staging
+        run: php artisan test --parallel --processes=auto --coverage --min=80.3 --env=staging --ansi --recreate-databases --drop-databases
