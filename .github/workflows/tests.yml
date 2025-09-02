@@ -35,7 +35,7 @@ jobs:
         with:
           php-version: '8.4'
           extensions: mbstring, pdo, sqlite, intl, bcmath
-          coverage: none
+          coverage: xdebug, pcov
 
       - name: Ensure Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,16 +55,16 @@ jobs:
       - name: Install dependencies
         run: ./vendor/bin/sail composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
+      - name: Install frontend dependencies
+        run: ./vendor/bin/sail yarn install
+      - name: Build frontend assets
+        run: ./vendor/bin/sail yarn run build
+
       - name: Generate Application Key
         run: ./vendor/bin/sail artisan key:generate
 
       - name: Publish Ziggy Configuration
         run: ./vendor/bin/sail artisan ziggy:generate
-
-      - name: Build frontend assets
-        run: ./vendor/bin/sail yarn install
-      - name: Build frontend assets
-        run: ./vendor/bin/sail yarn run build
 
       # - name: Create SQLite database file
       #   run: touch database/testing.sqlite
