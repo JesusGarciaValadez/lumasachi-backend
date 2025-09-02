@@ -40,8 +40,8 @@ jobs:
       - name: Ensure Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # - name: Copy CI env
-      #  run: cp .env.ci .env
+      - name: Copy CI env
+        run: cp .env .env
 
       - name: Wait for containers to be ready
         run: composer require laravel/sail --dev
