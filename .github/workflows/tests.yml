@@ -39,7 +39,7 @@ jobs:
 
       - name: Generate Application Key
         run: |
-          KEY=$(php artisan key:generate --env=testing --ansi --show)
+          KEY=$(php artisan key:generate --env=testing --show)
           if grep -q '^APP_KEY=' .env.testing; then
             sed -i "s/^APP_KEY=.*/APP_KEY=$KEY/" .env.testing
           else
