@@ -70,7 +70,9 @@ jobs:
       #   run: touch database/testing.sqlite
 
       - name: Migrate testing DB
-        run: ./vendor/bin/sail artisan migrate --force
+        run: |
+          APP_ENV=local APP_DEBUG=true DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=laravel DB_USERNAME=sail DB_PASSWORD=password \
+          ./vendor/bin/sail artisan migrate --force
 
       - name: Tests
         run: |
