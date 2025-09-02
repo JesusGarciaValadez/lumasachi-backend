@@ -67,10 +67,6 @@ final class CreateOrdersTableTest extends TestCase
     #[Test]
     public function it_checks_if_orders_table_column_types(): void
     {
-        dd(
-            config('database.default'),
-            config('app.env')
-        );
         // Test UUID columns
         if (config('database.default') === 'pgsql') {
             // PostgreSQL returns 'uuid' for UUID columns
