@@ -73,10 +73,10 @@ jobs:
         run: ./vendor/bin/sail yarn run build
 
       - name: Generate Application Key
-        run: ./vendor/bin/sail artisan key:generate
+        run: ./vendor/bin/sail artisan key:generate --env=testing
 
       - name: Publish Ziggy Configuration
-        run: ./vendor/bin/sail artisan ziggy:generate
+        run: ./vendor/bin/sail artisan ziggy:generate --env=testing
 
       # - name: Create SQLite database file
       #   run: touch database/testing.sqlite
