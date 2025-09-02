@@ -19,7 +19,7 @@ final class OrderFactory extends Factory
         $userId = User::factory()->create()->id;
 
         return [
-            'uuid' => Str::uuid(),
+            'uuid' => Str::uuid7(),
             'customer_id' => User::factory()->create()->id,
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),

@@ -32,7 +32,7 @@ final class UserRoleTest extends TestCase
         // Test each role can be stored
         foreach ($enumValues as $index => $role) {
             $user = User::create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User' . $index,
                 'email' => 'test' . $index . '@example.com',
@@ -55,7 +55,7 @@ final class UserRoleTest extends TestCase
         $this->expectException(\ValueError::class);
 
         User::create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
@@ -73,7 +73,7 @@ final class UserRoleTest extends TestCase
     {
         // Create user without specifying role
         $user = User::create([
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'first_name' => 'Default',
             'last_name' => 'User',
             'email' => 'default@example.com',
@@ -207,7 +207,7 @@ final class UserRoleTest extends TestCase
         // Create a user for each role to ensure database accepts them
         foreach ($enumRoles as $role) {
             $created = DB::table('users')->insert([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User',
                 'email' => 'test_' . uniqid() . '@example.com',
@@ -238,7 +238,7 @@ final class UserRoleTest extends TestCase
 
         foreach ($roles as $index => $role) {
             User::create([
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User' . $index,
                 'email' => 'user' . $index . '@example.com',

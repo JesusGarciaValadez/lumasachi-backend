@@ -32,7 +32,7 @@ trait HasAttachments
     {
         // Generate a unique file name to avoid conflicts
         $fileName = $file->getClientOriginalName();
-        $uniqueFileName = Str::uuid() . '_' . $fileName;
+        $uniqueFileName = Str::uuid7() . '_' . $fileName;
 
         // Determine the storage path based on the model type and ID
         $modelType = class_basename($this);

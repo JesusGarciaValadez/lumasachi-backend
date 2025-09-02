@@ -25,7 +25,7 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'name' => fake()->company(),
             'email' => fake()->unique()->companyEmail(),
             'phone' => fake()->phoneNumber(),

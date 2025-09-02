@@ -41,7 +41,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
         foreach ($trackedFields as $field) {
             if ($order->isDirty($field)) {
                 OrderHistory::create([
-                    'uuid' => Str::uuid()->toString(),
+                    'uuid' => Str::uuid7()->toString(),
                     'order_id' => $order->id,
                     'field_changed' => $field,
                     'old_value' => $order->getOriginal($field),

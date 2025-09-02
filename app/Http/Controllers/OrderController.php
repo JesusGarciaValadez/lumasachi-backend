@@ -57,7 +57,7 @@ final class OrderController extends Controller
         $validated = $request->validated();
 
         $order = Order::create(array_merge($validated, [
-            'uuid' => Str::uuid()->toString(),
+            'uuid' => Str::uuid7()->toString(),
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id
         ]));

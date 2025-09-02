@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\app\Http\Requests;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\StoreCategoriesRequest;
 use Tests\TestCase;
@@ -10,6 +11,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 class StoreCategoriesRequestTest extends TestCase
 {
+    use RefreshDatabase;
+
     private StoreCategoriesRequest $request;
 
     protected function setUp(): void

@@ -20,7 +20,7 @@ class CompanySeeder extends Seeder
 
         $companies = [
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => 'Acme Corporation',
                 'description' => 'A leading provider of innovative solutions and services.',
                 'phone' => $faker->phoneNumber(),
@@ -36,7 +36,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => 'TechVentures Inc.',
                 'description' => 'Specializing in cutting-edge technology and software development.',
                 'phone' => $faker->phoneNumber(),
@@ -52,7 +52,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => 'Global Solutions Ltd.',
                 'description' => 'International consulting and business services.',
                 'phone' => $faker->phoneNumber(),
@@ -68,7 +68,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => 'StartUp Hub',
                 'description' => 'Incubator and accelerator for emerging businesses.',
                 'phone' => $faker->phoneNumber(),
@@ -84,7 +84,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => 'Legacy Enterprises',
                 'description' => 'Traditional business with modern approach.',
                 'phone' => $faker->phoneNumber(),

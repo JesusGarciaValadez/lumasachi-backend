@@ -44,7 +44,7 @@ final class CategoryController extends Controller
 
         $categoriesToInsert = array_map(function ($category) use ($userId, $now) {
             return [
-                'uuid' => Str::uuid()->toString(),
+                'uuid' => Str::uuid7()->toString(),
                 'name' => $category['name'],
                 'description' => $category['description'] ?? null,
                 'is_active' => $category['is_active'] ?? true,
