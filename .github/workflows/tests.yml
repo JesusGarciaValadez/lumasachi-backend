@@ -39,12 +39,8 @@ jobs:
 
       - name: Generate Application Key
         run: |
-          KEY=$(php artisan key:generate --env=testing --show)
-          if grep -q '^APP_KEY=' .env.testing; then
-            sed -i "s/^APP_KEY=.*/APP_KEY=$KEY/" .env.testing
-          else
-            echo "APP_KEY=$KEY" >> .env.testing
-          fi
+          KEY="$(php artisan key:generate --env=testing --ansi --show)"
+          echo "APP_KEY=$KEY" >> "$GITHUB_ENV"
 
       - name: Publish Ziggy Configuration
         run: php artisan ziggy:generate
