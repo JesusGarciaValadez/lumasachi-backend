@@ -14,8 +14,8 @@ jobs:
   sail-tests:
     runs-on: ubuntu-latest
     services:
-      pgsql:
-        image: postgres:17
+      mysql:
+        image: mysql:8
         env:
           APP_ENV: local
           APP_DEBUG: true
@@ -30,7 +30,7 @@ jobs:
           5432:5432
         ]
         options: >-
-          --health-cmd="pg_isready -U sail -d laravel"
+          --health-cmd="mysqladmin ping -ppassword"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
