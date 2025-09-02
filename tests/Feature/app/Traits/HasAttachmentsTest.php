@@ -122,7 +122,7 @@ final class HasAttachmentsTest extends TestCase
     public function it_checks_if_detach_method_with_non_existent_attachment(): void
     {
         // Use a valid UUID format that doesn't exist
-        $result = $this->order->detach('00000000-0000-0000-0000-000000000000');
+        $result = $this->order->detach('00');
 
         $this->assertFalse($result);
     }

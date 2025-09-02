@@ -36,7 +36,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         ]);
 
         // Test show endpoint
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid);
 
         $response->assertStatus(200)
                 ->assertJsonPath('data.description', 'Status changed from Open to In Progress')
@@ -84,7 +84,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         ]);
 
         // Test index endpoint
-        $response = $this->getJson('/api/v1/history?order_id=' . $order->id);
+        $response = $this->getJson('/api/v1/orders/' . $order->uuid . '/history');
 
         $response->assertStatus(200);
 
@@ -164,7 +164,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         ]);
 
         // Test order history endpoint
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
         $response->assertStatus(200);
 

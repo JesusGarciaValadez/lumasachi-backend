@@ -160,7 +160,7 @@ final class CreateOrderHistoriesTableTest extends TestCase
         // Check that ID is a valid UUID format
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $history->id
+            $history->uuid
         );
     }
 

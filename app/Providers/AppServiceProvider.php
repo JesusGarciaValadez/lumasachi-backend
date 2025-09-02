@@ -194,7 +194,7 @@ class AppServiceProvider extends ServiceProvider
             });
 
         Gate::define('viewApiDocs', function (User $user) {
-            return in_array($user->email, [env('APP_MAINTEINER_EMAIL')]);
+            return in_array($user->email, [env('APP_MAINTAINER_EMAIL')]);
         });
     }
 }

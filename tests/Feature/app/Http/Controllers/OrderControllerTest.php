@@ -170,7 +170,7 @@ class OrderControllerTest extends TestCase
             'updated_by' => $this->admin->id
         ]);
 
-        $response = $this->getJson('/api/v1/orders/' . $order->id);
+        $response = $this->getJson('/api/v1/orders/' . $order->uuid);
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -207,7 +207,7 @@ class OrderControllerTest extends TestCase
             'priority' => OrderPriority::URGENT->value
         ];
 
-        $response = $this->putJson('/api/v1/orders/' . $order->id, $updateData);
+        $response = $this->putJson('/api/v1/orders/' . $order->uuid, $updateData);
 
         $response->assertOk()
             ->assertJson([
@@ -241,7 +241,7 @@ class OrderControllerTest extends TestCase
             'assigned_to' => $this->employee->id
         ]);
 
-        $response = $this->putJson('/api/v1/orders/' . $order->id, [
+        $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
             'title' => 'New Title Only'
         ]);
 
@@ -264,7 +264,7 @@ class OrderControllerTest extends TestCase
 
         $order = Order::factory()->createQuietly();
 
-        $response = $this->deleteJson('/api/v1/orders/' . $order->id);
+        $response = $this->deleteJson('/api/v1/orders/' . $order->uuid);
 
         $response->assertOk()
             ->assertJson([

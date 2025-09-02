@@ -54,7 +54,7 @@ class OrderCreatedMailTest extends TestCase
 
                 // Verify the envelope (subject and recipient)
                 $envelope = $mail->envelope();
-                $this->assertEquals('New Order Created: #' . $order->id, $envelope->subject);
+                $this->assertEquals('New Order Created: #' . $order->uuid, $envelope->subject);
 
                 // Verify the mail will be sent to the correct email
                 $this->assertEquals($customer->email, $mail->to[0]['address']);

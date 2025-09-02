@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderHistoryRequest;
@@ -51,7 +52,10 @@ final class OrderHistoryController extends Controller
     {
         $orderHistory = OrderHistory::create(array_merge(
             $request->validated(),
-            ['created_by' => $request->user()->id]
+            [
+                'uuid' => Str::uuid()->toString(),
+                'created_by' => $request->user()->id
+            ]
         ));
 
         $orderHistory->load(['createdBy', 'order.attachments']);

@@ -83,42 +83,42 @@ Route::group(['prefix' => 'v1'], function () {
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index']);
         Route::post('/bulk', [CategoryController::class, 'storeBulk']);
-        Route::delete('/{category}', [CategoryController::class, 'destroy'])->middleware('can:delete,category');
+        Route::delete('/{category:uuid}', [CategoryController::class, 'destroy'])->middleware('can:delete,category');
     });
 
     // Order History Routes
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('history')->group(function () {
         Route::get('/', [OrderHistoryController::class, 'index'])->middleware('can:viewAny,App\Models\OrderHistory');
         Route::post('/', [OrderHistoryController::class, 'store'])->middleware('can:create,App\Models\OrderHistory');
-        Route::get('/{orderHistory}', [OrderHistoryController::class, 'show'])->middleware('can:view,orderHistory');
-        Route::delete('/{orderHistory}', [OrderHistoryController::class, 'destroy'])->middleware('can:delete,orderHistory');
+        Route::get('/{orderHistory:uuid}', [OrderHistoryController::class, 'show'])->middleware('can:view,orderHistory');
+        Route::delete('/{orderHistory:uuid}', [OrderHistoryController::class, 'destroy'])->middleware('can:delete,orderHistory');
 
-        Route::get('/{orderHistory}/order/{order}', [OrderHistoryController::class, 'order'])->middleware('can:view,orderHistory');
-        Route::get('/{orderHistory}/order/{order}/attachments', [OrderHistoryController::class, 'orderAttachments'])->middleware('can:view,orderHistory');
+        Route::get('/{orderHistory:uuid}/order/{order:uuid}', [OrderHistoryController::class, 'order'])->middleware('can:view,orderHistory');
+        Route::get('/{orderHistory:uuid}/order/{order:uuid}/attachments', [OrderHistoryController::class, 'orderAttachments'])->middleware('can:view,orderHistory');
     });
 
     // Order Routes
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->middleware('can:viewAny,App\Models\Order');
         Route::post('/', [OrderController::class, 'store'])->middleware('can:create,App\Models\Order');
-        Route::get('/{order}', [OrderController::class, 'show'])->middleware('can:view,order');
-        Route::put('/{order}', [OrderController::class, 'update'])->middleware('can:update,order');
-        Route::delete('/{order}', [OrderController::class, 'destroy'])->middleware('can:delete,order');
+        Route::get('/{order:uuid}', [OrderController::class, 'show'])->middleware('can:view,order');
+        Route::put('/{order:uuid}', [OrderController::class, 'update'])->middleware('can:update,order');
+        Route::delete('/{order:uuid}', [OrderController::class, 'destroy'])->middleware('can:delete,order');
 
-        Route::post('/{order}/status', [OrderController::class, 'updateStatus'])->middleware('can:update,order');
-        Route::post('/{order}/assign', [OrderController::class, 'assign'])->middleware('can:assign,order');
-        Route::get('/{order}/history', [OrderController::class, 'history'])->middleware('can:view,order');
-        Route::get('/{order}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order');
-        Route::post('/{order}/attachments', [AttachmentController::class, 'store'])->middleware('can:update,order');
+        Route::post('/{order:uuid}/status', [OrderController::class, 'updateStatus'])->middleware('can:update,order');
+        Route::post('/{order:uuid}/assign', [OrderController::class, 'assign'])->middleware('can:assign,order');
+        Route::get('/{order:uuid}/history', [OrderController::class, 'history'])->middleware('can:view,order');
+        Route::get('/{order:uuid}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order');
+        Route::post('/{order:uuid}/attachments', [AttachmentController::class, 'store'])->middleware('can:update,order');
     });
 
     // Attachment Routes (outside of orders prefix)
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('attachments')->group(function () {
-        Route::get('/{attachment}/download', [AttachmentController::class, 'download'])
+        Route::get('/{attachment:uuid}/download', [AttachmentController::class, 'download'])
             ->name('attachments.download');
-        Route::get('/{attachment}/preview', [AttachmentController::class, 'preview'])
+        Route::get('/{attachment:uuid}/preview', [AttachmentController::class, 'preview'])
             ->name('attachments.preview');
-        Route::delete('/{attachment}', [AttachmentController::class, 'destroy']);
+        Route::delete('/{attachment:uuid}', [AttachmentController::class, 'destroy']);
     });
 
     // Health Check Routes

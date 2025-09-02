@@ -59,9 +59,10 @@ class CompanyTest extends TestCase
         $company = Company::factory()->create();
 
         // Test finding by UUID
-        $foundCompany = Company::find($company->uuid);
+        $foundCompany = Company::find($company->id);
 
         $this->assertInstanceOf(Company::class, $foundCompany);
+        $this->assertEquals($company->id, $foundCompany->id);
         $this->assertEquals($company->uuid, $foundCompany->uuid);
         $this->assertEquals($company->name, $foundCompany->name);
         $this->assertEquals($company->email, $foundCompany->email);
@@ -105,16 +106,16 @@ class CompanyTest extends TestCase
     public function it_checks_if_delete_company(): void
     {
         $company = Company::factory()->create();
-        $companyUuid = $company->uuid;
+        $companyId = $company->id;
 
         // Delete the company
         $company->delete();
 
         // Verify it's deleted from database
-        $this->assertDatabaseMissing('companies', ['uuid' => $companyUuid]);
+        $this->assertDatabaseMissing('companies', ['id' => $companyId]);
 
         // Try to find the deleted company
-        $deletedCompany = Company::find($companyUuid);
+        $deletedCompany = Company::find($companyId);
         $this->assertNull($deletedCompany);
     }
 }

@@ -91,7 +91,7 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->id);
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid);
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
@@ -110,7 +110,7 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->deleteJson('/api/v1/history/' . $orderHistory->id);
+        $response = $this->deleteJson('/api/v1/history/' . $orderHistory->uuid);
 
         $response->assertStatus(204);
 
@@ -128,7 +128,7 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id);
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid . '/order/' . $orderHistory->order->uuid);
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
@@ -148,7 +148,7 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->id . '/order/' . $orderHistory->order_id . '/attachments');
+        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid . '/order/' . $orderHistory->order->uuid . '/attachments');
 
         $response->assertStatus(200)
                 ->assertJsonStructure([

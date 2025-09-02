@@ -30,7 +30,7 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Order Created: #' . $this->order->id,
+            subject: 'New Order Created: #' . $this->order->uuid,
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }

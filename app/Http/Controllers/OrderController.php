@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
@@ -56,6 +57,7 @@ final class OrderController extends Controller
         $validated = $request->validated();
 
         $order = Order::create(array_merge($validated, [
+            'uuid' => Str::uuid()->toString(),
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id
         ]));

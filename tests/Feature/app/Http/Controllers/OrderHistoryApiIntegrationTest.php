@@ -3,6 +3,7 @@
 namespace Tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use App\Enums\UserRole;
 use App\Enums\OrderStatus;
@@ -47,7 +48,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         }
 
         // Test 2: GET /api/v1/history/{id} (show)
-        $response = $this->getJson("/api/v1/history/{$orderHistory->id}");
+        $response = $this->getJson("/api/v1/history/{$orderHistory->uuid}");
         $response->assertStatus(200)
             ->assertJsonPath('data.description', 'Status changed from Open to In Progress');
 
@@ -65,7 +66,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             ->assertJsonPath('data.description', 'Priority changed from Normal to Urgent');
 
         // Test 4: GET /api/v1/orders/{id}/history (order history)
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
         $response->assertStatus(200);
         $data = $response->json('data');
         if (is_array($data) && count($data) > 0) {
@@ -84,9 +85,12 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($admin);
 
-        $order = Order::factory()->createQuietly();
+        $order = Order::factory()->createQuietly([
+            'uuid' => Str::uuid()->toString(),
+        ]);
 
         $orderHistory = OrderHistory::factory()->create([
+            'uuid' => Str::uuid()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'assigned_to',
             'old_value' => null,
@@ -95,12 +99,13 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'created_by' => $admin->id
         ]);
 
-        $response = $this->getJson("/api/v1/history/{$orderHistory->id}");
+        $response = $this->getJson("/api/v1/history/{$orderHistory->uuid}");
 
-        $response->assertStatus(200)
+        $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     'id',
+                    'uuid',
                     'order_id',
                     'field_changed',
                     'old_value',
@@ -131,12 +136,13 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $this->actingAs($admin);
 
         $order = Order::factory()->createQuietly([
+            'uuid' => Str::uuid()->toString(),
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value
         ]);
 
         // Update order status (should trigger OrderObserver to create history)
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::DELIVERED->value
         ]);
 
@@ -151,7 +157,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $this->assertNotNull($history->description);
 
         // Verify the history is returned with description via API
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
         $response->assertStatus(200);
 
         $data = $response->json('data');
@@ -172,10 +178,13 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($admin);
 
-        $order = Order::factory()->createQuietly();
+        $order = Order::factory()->createQuietly([
+            'uuid' => Str::uuid()->toString(),
+        ]);
 
         // Create multiple history entries
         OrderHistory::factory()->create([
+            'uuid' => Str::uuid()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'status',
             'old_value' => OrderStatus::OPEN->value,
@@ -184,6 +193,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         ]);
 
         OrderHistory::factory()->create([
+            'uuid' => Str::uuid()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
@@ -192,7 +202,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
         ]);
 
         // Filter by status changes
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history?field=status");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=status");
 
         $response->assertStatus(200);
         $data = $response->json('data');

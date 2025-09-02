@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('companies', function (Blueprint $table) {
-            $table->uuid('uuid')->primary();
+            $table->id()->unsigned()->primary();
+            $table->uuid();
             $table->string('name');
             $table->string('email');
             $table->string('phone');
@@ -32,6 +33,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
+
+            $table->index('uuid');
         });
     }
 

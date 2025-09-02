@@ -23,6 +23,34 @@ class OrderHistory extends Model
     use HasFactory, HasUuids, HasAttachments;
 
     /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The name of the primary key.
+     *
+     * @var string
+     */
+    protected $keyName = 'id';
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'order_histories';
+
+    /**
      * Create a new factory instance for the model.
      *
      * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
@@ -32,7 +60,13 @@ class OrderHistory extends Model
         return OrderHistoryFactory::new();
     }
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
+        'uuid',
         'order_id',
         'field_changed',
         'old_value',
@@ -41,7 +75,13 @@ class OrderHistory extends Model
         'created_by'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
+        'uuid' => 'string',
         // Dynamic casting will be handled by accessors/mutators
     ];
 
@@ -56,6 +96,16 @@ class OrderHistory extends Model
     const FIELD_ACTUAL_COMPLETION = 'actual_completion';
     const FIELD_NOTES = 'notes';
     const FIELD_CATEGORY = 'category_id';
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     /**
      * Get the old value with proper casting based on field type

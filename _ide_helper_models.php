@@ -13,9 +13,10 @@
 
 namespace App\Models{
 /**
- * @property string $id
+ * @property int $id
+ * @property string $uuid
  * @property string $attachable_type
- * @property string $attachable_id
+ * @property int $attachable_id
  * @property string $file_name
  * @property string $file_path
  * @property int $file_size
@@ -41,6 +42,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereMimeType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUploadedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUuid($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -50,6 +52,7 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property string $uuid
  * @property string $name
  * @property string|null $description
  * @property bool $is_active
@@ -80,6 +83,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereSortOrder($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUpdatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUuid($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -88,6 +92,7 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property int $id
  * @property string $uuid
  * @property string $name
  * @property string $email
@@ -129,6 +134,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereIsActive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereLogo($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereName($value)
@@ -149,7 +155,8 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @property string $id
+ * @property int $id
+ * @property string $uuid
  * @property int $customer_id
  * @property int|null $category_id
  * @property int $assigned_to
@@ -192,6 +199,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUpdatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUuid($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -200,8 +208,9 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @property string $id
- * @property string $order_id
+ * @property int $id
+ * @property string $uuid
+ * @property int $order_id
  * @property string $field_changed
  * @property mixed|null $old_value
  * @property mixed|null $new_value
@@ -228,6 +237,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereOldValue($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereOrderId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereUuid($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -237,7 +247,8 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
- * @property string|null $company_id
+ * @property string $uuid
+ * @property int|null $company_id
  * @property string $first_name
  * @property string $last_name
  * @property string $email
@@ -286,6 +297,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRole($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUuid($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]

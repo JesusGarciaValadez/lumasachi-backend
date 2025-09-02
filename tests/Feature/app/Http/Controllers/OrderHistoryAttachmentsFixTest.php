@@ -31,10 +31,10 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         // Create admin user
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($admin);
-        
+
         // Create category first
         $category = Category::factory()->create();
-        
+
         // Create test order
         $order = Order::factory()->createQuietly([
             'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
@@ -45,25 +45,25 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         ]);
 
         // 1. Make a non-attachment change (status change)
-        $this->putJson("/api/v1/orders/{$order->id}", [
+        $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
         // 2. Upload an attachment (this should create attachment history)
         $file = UploadedFile::fake()->image('test-image.jpg', 100, 100);
-        $response = $this->postJson("/api/v1/orders/{$order->id}/attachments", [
+        $response = $this->postJson("/api/v1/orders/{$order->uuid}/attachments", [
             'file' => $file,
             'name' => 'test-image.jpg'
         ]);
         $response->assertCreated();
 
         // 3. Make another non-attachment change
-        $this->putJson("/api/v1/orders/{$order->id}", [
+        $this->putJson("/api/v1/orders/{$order->uuid}", [
             'title' => 'Updated Title'
         ]);
 
         // 4. Get order history
-        $historyResponse = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $historyResponse = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
         $historyResponse->assertOk();
         $historyData = $historyResponse->json('data');
@@ -74,7 +74,7 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         // Find the attachment-related history entry
         $attachmentHistory = collect($historyData)->firstWhere('field_changed', 'attachments');
         $this->assertNotNull($attachmentHistory, 'Should have attachment history entry');
-        
+
         // The attachment history entry should have attachment data
         $this->assertNotEmpty($attachmentHistory['attachments'], 'Attachment history should have attachment data');
         $this->assertEquals('test-image.jpg', $attachmentHistory['attachments'][0]['file_name']);

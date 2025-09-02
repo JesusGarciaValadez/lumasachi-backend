@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
 use App\Models\OrderHistory;
@@ -45,6 +46,7 @@ class OrderHistoryFactory extends Factory
         }
 
         return [
+            'uuid' => Str::uuid(),
             'order_id' => Order::factory()->createQuietly(),
             'field_changed' => $field,
             'old_value' => $oldValue,

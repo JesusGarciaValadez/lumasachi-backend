@@ -23,11 +23,40 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
     /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The name of the primary key.
+     *
+     * @var string
+     */
+    protected $keyName = 'id';
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'users';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
+        'uuid',
         'first_name',
         'last_name',
         'email',
@@ -71,12 +100,23 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'uuid' => 'string',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
             'role' => UserRole::class,
             'type' => UserType::class,
         ];
+    }
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
     }
 
     // Scopes for easy queries
@@ -135,6 +175,6 @@ class User extends Authenticatable
 
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'company_id', 'uuid');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 }

@@ -301,10 +301,10 @@ final class OrderHistoryFactoryTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create();
 
-        $this->assertNotNull($orderHistory->id);
+        $this->assertNotNull($orderHistory->uuid);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $orderHistory->id
+            $orderHistory->uuid
         );
     }
 

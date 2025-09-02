@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Notifications\OrderCreatedNotification;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Str;
 
 class OrderObserver implements ShouldHandleEventsAfterCommit
 {
@@ -26,6 +27,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
     public function updated(Order $order): void
     {
         $trackedFields = [
+            'uuid',
             'status',
             'priority',
             'assigned_to',
@@ -39,6 +41,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
         foreach ($trackedFields as $field) {
             if ($order->isDirty($field)) {
                 OrderHistory::create([
+                    'uuid' => Str::uuid()->toString(),
                     'order_id' => $order->id,
                     'field_changed' => $field,
                     'old_value' => $order->getOriginal($field),

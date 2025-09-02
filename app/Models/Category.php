@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\User;
 use Database\Factories\CategoryFactory;
 
@@ -14,7 +15,35 @@ use Database\Factories\CategoryFactory;
  */
 class Category extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The name of the primary key.
+     *
+     * @var string
+     */
+    protected $keyName = 'id';
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'categories';
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +51,7 @@ class Category extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'uuid',
         'name',
         'description',
         'is_active',
@@ -37,9 +67,20 @@ class Category extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'uuid' => 'string',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     /**
      * Get the user who created the category.

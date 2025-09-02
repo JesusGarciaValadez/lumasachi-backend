@@ -34,6 +34,7 @@ final class CompanyTest extends TestCase
         $fillable = $company->getFillable();
 
         $expectedFillable = [
+            'uuid',
             'name',
             'email',
             'phone',
@@ -96,7 +97,7 @@ final class CompanyTest extends TestCase
     {
         $company = Company::factory()->create();
 
-        $users = User::factory()->count(3)->create(['company_id' => $company->uuid]);
+        $users = User::factory()->count(3)->create(['company_id' => $company->id]);
 
         $this->assertCount(3, $company->users);
         $this->assertEquals(
@@ -113,8 +114,8 @@ final class CompanyTest extends TestCase
     {
         $company = Company::factory()->create();
 
-        User::factory()->count(2)->create(['company_id' => $company->uuid, 'is_active' => true]);
-        User::factory()->count(1)->create(['company_id' => $company->uuid, 'is_active' => false]);
+        User::factory()->count(2)->create(['company_id' => $company->id, 'is_active' => true]);
+        User::factory()->count(1)->create(['company_id' => $company->id, 'is_active' => false]);
 
         $this->assertCount(2, $company->activeUsers);
     }

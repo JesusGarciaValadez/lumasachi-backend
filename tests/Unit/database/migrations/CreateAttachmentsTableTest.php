@@ -62,7 +62,7 @@ final class CreateAttachmentsTableTest extends TestCase
         }
 
         // Test UUID columns - SQLite uses varchar for UUID
-        $uuidColumns = ['id', 'attachable_id'];
+        $uuidColumns = ['uuid'];
         foreach ($uuidColumns as $column) {
             $columnType = Schema::getColumnType('attachments', $column);
             $this->assertContains($columnType, ['uuid', 'varchar', 'string'], "Column '{$column}' is not of expected UUID/varchar type");
@@ -145,7 +145,7 @@ final class CreateAttachmentsTableTest extends TestCase
         // Create an attachment with valid user
         $attachment = Attachment::create([
             'attachable_type' => 'App\\Models\\TestModel',
-            'attachable_id' => fake()->uuid(),
+            'attachable_id' => fake()->randomNumber(1, 99),
             'file_name' => 'test.pdf',
             'file_path' => 'attachments/test.pdf',
             'file_size' => 1024,
@@ -163,7 +163,7 @@ final class CreateAttachmentsTableTest extends TestCase
 
         Attachment::create([
             'attachable_type' => 'App\\Models\\TestModel',
-            'attachable_id' => fake()->uuid(),
+            'attachable_id' => fake()->randomNumber(1, 99),
             'file_name' => 'test2.pdf',
             'file_path' => 'attachments/test2.pdf',
             'file_size' => 1024,
@@ -184,7 +184,7 @@ final class CreateAttachmentsTableTest extends TestCase
         // Create an attachment
         $attachment = Attachment::create([
             'attachable_type' => 'App\\Models\\TestModel',
-            'attachable_id' => fake()->uuid(),
+            'attachable_id' => fake()->randomNumber(1, 99),
             'file_name' => 'cascade_test.pdf',
             'file_path' => 'attachments/cascade_test.pdf',
             'file_size' => 1024,
@@ -211,7 +211,7 @@ final class CreateAttachmentsTableTest extends TestCase
 
         $attachment = Attachment::create([
             'attachable_type' => 'App\\Models\\Order',
-            'attachable_id' => '550e8400-e29b-41d4-a716-446655440000',
+            'attachable_id' => '55',
             'file_name' => 'invoice_2024_001.pdf',
             'file_path' => 'invoices/2024/01/invoice_2024_001.pdf',
             'file_size' => 2048576, // 2MB
@@ -249,7 +249,7 @@ final class CreateAttachmentsTableTest extends TestCase
             try {
                 $data = [
                     'attachable_type' => 'TestType',
-                    'attachable_id' => fake()->uuid(),
+                    'attachable_id' => fake()->randomNumber(1, 99),
                     'file_name' => 'test.pdf',
                     'file_path' => 'test/test.pdf',
                     'file_size' => 1024,
