@@ -23,7 +23,7 @@ class UserTest extends TestCase
 
         $this->assertInstanceOf(BelongsTo::class, $user->company());
         $this->assertEquals('company_id', $user->company()->getForeignKeyName());
-        $this->assertEquals('uuid', $user->company()->getOwnerKeyName());
+        $this->assertEquals('id', $user->company()->getOwnerKeyName());
     }
 
     /**
@@ -52,12 +52,12 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
-        $this->assertEquals($company->uuid, $user->company_id);
+        $this->assertEquals($company->id, $user->company_id);
         $this->assertInstanceOf(Company::class, $user->company);
-        $this->assertEquals($company->uuid, $user->company->uuid);
+        $this->assertEquals($company->id, $user->company->id);
         $this->assertEquals($company->name, $user->company->name);
     }
 
@@ -81,7 +81,7 @@ class UserTest extends TestCase
 
         $company = Company::factory()->create($companyData);
         $user = User::factory()->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
         $this->assertEquals($companyData['name'], $user->company->name);
@@ -103,12 +103,12 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $users = User::factory()->count(3)->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
         foreach ($users as $user) {
-            $this->assertEquals($company->uuid, $user->company_id);
-            $this->assertEquals($company->uuid, $user->company->uuid);
+            $this->assertEquals($company->id, $user->company_id);
+            $this->assertEquals($company->id, $user->company->id);
         }
 
         // Test from company perspective
@@ -128,19 +128,19 @@ class UserTest extends TestCase
         $company2 = Company::factory()->create(['name' => 'Company 2']);
 
         $user = User::factory()->create([
-            'company_id' => $company1->uuid
+            'company_id' => $company1->id
         ]);
 
         // Initial state
-        $this->assertEquals($company1->uuid, $user->company_id);
+        $this->assertEquals($company1->id, $user->company_id);
         $this->assertEquals('Company 1', $user->company->name);
 
         // Update company
-        $user->update(['company_id' => $company2->uuid]);
+        $user->update(['company_id' => $company2->id]);
         $user->refresh();
 
         // New state
-        $this->assertEquals($company2->uuid, $user->company_id);
+        $this->assertEquals($company2->id, $user->company_id);
         $this->assertEquals('Company 2', $user->company->name);
     }
 
@@ -152,7 +152,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
         // Initial state
@@ -175,7 +175,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         User::factory()->count(3)->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
         // Test that eager loading prevents N+1 queries
@@ -211,12 +211,12 @@ class UserTest extends TestCase
 
         // Create users for company 1
         User::factory()->count(2)->create([
-            'company_id' => $company1->uuid
+            'company_id' => $company1->id
         ]);
 
         // Create users for company 2
         User::factory()->count(3)->create([
-            'company_id' => $company2->uuid
+            'company_id' => $company2->id
         ]);
 
         // Create users without company
@@ -225,8 +225,8 @@ class UserTest extends TestCase
         ]);
 
         // Query users by company
-        $company1Users = User::where('company_id', $company1->uuid)->get();
-        $company2Users = User::where('company_id', $company2->uuid)->get();
+        $company1Users = User::where('company_id', $company1->id)->get();
+        $company2Users = User::where('company_id', $company2->id)->get();
         $usersWithoutCompany = User::whereNull('company_id')->get();
 
         $this->assertCount(2, $company1Users);
@@ -242,11 +242,11 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->uuid
+            'company_id' => $company->id
         ]);
 
         // Initial state
-        $this->assertEquals($company->uuid, $user->company_id);
+        $this->assertEquals($company->id, $user->company_id);
 
         // Delete company
         $company->delete();

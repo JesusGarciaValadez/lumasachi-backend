@@ -349,10 +349,10 @@ final class OrderTest extends TestCase
     {
         $order = Order::factory()->createQuietly();
 
-        $this->assertNotNull($order->id);
+        $this->assertNotNull($order->uuid);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
-            $order->id
+            $order->uuid
         );
     }
 

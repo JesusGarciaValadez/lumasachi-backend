@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
 use App\Models\Order;
@@ -18,6 +19,7 @@ final class OrderFactory extends Factory
         $userId = User::factory()->create()->id;
 
         return [
+            'uuid' => Str::uuid(),
             'customer_id' => User::factory()->create()->id,
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),

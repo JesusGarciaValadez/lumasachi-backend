@@ -20,21 +20,21 @@ class Company extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'uuid';
+    protected $primaryKey = 'id';
 
     /**
-     * Indicates if the IDs are auto-incrementing.
+     * The name of the primary key.
      *
-     * @var bool
+     * @var string
      */
-    public $incrementing = false;
+    protected $keyName = 'id';
 
     /**
      * The data type of the primary key.
      *
      * @var string
      */
-    protected $keyType = 'string';
+    protected $keyType = 'int';
 
     /**
      * The table associated with the model.
@@ -49,6 +49,7 @@ class Company extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'uuid',
         'name',
         'email',
         'phone',
@@ -75,6 +76,7 @@ class Company extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'uuid' => 'string',
         'is_active' => 'boolean',
         'settings' => 'json',
         'created_at' => 'datetime',
@@ -95,7 +97,7 @@ class Company extends Model
      */
     public function users()
     {
-        return $this->hasMany(\App\Models\User::class, 'company_id', 'uuid');
+        return $this->hasMany(\App\Models\User::class, 'company_id', 'id');
     }
 
     /**
@@ -103,7 +105,7 @@ class Company extends Model
      */
     public function activeUsers()
     {
-        return $this->hasMany(\App\Models\User::class, 'company_id', 'uuid')->where('is_active', true);
+        return $this->hasMany(\App\Models\User::class, 'company_id', 'id')->where('is_active', true);
     }
 
     /**

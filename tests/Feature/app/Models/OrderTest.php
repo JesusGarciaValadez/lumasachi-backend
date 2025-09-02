@@ -262,7 +262,7 @@ class OrderTest extends TestCase
         $this->assertCount(1, $order->fresh()->attachments);
 
         // Test detaching non-existent attachment
-        $result = $order->detach('00000000-0000-0000-0000-000000000000');
+        $result = $order->detach('00');
         $this->assertFalse($result);
 
         // Test detachAll
@@ -286,7 +286,7 @@ class OrderTest extends TestCase
         // Check that ID is a valid UUID (Laravel 11 uses UUID v7)
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $order->id
+            $order->uuid
         );
     }
 

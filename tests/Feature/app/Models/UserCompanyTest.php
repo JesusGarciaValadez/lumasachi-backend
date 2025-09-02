@@ -28,30 +28,30 @@ class UserCompanyTest extends TestCase
 
         // Create multiple users with different roles for the company
         $admin = User::factory()->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'role' => UserRole::ADMINISTRATOR,
             'first_name' => 'John',
             'last_name' => 'Admin'
         ]);
 
         $employee = User::factory()->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'role' => UserRole::EMPLOYEE,
             'first_name' => 'Jane',
             'last_name' => 'Employee'
         ]);
 
         $customer = User::factory()->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'role' => UserRole::CUSTOMER,
             'first_name' => 'Bob',
             'last_name' => 'Customer'
         ]);
 
         // Test that all users are associated with the company
-        $this->assertEquals($company->uuid, $admin->company_id);
-        $this->assertEquals($company->uuid, $employee->company_id);
-        $this->assertEquals($company->uuid, $customer->company_id);
+        $this->assertEquals($company->id, $admin->company_id);
+        $this->assertEquals($company->id, $employee->company_id);
+        $this->assertEquals($company->id, $customer->company_id);
 
         // Test accessing company from users
         $this->assertEquals('Acme Corporation', $admin->company->name);
@@ -89,13 +89,13 @@ class UserCompanyTest extends TestCase
 
         // Create active users
         $activeUsers = User::factory()->count(3)->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'is_active' => true
         ]);
 
         // Create inactive users
         $inactiveUsers = User::factory()->count(2)->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'is_active' => false
         ]);
 
@@ -135,11 +135,11 @@ class UserCompanyTest extends TestCase
 
         // Create users for each company
         User::factory()->count(2)->create([
-            'company_id' => $techCompany->uuid
+            'company_id' => $techCompany->id
         ]);
 
         User::factory()->count(3)->create([
-            'company_id' => $retailCompany->uuid
+            'company_id' => $retailCompany->id
         ]);
 
         // Query users with companies in specific cities
@@ -184,21 +184,21 @@ class UserCompanyTest extends TestCase
 
         // Create administrators for active company
         User::factory()->count(2)->create([
-            'company_id' => $activeCompany->uuid,
+            'company_id' => $activeCompany->id,
             'role' => UserRole::ADMINISTRATOR,
             'is_active' => true
         ]);
 
         // Create employees for active company
         User::factory()->count(3)->create([
-            'company_id' => $activeCompany->uuid,
+            'company_id' => $activeCompany->id,
             'role' => UserRole::EMPLOYEE,
             'is_active' => true
         ]);
 
         // Create users for inactive company
         User::factory()->count(2)->create([
-            'company_id' => $inactiveCompany->uuid,
+            'company_id' => $inactiveCompany->id,
             'is_active' => true
         ]);
 
@@ -227,8 +227,8 @@ class UserCompanyTest extends TestCase
 
         $this->assertCount(2, $usersPerCompany);
 
-        $activeCompanyUserCount = $usersPerCompany->where('company_id', $activeCompany->uuid)->first();
-        $inactiveCompanyUserCount = $usersPerCompany->where('company_id', $inactiveCompany->uuid)->first();
+        $activeCompanyUserCount = $usersPerCompany->where('company_id', $activeCompany->id)->first();
+        $inactiveCompanyUserCount = $usersPerCompany->where('company_id', $inactiveCompany->id)->first();
 
         $this->assertEquals(5, $activeCompanyUserCount->user_count);
         $this->assertEquals(2, $inactiveCompanyUserCount->user_count);
@@ -246,7 +246,7 @@ class UserCompanyTest extends TestCase
         ]);
 
         $user = User::factory()->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'first_name' => 'Test',
             'last_name' => 'User'
         ]);
@@ -259,6 +259,7 @@ class UserCompanyTest extends TestCase
 
         // Assert company data is included
         $this->assertArrayHasKey('company', $userData);
+        $this->assertEquals($company->id, $userData['company']['id']);
         $this->assertEquals($company->uuid, $userData['company']['uuid']);
         $this->assertEquals('Test Company', $userData['company']['name']);
         $this->assertEquals('test@example.com', $userData['company']['email']);

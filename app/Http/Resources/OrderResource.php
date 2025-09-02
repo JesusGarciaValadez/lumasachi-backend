@@ -16,6 +16,7 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'uuid' => $this->uuid,
             'customer' => new UserResource($this->whenLoaded('customer')),
             'title' => $this->title,
             'description' => $this->description,

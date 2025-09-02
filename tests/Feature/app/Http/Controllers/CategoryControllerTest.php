@@ -23,7 +23,8 @@ class CategoryControllerTest extends TestCase
         parent::setUp();
         $this->company = Company::factory()->create();
         $this->user = User::factory()->create([
-            'company_id' => $this->company->uuid,
+            'uuid' => fake()->uuid(),
+            'company_id' => $this->company->id,
             'role' => UserRole::EMPLOYEE,
             'is_active' => true,
         ]);
@@ -36,7 +37,7 @@ class CategoryControllerTest extends TestCase
 
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->uuid,
+            'company_id' => $company->id,
             'role' => UserRole::EMPLOYEE,
             'is_active' => true,
         ]);
@@ -51,7 +52,7 @@ class CategoryControllerTest extends TestCase
         // Categories for another company
         $otherCompany = Company::factory()->create();
         $otherUser = User::factory()->create([
-            'company_id' => $otherCompany->uuid,
+            'company_id' => $otherCompany->id,
             'role' => UserRole::EMPLOYEE->value,
             'is_active' => true,
         ]);
@@ -162,7 +163,7 @@ class CategoryControllerTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
-        $response = $this->deleteJson("/api/v1/categories/{$category->id}");
+        $response = $this->deleteJson("/api/v1/categories/{$category->uuid}");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Category deleted successfully.']);
@@ -175,7 +176,7 @@ class CategoryControllerTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        $response = $this->deleteJson("/api/v1/categories/{$category->id}");
+        $response = $this->deleteJson("/api/v1/categories/{$category->uuid}");
 
         $response->assertStatus(401);
     }
@@ -184,7 +185,7 @@ class CategoryControllerTest extends TestCase
     public function it_returns_a_403_error_if_user_is_a_customer_on_delete(): void
     {
         $customerUser = User::factory()->create([
-            'company_id' => $this->company->uuid,
+            'company_id' => $this->company->id,
             'role' => UserRole::CUSTOMER,
             'is_active' => true,
         ]);
@@ -196,7 +197,7 @@ class CategoryControllerTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
-        $response = $this->deleteJson("/api/v1/categories/{$category->id}");
+        $response = $this->deleteJson("/api/v1/categories/{$category->uuid}");
 
         $response->assertStatus(403);
     }
@@ -213,7 +214,7 @@ class CategoryControllerTest extends TestCase
             'updated_by' => $otherUser->id,
         ]);
 
-        $response = $this->deleteJson("/api/v1/categories/{$otherCategory->id}");
+        $response = $this->deleteJson("/api/v1/categories/{$otherCategory->uuid}");
 
         $response->assertStatus(403);
     }

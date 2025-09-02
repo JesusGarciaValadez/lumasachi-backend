@@ -27,6 +27,39 @@ final class Order extends Model
 {
     use HasFactory, HasUuids, HasAttachments;
 
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The name of the primary key.
+     *
+     * @var string
+     */
+    protected $keyName = 'id';
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'orders';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'customer_id',
         'title',
@@ -42,12 +75,27 @@ final class Order extends Model
         'assigned_to'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'estimated_completion' => 'datetime',
         'actual_completion' => 'datetime',
         'priority' => OrderPriority::class,
         'status' => OrderStatus::class,
     ];
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     // Relationships - Updated for unified architecture
     public function customer(): BelongsTo

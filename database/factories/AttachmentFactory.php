@@ -26,6 +26,7 @@ class AttachmentFactory extends Factory
         $attachable = Order::factory()->createQuietly();
 
         return [
+            'uuid' => Str::uuid(),
             'attachable_id' => $attachable->id,
             'attachable_type' => $attachable->getMorphClass(),
             'file_name' => $this->faker->word . '.' . $this->faker->fileExtension,

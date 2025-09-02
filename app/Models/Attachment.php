@@ -19,6 +19,34 @@ final class Attachment extends Model
     use HasFactory, HasUuids;
 
     /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The name of the primary key.
+     *
+     * @var string
+     */
+    protected $keyName = 'id';
+
+    /**
+     * The data type of the primary key.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'attachments';
+
+    /**
      * Create a new factory instance for the model.
      *
      * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
@@ -92,7 +120,13 @@ final class Attachment extends Model
         'application/x-7z-compressed',
     ];
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
+        'uuid',
         'attachable_type',
         'attachable_id',
         'file_name',
@@ -102,9 +136,25 @@ final class Attachment extends Model
         'uploaded_by'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
+        'uuid' => 'string',
         'file_size' => 'integer'
     ];
+
+    /**
+     * Get the columns that should receive a unique identifier.
+     *
+     * @return array
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     // Polymorphic relationships
     public function attachable(): MorphTo

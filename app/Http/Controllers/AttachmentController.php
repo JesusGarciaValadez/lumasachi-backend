@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -52,10 +53,11 @@ final class AttachmentController extends Controller
             $fileName = $validated['name'] ?? $file->getClientOriginalName();
 
             // Store the file
-            $path = $file->store('orders/' . $order->id, 'public');
+            $path = $file->store('orders/' . $order->uuid . '/' . $file->hashName(), 'public');
 
             // Create attachment record
             $attachment = $order->attachments()->create([
+                'uuid' => Str::uuid()->toString(),
                 'file_name' => $fileName,
                 'file_path' => $path,
                 'mime_type' => $file->getMimeType(),
@@ -65,6 +67,7 @@ final class AttachmentController extends Controller
 
             // Create history record
             OrderHistory::create([
+                'uuid' => Str::uuid()->toString(),
                 'order_id' => $order->id,
                 'field_changed' => 'attachments',
                 'old_value' => null,
@@ -219,6 +222,7 @@ final class AttachmentController extends Controller
             // Create history record
             if ($order) {
                 OrderHistory::create([
+                    'uuid' => Str::uuid()->toString(),
                     'order_id' => $order->id,
                     'field_changed' => 'attachments',
                     'old_value' => $attachment->file_name,

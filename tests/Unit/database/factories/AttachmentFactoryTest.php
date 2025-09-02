@@ -152,10 +152,10 @@ final class AttachmentFactoryTest extends TestCase
     {
         $attachment = Attachment::factory()->create();
 
-        $this->assertNotNull($attachment->id);
+        $this->assertNotNull($attachment->uuid);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $attachment->id
+            $attachment->uuid
         );
     }
 

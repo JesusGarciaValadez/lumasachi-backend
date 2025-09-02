@@ -14,9 +14,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id()->unsigned();
-            $table->foreignUuid('company_id')
+            $table->uuid();
+            $table->foreignId('company_id')
                 ->nullable()
-                ->constrained('companies', 'uuid')
+                ->constrained('companies')
                 ->nullOnDelete()
                 ->cascadeOnUpdate();
             $table->string('first_name');
@@ -32,6 +33,8 @@ return new class extends Migration
             $table->string('preferences')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->index('uuid');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

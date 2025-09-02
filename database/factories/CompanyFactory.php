@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 use App\Models\Company;
 
 /**
@@ -24,6 +25,7 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
+            'uuid' => Str::uuid()->toString(),
             'name' => fake()->company(),
             'email' => fake()->unique()->companyEmail(),
             'phone' => fake()->phoneNumber(),

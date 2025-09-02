@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Models\User;
 
@@ -79,6 +80,7 @@ class CategorySeeder extends Seeder
 
         foreach ($categories as $categoryData) {
             Category::create(array_merge($categoryData, [
+                'uuid' => Str::uuid(),
                 'is_active' => true,
                 'created_by' => $user->id,
                 'updated_by' => $user->id,

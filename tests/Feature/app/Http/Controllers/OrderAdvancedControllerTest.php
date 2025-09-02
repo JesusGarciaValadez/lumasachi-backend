@@ -57,7 +57,7 @@ class OrderAdvancedControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         // Step 1: OPEN -> IN_PROGRESS
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value,
             'notes' => 'Starting work on this order'
         ]);
@@ -85,7 +85,7 @@ class OrderAdvancedControllerTest extends TestCase
         ]);
 
         // Step 2: IN_PROGRESS -> READY_FOR_DELIVERY
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::READY_FOR_DELIVERY->value,
             'notes' => 'Order is ready for delivery'
         ]);
@@ -99,7 +99,7 @@ class OrderAdvancedControllerTest extends TestCase
             ]);
 
         // Step 3: READY_FOR_DELIVERY -> DELIVERED
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::DELIVERED->value,
             'notes' => 'Order delivered to customer'
         ]);
@@ -113,7 +113,7 @@ class OrderAdvancedControllerTest extends TestCase
             ]);
 
         // Step 4: DELIVERED -> PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::PAID->value,
             'notes' => 'Payment received'
         ]);
@@ -152,7 +152,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::CANCELLED->value,
             'notes' => 'Customer cancelled the order'
         ]);
@@ -183,7 +183,7 @@ class OrderAdvancedControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         // DELIVERED -> RETURNED
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::RETURNED->value,
             'notes' => 'Customer returned the order'
         ]);
@@ -197,7 +197,7 @@ class OrderAdvancedControllerTest extends TestCase
             ]);
 
         // RETURNED -> CANCELLED
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::CANCELLED->value,
             'notes' => 'Order cancelled after return'
         ]);
@@ -223,7 +223,7 @@ class OrderAdvancedControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         // DELIVERED -> NOT_PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::NOT_PAID->value,
             'notes' => 'Payment pending'
         ]);
@@ -237,7 +237,7 @@ class OrderAdvancedControllerTest extends TestCase
             ]);
 
         // NOT_PAID -> PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::PAID->value,
             'notes' => 'Payment received after follow-up'
         ]);
@@ -262,7 +262,7 @@ class OrderAdvancedControllerTest extends TestCase
         // Set order to paid status
         $this->order->update(['status' => OrderStatus::PAID->value]);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
@@ -288,7 +288,7 @@ class OrderAdvancedControllerTest extends TestCase
         // Set order to cancelled status
         $this->order->update(['status' => OrderStatus::CANCELLED->value]);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
@@ -312,7 +312,7 @@ class OrderAdvancedControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         // Try to go from OPEN directly to DELIVERED (skipping IN_PROGRESS and READY_FOR_DELIVERY)
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::DELIVERED->value
         ]);
 
@@ -339,7 +339,7 @@ class OrderAdvancedControllerTest extends TestCase
         $this->order->update(['status' => OrderStatus::IN_PROGRESS->value]);
 
         // Try to go back to OPEN
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::OPEN->value
         ]);
 
@@ -362,7 +362,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => 'InvalidStatus'
         ]);
 
@@ -383,7 +383,7 @@ class OrderAdvancedControllerTest extends TestCase
     #[Test]
     public function it_checks_status_update_requires_authentication()
     {
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
@@ -398,7 +398,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
@@ -421,7 +421,7 @@ class OrderAdvancedControllerTest extends TestCase
 
         $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$otherOrder->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$otherOrder->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value
         ]);
 
@@ -444,7 +444,7 @@ class OrderAdvancedControllerTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->postJson("/api/v1/orders/{$employeeOrder->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$employeeOrder->uuid}/status", [
             'status' => OrderStatus::IN_PROGRESS->value,
             'notes' => 'Admin updating status'
         ]);
@@ -472,7 +472,7 @@ class OrderAdvancedControllerTest extends TestCase
 
         $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/status", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
             'status' => OrderStatus::COMPLETED->value,
             'notes' => 'Order completed',
             'actual_completion' => now()->toIso8601String(), // Add actual_completion date
@@ -494,7 +494,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->employee2->id,
             'notes' => 'Reassigning to more experienced employee'
         ]);
@@ -532,7 +532,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->superAdmin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->employee2->id,
             'notes' => 'Super admin reassignment'
         ]);
@@ -556,7 +556,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->superAdmin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->admin->id,
             'notes' => 'Assigning to admin for review'
         ]);
@@ -580,7 +580,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->customer->id
         ]);
 
@@ -603,7 +603,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => '01234567890'
         ]);
 
@@ -626,7 +626,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->employee2->id
         ]);
 
@@ -641,7 +641,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->employee2->id
         ]);
 
@@ -654,7 +654,7 @@ class OrderAdvancedControllerTest extends TestCase
     #[Test]
     public function it_checks_assignment_requires_authentication()
     {
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", [
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
             'assigned_to' => $this->employee2->id
         ]);
 
@@ -669,7 +669,7 @@ class OrderAdvancedControllerTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        $response = $this->postJson("/api/v1/orders/{$this->order->id}/assign", []);
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", []);
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['assigned_to'])
@@ -695,7 +695,7 @@ class OrderAdvancedControllerTest extends TestCase
             'order_id' => $this->order->id
         ]);
 
-        $response = $this->getJson("/api/v1/orders/{$this->order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -736,7 +736,7 @@ class OrderAdvancedControllerTest extends TestCase
             'created_at' => now()
         ]);
 
-        $response = $this->getJson("/api/v1/orders/{$this->order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
 
         $response->assertOk();
 

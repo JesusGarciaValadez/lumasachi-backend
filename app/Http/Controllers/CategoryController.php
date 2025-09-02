@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoriesRequest;
@@ -43,6 +44,7 @@ final class CategoryController extends Controller
 
         $categoriesToInsert = array_map(function ($category) use ($userId, $now) {
             return [
+                'uuid' => Str::uuid()->toString(),
                 'name' => $category['name'],
                 'description' => $category['description'] ?? null,
                 'is_active' => $category['is_active'] ?? true,

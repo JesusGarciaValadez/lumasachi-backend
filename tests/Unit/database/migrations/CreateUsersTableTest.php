@@ -5,6 +5,7 @@ namespace Tests\Unit\database\migrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use App\Enums\UserRole;
 use App\Enums\UserType;
@@ -50,6 +51,7 @@ final class CreateUsersTableTest extends TestCase
     {
         $expectedColumns = [
             'id',
+            'uuid',
             'first_name',
             'last_name',
             'email',
@@ -122,6 +124,7 @@ final class CreateUsersTableTest extends TestCase
     {
         // Test by attempting to insert null values
         $user = User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'Test',
             'last_name' => 'Nullable',
             'email' => 'nullable@test.com',
@@ -166,6 +169,7 @@ final class CreateUsersTableTest extends TestCase
     {
         // Create a user
         User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'John',
             'last_name' => 'Doe',
             'email' => 'john@example.com',
@@ -178,6 +182,7 @@ final class CreateUsersTableTest extends TestCase
         $this->expectException(\Illuminate\Database\QueryException::class);
 
         User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'email' => 'john@example.com', // Same email
@@ -197,6 +202,7 @@ final class CreateUsersTableTest extends TestCase
 
         foreach ($roles as $role) {
             $user = User::create([
+                'uuid' => Str::uuid()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User',
                 'email' => 'test' . uniqid() . '@example.com',
@@ -221,6 +227,7 @@ final class CreateUsersTableTest extends TestCase
     public function it_checks_if_users_table_role_has_correct_default(): void
     {
         $user = User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
@@ -327,6 +334,7 @@ final class CreateUsersTableTest extends TestCase
     public function it_checks_if_can_create_user_with_all_fields(): void
     {
         $user = User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'John',
             'last_name' => 'Doe',
             'email' => 'john.doe@example.com',
@@ -357,6 +365,7 @@ final class CreateUsersTableTest extends TestCase
     public function it_checks_if_can_create_user_with_minimal_fields(): void
     {
         $user = User::create([
+            'uuid' => Str::uuid()->toString(),
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'email' => 'jane.smith@example.com',

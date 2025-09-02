@@ -13,8 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('attachments', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuidMorphs('attachable');
+            $table->id()->unsigned()->primary();
+            $table->uuid();
+            $table->morphs('attachable');
             $table->index(['attachable_type', 'attachable_id'], 'attachable_index');
             $table->string('file_name');
             $table->string('file_path');

@@ -16,9 +16,11 @@ class CompanySeeder extends Seeder
     {
         $faker = Faker::create();
 
+        $index = 0;
+
         $companies = [
             [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid()->toString(),
                 'name' => 'Acme Corporation',
                 'description' => 'A leading provider of innovative solutions and services.',
                 'phone' => $faker->phoneNumber(),
@@ -34,7 +36,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid()->toString(),
                 'name' => 'TechVentures Inc.',
                 'description' => 'Specializing in cutting-edge technology and software development.',
                 'phone' => $faker->phoneNumber(),
@@ -50,7 +52,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid()->toString(),
                 'name' => 'Global Solutions Ltd.',
                 'description' => 'International consulting and business services.',
                 'phone' => $faker->phoneNumber(),
@@ -66,7 +68,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid()->toString(),
                 'name' => 'StartUp Hub',
                 'description' => 'Incubator and accelerator for emerging businesses.',
                 'phone' => $faker->phoneNumber(),
@@ -82,7 +84,7 @@ class CompanySeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'uuid' => Str::uuid(),
+                'uuid' => Str::uuid()->toString(),
                 'name' => 'Legacy Enterprises',
                 'description' => 'Traditional business with modern approach.',
                 'phone' => $faker->phoneNumber(),
@@ -100,7 +102,7 @@ class CompanySeeder extends Seeder
         ];
 
         foreach ($companies as $company) {
-            Company::create($company);
+            Company::factory()->create($company);
         }
     }
 }

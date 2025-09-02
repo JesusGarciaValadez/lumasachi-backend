@@ -27,6 +27,7 @@ final class CreateCompanyTableTest extends TestCase
     public function it_checks_if_companies_table_has_all_required_columns(): void
     {
         $expectedColumns = [
+            'id',
             'uuid',
             'name',
             'email',

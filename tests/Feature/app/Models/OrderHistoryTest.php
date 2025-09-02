@@ -328,22 +328,22 @@ class OrderHistoryTest extends TestCase
     }
 
     /**
-     * Test UUID primary key functionality
+     * Test UUID functionality
      */
     #[Test]
-    public function it_checks_if_uuid_primary_key(): void
+    public function it_checks_if_uuid_exists(): void
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id
         ]);
 
-        $this->assertIsString($orderHistory->id);
-        $this->assertEquals(36, strlen($orderHistory->id)); // UUID length with hyphens
+        $this->assertIsString($orderHistory->uuid);
+        $this->assertEquals(36, strlen($orderHistory->uuid)); // UUID length with hyphens
         // Laravel uses UUID v7 (ordered UUIDs) by default
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $orderHistory->id
+            $orderHistory->uuid
         );
     }
 

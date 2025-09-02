@@ -14,8 +14,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_histories', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('order_id')
+            $table->id()->unsigned()->primary();
+            $table->uuid();
+            $table->foreignId('order_id')
                 ->index()
                 ->constrained('orders')
                 ->cascadeOnDelete()

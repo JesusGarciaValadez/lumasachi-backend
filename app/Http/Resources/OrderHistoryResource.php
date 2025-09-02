@@ -16,6 +16,7 @@ class OrderHistoryResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'uuid' => $this->uuid,
             'order_id' => $this->order_id,
             'field_changed' => $this->field_changed,
             'old_value' => $this->old_value,
@@ -32,7 +33,7 @@ class OrderHistoryResource extends JsonResource
     /**
      * Get attachments related to this history entry.
      * Only returns attachments for attachment-related history entries.
-     * 
+     *
      * @return array
      */
     private function getRelatedAttachments(): array
@@ -47,11 +48,11 @@ class OrderHistoryResource extends JsonResource
             // Look for attachment created within 1 minute of this history entry
             $historyTime = $this->created_at;
             $timeBuffer = 60; // 60 seconds buffer
-            
+
             // For upload events, new_value contains the filename
             // For deletion events, old_value contains the filename
             $filename = $this->new_value ?: $this->old_value;
-            
+
             if ($filename && isset($this->order->attachments)) {
                 // Filter the already-loaded attachments collection instead of querying database
                 $attachment = $this->order->attachments
@@ -64,7 +65,7 @@ class OrderHistoryResource extends JsonResource
                         );
                     })
                     ->first();
-                
+
                 if ($attachment) {
                     return [new AttachmentResource($attachment->load('uploadedBy'))];
                 }

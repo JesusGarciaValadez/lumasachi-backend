@@ -46,6 +46,7 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = new OrderHistory();
 
         $expected = [
+            'uuid',
             'order_id',
             'field_changed',
             'old_value',
@@ -307,10 +308,10 @@ final class OrderHistoryTest extends TestCase
             'created_by' => $user->id
         ]);
 
-        $this->assertNotNull($orderHistory->id);
+        $this->assertNotNull($orderHistory->uuid);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $orderHistory->id
+            $orderHistory->uuid
         );
     }
 

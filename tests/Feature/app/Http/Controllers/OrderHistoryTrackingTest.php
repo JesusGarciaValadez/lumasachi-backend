@@ -32,7 +32,7 @@ class OrderHistoryTrackingTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::IN_PROGRESS->value,
         ]);
 
@@ -62,7 +62,7 @@ class OrderHistoryTrackingTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'priority' => OrderPriority::URGENT->value,
         ]);
 
@@ -94,7 +94,7 @@ class OrderHistoryTrackingTest extends TestCase
             'category_id' => $category->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::DELIVERED->value,
             'priority' => OrderPriority::HIGH->value,
             'title' => 'Updated Title',
@@ -145,7 +145,7 @@ class OrderHistoryTrackingTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'assigned_to' => $employee->id,
         ]);
 
@@ -177,7 +177,7 @@ class OrderHistoryTrackingTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'estimated_completion' => $newDate->toISOString(),
         ]);
 
@@ -216,7 +216,7 @@ class OrderHistoryTrackingTest extends TestCase
         $initialHistoryCount = OrderHistory::where('order_id', $order->id)->count();
 
         // Update with same values
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
@@ -241,7 +241,7 @@ class OrderHistoryTrackingTest extends TestCase
             'category_id' => $category->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'notes' => null,
         ]);
 
@@ -267,7 +267,7 @@ class OrderHistoryTrackingTest extends TestCase
             'assigned_to' => User::factory()->create()->id,
         ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->id}", [
+        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'assigned_to' => null,
         ]);
 
@@ -288,7 +288,7 @@ class OrderHistoryTrackingTest extends TestCase
             'order_id' => $order->id,
         ]);
 
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -339,7 +339,7 @@ class OrderHistoryTrackingTest extends TestCase
         ]);
 
         // Filter by status field
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history?field=" . OrderHistory::FIELD_STATUS);
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=" . OrderHistory::FIELD_STATUS);
 
         $response->assertOk();
         $this->assertCount(5, $response->json('data'));
@@ -363,11 +363,11 @@ class OrderHistoryTrackingTest extends TestCase
         ]);
 
         // Create a status change
-        $this->putJson("/api/v1/orders/{$order->id}", [
+        $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::DELIVERED->value,
         ]);
 
-        $response = $this->getJson("/api/v1/orders/{$order->id}/history");
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
         $response->assertOk();
 

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
-            $table->id();
+            $table->id()->unsigned()->primary();
+            $table->uuid();
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
@@ -21,6 +22,8 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users')->cascadeOnUpdate()->nullOnDelete();
             $table->foreignId('updated_by')->constrained('users')->cascadeOnUpdate()->nullOnDelete();
             $table->timestamps();
+
+            $table->index('uuid');
         });
     }
 
