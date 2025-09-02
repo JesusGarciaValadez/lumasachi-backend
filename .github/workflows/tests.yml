@@ -58,8 +58,5 @@ jobs:
       - name: Migrate testing DB
         run: php artisan migrate --env=testing --force
 
-      - name: Build Assets
-        run: npm run build
-
       - name: Tests
         run: ./vendor/bin/phpunit
