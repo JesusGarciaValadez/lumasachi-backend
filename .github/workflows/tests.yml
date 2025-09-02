@@ -17,8 +17,14 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_DATABASE: testing
-          MYSQL_ROOT_PASSWORD: password
+          APP_ENV: local
+          APP_DEBUG: true
+          DB_CONNECTION: pgsql
+          DB_HOST: pgsql
+          DB_PORT: 5432
+          DB_DATABASE: laravel
+          DB_USERNAME: sail
+          DB_PASSWORD: password
         ports: [3306:3306]
         options: >-
           --health-cmd="mysqladmin ping -ppassword"
