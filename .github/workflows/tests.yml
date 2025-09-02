@@ -31,7 +31,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Copy CI env
-        run: cp .env.example .env
+        run: cp .env.example .env.testing
+
+      - name: Configure .env.testing
+        run: |
+          kv() { key="$1"; val="$2"; if grep -qE "^[#\s]*${key}=" .env.testing; then sed -i "s|^[#\s]*${key}=.*|${key}=${val}|" .env.testing; else echo "${key}=${val}" >> .env.testing; fi; }
+          kv APP_ENV testing
+          kv APP_DEBUG true
+          kv DB_CONNECTION pgsql
+          kv DB_HOST pgsql
+          kv DB_PORT 5432
+          kv DB_DATABASE laravel
+          kv DB_USERNAME sail
+          kv DB_PASSWORD password
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -71,10 +83,8 @@ jobs:
 
       - name: Migrate testing DB
         run: |
-          APP_ENV=local APP_DEBUG=true DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=laravel DB_USERNAME=sail DB_PASSWORD=password \
-          ./vendor/bin/sail artisan migrate --force
+          ./vendor/bin/sail artisan migrate --force --env=testing
 
       - name: Tests
         run: |
-          APP_ENV=local APP_DEBUG=true DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=laravel DB_USERNAME=sail DB_PASSWORD=password \
-          ./vendor/bin/sail artisan test --parallel --processes=auto
+          ./vendor/bin/sail artisan test --parallel --processes=auto --env=testing
