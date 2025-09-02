@@ -104,7 +104,7 @@ final class CreateUsersTableTest extends TestCase
         }
 
         // Test boolean column - PostgreSQL returns 'bool'
-        if (env('DB_CONNECTION') === 'pgsql') {
+        if (config('database.default') === 'pgsql') {
             $this->assertEquals('bool', Schema::getColumnType('users', 'is_active'));
         } else {
             $this->assertContains(Schema::getColumnType('users', 'is_active'), ['boolean', 'bool']);
