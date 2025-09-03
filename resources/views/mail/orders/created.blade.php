@@ -15,7 +15,7 @@
 - Priority: __{{ $order->priority->value }}__
 </x-mail::panel>
 
-<x-mail::button url="{{ route('orders.show', $order->uuid) }}" color="red">View Order</x-mail::button>
+<x-mail::button url="{{ route('web.orders.show', [$order->uuid]) }}" color="red">View Order</x-mail::button>
 
     Thank you,
     {{ config('app.name') }}
