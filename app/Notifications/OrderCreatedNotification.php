@@ -13,6 +13,21 @@ class OrderCreatedNotification extends Notification implements ShouldQueue
     use Queueable;
 
     /**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     *
+     * @var int
+     */
+    public $timeout = 120;
+
+
+    /**
      * Create a new notification instance.
      */
     public function __construct(
@@ -47,7 +62,7 @@ class OrderCreatedNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'order_id' => $this->order->id,
+            'order_id' => $this->order->uuid,
         ];
     }
 }
