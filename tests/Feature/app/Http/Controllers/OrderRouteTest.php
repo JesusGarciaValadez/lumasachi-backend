@@ -16,7 +16,7 @@ class OrderRouteTest extends TestCase
     public function it_redirects_guest_to_login_when_accessing_order_route(): void
     {
         $order = Order::factory()->createQuietly();
-        $response = $this->get(route('orders.show', $order->uuid));
+        $response = $this->get(route('web.orders.show', [$order->uuid]));
         $response->assertRedirect('/login');
     }
 
@@ -28,8 +28,8 @@ class OrderRouteTest extends TestCase
 
         $order = Order::factory()->createQuietly(['customer_id' => $user->id]);
 
-        $response = $this->get(route('orders.show', $order->uuid));
+        $response = $this->get(route('web.orders.show', [$order->uuid]));
         $response->assertOk();
-        $response->assertJsonFragment($order->title);
+        $response->assertSee($order->title);
     }
 }

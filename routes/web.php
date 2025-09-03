@@ -20,5 +20,5 @@ Route::middleware(['auth', 'verified', 'can:view,order'])->group(function () {
         return response()->json(
             new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
         );
-    })->name('orders.show');
+    })->name('web.orders.show');
 });
