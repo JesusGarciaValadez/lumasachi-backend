@@ -26,7 +26,6 @@ class OrderCreatedNotification extends Notification implements ShouldQueue
      */
     public $timeout = 120;
 
-
     /**
      * Create a new notification instance.
      */
