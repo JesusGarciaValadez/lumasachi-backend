@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Resources\OrderResource;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,8 +15,10 @@ Route::get('dashboard', function () {
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('orders/{order}', function (App\Models\Order $order) {
-        return $order->toArray();
+Route::middleware(['auth', 'verified', 'can:view,order'])->group(function () {
+    Route::get('orders/{order:uuid}', function (App\Models\Order $order) {
+        return response()->json(
+            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+        );
     })->name('orders.show');
 });
