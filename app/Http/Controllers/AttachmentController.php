@@ -173,10 +173,7 @@ final class AttachmentController extends Controller
         return response(Storage::temporaryUrl(
             $attachment->file_path,
             now()->addMinutes(5)
-        ), 200, [
-            'Content-Type' => $attachment->mime_type,
-            'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"'
-        ]);
+        ));
     }
 
     /**
