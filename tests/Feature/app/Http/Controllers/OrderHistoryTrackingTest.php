@@ -25,12 +25,13 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
+        $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::OPEN->value,
-            'category_id' => $category->id,
+            // 'category_id' => $categories[0]->id,
             'created_by' => $user->id,
         ]);
+        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::IN_PROGRESS->value,
@@ -55,12 +56,13 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
+        $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'priority' => OrderPriority::NORMAL->value,
-            'category_id' => $category->id,
+            // 'category_id' => $categories[0]->id,
             'created_by' => $user->id,
         ]);
+        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'priority' => OrderPriority::URGENT->value,
@@ -85,20 +87,21 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
+        $categories = Category::factory()->count(2)->create();
         $newCategory = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::LOW->value,
             'title' => 'Original Title',
-            'category_id' => $category->id,
+            // 'category_id' => $categories[0]->id,
         ]);
+        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::DELIVERED->value,
             'priority' => OrderPriority::HIGH->value,
             'title' => 'Updated Title',
-            'category_id' => $newCategory->id,
+            'categories' => [$newCategory->id],
         ]);
 
         $response->assertOk();
@@ -106,7 +109,7 @@ class OrderHistoryTrackingTest extends TestCase
         // Check that multiple history entries were created
         $histories = OrderHistory::where('order_id', $order->id)->get();
 
-        // Should have 4 history entries (status, priority, title, category_id)
+        // Should have 4 history entries (status, priority, title, categories)
         $this->assertCount(4, $histories);
 
         // Verify each field change
@@ -125,10 +128,10 @@ class OrderHistoryTrackingTest extends TestCase
         $this->assertEquals('Original Title', $titleHistory->old_value);
         $this->assertEquals('Updated Title', $titleHistory->new_value);
 
-        $categoryHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_CATEGORY);
+        $categoryHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_CATEGORIES);
         $this->assertNotNull($categoryHistory);
-        $this->assertEquals($category->id, $categoryHistory->old_value);
-        $this->assertEquals($newCategory->id, $categoryHistory->new_value);
+        $this->assertEquals(json_encode($categories->pluck('id')->toArray()), $categoryHistory->getRawOriginal('old_value'));
+        $this->assertEquals(json_encode([$newCategory->id]), $categoryHistory->getRawOriginal('new_value'));
     }
 
     #[Test]
@@ -141,9 +144,10 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'assigned_to' => $user->id,
-            'category_id' => $category->id,
+            // 'category_id' => $category->id,
             'created_by' => $user->id,
         ]);
+        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'assigned_to' => $employee->id,
@@ -173,9 +177,10 @@ class OrderHistoryTrackingTest extends TestCase
 
         $order = Order::factory()->createQuietly([
             'estimated_completion' => $oldDate,
-            'category_id' => $category->id,
+            // 'category_id' => $category->id,
             'created_by' => $user->id,
         ]);
+        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'estimated_completion' => $newDate->toISOString(),
@@ -209,8 +214,9 @@ class OrderHistoryTrackingTest extends TestCase
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
-            'category_id' => $category->id,
+            // 'category_id' => $category->id,
         ]);
+        $order->categories()->attach($category->id);
 
         // Count existing histories
         $initialHistoryCount = OrderHistory::where('order_id', $order->id)->count();
@@ -238,8 +244,9 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'notes' => 'Some important notes',
-            'category_id' => $category->id,
+            // 'category_id' => $category->id,
         ]);
+        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'notes' => null,
@@ -359,8 +366,9 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::OPEN->value,
-            'category_id' => $category->id,
+            // 'category_id' => $category->id,
         ]);
+        $order->categories()->attach($category->id);
 
         // Create a status change
         $this->putJson("/api/v1/orders/{$order->uuid}", [

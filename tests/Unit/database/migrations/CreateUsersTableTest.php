@@ -306,6 +306,7 @@ final class CreateUsersTableTest extends TestCase
         // Drop dependent tables first to avoid foreign key constraint issues
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
+        Schema::dropIfExists('order_category');
         Schema::dropIfExists('orders');
         Schema::dropIfExists('categories');
 

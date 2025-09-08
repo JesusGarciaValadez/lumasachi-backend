@@ -3,6 +3,8 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\UserResource;
 
 class OrderResource extends JsonResource
 {
@@ -22,7 +24,7 @@ class OrderResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'priority' => $this->priority,
-            'category' => $this->category ? $this->category->name : null,
+            'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'estimated_completion' => $this->estimated_completion,
             'actual_completion' => $this->actual_completion,
             'notes' => $this->notes,

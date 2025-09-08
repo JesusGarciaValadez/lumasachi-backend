@@ -14,6 +14,7 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
 use App\Traits\HasAttachments;
 use Database\Factories\OrderHistoryFactory;
+use App\Models\Category;
 
 /**
  * @mixin IdeHelperOrderHistory
@@ -95,7 +96,7 @@ class OrderHistory extends Model
     const FIELD_ESTIMATED_COMPLETION = 'estimated_completion';
     const FIELD_ACTUAL_COMPLETION = 'actual_completion';
     const FIELD_NOTES = 'notes';
-    const FIELD_CATEGORY = 'category_id';
+    const FIELD_CATEGORIES = 'categories';
 
     /**
      * Get the columns that should receive a unique identifier.
@@ -149,6 +150,15 @@ class OrderHistory extends Model
                     return $value;
                 }
                 return $value ? \Carbon\Carbon::parse($value) : null;
+            case self::FIELD_CATEGORIES:
+                // Keep raw JSON string for categories; consumers (like description) will decode as needed
+                if (is_string($value)) {
+                    return $value;
+                }
+                if (is_array($value)) {
+                    return json_encode($value);
+                }
+                return null;
             default:
                 return $value;
         }
@@ -187,6 +197,11 @@ class OrderHistory extends Model
             return $value->toISOString();
         }
 
+        if ($field === self::FIELD_CATEGORIES) {
+            // Ensure value is an array of IDs, then encode to JSON
+            return json_encode(collect($value)->map(fn($item) => is_object($item) ? $item->id : $item)->toArray());
+        }
+
         return (string) $value;
     }
 
@@ -199,6 +214,28 @@ class OrderHistory extends Model
         $oldValue = $this->getFormattedValue($this->field_changed, $this->old_value);
         $newValue = $this->getFormattedValue($this->field_changed, $this->new_value);
 
+        if ($this->field_changed === self::FIELD_CATEGORIES) {
+            $oldCategoryNames = $this->getCategoryNames($this->old_value);
+            $newCategoryNames = $this->getCategoryNames($this->new_value);
+
+            if (empty($oldCategoryNames)) {
+                return "Categories added: " . implode(', ', $newCategoryNames);
+            } elseif (empty($newCategoryNames)) {
+                return "Categories removed (was: " . implode(', ', $oldCategoryNames) . ")";
+            } else {
+                $added = array_diff($newCategoryNames, $oldCategoryNames);
+                $removed = array_diff($oldCategoryNames, $newCategoryNames);
+                $changes = [];
+                if (!empty($added)) {
+                    $changes[] = "added: " . implode(', ', $added);
+                }
+                if (!empty($removed)) {
+                    $changes[] = "removed: " . implode(', ', $removed);
+                }
+                return "Categories updated (" . implode('; ', $changes) . ")";
+            }
+        }
+
         if (is_null($this->old_value)) {
             return ucfirst($field) . " set to: {$newValue}";
         }
@@ -208,6 +245,24 @@ class OrderHistory extends Model
         }
 
         return ucfirst($field) . " changed from {$oldValue} to {$newValue}";
+    }
+
+    /**
+     * Get category names from a JSON string of category IDs.
+     */
+    protected function getCategoryNames(?string $value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        $categoryIds = json_decode($value, true);
+        if (!is_array($categoryIds)) {
+            return [];
+        }
+
+        $categories = Category::whereIn('id', $categoryIds)->pluck('name')->toArray();
+        return $categories;
     }
 
     /**

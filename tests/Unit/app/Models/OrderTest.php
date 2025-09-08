@@ -53,7 +53,7 @@ final class OrderTest extends TestCase
             'description',
             'status',
             'priority',
-        'category_id',
+            // 'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',
@@ -74,6 +74,7 @@ final class OrderTest extends TestCase
         $order = new Order();
         $casts = $order->getCasts();
 
+        $this->assertArrayNotHasKey('category_id', $casts);
         $this->assertArrayHasKey('estimated_completion', $casts);
         $this->assertArrayHasKey('actual_completion', $casts);
         $this->assertStringContainsString('datetime', $casts['estimated_completion']);
@@ -178,7 +179,22 @@ final class OrderTest extends TestCase
     }
 
     /**
-     * Test can create an order
+     * Test order can have multiple categories
+     */
+    #[Test]
+    public function it_checks_order_has_many_categories(): void
+    {
+        $order = Order::factory()->createQuietly();
+        $categories = Category::factory()->count(2)->create();
+        $order->categories()->attach($categories->pluck('id'));
+
+        $this->assertCount(2, $order->categories);
+        $this->assertTrue($order->categories->contains($categories->first()));
+        $this->assertTrue($order->categories->contains($categories->last()));
+    }
+
+    /**
+     * Test order can be created
      */
     #[Test]
     public function it_checks_if_can_create_an_order(): void
@@ -189,27 +205,31 @@ final class OrderTest extends TestCase
         $order = Order::factory()->createQuietly([
             'created_by' => $user->id,
             'updated_by' => $user->id,
-            'category_id' => $category->id,
         ]);
+        $order->categories()->attach($category->id);
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'created_by' => $user->id,
+        ]);
+        $this->assertDatabaseHas('order_category', [
+            'order_id' => $order->id,
             'category_id' => $category->id,
         ]);
     }
 
     /**
-     * Test belongs to a category
+     * Test order has categories relationship
      */
     #[Test]
-    public function it_checks_if_belongs_to_a_category(): void
+    public function it_checks_if_order_has_categories_relationship(): void
     {
-        $category = Category::factory()->create();
-        $order = Order::factory()->createQuietly(['category_id' => $category->id]);
+        $order = Order::factory()->createQuietly();
+        $categories = Category::factory()->count(2)->create();
+        $order->categories()->attach($categories->pluck('id'));
 
-        $this->assertInstanceOf(BelongsTo::class, $order->category());
-        $this->assertEquals($category->id, $order->category->id);
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, $order->categories());
+        $this->assertEquals(2, $order->categories->count());
     }
 
     /**
@@ -283,7 +303,6 @@ final class OrderTest extends TestCase
             'description' => 'Test Description',
             'status' => OrderStatus::OPEN,
             'priority' => OrderPriority::HIGH,
-            'category_id' => Category::factory()->create()->id,
             'estimated_completion' => now()->addDays(7),
             'notes' => 'Test notes',
             'created_by' => $creator->id,
@@ -297,7 +316,6 @@ final class OrderTest extends TestCase
         $this->assertEquals($data['description'], $order->description);
         $this->assertEquals($data['status']->value, $order->status->value);
         $this->assertEquals($data['priority']->value, $order->priority->value);
-        $this->assertEquals($data['category_id'], $order->category_id);
         $this->assertEquals($data['notes'], $order->notes);
     }
 
@@ -316,7 +334,6 @@ final class OrderTest extends TestCase
             'description' => 'Minimal Description',
             'status' => OrderStatus::OPEN,
             'priority' => OrderPriority::NORMAL,
-            'category_id' => Category::factory()->create()->id,
             'estimated_completion' => now()->addDays(3),
             'created_by' => $creator->id,
             'updated_by' => $creator->id,

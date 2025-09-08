@@ -307,7 +307,7 @@ class GenericOrderHistoryTest extends TestCase
             OrderHistory::FIELD_ESTIMATED_COMPLETION,
             OrderHistory::FIELD_ACTUAL_COMPLETION,
             OrderHistory::FIELD_NOTES,
-            OrderHistory::FIELD_CATEGORY,
+            OrderHistory::FIELD_CATEGORIES,
         ]);
     }
 

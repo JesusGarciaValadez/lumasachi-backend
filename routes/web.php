@@ -18,7 +18,7 @@ require __DIR__ . '/auth.php';
 Route::middleware(['auth', 'verified', 'can:view,order'])->group(function () {
     Route::get('orders/{order:uuid}', function (App\Models\Order $order) {
         return response()->json(
-            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
         );
     })->name('web.orders.show');
 });

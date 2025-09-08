@@ -30,7 +30,7 @@ final class OrderController extends Controller
         $user = $request->user();
 
         // Orders must be filtered by the user's role if isCustomer
-        $ordersQuery = Order::with(['customer', 'assignedTo', 'createdBy', 'category'])
+        $ordersQuery = Order::with(['customer', 'assignedTo', 'createdBy', 'categories'])
             ->when($user->isCustomer(), function ($query) use ($user) {
                 $query->where('customer_id', $user->id);
             })
@@ -56,15 +56,22 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
 
+        $categories = $validated['categories'] ?? [];
+        unset($validated['categories']);
+
         $order = Order::create(array_merge($validated, [
             'uuid' => Str::uuid7()->toString(),
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id
         ]));
 
+        if (!empty($categories)) {
+            $order->categories()->attach($categories);
+        }
+
         return response()->json([
             'message' => 'Order created successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'category']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'categories']))
         ], 201);
     }
 
@@ -77,7 +84,7 @@ final class OrderController extends Controller
     public function show(Order $order): JsonResponse
     {
         return response()->json(
-            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
         );
     }
 
@@ -92,13 +99,38 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
 
+        $categoriesProvided = array_key_exists('categories', $validated);
+        $categories = $categoriesProvided ? $validated['categories'] : null;
+        unset($validated['categories']);
+
+        $oldIds = $categoriesProvided ? $order->categories()->pluck('id')->toArray() : null;
+
         $order->update(array_merge($validated, [
             'updated_by' => $request->user()->id
         ]));
 
+        if ($categoriesProvided) {
+            $order->categories()->sync($categories);
+            $newIds = $order->categories()->pluck('id')->toArray();
+
+            sort($oldIds);
+            sort($newIds);
+
+            if ($oldIds !== $newIds) {
+                OrderHistory::create([
+                    'uuid' => Str::uuid7()->toString(),
+                    'order_id' => $order->id,
+                    'field_changed' => OrderHistory::FIELD_CATEGORIES,
+                    'old_value' => $oldIds,
+                    'new_value' => $newIds,
+                    'created_by' => $request->user()->id
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'Order updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
         ]);
     }
 
@@ -136,7 +168,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order status updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
         ]);
     }
 
@@ -159,7 +191,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order assigned successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'category']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
         ]);
     }
 

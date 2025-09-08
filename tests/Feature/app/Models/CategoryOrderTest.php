@@ -54,15 +54,19 @@ class CategoryOrderTest extends TestCase
 
         // Create orders for maintenance category
         $maintenanceOrders = Order::factory()->count(3)->createQuietly([
-            'category_id' => $maintenanceCategory->id,
+            // 'category_id' => $maintenanceCategory->id,
             'customer_id' => $customer->id,
-        ]);
+        ])->each(function ($order) use ($maintenanceCategory) {
+            $order->categories()->attach($maintenanceCategory->id);
+        });
 
         // Create orders for development category
         $developmentOrders = Order::factory()->count(2)->createQuietly([
-            'category_id' => $developmentCategory->id,
+            // 'category_id' => $developmentCategory->id,
             'customer_id' => $customer->id,
-        ]);
+        ])->each(function ($order) use ($developmentCategory) {
+            $order->categories()->attach($developmentCategory->id);
+        });
 
         // Test category relationships
         $this->assertCount(3, $maintenanceCategory->orders);
@@ -81,29 +85,31 @@ class CategoryOrderTest extends TestCase
         $this->assertEquals($maintenanceCategory->id, $orderedCategories->first()->id);
         $this->assertEquals($developmentCategory->id, $orderedCategories[1]->id);
 
-        // Test order category relationship
+        // Test order categories relationship
         foreach ($maintenanceOrders as $order) {
-            $this->assertEquals('Mantenimiento', $order->category->name);
-            $this->assertEquals('#3B82F6', $order->category->color);
+            $this->assertCount(1, $order->categories);
+            $this->assertEquals('Mantenimiento', $order->categories->first()->name);
+            $this->assertEquals('#3B82F6', $order->categories->first()->color);
         }
 
         foreach ($developmentOrders as $order) {
-            $this->assertEquals('Desarrollo', $order->category->name);
-            $this->assertEquals('#EC4899', $order->category->color);
+            $this->assertCount(1, $order->categories);
+            $this->assertEquals('Desarrollo', $order->categories->first()->name);
+            $this->assertEquals('#EC4899', $order->categories->first()->color);
         }
 
         // Test querying orders by category
-        $maintenanceOrdersQuery = Order::whereHas('category', function ($query) {
+        $maintenanceOrdersQuery = Order::whereHas('categories', function ($query) {
             $query->where('name', 'Mantenimiento');
         })->get();
 
         $this->assertCount(3, $maintenanceOrdersQuery);
 
         // Test eager loading
-        $ordersWithCategory = Order::with('category')->get();
-        foreach ($ordersWithCategory as $order) {
-            $this->assertNotNull($order->category);
-            $this->assertTrue($order->relationLoaded('category'));
+        $ordersWithCategories = Order::with('categories')->get();
+        foreach ($ordersWithCategories as $order) {
+            $this->assertNotNull($order->categories);
+            $this->assertTrue($order->relationLoaded('categories'));
         }
     }
 
@@ -113,33 +119,30 @@ class CategoryOrderTest extends TestCase
         $user = User::factory()->create();
 
         $order = Order::factory()->createQuietly([
-            'category_id' => null,
             'customer_id' => $user->id,
         ]);
 
-        $this->assertNull($order->category_id);
-        $this->assertNull($order->category);
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'category_id' => null,
+        $this->assertCount(0, $order->categories);
+        $this->assertDatabaseMissing('order_category', [
+            'order_id' => $order->id,
         ]);
     }
 
     #[Test]
-    public function it_checks_if_deleting_category_sets_order_category_to_null(): void
+    public function it_checks_if_deleting_category_detaches_from_orders(): void
     {
         $category = Category::factory()->create();
-        $order = Order::factory()->createQuietly(['category_id' => $category->id]);
+        $order = Order::factory()->createQuietly();
+        $order->categories()->attach($category->id);
 
         // Verify initial state
-        $this->assertEquals($category->id, $order->category_id);
+        $this->assertCount(1, $order->fresh()->categories);
 
         // Delete category
         $category->delete();
 
-        // Refresh order and verify category_id is null
+        // Refresh order and verify category is detached
         $order->refresh();
-        $this->assertNull($order->category_id);
-        $this->assertNull($order->category);
+        $this->assertCount(0, $order->categories);
     }
 }
