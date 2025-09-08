@@ -125,5 +125,11 @@ Route::group(['prefix' => 'v1'], function () {
     // Health Check Routes
     Route::get('/up', [HealthController::class, 'up'])->name('health.up');
     Route::get('/health', [HealthController::class, 'health'])->name('health.check');
+
+    // Users by company endpoints
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('users')->group(function () {
+        Route::get('/employees', [\App\Http\Controllers\UsersController::class, 'employees'])->name('api.users.employees');
+        Route::get('/customers', [\App\Http\Controllers\UsersController::class, 'customers'])->name('api.users.customers');
+    });
 });
 
