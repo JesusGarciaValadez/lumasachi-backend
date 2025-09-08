@@ -79,24 +79,4 @@ class StoreOrderRequest extends FormRequest
             'assigned_to.exists' => 'The selected employee does not exist.'
         ];
     }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        // Set default status if not provided
-        if (!$this->has('status')) {
-            $this->merge([
-                'status' => OrderStatus::OPEN->value
-            ]);
-        }
-
-        // Set default priority if not provided
-        if (!$this->has('priority')) {
-            $this->merge([
-                'priority' => OrderPriority::NORMAL->value
-            ]);
-        }
-    }
 }
