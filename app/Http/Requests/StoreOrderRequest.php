@@ -47,7 +47,6 @@ class StoreOrderRequest extends FormRequest
                 OrderPriority::HIGH->value,
                 OrderPriority::URGENT->value
             ]),
-            // 'category_id' => 'required|exists:categories,id',
             'categories' => 'required|array',
             'categories.*' => 'exists:categories,id',
             'estimated_completion' => 'nullable|date|after:today',
@@ -73,8 +72,6 @@ class StoreOrderRequest extends FormRequest
             'status.in' => 'The selected status is invalid.',
             'priority.required' => 'The order priority is required.',
             'priority.in' => 'The selected priority is invalid.',
-            // 'category_id.required' => 'The order category is required.',
-            // 'category_id.exists' => 'The selected category does not exist.',
             'categories.required' => 'At least one category is required.',
             'categories.array' => 'Categories must be an array.',
             'categories.*.exists' => 'One or more selected categories do not exist.',
@@ -86,4 +83,20 @@ class StoreOrderRequest extends FormRequest
     /**
      * Prepare the data for validation.
      */
+    protected function prepareForValidation(): void
+    {
+        // Set default status if not provided
+        if (!$this->has('status')) {
+            $this->merge([
+                'status' => OrderStatus::OPEN->value
+            ]);
+        }
+
+        // Set default priority if not provided
+        if (!$this->has('priority')) {
+            $this->merge([
+                'priority' => OrderPriority::NORMAL->value
+            ]);
+        }
+    }
 }
