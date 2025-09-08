@@ -35,7 +35,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
             'title',
             'description',
             'notes',
-            'category_id'
+            'categories'
         ];
 
         foreach ($trackedFields as $field) {
@@ -46,7 +46,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
                     'field_changed' => $field,
                     'old_value' => $order->getOriginal($field),
                     'new_value' => $order->getAttribute($field),
-                    'created_by' => auth()->id() ?? $order->updated_by,
+                    'created_by' => auth()?->id() ?? $order->updated_by,
                 ]);
             }
         }

@@ -34,6 +34,7 @@ class OrderHistoryAttachmentsFixTest extends TestCase
 
         // Create category first
         $category = Category::factory()->create();
+        $category2 = Category::factory()->create();
 
         // Create test order
         $order = Order::factory()->createQuietly([
@@ -41,12 +42,14 @@ class OrderHistoryAttachmentsFixTest extends TestCase
             'created_by' => $admin->id,
             'assigned_to' => $admin->id,
             'status' => OrderStatus::OPEN->value,
-            'category_id' => $category->id
+            // 'category_id' => $category->id
         ]);
+        $order->categories()->attach([$category->id, $category2->id]);
 
         // 1. Make a non-attachment change (status change)
         $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::IN_PROGRESS->value
+            'status' => OrderStatus::IN_PROGRESS->value,
+            'categories' => [$category->id] // Update to reflect actual categories being sent
         ]);
 
         // 2. Upload an attachment (this should create attachment history)
@@ -59,7 +62,8 @@ class OrderHistoryAttachmentsFixTest extends TestCase
 
         // 3. Make another non-attachment change
         $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'title' => 'Updated Title'
+            'title' => 'Updated Title',
+            'categories' => [$category2->id] // Update to reflect actual categories being sent
         ]);
 
         // 4. Get order history
@@ -68,7 +72,7 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         $historyResponse->assertOk();
         $historyData = $historyResponse->json('data');
 
-        // Verify we have at least 3 history entries (could be more depending on what fields changed)
+        // Verify we have at least 3 history entries (status, attachments, title, categories)
         $this->assertGreaterThanOrEqual(3, count($historyData));
 
         // Find the attachment-related history entry
@@ -79,10 +83,19 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         $this->assertNotEmpty($attachmentHistory['attachments'], 'Attachment history should have attachment data');
         $this->assertEquals('test-image.jpg', $attachmentHistory['attachments'][0]['file_name']);
 
+        // Find the categories-related history entry
+        $categoriesHistory = collect($historyData)->firstWhere('field_changed', 'categories');
+        $this->assertNotNull($categoriesHistory, 'Should have categories history entry');
+        $this->assertStringContainsString('Categories updated', $categoriesHistory['description']);
+        $this->assertStringContainsString($category->name, $categoriesHistory['description']);
+        $this->assertStringContainsString($category2->name, $categoriesHistory['description']);
+
         // Non-attachment history entries should have empty attachments
         $nonAttachmentHistory = collect($historyData)->where('field_changed', '!=', 'attachments');
         foreach ($nonAttachmentHistory as $history) {
-            $this->assertEmpty($history['attachments'], "Non-attachment history entry (field: {$history['field_changed']}) should have empty attachments array");
+            if ($history['field_changed'] !== 'categories') {
+                $this->assertEmpty($history['attachments'], "Non-attachment history entry (field: {$history['field_changed']}) should have empty attachments array");
+            }
         }
     }
 }

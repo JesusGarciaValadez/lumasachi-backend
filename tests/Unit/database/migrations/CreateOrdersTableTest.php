@@ -43,7 +43,6 @@ final class CreateOrdersTableTest extends TestCase
             'description',
             'status',
             'priority',
-            'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',
@@ -104,13 +103,6 @@ final class CreateOrdersTableTest extends TestCase
                 "Column '{$column}' is not of type string/varchar"
             );
         }
-
-        // Test foreign key columns - category_id is bigint
-        $this->assertContains(
-            Schema::getColumnType('orders', 'category_id'),
-            ['bigint', 'int8'],
-            "Column 'category_id' is not of type bigint/int8"
-        );
 
         // Test text columns
         $textColumns = ['description', 'notes'];
@@ -174,6 +166,7 @@ final class CreateOrdersTableTest extends TestCase
         // Drop dependent tables first to avoid foreign key constraint issues
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
+        Schema::dropIfExists('order_category');
 
         // Run down method
         $migration = include base_path('database/migrations/2025_07_27_164818_create_orders_table.php');
@@ -196,13 +189,12 @@ final class CreateOrdersTableTest extends TestCase
     public function it_checks_if_data_insertion_with_order_model(): void
     {
         $user = User::factory()->create();
-        $order = Order::factory()->createQuietly([
+        $order = Order::factory()->withCategories()->createQuietly([
             'customer_id' => $user->id,
             'title' => 'Test Order',
             'description' => 'This is a test order.',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::LOW->value,
-            'category_id' => Category::factory()->create()->id,
             'estimated_completion' => now(),
             'actual_completion' => now(),
             'notes' => 'Test notes.',
@@ -231,7 +223,6 @@ final class CreateOrdersTableTest extends TestCase
             'description' => 'Testing nullable fields',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category_id' => null,
             'estimated_completion' => null,
             'actual_completion' => null,
             'notes' => null,
@@ -240,7 +231,8 @@ final class CreateOrdersTableTest extends TestCase
             'assigned_to' => $creator->id,
         ]);
 
-        $this->assertNull($order->category_id);
+        $order->load('categories');
+        $this->assertCount(0, $order->categories);
         $this->assertNull($order->estimated_completion);
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);

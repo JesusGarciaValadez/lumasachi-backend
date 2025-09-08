@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\UserRole;
 use App\Enums\OrderPriority;
@@ -66,7 +67,6 @@ final class Order extends Model
         'description',
         'status',
         'priority',
-        'category_id',
         'estimated_completion',
         'actual_completion',
         'notes',
@@ -81,6 +81,7 @@ final class Order extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'uuid' => 'string',
         'estimated_completion' => 'datetime',
         'actual_completion' => 'datetime',
         'priority' => OrderPriority::class,
@@ -123,9 +124,9 @@ final class Order extends Model
         return $this->hasMany(OrderHistory::class);
     }
 
-    public function category(): BelongsTo
+    public function categories(): BelongsToMany
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsToMany(Category::class, 'order_category');
     }
 
     /**

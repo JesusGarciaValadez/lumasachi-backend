@@ -14,6 +14,7 @@ use App\Models\OrderHistory;
 use App\Models\Attachment;
 use Database\Seeders\DatabaseSeeder;
 use PHPUnit\Framework\Attributes\Test;
+use App\Models\Category;
 
 final class DatabaseSeederTest extends TestCase
 {
@@ -185,6 +186,27 @@ final class DatabaseSeederTest extends TestCase
     }
 
     /**
+     * Test that orders have categories attached by the seeder.
+     */
+    #[Test]
+    public function it_checks_if_orders_have_categories_attached_by_seeder(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $orders = Order::with('categories')->has('categories')->get();
+        $this->assertGreaterThan(0, $orders->count());
+
+        foreach ($orders as $order) {
+            $this->assertGreaterThan(0, $order->categories->count());
+            $this->assertInstanceOf(Category::class, $order->categories->first());
+        }
+
+        // Check specific order categories
+        $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
+        $this->assertTrue($urgentOrder->categories->contains(Category::where('name', 'Desarrollo')->first()));
+    }
+
+    /**
      * Test that the seeder creates relationships correctly
      */
     #[Test]
@@ -280,7 +302,7 @@ final class DatabaseSeederTest extends TestCase
         $expectedFields = [
             OrderHistory::FIELD_ACTUAL_COMPLETION,
             OrderHistory::FIELD_ASSIGNED_TO,
-            OrderHistory::FIELD_CATEGORY,
+            OrderHistory::FIELD_CATEGORIES,
             OrderHistory::FIELD_ESTIMATED_COMPLETION,
             OrderHistory::FIELD_NOTES,
             OrderHistory::FIELD_PRIORITY,
@@ -322,7 +344,7 @@ final class DatabaseSeederTest extends TestCase
         $this->assertNotNull($notesChange);
 
         // Category change
-        $categoryChange = OrderHistory::where('field_changed', OrderHistory::FIELD_CATEGORY)
+        $categoryChange = OrderHistory::where('field_changed', OrderHistory::FIELD_CATEGORIES)
             ->whereNotNull('old_value')
             ->whereNotNull('new_value')
             ->first();

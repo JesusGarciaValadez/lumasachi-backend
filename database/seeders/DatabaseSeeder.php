@@ -155,13 +155,13 @@ class DatabaseSeeder extends Seeder
             'description' => 'Complete redesign of company website with modern UI/UX. Must be responsive and include e-commerce functionality.',
             'status' => OrderStatus::IN_PROGRESS->value,
             'priority' => OrderPriority::URGENT->value,
-            'category_id' => Category::where('name', 'Desarrollo')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(7),
             'created_by' => $businessCustomer1->id,
             'updated_by' => $employee1->id,
             'assigned_to' => $employee1->id,
             'notes' => 'Client needs this completed before product launch',
         ]);
+        $order1->categories()->attach(Category::where('name', 'Desarrollo')->first()->id);
 
         // Order 2: Normal priority order ready for delivery
         $order2 = Order::factory()->createQuietly([
@@ -171,12 +171,12 @@ class DatabaseSeeder extends Seeder
             'description' => 'Design and print 500 business cards with new company branding.',
             'status' => OrderStatus::READY_FOR_DELIVERY->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category_id' => Category::where('name', 'Otros')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(3),
             'created_by' => $customer1->id,
             'updated_by' => $employee2->id,
             'assigned_to' => $employee2->id,
         ]);
+        $order2->categories()->attach(Category::where('name', 'Otros')->first()->id);
 
         // Order 3: Completed and paid order
         $order3 = Order::factory()->createQuietly([
@@ -186,7 +186,6 @@ class DatabaseSeeder extends Seeder
             'description' => 'Create new company logo with 3 variations and brand guidelines document.',
             'status' => OrderStatus::PAID->value,
             'priority' => OrderPriority::HIGH->value,
-            'category_id' => Category::where('name', 'Consultoría')->first()->id,
             'estimated_completion' => Carbon::now()->subDays(5),
             'actual_completion' => Carbon::now()->subDays(7),
             'created_by' => $customer2->id,
@@ -194,6 +193,7 @@ class DatabaseSeeder extends Seeder
             'assigned_to' => $employee3->id,
             'notes' => 'Customer very satisfied with the result',
         ]);
+        $order3->categories()->attach(Category::where('name', 'Consultoría')->first()->id);
 
         // Order 4: Open order not yet assigned
         $order4 = Order::factory()->createQuietly([
@@ -203,12 +203,12 @@ class DatabaseSeeder extends Seeder
             'description' => 'Design materials for Q4 marketing campaign including posters, flyers, and social media graphics.',
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
-            'category_id' => Category::where('name', 'Consultoría')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(14),
             'created_by' => $businessCustomer2->id,
             'updated_by' => $admin->id,
             'assigned_to' => $admin->id,
         ]);
+        $order4->categories()->attach(Category::where('name', 'Consultoría')->first()->id);
 
         // Order 5: Cancelled order
         $order5 = Order::factory()->createQuietly([
@@ -218,19 +218,21 @@ class DatabaseSeeder extends Seeder
             'description' => 'Professional photography session for new product line.',
             'status' => OrderStatus::CANCELLED->value,
             'priority' => OrderPriority::LOW->value,
-            'category_id' => Category::where('name', 'Otros')->first()->id,
             'estimated_completion' => Carbon::now()->addDays(10),
             'created_by' => $customer1->id,
             'updated_by' => $admin->id,
             'assigned_to' => $admin->id, // Cancelled orders shouldn't have assigned employees
             'notes' => 'Customer cancelled due to budget constraints',
         ]);
+        $order5->categories()->attach(Category::where('name', 'Otros')->first()->id);
 
         // Create more random orders
         Order::factory()->count(10)->createQuietly([
             'uuid' => Str::uuid7()->toString(),
             'assigned_to' => User::factory(),
-        ]);
+        ])->each(function ($order) {
+            $order->categories()->attach(Category::inRandomOrder()->limit(rand(1, 3))->pluck('id'));
+        });
 
         // Create Order History entries
 
@@ -427,9 +429,9 @@ class DatabaseSeeder extends Seeder
             OrderHistory::factory()->create([
                 'uuid' => Str::uuid7()->toString(),
                 'order_id' => $order4->id,
-                'field_changed' => OrderHistory::FIELD_CATEGORY,
-                'old_value' => (string) $developmentCategory->id,
-                'new_value' => (string) $consultingCategory->id,
+                'field_changed' => OrderHistory::FIELD_CATEGORIES,
+                'old_value' => json_encode([$developmentCategory->id]),
+                'new_value' => json_encode([$consultingCategory->id]),
                 'comment' => 'Reclassified from development to consulting based on project scope',
                 'created_by' => $admin->id,
                 'created_at' => $order4->created_at->addHours(3),

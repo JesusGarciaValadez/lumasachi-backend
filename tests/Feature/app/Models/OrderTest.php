@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use PHPUnit\Framework\Attributes\Test;
+use App\Models\Category;
 
 class OrderTest extends TestCase
 {
@@ -36,6 +37,7 @@ class OrderTest extends TestCase
         $creator = User::factory()->create();
         $updater = User::factory()->create();
         $assignee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        $categories = Category::factory()->count(2)->create();
 
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
@@ -43,6 +45,7 @@ class OrderTest extends TestCase
             'updated_by' => $updater->id,
             'assigned_to' => $assignee->id,
         ]);
+        $order->categories()->attach($categories->pluck('id'));
 
         $this->assertInstanceOf(User::class, $order->customer);
         $this->assertEquals($customer->id, $order->customer->id);
@@ -55,6 +58,46 @@ class OrderTest extends TestCase
 
         $this->assertInstanceOf(User::class, $order->assignedTo);
         $this->assertEquals($assignee->id, $order->assignedTo->id);
+
+        $this->assertCount(2, $order->categories);
+        $this->assertTrue($order->categories->contains($categories->first()));
+        $this->assertTrue($order->categories->contains($categories->last()));
+    }
+
+    /**
+     * Test order can have multiple categories.
+     */
+    #[Test]
+    public function it_checks_order_can_have_multiple_categories(): void
+    {
+        $order = Order::factory()->createQuietly();
+        $categories = Category::factory()->count(3)->create();
+
+        $order->categories()->attach($categories->pluck('id'));
+
+        $this->assertCount(3, $order->categories);
+        foreach ($categories as $category) {
+            $this->assertTrue($order->categories->contains($category));
+        }
+    }
+
+    /**
+     * Test detaching categories from order.
+     */
+    #[Test]
+    public function it_checks_detaching_categories_from_order(): void
+    {
+        $order = Order::factory()->createQuietly();
+        $categories = Category::factory()->count(3)->create();
+
+        $order->categories()->attach($categories->pluck('id'));
+        $this->assertCount(3, $order->fresh()->categories);
+
+        $order->categories()->detach($categories->first()->id);
+        $this->assertCount(2, $order->fresh()->categories);
+
+        $order->categories()->detach(); // Detach all
+        $this->assertCount(0, $order->fresh()->categories);
     }
 
     /**
@@ -302,7 +345,7 @@ class OrderTest extends TestCase
             'description',
             'status',
             'priority',
-            'category_id',
+            // 'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',

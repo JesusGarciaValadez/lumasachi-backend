@@ -22,10 +22,6 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
-            $table->foreignId('category_id')
-                ->nullable()
-                ->constrained('categories')
-                ->nullOnDelete();
             $table->foreignId('assigned_to')
                 ->constrained('users')
                 ->cascadeOnUpdate();

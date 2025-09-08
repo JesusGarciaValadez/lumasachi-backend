@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\OrderHistory;
 use App\Models\Order;
 use App\Models\Attachment;
+use App\Models\Category;
 use PHPUnit\Framework\Attributes\Test;
 
 class OrderHistoryControllerTest extends TestCase
@@ -56,7 +57,10 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($user);
 
-        $order = Order::factory()->createQuietly(['assigned_to' => $user->id]);
+        $order = Order::factory()->createQuietly([
+            'assigned_to' => $user->id
+        ]);
+        $order->categories()->attach(Category::factory()->create()->id);
         $orderHistoryData = [
             'order_id' => $order->id,
             'field_changed' => 'status',
@@ -124,6 +128,7 @@ class OrderHistoryControllerTest extends TestCase
     public function it_checks_if_order_for_order_history(): void
     {
         $orderHistory = OrderHistory::factory()->create();
+        $orderHistory->order->categories()->attach(Category::factory()->create()->id);
 
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
@@ -132,7 +137,7 @@ class OrderHistoryControllerTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'order' => ['id', 'status']
+                    'order' => ['id', 'status', 'categories']
                 ]);
     }
 

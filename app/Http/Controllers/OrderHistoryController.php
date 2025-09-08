@@ -104,11 +104,11 @@ final class OrderHistoryController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Load the order relationship if not already loaded
-        $orderHistory->loadMissing('order');
+        // Load relationships directly on the provided $order instance to ensure categories are present
+        $order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']);
 
         return response()->json([
-            'order' => new OrderResource($orderHistory->order)
+            'order' => new OrderResource($order)
         ]);
     }
 

@@ -12,6 +12,7 @@ use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use App\Models\Category;
 
 final class OrderFactoryTest extends TestCase
 {
@@ -45,7 +46,6 @@ final class OrderFactoryTest extends TestCase
         $this->assertNotNull($order->description);
         $this->assertNotNull($order->status);
         $this->assertNotNull($order->priority);
-        $this->assertNotNull($order->category);
         $this->assertNotNull($order->estimated_completion);
         $this->assertNotNull($order->created_by);
         $this->assertNotNull($order->updated_by);
@@ -257,7 +257,7 @@ final class OrderFactoryTest extends TestCase
     #[Test]
     public function it_checks_if_factory_generates_realistic_data(): void
     {
-        $order = Order::factory()->createQuietly();
+        $order = Order::factory()->withCategories()->createQuietly();
 
         // Title should be a short sentence (3 words)
         $wordCount = str_word_count($order->title);
@@ -268,8 +268,13 @@ final class OrderFactoryTest extends TestCase
         $this->assertGreaterThan(10, strlen($order->description));
 
         // Category should be loaded and have a name
-        $this->assertNotNull($order->category);
-        $this->assertNotNull($order->category->name);
+        // $this->assertNotNull($order->category);
+        // $this->assertNotNull($order->category->name);
+
+        // Check that categories relationship exists and is not empty
+        $this->assertNotNull($order->categories);
+        $this->assertGreaterThan(0, $order->categories->count());
+        $this->assertInstanceOf(Category::class, $order->categories->first());
     }
 
     /**

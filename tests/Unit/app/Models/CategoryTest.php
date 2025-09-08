@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use PHPUnit\Framework\Attributes\Test;
 
 class CategoryTest extends TestCase
@@ -44,10 +44,11 @@ class CategoryTest extends TestCase
     #[Test]
     public function it_checks_if_has_many_orders(): void
     {
-        $category = Category::factory()->create();
-        Order::factory()->createQuietly(['category_id' => $category->id]);
+        Order::factory()->withCategories()->createQuietly();
+        $category = Category::all()->first();
 
-        $this->assertInstanceOf(HasMany::class, $category->orders());
+        $this->assertInstanceOf(BelongsToMany::class, $category->orders());
+        $category->load('orders');
         $this->assertCount(1, $category->orders);
     }
 

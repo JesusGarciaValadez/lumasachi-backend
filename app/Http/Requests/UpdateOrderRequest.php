@@ -43,7 +43,9 @@ class UpdateOrderRequest extends FormRequest
                 OrderPriority::HIGH->value,
                 OrderPriority::URGENT->value
             ]),
-            'category_id' => 'sometimes|required|exists:categories,id',
+            // 'category_id' => 'sometimes|required|exists:categories,id',
+            'categories' => 'sometimes|required|array',
+            'categories.*' => 'exists:categories,id',
             'estimated_completion' => 'nullable|date',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -64,8 +66,11 @@ class UpdateOrderRequest extends FormRequest
             'description.required' => 'The order description is required.',
             'status.in' => 'The selected status is invalid.',
             'priority.in' => 'The selected priority is invalid.',
-            'category_id.required' => 'The order category is required.',
-            'category_id.exists' => 'The selected category does not exist.',
+            // 'category_id.required' => 'The order category is required.',
+            // 'category_id.exists' => 'The selected category does not exist.',
+            'categories.required' => 'At least one category is required.',
+            'categories.array' => 'Categories must be an array.',
+            'categories.*.exists' => 'One or more selected categories do not exist.',
             'assigned_to.exists' => 'The selected employee does not exist.'
         ];
     }

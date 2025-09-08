@@ -25,7 +25,6 @@ final class OrderFactory extends Factory
             'description' => $this->faker->paragraph(),
             'status' => $this->faker->randomElement(OrderStatus::cases()),
             'priority' => $this->faker->randomElement(OrderPriority::cases()),
-            'category_id' => Category::factory(),
             'estimated_completion' => $this->faker->dateTimeBetween('now', '+30 days'),
             'actual_completion' => null,
             'notes' => null,
@@ -52,6 +51,15 @@ final class OrderFactory extends Factory
                 'status' => OrderStatus::OPEN->value,
                 'actual_completion' => null,
             ];
+        });
+    }
+
+    public function withCategories(int $count = 2)
+    {
+        return $this->afterCreating(function (\App\Models\Order $order) use ($count) {
+            $ids = \App\Models\Category::factory()->count($count)->create()->pluck('id')->all();
+            $order->categories()->attach($ids);
+            $order->load('categories');
         });
     }
 }
