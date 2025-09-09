@@ -369,7 +369,8 @@ class AttachmentControllerTest extends TestCase
         $response = $this->get("/api/v1/attachments/{$attachment->uuid}/preview");
 
         $response->assertOk()
-            ->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+            ->assertHeader('Content-Type', 'image/jpeg')
+            ->assertHeader('Content-Disposition', 'inline; filename="test-image.jpg"');
     }
 
     /**
@@ -395,7 +396,8 @@ class AttachmentControllerTest extends TestCase
         $response = $this->get("/api/v1/attachments/{$attachment->uuid}/preview");
 
         $response->assertOk()
-            ->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename="test-document.pdf"');
     }
 
     /**

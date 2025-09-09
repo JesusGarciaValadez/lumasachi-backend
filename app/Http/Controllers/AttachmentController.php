@@ -190,10 +190,16 @@ final class AttachmentController extends Controller
             ], 404);
         }
 
-        return response(Storage::temporaryUrl(
-            $attachment->file_path,
-            now()->addMinutes(5)
-        ));
+        // Get the file path
+        $filePath = Storage::disk('public')->path($attachment->file_path);
+
+        return response()->file(
+            $filePath,
+            [
+                'Content-Type' => $attachment->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"'
+            ]
+        );
     }
 
     /**
