@@ -42,10 +42,10 @@ class CategoryTest extends TestCase
     }
 
     #[Test]
-    public function it_checks_if_has_many_orders(): void
+    public function it_checks_if_belongs_to_many_orders(): void
     {
-        Order::factory()->withCategories()->createQuietly();
-        $category = Category::all()->first();
+        $order = Order::factory()->withCategories()->createQuietly();
+        $category = $order->categories()->firstOrFail();
 
         $this->assertInstanceOf(BelongsToMany::class, $category->orders());
         $category->load('orders');

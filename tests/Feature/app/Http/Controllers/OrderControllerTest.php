@@ -95,7 +95,10 @@ class OrderControllerTest extends TestCase
 
         $this->actingAs($this->employee);
 
-        $category = Category::factory()->create();
+        $category = Category::factory()->create([
+            'created_by' => $this->employee->id,
+            'updated_by' => $this->employee->id,
+        ]);
 
         $orderData = [
             'customer_id' => $this->customer->id,
@@ -120,6 +123,10 @@ class OrderControllerTest extends TestCase
         $order = Order::firstWhere('title', 'Test Order Title');
         $this->assertCount(1, $order->categories);
         $this->assertEquals($category->id, $order->categories->first()->id);
+        $this->assertDatabaseHas('order_category', [
+            'order_id' => $order->id,
+            'category_id' => $category->id,
+        ]);
 
         $this->employee->notify(new OrderCreatedNotification($order));
 
@@ -174,7 +181,10 @@ class OrderControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $categories = Category::factory()->count(2)->create();
+        $categories = Category::factory()->count(2)->create([
+            'created_by' => $this->employee->id,
+            'updated_by' => $this->employee->id,
+        ]);
 
         $orderData = [
             'customer_id' => $this->customer->id,
@@ -194,6 +204,13 @@ class OrderControllerTest extends TestCase
         $this->assertCount(2, $order->categories);
         $this->assertTrue($order->categories->contains($categories->first()));
         $this->assertTrue($order->categories->contains($categories->last()));
+
+        foreach ($categories as $cat) {
+            $this->assertDatabaseHas('order_category', [
+                'order_id' => $order->id,
+                'category_id' => $cat->id,
+            ]);
+        }
     }
 
     /**
@@ -274,8 +291,9 @@ class OrderControllerTest extends TestCase
             'title' => 'Updated Order Title',
             'updated_by' => $this->employee->id
         ]);
-        $this->assertCount(1, $order->fresh()->categories);
-        $this->assertTrue($order->fresh()->categories->contains($newCategory));
+        $reloaded = $order->fresh('categories');
+        $this->assertCount(1, $reloaded->categories);
+        $this->assertTrue($reloaded->categories->contains($newCategory));
     }
 
     /**

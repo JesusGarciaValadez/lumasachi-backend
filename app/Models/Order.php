@@ -126,7 +126,7 @@ final class Order extends Model
 
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'order_category');
+        return $this->belongsToMany(Category::class, 'order_category')->withTimestamps();
     }
 
     /**

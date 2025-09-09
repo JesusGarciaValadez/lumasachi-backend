@@ -117,7 +117,7 @@ class Category extends Model
      */
     public function orders(): BelongsToMany
     {
-        return $this->belongsToMany(Order::class, 'order_category');
+        return $this->belongsToMany(Order::class, 'order_category')->withTimestamps();
     }
 
     /**

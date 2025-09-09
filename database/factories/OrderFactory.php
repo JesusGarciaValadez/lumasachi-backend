@@ -54,11 +54,11 @@ final class OrderFactory extends Factory
         });
     }
 
-    public function withCategories(int $count = 2)
+    public function withCategories(int $count = 2): self
     {
         return $this->afterCreating(function (\App\Models\Order $order) use ($count) {
             $ids = \App\Models\Category::factory()->count($count)->create()->pluck('id')->all();
-            $order->categories()->attach($ids);
+            $order->categories()->syncWithoutDetaching($ids);
             $order->load('categories');
         });
     }

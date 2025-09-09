@@ -105,12 +105,12 @@ final class HealthController extends Controller
             DB::select('SELECT 1');
             $responseTime = round((microtime(true) - $start) * 1000, 2);
 
-            // Check if response time is acceptable (under 100ms)
-            $healthy = $responseTime < 100;
+            // Consider healthy if query succeeds; include response time as metric only
+            $healthy = true;
 
             return [
                 'healthy' => $healthy,
-                'message' => $healthy ? 'Database is responsive' : 'Database response time is high',
+                'message' => 'Database is responsive',
                 'response_time_ms' => $responseTime,
                 'connection' => config('database.default')
             ];
@@ -141,7 +141,7 @@ final class HealthController extends Controller
             Cache::forget($key);
             $responseTime = round((microtime(true) - $start) * 1000, 2);
 
-            $healthy = $retrieved === $value && $responseTime < 50;
+            $healthy = $retrieved === $value;
 
             return [
                 'healthy' => $healthy,

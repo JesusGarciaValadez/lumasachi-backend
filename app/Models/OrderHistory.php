@@ -151,14 +151,15 @@ class OrderHistory extends Model
                 }
                 return $value ? \Carbon\Carbon::parse($value) : null;
             case self::FIELD_CATEGORIES:
-                // Keep raw JSON string for categories; consumers (like description) will decode as needed
-                if (is_string($value)) {
-                    return $value;
-                }
-                if (is_array($value)) {
-                    return json_encode($value);
-                }
-                return null;
+                 $ids = match (true) {
+                     is_string($value) => json_decode($value, true) ?: [],
+                     $value instanceof \Illuminate\Support\Collection => $value->all(),
+                     is_array($value) => $value,
+                     default => [],
+                 };
+                 $ids = array_values(array_unique(array_map('intval', $ids)));
+                 sort($ids);
+                 return json_encode($ids);
             default:
                 return $value;
         }
@@ -198,8 +199,20 @@ class OrderHistory extends Model
         }
 
         if ($field === self::FIELD_CATEGORIES) {
-            // Ensure value is an array of IDs, then encode to JSON
-            return json_encode(collect($value)->map(fn($item) => is_object($item) ? $item->id : $item)->toArray());
+            // Normalize to an array of integer IDs
+            if (is_string($value)) {
+                $value = json_decode($value, true) ?: [];
+            }
+            if ($value instanceof \Illuminate\Support\Collection) {
+                $value = $value->all();
+            }
+            $ids = array_map(
+                fn($item) => is_object($item) ? (int)($item->id ?? 0) : (int)$item,
+                (array)$value
+            );
+            $ids = array_values(array_unique(array_filter($ids)));
+            sort($ids);
+            return json_encode($ids);
         }
 
         return (string) $value;
@@ -218,22 +231,25 @@ class OrderHistory extends Model
             $oldCategoryNames = $this->getCategoryNames($this->old_value);
             $newCategoryNames = $this->getCategoryNames($this->new_value);
 
+            if ($oldCategoryNames === $newCategoryNames) {
+                return "Categories unchanged";
+            }
             if (empty($oldCategoryNames)) {
                 return "Categories added: " . implode(', ', $newCategoryNames);
-            } elseif (empty($newCategoryNames)) {
-                return "Categories removed (was: " . implode(', ', $oldCategoryNames) . ")";
-            } else {
-                $added = array_diff($newCategoryNames, $oldCategoryNames);
-                $removed = array_diff($oldCategoryNames, $newCategoryNames);
-                $changes = [];
-                if (!empty($added)) {
-                    $changes[] = "added: " . implode(', ', $added);
-                }
-                if (!empty($removed)) {
-                    $changes[] = "removed: " . implode(', ', $removed);
-                }
-                return "Categories updated (" . implode('; ', $changes) . ")";
             }
+            if (empty($newCategoryNames)) {
+                return "Categories removed (was: " . implode(', ', $oldCategoryNames) . ")";
+            }
+            $added = array_values(array_diff($newCategoryNames, $oldCategoryNames));
+            $removed = array_values(array_diff($oldCategoryNames, $newCategoryNames));
+            $changes = [];
+            if (!empty($added)) {
+                $changes[] = "added: " . implode(', ', $added);
+            }
+            if (!empty($removed)) {
+                $changes[] = "removed: " . implode(', ', $removed);
+            }
+            return "Categories updated (" . implode('; ', $changes) . ")";
         }
 
         if (is_null($this->old_value)) {
@@ -256,7 +272,7 @@ class OrderHistory extends Model
             return [];
         }
 
-        $categoryIds = json_decode($value, true);
+        $categoryIds = is_string($value) ? json_decode($value, true) : (array)$value;
         if (!is_array($categoryIds)) {
             return [];
         }

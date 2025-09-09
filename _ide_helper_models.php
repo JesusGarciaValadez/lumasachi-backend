@@ -158,7 +158,6 @@ namespace App\Models{
  * @property int $id
  * @property string $uuid
  * @property int $customer_id
- * @property int|null $category_id
  * @property int $assigned_to
  * @property string $title
  * @property string $description
@@ -174,7 +173,8 @@ namespace App\Models{
  * @property-read \App\Models\User $assignedTo
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attachment> $attachments
  * @property-read int|null $attachments_count
- * @property-read \App\Models\Category|null $category
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
+ * @property-read int|null $categories_count
  * @property-read \App\Models\User $createdBy
  * @property-read \App\Models\User $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderHistory> $orderHistories
@@ -186,7 +186,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereActualCompletion($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereAssignedTo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCategoryId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCustomerId($value)

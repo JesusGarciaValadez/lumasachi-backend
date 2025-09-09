@@ -139,6 +139,8 @@ class OrderHistoryControllerTest extends TestCase
                 ->assertJsonStructure([
                     'order' => ['id', 'status', 'categories']
                 ]);
+        $this->assertIsArray($response->json('order.categories'));
+        $this->assertGreaterThan(0, count($response->json('order.categories') ?? []));
     }
 
     /**

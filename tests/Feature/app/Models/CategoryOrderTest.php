@@ -54,18 +54,16 @@ class CategoryOrderTest extends TestCase
 
         // Create orders for maintenance category
         $maintenanceOrders = Order::factory()->count(3)->createQuietly([
-            // 'category_id' => $maintenanceCategory->id,
             'customer_id' => $customer->id,
         ])->each(function ($order) use ($maintenanceCategory) {
-            $order->categories()->attach($maintenanceCategory->id);
+            $order->categories()->syncWithoutDetaching($maintenanceCategory->id);
         });
 
         // Create orders for development category
         $developmentOrders = Order::factory()->count(2)->createQuietly([
-            // 'category_id' => $developmentCategory->id,
             'customer_id' => $customer->id,
         ])->each(function ($order) use ($developmentCategory) {
-            $order->categories()->attach($developmentCategory->id);
+            $order->categories()->syncWithoutDetaching($developmentCategory->id);
         });
 
         // Test category relationships
@@ -88,6 +86,7 @@ class CategoryOrderTest extends TestCase
         // Test order categories relationship
         foreach ($maintenanceOrders as $order) {
             $this->assertCount(1, $order->categories);
+            $this->assertTrue($order->categories->pluck('id')->contains($maintenanceCategory->id));
             $this->assertEquals('Mantenimiento', $order->categories->first()->name);
             $this->assertEquals('#3B82F6', $order->categories->first()->color);
         }
@@ -99,11 +98,11 @@ class CategoryOrderTest extends TestCase
         }
 
         // Test querying orders by category
-        $maintenanceOrdersQuery = Order::whereHas('categories', function ($query) {
+        $ordersInMaintenance = Order::whereHas('categories', function ($query) {
             $query->where('name', 'Mantenimiento');
         })->get();
 
-        $this->assertCount(3, $maintenanceOrdersQuery);
+        $this->assertCount(3, $ordersInMaintenance);
 
         // Test eager loading
         $ordersWithCategories = Order::with('categories')->get();

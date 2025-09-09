@@ -3,10 +3,11 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Models\Order;
-use App\Enums\UserRole;
+use Illuminate\Validation\Rule;
 use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Models\Order;
+use App\Models\User;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -48,7 +49,19 @@ class StoreOrderRequest extends FormRequest
                 OrderPriority::URGENT->value
             ]),
             'categories' => 'required|array',
-            'categories.*' => 'exists:categories,id',
+            'categories.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('categories', 'id')->where(function ($q) {
+                    $companyId = optional($this->user())->company_id ?? null;
+                    if ($companyId) {
+                        // categories.created_by must belong to users of same company
+                        $q->whereIn('created_by', User::query()
+                            ->where('company_id', $companyId)
+                            ->select('id'));
+                    }
+                }),
+            ],
             'estimated_completion' => 'nullable|date|after:today',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -72,9 +85,10 @@ class StoreOrderRequest extends FormRequest
             'status.in' => 'The selected status is invalid.',
             'priority.required' => 'The order priority is required.',
             'priority.in' => 'The selected priority is invalid.',
-            'categories.required' => 'At least one category is required.',
             'categories.array' => 'Categories must be an array.',
-            'categories.*.exists' => 'One or more selected categories do not exist.',
+            'categories.min' => 'Select at least one category.',
+            'categories.*.integer' => 'Each category ID must be an integer.',
+            'categories.*.distinct' => 'Duplicate categories are not allowed.',
             'estimated_completion.after' => 'The estimated completion date must be in the future.',
             'assigned_to.exists' => 'The selected employee does not exist.'
         ];

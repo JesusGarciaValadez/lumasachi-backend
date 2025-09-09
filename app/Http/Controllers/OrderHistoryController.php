@@ -105,7 +105,8 @@ final class OrderHistoryController extends Controller
         }
 
         // Load relationships directly on the provided $order instance to ensure categories are present
-        $order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']);
+        Gate::authorize('view', $order);
+        $order->loadMissing(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']);
 
         return response()->json([
             'order' => new OrderResource($order)

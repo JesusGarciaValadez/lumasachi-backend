@@ -2,11 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Lumasachi API Documentation",
-        "version": "0.0.1",
-		"name": "Lumasachi Backend",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_postman_id": "9b1a479e-e06e-4b9b-815b-ec445f989ec6",
-		"_exporter_id": "9427715"
+        "version": "0.0.1"
     },
     "servers": [
         {
@@ -18,10 +14,10 @@
             "description": "Staging"
         }
     ],
-    "item": {
+    "paths": {
         "/orders/{order}/attachments": {
             "get": {
-                "operationId": "attachment.index",
+                "operationId": "orders.attachments.index",
                 "summary": "Get attachments for an order",
                 "tags": [
                     "Attachment"
@@ -83,7 +79,7 @@
                 }
             },
             "post": {
-                "operationId": "attachment.store",
+                "operationId": "orders.attachments.store",
                 "summary": "Upload an attachment to an order",
                 "tags": [
                     "Attachment"
@@ -264,12 +260,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Return file response for preview",
+                        "description": "",
                         "content": {
-                            "application/octet-stream": {
+                            "application/json": {
                                 "schema": {
-                                    "type": "string",
-                                    "format": "binary"
+                                    "type": "string"
                                 }
                             }
                         }
@@ -327,7 +322,7 @@
         },
         "/attachments/{attachment}": {
             "delete": {
-                "operationId": "attachment.destroy",
+                "operationId": "attachments.destroy",
                 "summary": "Delete an attachment",
                 "tags": [
                     "Attachment"
@@ -820,7 +815,7 @@
         },
         "/orders": {
             "get": {
-                "operationId": "order.index",
+                "operationId": "orders.index",
                 "summary": "Display a listing of all orders",
                 "tags": [
                     "Order"
@@ -848,7 +843,7 @@
                 }
             },
             "post": {
-                "operationId": "order.store",
+                "operationId": "orders.store",
                 "summary": "Store a newly created order in storage",
                 "tags": [
                     "Order"
@@ -903,7 +898,7 @@
         },
         "/orders/{order}": {
             "get": {
-                "operationId": "order.show",
+                "operationId": "orders.show",
                 "summary": "Display the specified order",
                 "tags": [
                     "Order"
@@ -942,7 +937,7 @@
                 }
             },
             "put": {
-                "operationId": "order.update",
+                "operationId": "orders.update",
                 "summary": "Update the specified order in storage",
                 "tags": [
                     "Order"
@@ -1008,7 +1003,7 @@
                 }
             },
             "delete": {
-                "operationId": "order.destroy",
+                "operationId": "orders.destroy",
                 "summary": "Remove the specified order from storage",
                 "tags": [
                     "Order"
@@ -1060,7 +1055,7 @@
         },
         "/orders/{order}/status": {
             "post": {
-                "operationId": "order.updateStatus",
+                "operationId": "orders.status.update",
                 "summary": "Update the status of an order",
                 "tags": [
                     "Order"
@@ -1129,7 +1124,7 @@
         },
         "/orders/{order}/assign": {
             "post": {
-                "operationId": "order.assign",
+                "operationId": "orders.assign",
                 "summary": "Assign an order to an employee",
                 "tags": [
                     "Order"
@@ -1198,7 +1193,7 @@
         },
         "/orders/{order}/history": {
             "get": {
-                "operationId": "order.history",
+                "operationId": "orders.history",
                 "summary": "Get the history of an order",
                 "tags": [
                     "Order"
@@ -1242,6 +1237,41 @@
                                             "items": {
                                                 "$ref": "#/components/schemas/OrderHistoryResource"
                                             }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
                                         },
                                         "meta": {
                                             "type": "object",
@@ -1317,47 +1347,12 @@
                                                 "to",
                                                 "total"
                                             ]
-                                        },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
-                                        "meta"
+                                        "meta",
+                                        "links"
                                     ]
                                 }
                             }
@@ -1729,6 +1724,60 @@
                 }
             }
         },
+        "/users/employees": {
+            "get": {
+                "operationId": "users.employees",
+                "summary": "Get employees of the authenticated user's company",
+                "tags": [
+                    "Users"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/customers": {
+            "get": {
+                "operationId": "users.customers",
+                "summary": "Get customers: users from a different company than the authenticated user's company",
+                "tags": [
+                    "Users"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/verify-email/{id}/{hash}": {
             "get": {
                 "operationId": "verification.verify",
@@ -1764,12 +1813,6 @@
                                 }
                             }
                         }
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -1878,6 +1921,70 @@
                     "extension"
                 ],
                 "title": "AttachmentResource"
+            },
+            "CategoryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_by": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "updated_by": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "uuid",
+                    "name",
+                    "description",
+                    "is_active",
+                    "sort_order",
+                    "color",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "CategoryResource"
             },
             "LoginRequest": {
                 "type": "object",
@@ -2019,17 +2126,11 @@
                     "priority": {
                         "$ref": "#/components/schemas/OrderPriority"
                     },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "category_id": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ]
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryResource"
+                        }
                     },
                     "estimated_completion": {
                         "type": [
@@ -2082,8 +2183,6 @@
                     "description",
                     "status",
                     "priority",
-                    "category",
-                    "category_id",
                     "estimated_completion",
                     "actual_completion",
                     "notes",
@@ -2225,9 +2324,6 @@
                             "Urgent"
                         ]
                     },
-                    "category_id": {
-                        "type": "integer"
-                    },
                     "estimated_completion": {
                         "type": [
                             "string",
@@ -2250,6 +2346,12 @@
                     },
                     "assigned_to": {
                         "type": "integer"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
                     }
                 },
                 "required": [
@@ -2258,8 +2360,8 @@
                     "description",
                     "status",
                     "priority",
-                    "category_id",
-                    "assigned_to"
+                    "assigned_to",
+                    "categories"
                 ],
                 "title": "StoreOrderRequest"
             },
@@ -2298,9 +2400,6 @@
                             "Urgent"
                         ]
                     },
-                    "category_id": {
-                        "type": "integer"
-                    },
                     "estimated_completion": {
                         "type": [
                             "string",
@@ -2323,6 +2422,13 @@
                     },
                     "assigned_to": {
                         "type": "integer"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "description": "'category_id' => 'sometimes|required|exists:categories,id',",
+                        "items": {
+                            "type": "integer"
+                        }
                     }
                 },
                 "title": "UpdateOrderRequest"
@@ -2558,8 +2664,8 @@
                     }
                 }
             },
-            "AuthorizationException": {
-                "description": "Authorization error",
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -2577,8 +2683,8 @@
                     }
                 }
             },
-            "ModelNotFoundException": {
-                "description": "Not found",
+            "AuthorizationException": {
+                "description": "Authorization error",
                 "content": {
                     "application/json": {
                         "schema": {
