@@ -131,7 +131,7 @@ class AttachmentControllerTest extends TestCase
     }
 
     /**
-     * Test uploading attachment to order
+     * Test uploading attachment to order (single file)
      */
     #[Test]
     public function it_checks_upload_attachment_to_order()
@@ -173,6 +173,52 @@ class AttachmentControllerTest extends TestCase
 
         $this->assertNotNull($history);
         $this->assertStringContainsString('Important Document', $history->description);
+    }
+
+    /**
+     * Test uploading multiple attachments to order
+     */
+    #[Test]
+    public function it_checks_upload_multiple_attachments_to_order()
+    {
+        $this->actingAs($this->employee);
+
+        $file1 = UploadedFile::fake()->create('doc1.pdf', 500, 'application/pdf');
+        $file2 = UploadedFile::fake()->image('image1.jpg', 100, 100);
+
+        $response = $this->post("/api/v1/orders/{$this->order->uuid}/attachments", [
+            'files' => [$file1, $file2],
+        ]);
+
+        $response->assertCreated()
+            ->assertJson([
+                'message' => 'Files uploaded successfully.'
+            ])
+            ->assertJsonCount(2, 'attachments');
+
+        // Check files stored
+        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file1->hashName());
+        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file2->hashName());
+
+        // Check DB records exist
+        $this->assertDatabaseHas('attachments', [
+            'attachable_type' => 'order',
+            'attachable_id' => $this->order->id,
+            'file_name' => 'doc1.pdf'
+        ]);
+        $this->assertDatabaseHas('attachments', [
+            'attachable_type' => 'order',
+            'attachable_id' => $this->order->id,
+            'file_name' => 'image1.jpg'
+        ]);
+
+        // Check two history entries created for attachments
+        $histories = OrderHistory::where('order_id', $this->order->id)
+            ->where('field_changed', 'attachments')
+            ->latest()
+            ->take(2)
+            ->get();
+        $this->assertCount(2, $histories);
     }
 
     /**

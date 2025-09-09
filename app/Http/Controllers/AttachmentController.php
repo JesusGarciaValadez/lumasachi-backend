@@ -49,48 +49,68 @@ final class AttachmentController extends Controller
 
         DB::beginTransaction();
         try {
-            $file = $request->file('file');
-            $fileName = $validated['name'] ?? $file->getClientOriginalName();
+            $attachments = [];
 
-            // Store the file
-            $path = $file->store('orders/' . $order->uuid . '/' . $file->hashName(), 'public');
+            // Determine if multiple files were provided
+            $files = [];
+            if ($request->hasFile('files')) {
+                $files = $request->file('files');
+            } elseif ($request->hasFile('file')) {
+                $files = [$request->file('file')];
+            }
 
-            // Create attachment record
-            $attachment = $order->attachments()->create([
-                'uuid' => Str::uuid7()->toString(),
-                'file_name' => $fileName,
-                'file_path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'uploaded_by' => $request->user()->id
-            ]);
+            foreach ($files as $index => $file) {
+                // Determine name/description per file
+                $fileName = $validated['names'][$index] ?? ($validated['name'] ?? $file->getClientOriginalName());
 
-            // Create history record
-            OrderHistory::create([
-                'uuid' => Str::uuid7()->toString(),
-                'order_id' => $order->id,
-                'field_changed' => 'attachments',
-                'old_value' => null,
-                'new_value' => $attachment->file_name,
-                'comment' => "File '{$fileName}' was uploaded",
-                'created_by' => request()->user()->id
-            ]);
+                // Store the file
+                $path = $file->store('orders/' . $order->uuid . '/' . $file->hashName(), 'public');
+
+                // Create attachment record
+                $attachment = $order->attachments()->create([
+                    'uuid' => Str::uuid7()->toString(),
+                    'file_name' => $fileName,
+                    'file_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'uploaded_by' => $request->user()->id
+                ]);
+
+                $attachments[] = $attachment;
+
+                // Create history record (one per file)
+                OrderHistory::create([
+                    'uuid' => Str::uuid7()->toString(),
+                    'order_id' => $order->id,
+                    'field_changed' => 'attachments',
+                    'old_value' => null,
+                    'new_value' => $attachment->file_name,
+                    'comment' => "File '{$fileName}' was uploaded",
+                    'created_by' => request()->user()->id
+                ]);
+            }
 
             DB::commit();
 
+            if (count($attachments) === 1) {
+                return response()->json([
+                    'message' => 'File uploaded successfully.',
+                    'attachment' => new AttachmentResource($attachments[0]->load('uploadedBy'))
+                ], 201);
+            }
+
+            // Ensure we use an Eloquent Collection to support ->load()
+            $eloquentCollection = new \Illuminate\Database\Eloquent\Collection($attachments);
+
             return response()->json([
-                'message' => 'File uploaded successfully.',
-                'attachment' => new AttachmentResource($attachment->load('uploadedBy'))
+                'message' => 'Files uploaded successfully.',
+                'attachments' => AttachmentResource::collection($eloquentCollection->load('uploadedBy'))
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            // Clean up uploaded file if exists
-            if (isset($path) && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
 
             return response()->json([
-                'message' => 'Failed to upload file.',
+                'message' => 'Failed to upload file(s).',
                 'error' => $e->getMessage()
             ], 500);
         }
