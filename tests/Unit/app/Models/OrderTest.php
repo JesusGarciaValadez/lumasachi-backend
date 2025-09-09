@@ -14,8 +14,12 @@ use Database\Factories\OrderFactory;
 use Carbon\CarbonImmutable;
 use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+/**
+  * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+  */
 final class OrderTest extends TestCase
 {
     use RefreshDatabase;
@@ -228,7 +232,7 @@ final class OrderTest extends TestCase
         $categories = Category::factory()->count(2)->create();
         $order->categories()->attach($categories->pluck('id'));
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, $order->categories());
+        $this->assertInstanceOf(BelongsToMany::class, $order->categories());
         $this->assertEquals(2, $order->categories->count());
     }
 

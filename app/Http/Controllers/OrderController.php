@@ -59,15 +59,21 @@ final class OrderController extends Controller
         $categories = $validated['categories'] ?? [];
         unset($validated['categories']);
 
-        $order = Order::create(array_merge($validated, [
-            'uuid' => Str::uuid7()->toString(),
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id
-        ]));
-
-        if (!empty($categories)) {
-            $order->categories()->attach($categories);
-        }
+        $order = DB::transaction(function () use ($validated, $request, $categories) {
+            $order = Order::create(array_merge($validated, [
+                'uuid' => method_exists(Str::class, 'uuid7')
+                    ? Str::uuid7()->toString()
+                    : (method_exists(Str::class, 'orderedUuid')
+                        ? (string) Str::orderedUuid()
+                        : (string) Str::uuid()),
+                'created_by' => $request->user()->id,
+                'updated_by' => $request->user()->id
+            ]));
+            if (!empty($categories)) {
+                $order->categories()->sync($categories);
+            }
+            return $order;
+        });
 
         return response()->json([
             'message' => 'Order created successfully.',
@@ -105,28 +111,31 @@ final class OrderController extends Controller
 
         $oldIds = $categoriesProvided ? $order->categories()->pluck('id')->toArray() : null;
 
-        $order->update(array_merge($validated, [
-            'updated_by' => $request->user()->id
-        ]));
+        DB::transaction(function () use ($order, $validated, $request, $categories, $categoriesProvided, $oldIds) {
+            $order->update(array_merge($validated, [
+                'updated_by' => $request->user()->id
+            ]));
 
-        if ($categoriesProvided) {
-            $order->categories()->sync($categories);
-            $newIds = $order->categories()->pluck('id')->toArray();
+            if ($categoriesProvided) {
+                $order->categories()->sync($categories);
+                $newIds = $order->categories()->pluck('id')->toArray();
 
-            sort($oldIds);
-            sort($newIds);
-
-            if ($oldIds !== $newIds) {
-                OrderHistory::create([
-                    'uuid' => Str::uuid7()->toString(),
-                    'order_id' => $order->id,
-                    'field_changed' => OrderHistory::FIELD_CATEGORIES,
-                    'old_value' => $oldIds,
-                    'new_value' => $newIds,
-                    'created_by' => $request->user()->id
-                ]);
+                $sortedOldIds = $oldIds;
+                $sortedNewIds = $newIds;
+                sort($sortedOldIds);
+                sort($sortedNewIds);
+                if ($sortedOldIds !== $sortedNewIds) {
+                    OrderHistory::create([
+                        'uuid' => Str::uuid7()->toString(),
+                        'order_id' => $order->id,
+                        'field_changed' => OrderHistory::FIELD_CATEGORIES,
+                        'old_value' => $sortedOldIds,
+                        'new_value' => $sortedNewIds,
+                        'created_by' => $request->user()->id
+                    ]);
+                }
             }
-        }
+        });
 
         return response()->json([
             'message' => 'Order updated successfully.',

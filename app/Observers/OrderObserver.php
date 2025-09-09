@@ -5,11 +5,15 @@ namespace App\Observers;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Notifications\OrderCreatedNotification;
-use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Str;
 
-class OrderObserver implements ShouldHandleEventsAfterCommit
+class OrderObserver
 {
+    /**
+     * Store original values during updating to compute history afterwards.
+     */
+    protected static array $originals = [];
+
     /**
      * Handle the Order "created" event.
      */
@@ -19,6 +23,14 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
         if ($order->customer) {
             $order->customer->notify(new OrderCreatedNotification($order));
         }
+    }
+
+    /**
+     * Capture original values before updating.
+     */
+    public function updating(Order $order): void
+    {
+        self::$originals[$order->getKey()] = $order->getOriginal();
     }
 
     /**
@@ -35,17 +47,30 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
             'title',
             'description',
             'notes',
-            'categories'
         ];
 
+        $original = self::$originals[$order->getKey()] ?? [];
+        unset(self::$originals[$order->getKey()]);
+
         foreach ($trackedFields as $field) {
-            if ($order->isDirty($field)) {
+            $old = $original[$field] ?? null;
+            $new = $order->getAttribute($field);
+
+            // Normalize Carbon instances to strings for comparison
+            if ($old instanceof \Carbon\CarbonInterface) {
+                $old = $old->toISOString();
+            }
+            if ($new instanceof \Carbon\CarbonInterface) {
+                $new = $new->toISOString();
+            }
+
+            if ($old !== $new) {
                 OrderHistory::create([
                     'uuid' => Str::uuid7()->toString(),
                     'order_id' => $order->id,
                     'field_changed' => $field,
-                    'old_value' => $order->getOriginal($field),
-                    'new_value' => $order->getAttribute($field),
+                    'old_value' => $old,
+                    'new_value' => $new,
                     'created_by' => auth()?->id() ?? $order->updated_by,
                 ]);
             }

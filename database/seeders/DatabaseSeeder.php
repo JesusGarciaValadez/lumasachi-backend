@@ -161,7 +161,7 @@ class DatabaseSeeder extends Seeder
             'assigned_to' => $employee1->id,
             'notes' => 'Client needs this completed before product launch',
         ]);
-        $order1->categories()->attach(Category::where('name', 'Desarrollo')->first()->id);
+        $order1->categories()->attach(Category::where('name', 'Desarrollo')->firstOrFail()->id);
 
         // Order 2: Normal priority order ready for delivery
         $order2 = Order::factory()->createQuietly([
@@ -176,7 +176,7 @@ class DatabaseSeeder extends Seeder
             'updated_by' => $employee2->id,
             'assigned_to' => $employee2->id,
         ]);
-        $order2->categories()->attach(Category::where('name', 'Otros')->first()->id);
+        $order2->categories()->attach(Category::where('name', 'Otros')->firstOrFail()->id);
 
         // Order 3: Completed and paid order
         $order3 = Order::factory()->createQuietly([
@@ -193,7 +193,7 @@ class DatabaseSeeder extends Seeder
             'assigned_to' => $employee3->id,
             'notes' => 'Customer very satisfied with the result',
         ]);
-        $order3->categories()->attach(Category::where('name', 'Consultoría')->first()->id);
+        $order3->categories()->attach(Category::where('name', 'Consultoría')->firstOrFail()->id);
 
         // Order 4: Open order not yet assigned
         $order4 = Order::factory()->createQuietly([
@@ -208,7 +208,7 @@ class DatabaseSeeder extends Seeder
             'updated_by' => $admin->id,
             'assigned_to' => $admin->id,
         ]);
-        $order4->categories()->attach(Category::where('name', 'Consultoría')->first()->id);
+        $order4->categories()->attach(Category::where('name', 'Consultoría')->firstOrFail()->id);
 
         // Order 5: Cancelled order
         $order5 = Order::factory()->createQuietly([
@@ -228,7 +228,6 @@ class DatabaseSeeder extends Seeder
 
         // Create more random orders
         Order::factory()->count(10)->createQuietly([
-            'uuid' => Str::uuid7()->toString(),
             'assigned_to' => User::factory(),
         ])->each(function ($order) {
             $order->categories()->attach(Category::inRandomOrder()->limit(rand(1, 3))->pluck('id'));

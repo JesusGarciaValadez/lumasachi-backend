@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Factories\Sequence;
 use PHPUnit\Framework\Attributes\Test;
 use App\Models\Category;
 
+/**
+  * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+  */
 class OrderTest extends TestCase
 {
     use RefreshDatabase;
@@ -46,6 +49,7 @@ class OrderTest extends TestCase
             'assigned_to' => $assignee->id,
         ]);
         $order->categories()->attach($categories->pluck('id'));
+        $order->refresh()->load('categories');
 
         $this->assertInstanceOf(User::class, $order->customer);
         $this->assertEquals($customer->id, $order->customer->id);
@@ -60,21 +64,22 @@ class OrderTest extends TestCase
         $this->assertEquals($assignee->id, $order->assignedTo->id);
 
         $this->assertCount(2, $order->categories);
-        $this->assertTrue($order->categories->contains($categories->first()));
-        $this->assertTrue($order->categories->contains($categories->last()));
+        $this->assertTrue($order->categories->pluck('id')->contains($categories->first()->id));
+        $this->assertTrue($order->categories->pluck('id')->contains($categories->last()->id));
     }
 
     /**
      * Test order can have multiple categories.
      */
     #[Test]
-    public function it_checks_order_can_have_multiple_categories(): void
+    public function it_checks_order_can_have_multiple_categories()
     {
         $order = Order::factory()->createQuietly();
         $categories = Category::factory()->count(3)->create();
 
         $order->categories()->attach($categories->pluck('id'));
 
+        $order = $order->fresh('categories');
         $this->assertCount(3, $order->categories);
         foreach ($categories as $category) {
             $this->assertTrue($order->categories->contains($category));
@@ -85,7 +90,7 @@ class OrderTest extends TestCase
      * Test detaching categories from order.
      */
     #[Test]
-    public function it_checks_detaching_categories_from_order(): void
+    public function it_checks_detaching_categories_from_order()
     {
         $order = Order::factory()->createQuietly();
         $categories = Category::factory()->count(3)->create();

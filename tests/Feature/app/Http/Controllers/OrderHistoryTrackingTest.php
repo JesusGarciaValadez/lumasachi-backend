@@ -28,7 +28,6 @@ class OrderHistoryTrackingTest extends TestCase
         $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::OPEN->value,
-            // 'category_id' => $categories[0]->id,
             'created_by' => $user->id,
         ]);
         $order->categories()->attach($categories->pluck('id'));
@@ -59,7 +58,6 @@ class OrderHistoryTrackingTest extends TestCase
         $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'priority' => OrderPriority::NORMAL->value,
-            // 'category_id' => $categories[0]->id,
             'created_by' => $user->id,
         ]);
         $order->categories()->attach($categories->pluck('id'));
@@ -93,7 +91,6 @@ class OrderHistoryTrackingTest extends TestCase
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::LOW->value,
             'title' => 'Original Title',
-            // 'category_id' => $categories[0]->id,
         ]);
         $order->categories()->attach($categories->pluck('id'));
 
@@ -111,6 +108,15 @@ class OrderHistoryTrackingTest extends TestCase
 
         // Should have 4 history entries (status, priority, title, categories)
         $this->assertCount(4, $histories);
+        $this->assertEqualsCanonicalizing(
+            [
+                OrderHistory::FIELD_STATUS,
+                OrderHistory::FIELD_PRIORITY,
+                OrderHistory::FIELD_TITLE,
+                OrderHistory::FIELD_CATEGORIES,
+            ],
+            $histories->pluck('field_changed')->toArray()
+        );
 
         // Verify each field change
         $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
@@ -130,8 +136,10 @@ class OrderHistoryTrackingTest extends TestCase
 
         $categoryHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_CATEGORIES);
         $this->assertNotNull($categoryHistory);
-        $this->assertEquals(json_encode($categories->pluck('id')->toArray()), $categoryHistory->getRawOriginal('old_value'));
-        $this->assertEquals(json_encode([$newCategory->id]), $categoryHistory->getRawOriginal('new_value'));
+        $oldCats = json_decode($categoryHistory->getRawOriginal('old_value'), true) ?? [];
+        $newCats = json_decode($categoryHistory->getRawOriginal('new_value'), true) ?? [];
+        $this->assertEqualsCanonicalizing($categories->pluck('id')->all(), $oldCats);
+        $this->assertEqualsCanonicalizing([$newCategory->id], $newCats);
     }
 
     #[Test]
@@ -177,7 +185,6 @@ class OrderHistoryTrackingTest extends TestCase
 
         $order = Order::factory()->createQuietly([
             'estimated_completion' => $oldDate,
-            // 'category_id' => $category->id,
             'created_by' => $user->id,
         ]);
         $order->categories()->attach($category->id);
@@ -214,7 +221,6 @@ class OrderHistoryTrackingTest extends TestCase
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
-            // 'category_id' => $category->id,
         ]);
         $order->categories()->attach($category->id);
 
@@ -244,7 +250,6 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'notes' => 'Some important notes',
-            // 'category_id' => $category->id,
         ]);
         $order->categories()->attach($category->id);
 
@@ -366,7 +371,6 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::OPEN->value,
-            // 'category_id' => $category->id,
         ]);
         $order->categories()->attach($category->id);
 

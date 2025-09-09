@@ -60,7 +60,7 @@ final class OrderHistoryFactoryTest extends TestCase
             'estimated_completion',
             'actual_completion',
             'notes',
-            'category_id'
+            'categories'
         ];
 
         $orderHistory = OrderHistory::factory()->make();
@@ -236,7 +236,7 @@ final class OrderHistoryFactoryTest extends TestCase
             'estimated_completion',
             'actual_completion',
             'notes',
-            'category_id'
+            'categories'
         ]);
 
         // If comment exists, it should be meaningful

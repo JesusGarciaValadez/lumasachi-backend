@@ -187,6 +187,7 @@ final class DatabaseSeederTest extends TestCase
 
     /**
      * Test that orders have categories attached by the seeder.
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
      */
     #[Test]
     public function it_checks_if_orders_have_categories_attached_by_seeder(): void
@@ -202,8 +203,14 @@ final class DatabaseSeederTest extends TestCase
         }
 
         // Check specific order categories
-        $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
-        $this->assertTrue($urgentOrder->categories->contains(Category::where('name', 'Desarrollo')->first()));
+        $urgentOrder = Order::with('categories')->where('title', 'Urgent Website Redesign')->first();
+        $this->assertNotNull($urgentOrder, 'Urgent Website Redesign order not found');
+        $devCategoryId = Category::where('name', 'Desarrollo')->value('id');
+        $this->assertNotNull($devCategoryId, 'Desarrollo category not found');
+        $this->assertTrue(
+            $urgentOrder->categories->contains('id', $devCategoryId),
+            'Urgent order should contain Desarrollo category'
+        );
     }
 
     /**

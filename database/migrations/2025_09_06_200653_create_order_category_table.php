@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_category', function (Blueprint $table) {
-            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('order_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->primary(['order_id', 'category_id']);
+            $table->index(['category_id', 'order_id']);
             $table->timestamps();
         });
     }

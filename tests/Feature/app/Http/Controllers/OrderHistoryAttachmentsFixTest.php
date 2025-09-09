@@ -5,13 +5,11 @@ namespace Tests\Feature\app\Http\Controllers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Attachment;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
 use App\Models\Order;
-use App\Models\OrderHistory;
 use App\Models\User;
 use App\Models\Category;
-use App\Enums\UserRole;
-use App\Enums\OrderStatus;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -42,15 +40,15 @@ class OrderHistoryAttachmentsFixTest extends TestCase
             'created_by' => $admin->id,
             'assigned_to' => $admin->id,
             'status' => OrderStatus::OPEN->value,
-            // 'category_id' => $category->id
         ]);
         $order->categories()->attach([$category->id, $category2->id]);
 
         // 1. Make a non-attachment change (status change)
-        $this->putJson("/api/v1/orders/{$order->uuid}", [
+        $resp1 = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::IN_PROGRESS->value,
             'categories' => [$category->id] // Update to reflect actual categories being sent
         ]);
+        $resp1->assertOk();
 
         // 2. Upload an attachment (this should create attachment history)
         $file = UploadedFile::fake()->image('test-image.jpg', 100, 100);
@@ -61,10 +59,11 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         $response->assertCreated();
 
         // 3. Make another non-attachment change
-        $this->putJson("/api/v1/orders/{$order->uuid}", [
+        $resp2 = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'title' => 'Updated Title',
             'categories' => [$category2->id] // Update to reflect actual categories being sent
         ]);
+        $resp2->assertOk();
 
         // 4. Get order history
         $historyResponse = $this->getJson("/api/v1/orders/{$order->uuid}/history");
@@ -72,8 +71,8 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         $historyResponse->assertOk();
         $historyData = $historyResponse->json('data');
 
-        // Verify we have at least 3 history entries (status, attachments, title, categories)
-        $this->assertGreaterThanOrEqual(3, count($historyData));
+        // Verify we have at least 4 history entries (status, attachments, title, categories)
+        $this->assertGreaterThanOrEqual(4, count($historyData));
 
         // Find the attachment-related history entry
         $attachmentHistory = collect($historyData)->firstWhere('field_changed', 'attachments');
@@ -93,9 +92,7 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         // Non-attachment history entries should have empty attachments
         $nonAttachmentHistory = collect($historyData)->where('field_changed', '!=', 'attachments');
         foreach ($nonAttachmentHistory as $history) {
-            if ($history['field_changed'] !== 'categories') {
-                $this->assertEmpty($history['attachments'], "Non-attachment history entry (field: {$history['field_changed']}) should have empty attachments array");
-            }
+            $this->assertEmpty($history['attachments'], "Non-attachment history entry (field: {$history['field_changed']}) should have empty attachments array");
         }
     }
 }

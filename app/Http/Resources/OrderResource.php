@@ -3,9 +3,6 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\CategoryResource;
-use App\Http\Resources\UserResource;
-
 class OrderResource extends JsonResource
 {
     /**
@@ -13,6 +10,7 @@ class OrderResource extends JsonResource
      *
      * @param  \Illuminate\Http\Request  $request
      * @return array
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function toArray($request)
     {
