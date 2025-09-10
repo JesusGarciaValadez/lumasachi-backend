@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Enums\UserRole;
 
 final class UsersController extends Controller
 {
@@ -27,7 +28,10 @@ final class UsersController extends Controller
         }
 
         // Optional: exclude soft-deleted or inactive if needed; not specified in requirement
-        $users = $query->with('company')->get();
+        $users = $query->with('company')
+            ->whereNot('role', UserRole::CUSTOMER->value)
+            ->where('is_active', true)
+            ->get();
 
         return response()->json(UserResource::collection($users));
     }
@@ -53,7 +57,10 @@ final class UsersController extends Controller
             });
         }
 
-        $users = $query->with('company')->get();
+        $users = $query->with('company')
+            ->where('role', UserRole::CUSTOMER->value)
+            ->where('is_active', true)
+            ->get();
 
         return response()->json(UserResource::collection($users));
     }

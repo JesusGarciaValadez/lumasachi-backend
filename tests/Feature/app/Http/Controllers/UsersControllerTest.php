@@ -18,6 +18,7 @@ final class UsersControllerTest extends TestCase
         $user = User::factory()->create([
             'role' => UserRole::EMPLOYEE->value,
             'company_id' => $companyId,
+            'is_active' => true,
         ]);
         $this->actingAs($user);
         return $user;
@@ -34,11 +35,13 @@ final class UsersControllerTest extends TestCase
         // Same company users
         $sameCompanyUsers = User::factory()->count(3)->create([
             'company_id' => $companyA->id,
+            'role' => UserRole::EMPLOYEE->value,
+            'is_active' => true,
         ]);
 
         // Different company and null company users
-        $otherCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyB->id]);
-        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null]);
+        $otherCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyB->id, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
+        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
 
         $response = $this->getJson('/api/v1/users/employees');
         $response->assertOk();
@@ -68,11 +71,11 @@ final class UsersControllerTest extends TestCase
         $me = $this->authUserWithCompany($companyA->id);
 
         // Different company users (including null)
-        $otherCompanyUsers = User::factory()->count(3)->create(['company_id' => $companyB->id]);
-        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null]);
+        $otherCompanyUsers = User::factory()->count(3)->create(['company_id' => $companyB->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
+        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
 
         // Same company users
-        $sameCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyA->id]);
+        $sameCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyA->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
 
         $response = $this->getJson('/api/v1/users/customers');
         $response->assertOk();
@@ -97,9 +100,9 @@ final class UsersControllerTest extends TestCase
     {
         $me = $this->authUserWithCompany(null);
 
-        $nullCompanyUsers = User::factory()->count(3)->create(['company_id' => null]);
+        $nullCompanyUsers = User::factory()->count(3)->create(['company_id' => null, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
         $someCompany = Company::factory()->create();
-        $nonNullCompanyUsers = User::factory()->count(2)->create(['company_id' => $someCompany->id]);
+        $nonNullCompanyUsers = User::factory()->count(2)->create(['company_id' => $someCompany->id, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
 
         $response = $this->getJson('/api/v1/users/employees');
         $response->assertOk();
@@ -121,9 +124,9 @@ final class UsersControllerTest extends TestCase
     {
         $this->authUserWithCompany(null);
 
-        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null]);
+        $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
         $someCompany = Company::factory()->create();
-        $nonNullCompanyUsers = User::factory()->count(3)->create(['company_id' => $someCompany->id]);
+        $nonNullCompanyUsers = User::factory()->count(3)->create(['company_id' => $someCompany->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
 
         $response = $this->getJson('/api/v1/users/customers');
         $response->assertOk();
