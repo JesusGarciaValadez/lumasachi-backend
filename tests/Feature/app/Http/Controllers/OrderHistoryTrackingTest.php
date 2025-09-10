@@ -23,10 +23,12 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_status_changes_when_updating_order(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
         $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'status' => OrderStatus::OPEN->value,
             'created_by' => $user->id,
         ]);
@@ -53,10 +55,13 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_priority_changes_when_updating_order(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
         $categories = Category::factory()->count(2)->create();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'priority' => OrderPriority::NORMAL->value,
             'created_by' => $user->id,
         ]);
@@ -87,7 +92,9 @@ class OrderHistoryTrackingTest extends TestCase
 
         $categories = Category::factory()->count(2)->create();
         $newCategory = Category::factory()->create();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::LOW->value,
             'title' => 'Original Title',
@@ -146,11 +153,13 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_assignment_changes(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $employee = User::factory()->create();
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'assigned_to' => $user->id,
             // 'category_id' => $category->id,
             'created_by' => $user->id,
@@ -177,6 +186,7 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_estimated_completion_date_changes(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
@@ -184,6 +194,7 @@ class OrderHistoryTrackingTest extends TestCase
         $newDate = Carbon::now()->addDays(10);
 
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'estimated_completion' => $oldDate,
             'created_by' => $user->id,
         ]);
@@ -214,10 +225,12 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_does_not_create_history_when_no_changes_made(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
@@ -245,10 +258,12 @@ class OrderHistoryTrackingTest extends TestCase
     public function it_checks_if_tracks_setting_field_to_null(): void
     {
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
             'notes' => 'Some important notes',
         ]);
         $order->categories()->attach($category->id);
@@ -275,6 +290,7 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
             'assigned_to' => User::factory()->create()->id,
         ]);
@@ -293,7 +309,10 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $order = Order::factory()->createQuietly();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
+        ]);
 
         // Create multiple history entries
         OrderHistory::factory()->count(25)->create([
@@ -337,7 +356,10 @@ class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $order = Order::factory()->createQuietly();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
+        ]);
 
         // Create different types of history
         OrderHistory::factory()->count(5)->create([

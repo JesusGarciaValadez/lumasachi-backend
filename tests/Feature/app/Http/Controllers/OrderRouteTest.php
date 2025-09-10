@@ -3,11 +3,12 @@
 namespace Tests\Feature\app\Http\Controllers;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\UserRole;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use App\Models\Category;
 
 class OrderRouteTest extends TestCase
 {
@@ -16,7 +17,8 @@ class OrderRouteTest extends TestCase
     #[Test]
     public function it_redirects_guest_to_login_when_accessing_order_route(): void
     {
-        $order = Order::factory()->withCategories()->createQuietly();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+        $order = Order::factory()->withCategories()->createQuietly(['customer_id' => $customer->id]);
         $response = $this->get(route('web.orders.show', [$order->uuid]));
         $response->assertRedirect('/login');
     }
@@ -25,10 +27,11 @@ class OrderRouteTest extends TestCase
     public function it_shows_order_details_to_authenticated_user(): void
     {
         $user = User::factory()->create();
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $this->actingAs($user);
 
         $order = Order::factory()->withCategories()->createQuietly([
-            'customer_id' => $user->id,
+            'customer_id' => $customer->id,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
         ]);

@@ -133,10 +133,12 @@ class OrderHistoryApiIntegrationTest extends TestCase
     public function it_checks_if_automatic_description_generation_on_order_update(): void
     {
         $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $this->actingAs($admin);
 
         $order = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
+            'customer_id' => $customer->id,
             'status' => OrderStatus::OPEN->value,
             'priority' => OrderPriority::NORMAL->value
         ]);
