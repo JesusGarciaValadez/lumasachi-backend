@@ -71,6 +71,7 @@ class OrderControllerTest extends TestCase
         // Create orders for another employee that should not be returned
         $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $otherOrders = Order::factory()->count(5)->createQuietly([
+            'customer_id' => $this->customer->id,
             'status' => OrderStatus::COMPLETED->value,
             'assigned_to' => $otherEmployee->id,
             'created_by' => $this->admin->id,
@@ -116,6 +117,7 @@ class OrderControllerTest extends TestCase
         $response->assertCreated();
 
         $this->assertDatabaseHas('orders', [
+            'customer_id' => $this->customer->id,
             'title' => 'Test Order Title',
             'created_by' => $this->employee->id,
         ]);
@@ -147,7 +149,7 @@ class OrderControllerTest extends TestCase
         $response = $this->postJson('/api/v1/orders', []);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'status', 'priority', 'categories', 'assigned_to']);
+            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'status', 'priority', 'assigned_to']);
     }
 
     /**
@@ -258,6 +260,7 @@ class OrderControllerTest extends TestCase
 
         // Create an order that the employee created
         $order = Order::factory()->createQuietly([
+            'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id
         ]);
@@ -288,6 +291,7 @@ class OrderControllerTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
+            'customer_id' => $this->customer->id,
             'title' => 'Updated Order Title',
             'updated_by' => $this->employee->id
         ]);
@@ -305,6 +309,7 @@ class OrderControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         $order = Order::factory()->createQuietly([
+            'customer_id' => $this->customer->id,
             'title' => 'Original Title',
             'description' => 'Original Description',
             'created_by' => $this->employee->id,
@@ -320,6 +325,7 @@ class OrderControllerTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
+            'customer_id' => $this->customer->id,
             'title' => 'New Title Only',
             // 'description' => 'Original Description' // Should remain unchanged
         ]);

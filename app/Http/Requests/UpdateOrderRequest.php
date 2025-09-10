@@ -43,7 +43,6 @@ class UpdateOrderRequest extends FormRequest
                 OrderPriority::HIGH->value,
                 OrderPriority::URGENT->value
             ]),
-            // 'category_id' => 'sometimes|required|exists:categories,id',
             'categories' => 'sometimes|required|array',
             'categories.*' => 'exists:categories,id',
             'estimated_completion' => 'nullable|date',
