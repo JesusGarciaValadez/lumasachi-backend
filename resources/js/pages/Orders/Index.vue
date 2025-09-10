@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Card } from '@/components/ui/card';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { useI18n } from 'vue-i18n';
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const { t } = useI18n();
 
@@ -31,7 +31,8 @@ onMounted(async () => {
     orders.value = Array.isArray(json?.data)
       ? json.data
       : (Array.isArray(json) ? json : []);
-  } catch (e) {
+  } catch (error: unknown) {
+    console.error('Error fetching orders', error);
     orders.value = [];
   } finally {
     loading.value = false;
