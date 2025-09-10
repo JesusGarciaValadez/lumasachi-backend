@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n';
 import { computed, onMounted, ref } from 'vue';
 
 interface UserResource { id: number; full_name: string; email: string; }
-interface CategoryResource { id: number; name: string; color?: string | null }
+interface CategoryResource { data: Array<{ id: number; name: string; color?: string | null; }> }
 interface OrderResourceTs {
   id?: number;
   uuid?: string;
@@ -17,7 +17,7 @@ interface OrderResourceTs {
   description?: string | null;
   status?: string;
   priority?: string;
-  categories?: CategoryResource[];
+  categories?: CategoryResource;
   estimated_completion?: string | null;
   actual_completion?: string | null;
   notes?: string | null;
@@ -156,8 +156,8 @@ onMounted(async () => {
           <div class="mt-6">
             <div class="text-sm text-muted-foreground mb-2">{{ t('orders.categories') }}</div>
             <div class="flex flex-wrap gap-2">
-              <template v-if="order?.categories && order?.categories.length">
-                <span v-for="c in order.categories.data" :key="c.id" class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+              <template v-if="order?.categories && order?.categories?.data?.length">
+                <span v-for="c in order.categories?.data" :key="c.id" class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
                   <span class="mr-2 inline-block size-2 rounded-full" :style="{ backgroundColor: c.color || '#999' }"></span>
                   {{ c.name }}
                 </span>
