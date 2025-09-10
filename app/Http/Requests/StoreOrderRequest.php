@@ -48,7 +48,7 @@ class StoreOrderRequest extends FormRequest
                 OrderPriority::HIGH->value,
                 OrderPriority::URGENT->value
             ]),
-            'categories' => 'sometimes|required|array',
+            'categories' => 'required|array',
             'categories.*' => [
                 'integer',
                 'distinct',

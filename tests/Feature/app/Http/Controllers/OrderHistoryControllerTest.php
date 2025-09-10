@@ -127,9 +127,7 @@ class OrderHistoryControllerTest extends TestCase
     #[Test]
     public function it_checks_if_order_for_order_history(): void
     {
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
-        $orderHistory = OrderHistory::factory()->create(['order_id' => $order->id]);
+        $orderHistory = OrderHistory::factory()->create();
         $orderHistory->order->categories()->attach(Category::factory()->create()->id);
 
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
