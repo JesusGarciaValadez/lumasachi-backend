@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 import { Card } from '@/components/ui/card';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
@@ -76,7 +76,8 @@ onMounted(async () => {
     });
     const json = await res.json().catch(() => null);
     attachments.value = json?.attachments ?? [];
-  } catch (e) {
+  } catch (error: unknown) {
+    console.error('Error fetching attachments', error);
     attachments.value = [];
   } finally {
     attachmentsLoading.value = false;
@@ -90,7 +91,8 @@ onMounted(async () => {
     });
     const json = await res.json().catch(() => null);
     history.value = json ?? { data: [] };
-  } catch (e) {
+  } catch (error: unknown) {
+    console.error('Error fetching history', error);
     history.value = { data: [] };
   } finally {
     historyLoading.value = false;

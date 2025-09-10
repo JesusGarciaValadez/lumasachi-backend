@@ -11,7 +11,7 @@ const { t } = useI18n();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
+        title: t('common.dashboard'),
         href: '/dashboard',
     },
 ];
@@ -40,7 +40,8 @@ onMounted(async () => {
     orders.value = Array.isArray(json?.data)
       ? json.data
       : (Array.isArray(json) ? json : []);
-  } catch (e) {
+  } catch (error: unknown) {
+    console.error('Error fetching orders', error);
     orders.value = [];
   } finally {
     loading.value = false;

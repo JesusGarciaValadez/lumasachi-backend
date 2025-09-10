@@ -6,7 +6,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const i18n = useI18n();
