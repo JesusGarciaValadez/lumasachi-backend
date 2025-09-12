@@ -24,6 +24,7 @@ class PasswordConfirmationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->post('/confirm-password', [
+            'email' => $user->email,
             'password' => 'password',
         ]);
 
@@ -36,6 +37,7 @@ class PasswordConfirmationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->post('/confirm-password', [
+            'email' => $user->email,
             'password' => 'wrong-password',
         ]);
 
