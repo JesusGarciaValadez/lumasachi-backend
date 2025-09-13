@@ -26,14 +26,16 @@ class ConfirmablePasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse | JsonResponse
     {
+        dd($request->session());
         if (! Auth::guard('web')->validate([
-            'email' => $request->email,
+            'email' => $request->user()->email,
             'password' => $request->password,
         ])) {
             throw ValidationException::withMessages([
                 'password' => __('auth.password'),
             ]);
         }
+
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Password confirmed!'], 200);
