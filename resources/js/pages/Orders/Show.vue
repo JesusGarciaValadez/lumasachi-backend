@@ -51,7 +51,7 @@ const history = ref<any>({ data: [], meta: null });
 const historyLoading = ref(true);
 
 const orderUuid = computed(() => order.value?.uuid ?? '');
-const categoryList = computed(() => order.value?.categories?.data ?? []);
+const categoryList = computed<CategoryResource['data']>(() => order.value?.categories?.data ?? []);
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
