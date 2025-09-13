@@ -51,6 +51,7 @@ const history = ref<any>({ data: [], meta: null });
 const historyLoading = ref(true);
 
 const orderUuid = computed(() => order.value?.uuid ?? '');
+const categoryList = computed(() => order.value?.categories?.data ?? []);
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
@@ -156,8 +157,8 @@ onMounted(async () => {
           <div class="mt-6">
             <div class="text-sm text-muted-foreground mb-2">{{ t('orders.categories') }}</div>
             <div class="flex flex-wrap gap-2">
-              <template v-if="order?.categories && order?.categories?.data?.length">
-                <span v-for="c in order.categories?.data" :key="c.id" class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
++              <template v-if="categoryList.length">
++                <span v-for="c in categoryList" :key="c.id" class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
                   <span class="mr-2 inline-block size-2 rounded-full" :style="{ backgroundColor: c.color || '#999' }"></span>
                   {{ c.name }}
                 </span>
