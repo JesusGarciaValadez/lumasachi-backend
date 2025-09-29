@@ -92,6 +92,13 @@ return [
 
     ],
 
+    'orders' => [
+        'ttl' => [
+            'index' => env('ORDERS_INDEX_TTL', 60),
+            'show' => env('ORDERS_SHOW_TTL', 300),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Cache Key Prefix

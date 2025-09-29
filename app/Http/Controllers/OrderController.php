@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
@@ -17,33 +18,42 @@ use App\Http\Resources\OrderHistoryResource;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Traits\CachesOrders;
 
 final class OrderController extends Controller
 {
+    use CachesOrders;
     /**
      * Display a listing of all orders.
      *
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Orders must be filtered by the user's role if isCustomer
-        $ordersQuery = Order::with(['customer', 'assignedTo', 'createdBy', 'categories'])
-            ->when($user->isCustomer(), function ($query) use ($user) {
-                $query->where('customer_id', $user->id);
-            })
-            ->when($user->isEmployee(), function ($query) use ($user) {
-                $query->where('assigned_to', $user->id)
-                    ->orWhere('created_by', $user->id);
-            })
-            ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) use ($user) {
-                // No additional query modification needed for administrators
-        })
-            ->get();
+        $key = self::indexKeyFor($user);
+        $hit = Cache::has($key);
 
-        return response()->json(OrderResource::collection($ordersQuery));
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($user) {
+            $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'categories'])
+                ->when($user->isCustomer(), function ($query) use ($user) {
+                    $query->where('customer_id', $user->id);
+                })
+                ->when($user->isEmployee(), function ($query) use ($user) {
+                    $query->where('assigned_to', $user->id)
+                        ->orWhere('created_by', $user->id);
+                })
+                ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) use ($user) {
+                    // No additional query modification needed for administrators
+                })
+                ->get();
+
+            return OrderResource::collection($orders)->resolve();
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
@@ -87,11 +97,17 @@ final class OrderController extends Controller
      * @param Order $order
      * @return JsonResponse
      */
-    public function show(Order $order): JsonResponse
+public function show(Order $order): JsonResponse
     {
-        return response()->json(
-            new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
-        );
+        $key = self::showKeyFor($order->uuid);
+        $hit = Cache::has($key);
+
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order) {
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])))->resolve();
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
