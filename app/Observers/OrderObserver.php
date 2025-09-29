@@ -6,9 +6,11 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Notifications\OrderCreatedNotification;
 use Illuminate\Support\Str;
+use App\Traits\CachesOrders;
 
 class OrderObserver
 {
+    use CachesOrders;
     /**
      * Store original values during updating to compute history afterwards.
      */
@@ -23,6 +25,9 @@ class OrderObserver
         if ($order->customer) {
             $order->customer->notify(new OrderCreatedNotification($order));
         }
+
+        // Invalidate orders cache namespace
+        self::bumpVersion();
     }
 
     /**
@@ -75,6 +80,9 @@ class OrderObserver
                 ]);
             }
         }
+
+        // Invalidate orders cache namespace
+        self::bumpVersion();
     }
 
     /**
@@ -82,7 +90,8 @@ class OrderObserver
      */
     public function deleted(Order $order): void
     {
-        //
+        // Invalidate orders cache namespace
+        self::bumpVersion();
     }
 
     /**
@@ -90,7 +99,8 @@ class OrderObserver
      */
     public function restored(Order $order): void
     {
-        //
+        // Invalidate orders cache namespace
+        self::bumpVersion();
     }
 
     /**
@@ -98,6 +108,7 @@ class OrderObserver
      */
     public function forceDeleted(Order $order): void
     {
-        //
+        // Invalidate orders cache namespace
+        self::bumpVersion();
     }
 }

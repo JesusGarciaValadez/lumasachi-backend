@@ -5,6 +5,7 @@ namespace Tests\Feature\app\Http\Controllers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Cache;
 use App\Enums\UserRole;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -30,6 +31,10 @@ class OrderControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Configure cache for tests: in-memory and clean state
+        config(['cache.default' => 'array']);
+        Cache::flush();
 
         $this->company = Company::factory()->create([
             'name' => 'Test Company',
@@ -112,9 +117,14 @@ class OrderControllerTest extends TestCase
             'assigned_to' => $this->employee->id
         ];
 
+        $v1 = (int) Cache::get('orders:version', 0);
+
         $response = $this->postJson('/api/v1/orders', $orderData);
 
         $response->assertCreated();
+
+        $v2 = (int) Cache::get('orders:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Orders cache version should bump on create');
 
         $this->assertDatabaseHas('orders', [
             'customer_id' => $this->customer->id,
@@ -274,20 +284,26 @@ class OrderControllerTest extends TestCase
             'categories' => [$newCategory->id]
         ];
 
+        $v1 = (int) Cache::get('orders:version', 0);
+
         $response = $this->putJson('/api/v1/orders/' . $order->uuid, $updateData);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order updated successfully.',
-                'order' => [
-                    'title' => 'Updated Order Title',
-                    'status' => OrderStatus::IN_PROGRESS->value,
-                    'priority' => OrderPriority::URGENT->value,
-                    'categories' => [
-                        ['id' => $newCategory->id, 'name' => $newCategory->name]
-                    ]
+        $response->assertOk();
+
+        $v2 = (int) Cache::get('orders:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Orders cache version should bump on update');
+
+        $response->assertJson([
+            'message' => 'Order updated successfully.',
+            'order' => [
+                'title' => 'Updated Order Title',
+                'status' => OrderStatus::IN_PROGRESS->value,
+                'priority' => OrderPriority::URGENT->value,
+                'categories' => [
+                    ['id' => $newCategory->id, 'name' => $newCategory->name]
                 ]
-            ]);
+            ]
+        ]);
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
@@ -341,12 +357,18 @@ class OrderControllerTest extends TestCase
 
         $order = Order::factory()->withCategories()->createQuietly();
 
+        $v1 = (int) Cache::get('orders:version', 0);
+
         $response = $this->deleteJson('/api/v1/orders/' . $order->uuid);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order deleted successfully.'
-            ]);
+        $response->assertOk();
+
+        $v2 = (int) Cache::get('orders:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Orders cache version should bump on delete');
+
+        $response->assertJson([
+            'message' => 'Order deleted successfully.'
+        ]);
 
         $this->assertDatabaseMissing('orders', [
             'id' => $order->id
@@ -373,5 +395,52 @@ class OrderControllerTest extends TestCase
 
         $response = $this->getJson('/api/v1/orders/non-existent-id');
         $response->assertNotFound();
+    }
+    /**
+     * Test that index caches results and returns X-Cache HIT on second request
+     */
+    #[Test]
+    public function it_caches_index_responses_and_returns_hit_on_second_request(): void
+    {
+        $this->actingAs($this->employee);
+
+        // Create a couple of orders for this employee
+        $orders = Order::factory()->count(2)->createQuietly([
+            'customer_id' => $this->customer->id,
+            'status' => OrderStatus::OPEN->value,
+            'assigned_to' => $this->employee->id,
+            'created_by' => $this->admin->id,
+        ]);
+        foreach ($orders as $order) {
+            $order->categories()->attach(Category::factory()->create()->id);
+        }
+
+        $first = $this->getJson('/api/v1/orders');
+        $first->assertOk()->assertHeader('X-Cache', 'MISS');
+
+        $second = $this->getJson('/api/v1/orders');
+        $second->assertOk()->assertHeader('X-Cache', 'HIT');
+    }
+
+    /**
+     * Test that show caches result and returns X-Cache HIT on second request
+     */
+    #[Test]
+    public function it_caches_show_responses_and_returns_hit_on_second_request(): void
+    {
+        $this->actingAs($this->employee);
+
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $this->customer->id,
+            'assigned_to' => $this->employee->id,
+            'created_by' => $this->admin->id,
+        ]);
+        $order->categories()->attach(Category::factory()->create()->id);
+
+        $first = $this->getJson('/api/v1/orders/' . $order->uuid);
+        $first->assertOk()->assertHeader('X-Cache', 'MISS');
+
+        $second = $this->getJson('/api/v1/orders/' . $order->uuid);
+        $second->assertOk()->assertHeader('X-Cache', 'HIT');
     }
 }
