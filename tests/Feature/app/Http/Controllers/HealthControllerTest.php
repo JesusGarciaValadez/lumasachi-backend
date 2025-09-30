@@ -1,22 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Tests\TestCase;
+use DateTime;
+use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class HealthControllerTest extends TestCase
+final class HealthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
      * Test the simple health check endpoint returns correct response.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_up_endpoint_returns_operational_status(): void
@@ -33,22 +35,20 @@ class HealthControllerTest extends TestCase
                 'environment',
                 'version',
                 'php_version',
-                'laravel_version'
+                'laravel_version',
             ])
             ->assertJson([
                 'status' => 'up',
-                'message' => 'API is operational'
+                'message' => 'API is operational',
             ]);
 
         // Verify timestamp is valid ISO 8601
         $data = $response->json();
-        $this->assertNotNull(\DateTime::createFromFormat(\DateTime::ISO8601, $data['timestamp']));
+        $this->assertNotNull(DateTimeImmutable::createFromFormat(DateTime::ISO8601, $data['timestamp']));
     }
 
     /**
      * Test comprehensive health check returns healthy status when all checks pass.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_endpoint_returns_healthy_status_when_all_checks_pass(): void
@@ -69,34 +69,34 @@ class HealthControllerTest extends TestCase
                         'healthy',
                         'message',
                         'response_time_ms',
-                        'connection'
+                        'connection',
                     ],
                     'cache' => [
                         'healthy',
                         'message',
                         'response_time_ms',
-                        'driver'
+                        'driver',
                     ],
                     'storage' => [
                         'healthy',
                         'message',
-                        'disks'
+                        'disks',
                     ],
                     'memory' => [
                         'healthy',
                         'message',
                         'usage_mb',
                         'limit_mb',
-                        'usage_percentage'
+                        'usage_percentage',
                     ],
                     'disk' => [
                         'healthy',
                         'message',
                         'free_gb',
                         'total_gb',
-                        'used_percentage'
-                    ]
-                ]
+                        'used_percentage',
+                    ],
+                ],
             ]);
 
         // Verify overall status is healthy
@@ -107,8 +107,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test health check database component works correctly.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_database_component(): void
@@ -131,8 +129,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test health check cache component works correctly.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_cache_component(): void
@@ -152,8 +148,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test health check storage component works correctly.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_storage_component(): void
@@ -170,13 +164,12 @@ class HealthControllerTest extends TestCase
         $data = $response->json();
 
         $this->assertArrayHasKey('storage', $data['checks']);
+        $this->assertTrue($data['checks']['storage']['healthy']);
         $this->assertArrayHasKey('disks', $data['checks']['storage']);
     }
 
     /**
      * Test health check memory component works correctly.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_memory_component(): void
@@ -197,8 +190,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test health check disk space component works correctly.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_disk_space_component(): void
@@ -219,8 +210,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test health check returns unhealthy status when a component fails.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_health_check_returns_unhealthy_when_component_fails(): void
@@ -262,8 +251,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test queue check is included when queue is not sync.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_queue_check_included_when_queue_not_sync(): void
@@ -272,7 +259,7 @@ class HealthControllerTest extends TestCase
         config(['queue.default' => 'database']);
 
         // Create queue tables if they don't exist
-        if (!DB::getSchemaBuilder()->hasTable('jobs')) {
+        if (! DB::getSchemaBuilder()->hasTable('jobs')) {
             DB::getSchemaBuilder()->create('jobs', function ($table) {
                 $table->bigIncrements('id');
                 $table->string('queue')->index();
@@ -284,7 +271,7 @@ class HealthControllerTest extends TestCase
             });
         }
 
-        if (!DB::getSchemaBuilder()->hasTable('failed_jobs')) {
+        if (! DB::getSchemaBuilder()->hasTable('failed_jobs')) {
             DB::getSchemaBuilder()->create('failed_jobs', function ($table) {
                 $table->id();
                 $table->string('uuid')->unique();
@@ -312,8 +299,6 @@ class HealthControllerTest extends TestCase
 
     /**
      * Test queue check is not included when queue is sync.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_queue_check_not_included_when_queue_is_sync(): void
