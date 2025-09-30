@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Str;
 
 return [
@@ -92,7 +94,7 @@ return [
 
     ],
 
-'orders' => [
+    'orders' => [
         'ttl' => [
             'index' => env('ORDERS_INDEX_TTL', 60),
             'show' => env('ORDERS_SHOW_TTL', 300),
@@ -102,6 +104,13 @@ return [
     'categories' => [
         'ttl' => [
             'index' => env('CATEGORIES_INDEX_TTL', 300),
+        ],
+    ],
+
+    'order_histories' => [
+        'ttl' => [
+            'index' => env('ORDER_HISTORIES_INDEX_TTL', 120),
+            'show' => env('ORDER_HISTORIES_SHOW_TTL', 300),
         ],
     ],
 
