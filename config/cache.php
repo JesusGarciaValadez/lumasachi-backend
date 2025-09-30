@@ -92,10 +92,16 @@ return [
 
     ],
 
-    'orders' => [
+'orders' => [
         'ttl' => [
             'index' => env('ORDERS_INDEX_TTL', 60),
             'show' => env('ORDERS_SHOW_TTL', 300),
+        ],
+    ],
+
+    'categories' => [
+        'ttl' => [
+            'index' => env('CATEGORIES_INDEX_TTL', 300),
         ],
     ],
 
