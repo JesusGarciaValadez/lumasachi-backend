@@ -1,16 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderRouteTest extends TestCase
+final class OrderRouteTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -26,7 +27,7 @@ class OrderRouteTest extends TestCase
     #[Test]
     public function it_shows_order_details_to_authenticated_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $this->actingAs($user);
 
