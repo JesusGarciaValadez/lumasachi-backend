@@ -195,6 +195,9 @@ final class OrderHistory extends Model
     /**
      * Get the order(s) related to this order history.
      * This is an alias for the order() method to maintain compatibility.
+     *
+     * DEPRECATED: Use order() instead. Returns a single Order, not a collection.
+     * Maintained for backward compatibility only.
      */
     public function orders(): BelongsTo
     {
@@ -206,7 +209,7 @@ final class OrderHistory extends Model
      *
      * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
      */
-    protected static function newFactory()
+    protected static function newFactory(): OrderHistoryFactory
     {
         return OrderHistoryFactory::new();
     }

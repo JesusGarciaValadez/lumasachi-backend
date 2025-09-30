@@ -19,21 +19,17 @@ trait CachesOrderHistories
             Cache::forever($key, 1);
         }
 
+        Cache::add($key, 1); // Only sets if key doesn't exist (atomic)
         return (int) Cache::get($key, 1);
     }
 
     public static function bumpVersion(): int
     {
         $key = self::versionKey();
-        $existed = Cache::has($key);
-        $before = $existed ? (int) Cache::get($key) : null;
-
-        if (! $existed) {
-            Cache::forever($key, 1);
-            $after = 1;
-        } else {
-            $after = (int) Cache::increment($key);
-        }
+        // Atomic: add returns false if key exists, ensuring exactly-once initialization
+        $existed = !Cache::add($key, 0); // Start at 0 since we'll increment immediately
+        $before = $existed ? (int) Cache::get($key) : 0;
+        $after = (int) Cache::increment($key);
 
         if (app()->runningUnitTests()) {
             Log::debug('order_histories:version bump', [
@@ -94,7 +90,7 @@ trait CachesOrderHistories
         foreach ($bt as $frame) {
             if (isset($frame['class'], $frame['function'])) {
                 // Skip internal cache trait frames
-                if (str_contains($frame['class'], __CLASS__)) {
+                if (str_contains($frame['class'], 'CachesOrderHistories')) {
                     continue;
                 }
 
