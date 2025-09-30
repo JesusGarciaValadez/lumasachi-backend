@@ -1,23 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Gate;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderHistoryRequest;
 use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderHistory;
-
+use App\Traits\CachesOrderHistories;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 final class OrderHistoryController extends Controller
 {
+    use CachesOrderHistories;
+
     /**
      * Display a listing of order histories.
      */
@@ -25,24 +29,42 @@ final class OrderHistoryController extends Controller
     {
         Gate::authorize('viewAny', OrderHistory::class);
 
-        $query = OrderHistory::with(['createdBy', 'order.attachments']);
+        // Build normalized filters and pagination signature for cache key
+        $filters = [
+            'order_id' => $request->input('order_id'),
+            'from_date' => $request->input('from_date'),
+            'to_date' => $request->input('to_date'),
+            'page' => (int) $request->input('page', 1),
+            'per_page' => (int) $request->input('per_page', 15),
+        ];
 
-        // Filter by order_id if provided
-        if ($request->has('order_id')) {
-            $query->where('order_id', $request->order_id);
-        }
+        $key = self::indexKeyFor($filters);
+        $hit = Cache::has($key);
 
-        // Filter by date range if provided
-        if ($request->has('from_date')) {
-            $query->whereDate('created_at', '>=', $request->from_date);
-        }
-        if ($request->has('to_date')) {
-            $query->whereDate('created_at', '<=', $request->to_date);
-        }
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($request) {
+            $query = OrderHistory::with(['createdBy', 'order.attachments']);
 
-        $orderHistories = $query->orderBy('created_at', 'desc')->paginate($request->get('per_page', 15));
+            if ($request->filled('order_id')) {
+                $query->where('order_id', $request->order_id);
+            }
+            if ($request->filled('from_date')) {
+                $query->whereDate('created_at', '>=', $request->from_date);
+            }
+            if ($request->filled('to_date')) {
+                $query->whereDate('created_at', '<=', $request->to_date);
+            }
 
-        return response()->json(OrderHistoryResource::collection($orderHistories));
+            $paginator = $query->orderBy('created_at', 'desc')
+                ->paginate($request->integer('per_page', 15));
+
+            // Preserve paginator structure in cache
+            return OrderHistoryResource::collection($paginator)
+                ->response()
+                ->getData(true);
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
@@ -54,7 +76,7 @@ final class OrderHistoryController extends Controller
             $request->validated(),
             [
                 'uuid' => Str::uuid7()->toString(),
-                'created_by' => $request->user()->id
+                'created_by' => $request->user()->id,
             ]
         ));
 
@@ -73,9 +95,17 @@ final class OrderHistoryController extends Controller
     {
         Gate::authorize('view', $orderHistory);
 
-        $orderHistory->load(['createdBy', 'order.attachments']);
+        $key = self::showKeyFor($orderHistory->uuid);
+        $hit = Cache::has($key);
 
-        return response()->json(['data' => new OrderHistoryResource($orderHistory)]);
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($orderHistory) {
+            $orderHistory->load(['createdBy', 'order.attachments']);
+
+            return ['data' => (new OrderHistoryResource($orderHistory))->resolve()];
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
@@ -100,7 +130,7 @@ final class OrderHistoryController extends Controller
         // Verify that the order history belongs to the specified order
         if ($orderHistory->order_id !== $order->id) {
             return response()->json([
-                'message' => 'Order history does not belong to the specified order.'
+                'message' => 'Order history does not belong to the specified order.',
             ], Response::HTTP_NOT_FOUND);
         }
 
@@ -109,7 +139,7 @@ final class OrderHistoryController extends Controller
         $order->loadMissing(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']);
 
         return response()->json([
-            'order' => new OrderResource($order)
+            'order' => new OrderResource($order),
         ]);
     }
 
@@ -123,7 +153,7 @@ final class OrderHistoryController extends Controller
         // Verify that the order history belongs to the specified order
         if ($orderHistory->order_id !== $order->id) {
             return response()->json([
-                'message' => 'Order history does not belong to the specified order.'
+                'message' => 'Order history does not belong to the specified order.',
             ], Response::HTTP_NOT_FOUND);
         }
 
@@ -133,7 +163,7 @@ final class OrderHistoryController extends Controller
         $attachments = $orderHistory->order->attachments;
 
         return response()->json([
-            'attachments' => AttachmentResource::collection($attachments)
+            'attachments' => AttachmentResource::collection($attachments),
         ]);
     }
 }

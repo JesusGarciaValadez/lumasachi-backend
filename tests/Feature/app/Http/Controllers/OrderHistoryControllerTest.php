@@ -1,22 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
-use App\Enums\UserRole;
 use App\Enums\OrderStatus;
-use App\Models\User;
-use App\Models\OrderHistory;
-use App\Models\Order;
+use App\Enums\UserRole;
 use App\Models\Attachment;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryControllerTest extends TestCase
+final class OrderHistoryControllerTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['cache.default' => 'array']);
+        Cache::flush();
+    }
 
     /**
      * Test listing order histories.
@@ -29,21 +39,32 @@ class OrderHistoryControllerTest extends TestCase
 
         OrderHistory::factory()->count(3)->create();
 
-        $response = $this->getJson('/api/v1/history');
+        $first = $this->getJson('/api/v1/history');
 
-        $response->assertStatus(200);
+        $first->assertStatus(200)
+            ->assertHeader('X-Cache', 'MISS');
 
-        // Debug the response
-        $content = $response->json();
-        // dd($content); // Uncomment to see actual response structure
+        $v = (int) Cache::get('order_histories:version', 1);
+        $filters = [
+            'order_id' => null,
+            'from_date' => null,
+            'to_date' => null,
+            'page' => 1,
+            'per_page' => 15,
+        ];
+        ksort($filters);
+        $signature = md5(json_encode($filters));
+        $this->assertTrue(Cache::has("order_histories:index:v{$v}:f:{$signature}"));
 
-        // Check if it has the basic pagination structure
+        $second = $this->getJson('/api/v1/history');
+        $second->assertStatus(200)
+            ->assertHeader('X-Cache', 'HIT');
+
+        $content = $second->json();
         $this->assertIsArray($content);
-        // Since it's a resource collection on a paginator, check for proper structure
         if (isset($content['data'])) {
             $this->assertCount(3, $content['data']);
         } else {
-            // Direct array response
             $this->assertCount(3, $content);
         }
     }
@@ -58,7 +79,7 @@ class OrderHistoryControllerTest extends TestCase
         $this->actingAs($user);
 
         $order = Order::factory()->createQuietly([
-            'assigned_to' => $user->id
+            'assigned_to' => $user->id,
         ]);
         $order->categories()->attach(Category::factory()->create()->id);
         $orderHistoryData = [
@@ -69,12 +90,17 @@ class OrderHistoryControllerTest extends TestCase
             'comment' => $this->faker->sentence(),
         ];
 
+        $v1 = (int) Cache::get('order_histories:version', 0);
+
         $response = $this->postJson('/api/v1/history', $orderHistoryData);
 
         $response->assertStatus(201)
-                ->assertJsonStructure([
-                    'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at']
-                ]);
+            ->assertJsonStructure([
+                'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at'],
+            ]);
+
+        $v2 = (int) Cache::get('order_histories:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Order histories cache version should bump on create');
 
         // Verify database has the correct data (without description since it's a calculated field)
         $this->assertDatabaseHas('order_histories', $orderHistoryData);
@@ -95,12 +121,16 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid);
+        $first = $this->getJson('/api/v1/history/'.$orderHistory->uuid);
 
-        $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at']
-                ]);
+        $first->assertStatus(200)
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertJsonStructure([
+                'data' => ['id', 'order_id', 'field_changed', 'old_value', 'new_value', 'comment', 'description', 'created_by', 'created_at'],
+            ]);
+
+        $second = $this->getJson('/api/v1/history/'.$orderHistory->uuid);
+        $second->assertStatus(200)->assertHeader('X-Cache', 'HIT');
     }
 
     /**
@@ -114,9 +144,14 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->deleteJson('/api/v1/history/' . $orderHistory->uuid);
+        $v1 = (int) Cache::get('order_histories:version', 0);
+
+        $response = $this->deleteJson('/api/v1/history/'.$orderHistory->uuid);
 
         $response->assertStatus(204);
+
+        $v2 = (int) Cache::get('order_histories:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Order histories cache version should bump on delete');
 
         $this->assertModelMissing($orderHistory);
     }
@@ -135,12 +170,12 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid . '/order/' . $orderHistory->order->uuid);
+        $response = $this->getJson('/api/v1/history/'.$orderHistory->uuid.'/order/'.$orderHistory->order->uuid);
 
         $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'order' => ['id', 'status', 'categories']
-                ]);
+            ->assertJsonStructure([
+                'order' => ['id', 'status', 'categories'],
+            ]);
         $this->assertIsArray($response->json('order.categories'));
         $this->assertGreaterThan(0, count($response->json('order.categories') ?? []));
     }
@@ -157,14 +192,13 @@ class OrderHistoryControllerTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid . '/order/' . $orderHistory->order->uuid . '/attachments');
+        $response = $this->getJson('/api/v1/history/'.$orderHistory->uuid.'/order/'.$orderHistory->order->uuid.'/attachments');
 
         $response->assertStatus(200)
-                ->assertJsonStructure([
-                    'attachments' => [
-                        '*' => ['id', 'file_name', 'url']
-                    ]
-                ]);
+            ->assertJsonStructure([
+                'attachments' => [
+                    '*' => ['id', 'file_name', 'url'],
+                ],
+            ]);
     }
 }
-
