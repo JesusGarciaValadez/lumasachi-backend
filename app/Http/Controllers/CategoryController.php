@@ -6,14 +6,17 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoriesRequest;
+use App\Traits\CachesCategories;
 use Carbon\Carbon;
 
 final class CategoryController extends Controller
 {
+    use CachesCategories;
     /**
      * Display a listing of the resource.
      *
@@ -22,12 +25,23 @@ final class CategoryController extends Controller
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $categories = Category::forCompany($user->company_id)
-            ->active()
-            ->orderBy('name', 'asc')
-            ->orderBy('description', 'asc')
-            ->get();
-        return response()->json($categories);
+
+        $key = self::indexKeyForCompany($user->company_id);
+        $hit = Cache::has($key);
+
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($user) {
+            $categories = Category::forCompany($user->company_id)
+                ->active()
+                ->orderBy('name', 'asc')
+                ->orderBy('description', 'asc')
+                ->get();
+
+            // Return plain arrays to store in cache
+            return $categories->toArray();
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
@@ -56,6 +70,9 @@ final class CategoryController extends Controller
         }, $categoriesData);
 
         Category::insert($categoriesToInsert);
+
+        // Bulk insert does not fire Eloquent events; manually bump cache version
+        self::bumpVersion();
 
         return response()->json(['message' => 'Categories created successfully.'], 201);
     }

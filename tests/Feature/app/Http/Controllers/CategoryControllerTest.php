@@ -5,6 +5,7 @@ namespace Tests\Feature\app\Http\Controllers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Facades\Cache;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Category;
@@ -21,6 +22,11 @@ class CategoryControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Configure cache driver for tests and flush cache
+        config(['cache.default' => 'array']);
+        Cache::flush();
+
         $this->company = Company::factory()->create();
         $this->user = User::factory()->create([
             'uuid' => fake()->uuid(),
@@ -62,10 +68,19 @@ class CategoryControllerTest extends TestCase
             'updated_by' => $otherUser->id,
         ]);
 
-        $response = $this->getJson('/api/v1/categories');
+        $first = $this->getJson('/api/v1/categories');
 
-        $response->assertStatus(200)
-            ->assertJsonCount(3);
+        $first->assertStatus(200)
+            ->assertJsonCount(3)
+            ->assertHeader('X-Cache', 'MISS');
+
+        // After first request, the cache key for this company should exist
+        $v = (int) Cache::get('categories:version', 1);
+        $this->assertTrue(Cache::has("categories:index:v{$v}:company:{$this->user->company_id}"));
+
+        $second = $this->getJson('/api/v1/categories');
+        $second->assertStatus(200)
+            ->assertHeader('X-Cache', 'HIT');
     }
 
     #[Test]
@@ -110,10 +125,15 @@ class CategoryControllerTest extends TestCase
             ]
         ];
 
+        $v1 = (int) Cache::get('categories:version', 0);
+
         $response = $this->postJson('/api/v1/categories/bulk', $categoriesData);
 
         $response->assertStatus(201)
             ->assertJson(['message' => 'Categories created successfully.']);
+
+        $v2 = (int) Cache::get('categories:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Categories cache version should bump on bulk insert');
 
         $this->assertDatabaseCount('categories', 3);
         $this->assertDatabaseHas('categories', ['name' => 'Category A']);
@@ -163,10 +183,15 @@ class CategoryControllerTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
+        $v1 = (int) Cache::get('categories:version', 0);
+
         $response = $this->deleteJson("/api/v1/categories/{$category->uuid}");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Category deleted successfully.']);
+
+        $v2 = (int) Cache::get('categories:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Categories cache version should bump on delete');
 
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }
