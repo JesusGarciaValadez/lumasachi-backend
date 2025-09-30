@@ -28,20 +28,23 @@ final class OrderHistoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         Gate::authorize('viewAny', OrderHistory::class);
+        $user = $request->user();
 
         // Build normalized filters and pagination signature for cache key
         $filters = [
             'order_id' => $request->input('order_id'),
             'from_date' => $request->input('from_date'),
             'to_date' => $request->input('to_date'),
-            'page' => (int) $request->input('page', 1),
-            'per_page' => (int) $request->input('per_page', 15),
+            'page'     => max(1, (int) $request->input('page', 1)),
+            'per_page' => min(100, max(1, (int) $request->input('per_page', 15))),
+            'company_id' => $user->company_id,
+            'user_id'    => $user->id,
         ];
 
         $key = self::indexKeyFor($filters);
         $hit = Cache::has($key);
 
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($filters) {
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($filters, $user) {
             $query = OrderHistory::with(['createdBy', 'order.attachments']);
 
             if ($filters['order_id']) {
@@ -54,7 +57,9 @@ final class OrderHistoryController extends Controller
                 $query->whereDate('created_at', '<=', $filters['to_date']);
             }
 
-            $paginator = $query->orderBy('created_at', 'desc')
+            $paginator = $query
+                ->whereHas('order.createdBy', fn($q) => $q->where('company_id', $user->company_id))
+                ->orderBy('created_at', 'desc')
                 ->paginate($filters['per_page']);
 
             // Preserve paginator structure in cache
@@ -98,11 +103,15 @@ final class OrderHistoryController extends Controller
         $key = self::showKeyFor($orderHistory->uuid);
         $hit = Cache::has($key);
 
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($orderHistory) {
+        $payload = Cache::get($key);
+        $hit = $payload !== null;
+        if (! $hit) {
             $orderHistory->load(['createdBy', 'order.attachments']);
-
-            return ['data' => (new OrderHistoryResource($orderHistory))->resolve()];
-        });
+            $payload = ['data' => (new OrderHistoryResource($orderHistory))->resolve()];
+            \Illuminate\Support\Facades\DB::afterCommit(function () use ($key, $payload) {
+                Cache::put($key, $payload, now()->addSeconds(self::ttlShow()));
+            });
+        }
 
         return response()->json($payload)
             ->header('X-Cache', $hit ? 'HIT' : 'MISS');
@@ -163,7 +172,7 @@ final class OrderHistoryController extends Controller
         $attachments = $orderHistory->order->attachments;
 
         return response()->json([
-            'attachments' => AttachmentResource::collection($attachments),
+            'attachments' => AttachmentResource::collection($attachments)->resolve(),
         ]);
     }
 }
