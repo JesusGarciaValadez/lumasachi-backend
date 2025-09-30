@@ -1,22 +1,115 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Observers\AttachmentObserver;
+use Database\Factories\AttachmentFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
-use Database\Factories\AttachmentFactory;
 
 /**
  * @mixin IdeHelperAttachment
  */
+#[ObservedBy([AttachmentObserver::class])]
 final class Attachment extends Model
 {
     use HasFactory, HasUuids;
+
+    // File type constants
+    public const TYPE_IMAGE = 'image';
+
+    public const TYPE_DOCUMENT = 'document';
+
+    public const TYPE_PDF = 'pdf';
+
+    public const TYPE_SPREADSHEET = 'spreadsheet';
+
+    public const TYPE_PRESENTATION = 'presentation';
+
+    public const TYPE_VIDEO = 'video';
+
+    public const TYPE_AUDIO = 'audio';
+
+    public const TYPE_ARCHIVE = 'archive';
+
+    public const TYPE_OTHER = 'other';
+
+    // Common MIME type constants
+    public const MIME_PDF = 'application/pdf';
+
+    public const MIME_DOC = 'application/msword';
+
+    public const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    public const MIME_XLS = 'application/vnd.ms-excel';
+
+    public const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    public const MIME_PPT = 'application/vnd.ms-powerpoint';
+
+    public const MIME_PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    public const MIME_TXT = 'text/plain';
+
+    public const MIME_CSV = 'text/csv';
+
+    public const MIME_JPG = 'image/jpeg';
+
+    public const MIME_PNG = 'image/png';
+
+    public const MIME_GIF = 'image/gif';
+
+    public const MIME_SVG = 'image/svg+xml';
+
+    public const MIME_WEBP = 'image/webp';
+
+    public const MIME_ZIP = 'application/zip';
+
+    public const MIME_RAR = 'application/x-rar-compressed';
+
+    public const MIME_JSON = 'application/json';
+
+    public const MIME_XML = 'application/xml';
+
+    // MIME type groups
+    public const IMAGE_MIME_TYPES = [
+        self::MIME_JPG,
+        self::MIME_PNG,
+        self::MIME_GIF,
+        self::MIME_SVG,
+        self::MIME_WEBP,
+    ];
+
+    public const DOCUMENT_MIME_TYPES = [
+        self::MIME_DOC,
+        self::MIME_DOCX,
+        self::MIME_PDF,
+        self::MIME_TXT,
+    ];
+
+    public const SPREADSHEET_MIME_TYPES = [
+        self::MIME_XLS,
+        self::MIME_XLSX,
+        self::MIME_CSV,
+    ];
+
+    public const PRESENTATION_MIME_TYPES = [
+        self::MIME_PPT,
+        self::MIME_PPTX,
+    ];
+
+    public const ARCHIVE_MIME_TYPES = [
+        self::MIME_ZIP,
+        self::MIME_RAR,
+        'application/x-7z-compressed',
+    ];
 
     /**
      * The primary key associated with the table.
@@ -47,80 +140,6 @@ final class Attachment extends Model
     protected $table = 'attachments';
 
     /**
-     * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
-     */
-    protected static function newFactory()
-    {
-        return AttachmentFactory::new();
-    }
-
-    // File type constants
-    const TYPE_IMAGE = 'image';
-    const TYPE_DOCUMENT = 'document';
-    const TYPE_PDF = 'pdf';
-    const TYPE_SPREADSHEET = 'spreadsheet';
-    const TYPE_PRESENTATION = 'presentation';
-    const TYPE_VIDEO = 'video';
-    const TYPE_AUDIO = 'audio';
-    const TYPE_ARCHIVE = 'archive';
-    const TYPE_OTHER = 'other';
-
-    // Common MIME type constants
-    const MIME_PDF = 'application/pdf';
-    const MIME_DOC = 'application/msword';
-    const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    const MIME_XLS = 'application/vnd.ms-excel';
-    const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    const MIME_PPT = 'application/vnd.ms-powerpoint';
-    const MIME_PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-    const MIME_TXT = 'text/plain';
-    const MIME_CSV = 'text/csv';
-    const MIME_JPG = 'image/jpeg';
-    const MIME_PNG = 'image/png';
-    const MIME_GIF = 'image/gif';
-    const MIME_SVG = 'image/svg+xml';
-    const MIME_WEBP = 'image/webp';
-    const MIME_ZIP = 'application/zip';
-    const MIME_RAR = 'application/x-rar-compressed';
-    const MIME_JSON = 'application/json';
-    const MIME_XML = 'application/xml';
-
-    // MIME type groups
-    const IMAGE_MIME_TYPES = [
-        self::MIME_JPG,
-        self::MIME_PNG,
-        self::MIME_GIF,
-        self::MIME_SVG,
-        self::MIME_WEBP,
-    ];
-
-    const DOCUMENT_MIME_TYPES = [
-        self::MIME_DOC,
-        self::MIME_DOCX,
-        self::MIME_PDF,
-        self::MIME_TXT,
-    ];
-
-    const SPREADSHEET_MIME_TYPES = [
-        self::MIME_XLS,
-        self::MIME_XLSX,
-        self::MIME_CSV,
-    ];
-
-    const PRESENTATION_MIME_TYPES = [
-        self::MIME_PPT,
-        self::MIME_PPTX,
-    ];
-
-    const ARCHIVE_MIME_TYPES = [
-        self::MIME_ZIP,
-        self::MIME_RAR,
-        'application/x-7z-compressed',
-    ];
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -133,7 +152,7 @@ final class Attachment extends Model
         'file_path',
         'file_size',
         'mime_type',
-        'uploaded_by'
+        'uploaded_by',
     ];
 
     /**
@@ -143,13 +162,32 @@ final class Attachment extends Model
      */
     protected $casts = [
         'uuid' => 'string',
-        'file_size' => 'integer'
+        'file_size' => 'integer',
     ];
 
     /**
-     * Get the columns that should receive a unique identifier.
+     * Get allowed file extensions for upload validation
      *
-     * @return array
+     * @return array<string>
+     */
+    public static function getAllowedExtensions(): array
+    {
+        return [
+            // Images
+            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
+            // Documents
+            'pdf', 'doc', 'docx', 'txt',
+            // Spreadsheets
+            'xls', 'xlsx', 'csv',
+            // Presentations
+            'ppt', 'pptx',
+            // Archives
+            'zip', 'rar', '7z',
+        ];
+    }
+
+    /**
+     * Get the columns that should receive a unique identifier.
      */
     public function uniqueIds(): array
     {
@@ -182,8 +220,6 @@ final class Attachment extends Model
 
     /**
      * Get the public URL of the file
-     *
-     * @return string
      */
     public function getUrl(): string
     {
@@ -192,8 +228,6 @@ final class Attachment extends Model
 
     /**
      * Get human-readable file size
-     *
-     * @return string
      */
     public function getHumanReadableSize(): string
     {
@@ -206,13 +240,11 @@ final class Attachment extends Model
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
      * Check if the file is an image
-     *
-     * @return bool
      */
     public function isImage(): bool
     {
@@ -221,8 +253,6 @@ final class Attachment extends Model
 
     /**
      * Check if the file is a document
-     *
-     * @return bool
      */
     public function isDocument(): bool
     {
@@ -234,7 +264,7 @@ final class Attachment extends Model
             'application/vnd.ms-powerpoint',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             'text/plain',
-            'application/rtf'
+            'application/rtf',
         ];
 
         return in_array($this->mime_type, $documentMimeTypes);
@@ -242,8 +272,6 @@ final class Attachment extends Model
 
     /**
      * Check if the file is a PDF
-     *
-     * @return bool
      */
     public function isPdf(): bool
     {
@@ -252,33 +280,10 @@ final class Attachment extends Model
 
     /**
      * Get the file extension
-     *
-     * @return string
      */
     public function getExtension(): string
     {
         return pathinfo($this->file_name, PATHINFO_EXTENSION);
-    }
-
-    /**
-     * Get allowed file extensions for upload validation
-     *
-     * @return array<string>
-     */
-    public static function getAllowedExtensions(): array
-    {
-        return [
-            // Images
-            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
-            // Documents
-            'pdf', 'doc', 'docx', 'txt',
-            // Spreadsheets
-            'xls', 'xlsx', 'csv',
-            // Presentations
-            'ppt', 'pptx',
-            // Archives
-            'zip', 'rar', '7z'
-        ];
     }
 
     /**
@@ -295,5 +300,15 @@ final class Attachment extends Model
 
         // Delete the database record
         return parent::delete();
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
+     */
+    protected static function newFactory()
+    {
+        return AttachmentFactory::new();
     }
 }

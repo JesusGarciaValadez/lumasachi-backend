@@ -1,46 +1,54 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Http\Requests\UploadAttachmentRequest;
+use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\UploadAttachmentRequest;
-use App\Http\Resources\AttachmentResource;
+use App\Traits\CachesAttachments;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 final class AttachmentController extends Controller
 {
+    use CachesAttachments;
+
     /**
      * Get attachments for an order.
-     *
-     * @param Order $order
-     * @return JsonResponse
      */
     public function index(Order $order): JsonResponse
     {
         // Authorization is handled by middleware
-        $attachments = $order->attachments()->with('uploadedBy')->get();
+        $filters = ['order_id' => $order->id];
+        $key = self::indexKeyFor($filters);
+        $hit = Cache::has($key);
 
-        return response()->json([
-            'order_id' => $order->id,
-            'attachments' => AttachmentResource::collection($attachments),
-            'total_size' => $order->getTotalAttachmentsSize(),
-            'total_size_formatted' => $order->getTotalAttachmentsSizeFormatted()
-        ]);
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($order) {
+            $attachments = $order->attachments()->with('uploadedBy')->get();
+
+            return [
+                'order_id' => $order->id,
+                'attachments' => AttachmentResource::collection($attachments),
+                'total_size' => $order->getTotalAttachmentsSize(),
+                'total_size_formatted' => $order->getTotalAttachmentsSizeFormatted(),
+            ];
+        });
+
+        return response()->json($payload)
+            ->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
     /**
      * Upload an attachment to an order.
-     *
-     * @param UploadAttachmentRequest $request
-     * @param Order $order
-     * @return JsonResponse
      */
     public function store(UploadAttachmentRequest $request, Order $order): JsonResponse
     {
@@ -64,7 +72,7 @@ final class AttachmentController extends Controller
                 $fileName = $validated['names'][$index] ?? ($validated['name'] ?? $file->getClientOriginalName());
 
                 // Store the file
-                $path = $file->store('orders/' . $order->uuid . '/' . $file->hashName(), 'public');
+                $path = $file->store('orders/'.$order->uuid.'/'.$file->hashName(), 'public');
 
                 // Create attachment record
                 $attachment = $order->attachments()->create([
@@ -73,7 +81,7 @@ final class AttachmentController extends Controller
                     'file_path' => $path,
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
-                    'uploaded_by' => $request->user()->id
+                    'uploaded_by' => $request->user()->id,
                 ]);
 
                 $attachments[] = $attachment;
@@ -86,7 +94,7 @@ final class AttachmentController extends Controller
                     'old_value' => null,
                     'new_value' => $attachment->file_name,
                     'comment' => "File '{$fileName}' was uploaded",
-                    'created_by' => request()->user()->id
+                    'created_by' => request()->user()->id,
                 ]);
             }
 
@@ -95,7 +103,7 @@ final class AttachmentController extends Controller
             if (count($attachments) === 1) {
                 return response()->json([
                     'message' => 'File uploaded successfully.',
-                    'attachment' => new AttachmentResource($attachments[0]->load('uploadedBy'))
+                    'attachment' => new AttachmentResource($attachments[0]->load('uploadedBy')),
                 ], 201);
             }
 
@@ -104,14 +112,14 @@ final class AttachmentController extends Controller
 
             return response()->json([
                 'message' => 'Files uploaded successfully.',
-                'attachments' => AttachmentResource::collection($eloquentCollection->load('uploadedBy'))
+                'attachments' => AttachmentResource::collection($eloquentCollection->load('uploadedBy')),
             ], 201);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'message' => 'Failed to upload file(s).',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -119,22 +127,21 @@ final class AttachmentController extends Controller
     /**
      * Download an attachment.
      *
-     * @param Attachment $attachment
      * @return Response|\Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download(Attachment $attachment)
     {
         // Check if user has permission to download this attachment
-        if (!$this->canAccessAttachment($attachment)) {
+        if (! $this->canAccessAttachment($attachment)) {
             return response()->json([
-                'message' => 'Unauthorized to download this attachment.'
+                'message' => 'Unauthorized to download this attachment.',
             ], 403);
         }
 
         // Check if file exists
-        if (!Storage::disk('public')->exists($attachment->file_path)) {
+        if (! Storage::disk('public')->exists($attachment->file_path)) {
             return response()->json([
-                'message' => 'File not found.'
+                'message' => 'File not found.',
             ], 404);
         }
 
@@ -147,7 +154,7 @@ final class AttachmentController extends Controller
             $attachment->file_name,
             [
                 'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => 'attachment; filename="' . $attachment->file_name . '"'
+                'Content-Disposition' => 'attachment; filename="'.$attachment->file_name.'"',
             ]
         );
     }
@@ -155,15 +162,14 @@ final class AttachmentController extends Controller
     /**
      * Preview an attachment (for images and PDFs).
      *
-     * @param Attachment $attachment
      * @return Response|\Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function preview(Attachment $attachment)
     {
         // Check if user has permission to preview this attachment
-        if (!$this->canAccessAttachment($attachment)) {
+        if (! $this->canAccessAttachment($attachment)) {
             return response()->json([
-                'message' => 'Unauthorized to preview this attachment.'
+                'message' => 'Unauthorized to preview this attachment.',
             ], 403);
         }
 
@@ -174,19 +180,19 @@ final class AttachmentController extends Controller
             'image/gif',
             'image/svg+xml',
             'image/webp',
-            'application/pdf'
+            'application/pdf',
         ];
 
-        if (!in_array($attachment->mime_type, $previewableMimeTypes)) {
+        if (! in_array($attachment->mime_type, $previewableMimeTypes)) {
             return response()->json([
-                'message' => 'This file type cannot be previewed.'
+                'message' => 'This file type cannot be previewed.',
             ], 400);
         }
 
         // Check if file exists
-        if (!Storage::disk('public')->exists($attachment->file_path)) {
+        if (! Storage::disk('public')->exists($attachment->file_path)) {
             return response()->json([
-                'message' => 'File not found.'
+                'message' => 'File not found.',
             ], 404);
         }
 
@@ -197,32 +203,29 @@ final class AttachmentController extends Controller
             $filePath,
             [
                 'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"'
+                'Content-Disposition' => 'inline; filename="'.$attachment->file_name.'"',
             ]
         );
     }
 
     /**
      * Delete an attachment.
-     *
-     * @param Attachment $attachment
-     * @return JsonResponse
      */
     public function destroy(Attachment $attachment): JsonResponse
     {
         // Check if attachment belongs to an order
         if ($attachment->attachable_type !== 'order') {
             return response()->json([
-                'message' => 'This attachment does not belong to an order.'
+                'message' => 'This attachment does not belong to an order.',
             ], 403);
         }
 
         $order = $attachment->attachable;
 
         // Check authorization on the order
-        if ($order && !request()->user()->can('update', $order)) {
+        if ($order && ! request()->user()->can('update', $order)) {
             return response()->json([
-                'message' => 'Unauthorized to delete this attachment.'
+                'message' => 'Unauthorized to delete this attachment.',
             ], 403);
         }
 
@@ -247,29 +250,27 @@ final class AttachmentController extends Controller
                     'old_value' => $attachment->file_name,
                     'new_value' => null,
                     'comment' => "File '{$fileName}' was deleted",
-                    'created_by' => request()->user()->id
+                    'created_by' => request()->user()->id,
                 ]);
             }
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Attachment deleted successfully.'
+                'message' => 'Attachment deleted successfully.',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Failed to delete attachment.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Check if the current user can access the attachment.
-     *
-     * @param Attachment $attachment
-     * @return bool
      */
     private function canAccessAttachment(Attachment $attachment): bool
     {
@@ -283,7 +284,7 @@ final class AttachmentController extends Controller
         $order = $attachment->attachable;
 
         // If order doesn't exist, deny access
-        if (!$order) {
+        if (! $order) {
             return false;
         }
 
