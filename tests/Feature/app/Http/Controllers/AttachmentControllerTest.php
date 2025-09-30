@@ -1,36 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
-use App\Enums\UserRole;
-use App\Enums\OrderStatus;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class AttachmentControllerTest extends TestCase
+final class AttachmentControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $superAdmin;
+
     protected $admin;
+
     protected $employee;
+
     protected $employee2;
+
     protected $customer;
+
     protected $order;
+
     protected $otherOrder;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        config(['cache.default' => 'array']);
+        Cache::flush();
         Storage::fake('public');
 
         // Create users with different roles
@@ -46,7 +57,7 @@ class AttachmentControllerTest extends TestCase
             'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::OPEN->value
+            'status' => OrderStatus::OPEN->value,
         ]);
 
         $this->otherOrder = Order::factory()->createQuietly([
@@ -54,8 +65,15 @@ class AttachmentControllerTest extends TestCase
             'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
             'created_by' => $this->employee2->id,
             'assigned_to' => $this->employee2->id,
-            'status' => OrderStatus::OPEN->value
+            'status' => OrderStatus::OPEN->value,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up any test files created during tests
+        Storage::fake('public');
+        parent::tearDown();
     }
 
     /**
@@ -70,12 +88,13 @@ class AttachmentControllerTest extends TestCase
         Attachment::factory()->count(2)->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'uploaded_by' => $this->employee->id
+            'uploaded_by' => $this->employee->id,
         ]);
 
-        $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/attachments");
+        $first = $this->getJson("/api/v1/orders/{$this->order->uuid}/attachments");
 
-        $response->assertOk()
+        $first->assertOk()
+            ->assertHeader('X-Cache', 'MISS')
             ->assertJsonStructure([
                 'order_id',
                 'attachments' => [
@@ -94,14 +113,75 @@ class AttachmentControllerTest extends TestCase
                             'id',
                             'first_name',
                             'last_name',
-                            'email'
-                        ]
-                    ]
+                            'email',
+                        ],
+                    ],
                 ],
                 'total_size',
-                'total_size_formatted'
+                'total_size_formatted',
             ])
             ->assertJsonCount(2, 'attachments');
+
+        $v = (int) Cache::get('attachments:version', 1);
+        $filters = ['order_id' => $this->order->id];
+        ksort($filters);
+        $signature = md5(json_encode($filters));
+        $this->assertTrue(Cache::has("attachments:index:v{$v}:f:{$signature}"));
+
+        $second = $this->getJson("/api/v1/orders/{$this->order->uuid}/attachments");
+        $second->assertOk()
+            ->assertHeader('X-Cache', 'HIT')
+            ->assertJsonCount(2, 'attachments');
+    }
+
+    /**
+     * Test cache invalidation on attachment creation
+     */
+    #[Test]
+    public function it_checks_cache_invalidation_on_attachment_creation()
+    {
+        $this->actingAs($this->employee);
+
+        $v1 = (int) Cache::get('attachments:version', 0);
+
+        $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
+
+        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/attachments", [
+            'file' => $file,
+            'name' => 'Important Document',
+            'description' => 'Contract document for this order',
+        ]);
+
+        $response->assertCreated();
+
+        $v2 = (int) Cache::get('attachments:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Attachments cache version should bump on create');
+    }
+
+    /**
+     * Test cache invalidation on attachment deletion
+     */
+    #[Test]
+    public function it_checks_cache_invalidation_on_attachment_deletion()
+    {
+        $this->actingAs($this->employee);
+
+        $attachment = Attachment::factory()->create([
+            'attachable_type' => 'order',
+            'attachable_id' => $this->order->id,
+            'file_path' => 'orders/test-file.pdf',
+        ]);
+
+        Storage::disk('public')->put('orders/test-file.pdf', 'test content');
+
+        $v1 = (int) Cache::get('attachments:version', 0);
+
+        $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
+
+        $response->assertOk();
+
+        $v2 = (int) Cache::get('attachments:version', 0);
+        $this->assertSame($v1 + 1, $v2, 'Attachments cache version should bump on delete');
     }
 
     /**
@@ -143,7 +223,7 @@ class AttachmentControllerTest extends TestCase
         $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/attachments", [
             'file' => $file,
             'name' => 'Important Document',
-            'description' => 'Contract document for this order'
+            'description' => 'Contract document for this order',
         ]);
 
         $response->assertCreated()
@@ -151,18 +231,18 @@ class AttachmentControllerTest extends TestCase
                 'message' => 'File uploaded successfully.',
                 'attachment' => [
                     'file_name' => 'Important Document',
-                    'mime_type' => 'application/pdf'
-                ]
+                    'mime_type' => 'application/pdf',
+                ],
             ]);
 
         // Check file was stored
-        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file->hashName());
+        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/".$file->hashName());
 
         // Check database record
         $this->assertDatabaseHas('attachments', [
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'file_name' => 'Important Document'
+            'file_name' => 'Important Document',
         ]);
 
         // Check history was created (description is a computed attribute, not a DB field)
@@ -192,24 +272,24 @@ class AttachmentControllerTest extends TestCase
 
         $response->assertCreated()
             ->assertJson([
-                'message' => 'Files uploaded successfully.'
+                'message' => 'Files uploaded successfully.',
             ])
             ->assertJsonCount(2, 'attachments');
 
         // Check files stored
-        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file1->hashName());
-        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file2->hashName());
+        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/".$file1->hashName());
+        Storage::disk('public')->assertExists("orders/{$this->order->uuid}/".$file2->hashName());
 
         // Check DB records exist
         $this->assertDatabaseHas('attachments', [
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'file_name' => 'doc1.pdf'
+            'file_name' => 'doc1.pdf',
         ]);
         $this->assertDatabaseHas('attachments', [
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'file_name' => 'image1.jpg'
+            'file_name' => 'image1.jpg',
         ]);
 
         // Check two history entries created for attachments
@@ -232,7 +312,7 @@ class AttachmentControllerTest extends TestCase
         $file = UploadedFile::fake()->create('script.exe', 1000);
 
         $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/attachments", [
-            'file' => $file
+            'file' => $file,
         ]);
 
         $response->assertUnprocessable()
@@ -251,7 +331,7 @@ class AttachmentControllerTest extends TestCase
         $file = UploadedFile::fake()->create('large.pdf', 11000); // 11MB
 
         $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/attachments", [
-            'file' => $file
+            'file' => $file,
         ]);
 
         $response->assertUnprocessable()
@@ -269,7 +349,7 @@ class AttachmentControllerTest extends TestCase
         $file = UploadedFile::fake()->create('document.pdf', 1000);
 
         $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/attachments", [
-            'file' => $file
+            'file' => $file,
         ]);
 
         $response->assertForbidden();
@@ -292,7 +372,7 @@ class AttachmentControllerTest extends TestCase
             'attachable_id' => $this->order->id,
             'file_path' => $filePath,
             'file_name' => 'test-document.pdf',
-            'mime_type' => 'application/pdf'
+            'mime_type' => 'application/pdf',
         ]);
 
         $response = $this->get("/api/v1/attachments/{$attachment->uuid}/download");
@@ -313,14 +393,14 @@ class AttachmentControllerTest extends TestCase
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->otherOrder->id,
-            'file_path' => 'orders/test-file.pdf'
+            'file_path' => 'orders/test-file.pdf',
         ]);
 
         $response = $this->getJson("/api/v1/attachments/{$attachment->uuid}/download");
 
         $response->assertForbidden()
             ->assertJson([
-                'message' => 'Unauthorized to download this attachment.'
+                'message' => 'Unauthorized to download this attachment.',
             ]);
     }
 
@@ -335,14 +415,14 @@ class AttachmentControllerTest extends TestCase
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'file_path' => 'orders/non-existent.pdf'
+            'file_path' => 'orders/non-existent.pdf',
         ]);
 
         $response = $this->getJson("/api/v1/attachments/{$attachment->uuid}/download");
 
         $response->assertNotFound()
             ->assertJson([
-                'message' => 'File not found.'
+                'message' => 'File not found.',
             ]);
     }
 
@@ -363,7 +443,7 @@ class AttachmentControllerTest extends TestCase
             'attachable_id' => $this->order->id,
             'file_path' => $filePath,
             'file_name' => 'test-image.jpg',
-            'mime_type' => 'image/jpeg'
+            'mime_type' => 'image/jpeg',
         ]);
 
         $response = $this->get("/api/v1/attachments/{$attachment->uuid}/preview");
@@ -390,7 +470,7 @@ class AttachmentControllerTest extends TestCase
             'attachable_id' => $this->order->id,
             'file_path' => $filePath,
             'file_name' => 'test-document.pdf',
-            'mime_type' => 'application/pdf'
+            'mime_type' => 'application/pdf',
         ]);
 
         $response = $this->get("/api/v1/attachments/{$attachment->uuid}/preview");
@@ -412,14 +492,14 @@ class AttachmentControllerTest extends TestCase
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
             'file_path' => 'orders/test.zip',
-            'mime_type' => 'application/zip'
+            'mime_type' => 'application/zip',
         ]);
 
         $response = $this->getJson("/api/v1/attachments/{$attachment->uuid}/preview");
 
         $response->assertBadRequest()
             ->assertJson([
-                'message' => 'This file type cannot be previewed.'
+                'message' => 'This file type cannot be previewed.',
             ]);
     }
 
@@ -435,14 +515,14 @@ class AttachmentControllerTest extends TestCase
             'attachable_type' => 'order',
             'attachable_id' => $this->otherOrder->id,
             'file_path' => 'orders/test.pdf',
-            'mime_type' => 'application/pdf'
+            'mime_type' => 'application/pdf',
         ]);
 
         $response = $this->getJson("/api/v1/attachments/{$attachment->uuid}/preview");
 
         $response->assertForbidden()
             ->assertJson([
-                'message' => 'Unauthorized to preview this attachment.'
+                'message' => 'Unauthorized to preview this attachment.',
             ]);
     }
 
@@ -458,7 +538,7 @@ class AttachmentControllerTest extends TestCase
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->order->id,
-            'file_path' => 'orders/test-file.pdf'
+            'file_path' => 'orders/test-file.pdf',
         ]);
 
         // Put a fake file in storage
@@ -468,7 +548,7 @@ class AttachmentControllerTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'message' => 'Attachment deleted successfully.'
+                'message' => 'Attachment deleted successfully.',
             ]);
 
         // Check file was deleted
@@ -476,7 +556,7 @@ class AttachmentControllerTest extends TestCase
 
         // Check database record was deleted
         $this->assertDatabaseMissing('attachments', [
-            'id' => $attachment->id
+            'id' => $attachment->id,
         ]);
 
         // Check history was created (description is a computed attribute, not a DB field)
@@ -500,14 +580,14 @@ class AttachmentControllerTest extends TestCase
         // Create an attachment for different type
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order_history',
-            'attachable_id' => OrderHistory::factory()->create()->id
+            'attachable_id' => OrderHistory::factory()->create()->id,
         ]);
 
         $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
 
         $response->assertForbidden()
             ->assertJson([
-                'message' => 'This attachment does not belong to an order.'
+                'message' => 'This attachment does not belong to an order.',
             ]);
     }
 
@@ -521,7 +601,7 @@ class AttachmentControllerTest extends TestCase
 
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
-            'attachable_id' => $this->order->id
+            'attachable_id' => $this->order->id,
         ]);
 
         $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
@@ -539,14 +619,14 @@ class AttachmentControllerTest extends TestCase
 
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
-            'attachable_id' => $this->otherOrder->id
+            'attachable_id' => $this->otherOrder->id,
         ]);
 
         $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
 
         $response->assertForbidden()
             ->assertJson([
-                'message' => 'Unauthorized to delete this attachment.'
+                'message' => 'Unauthorized to delete this attachment.',
             ]);
     }
 
@@ -561,7 +641,7 @@ class AttachmentControllerTest extends TestCase
         $attachment = Attachment::factory()->create([
             'attachable_type' => 'order',
             'attachable_id' => $this->otherOrder->id,
-            'file_path' => 'orders/test-file.pdf'
+            'file_path' => 'orders/test-file.pdf',
         ]);
 
         Storage::disk('public')->put('orders/test-file.pdf', 'test content');
@@ -570,14 +650,7 @@ class AttachmentControllerTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'message' => 'Attachment deleted successfully.'
+                'message' => 'Attachment deleted successfully.',
             ]);
-    }
-
-    protected function tearDown(): void
-    {
-        // Clean up any test files created during tests
-        Storage::fake('public');
-        parent::tearDown();
     }
 }
