@@ -41,21 +41,21 @@ final class OrderHistoryController extends Controller
         $key = self::indexKeyFor($filters);
         $hit = Cache::has($key);
 
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($request) {
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($filters) {
             $query = OrderHistory::with(['createdBy', 'order.attachments']);
 
-            if ($request->filled('order_id')) {
-                $query->where('order_id', $request->order_id);
+            if ($filters['order_id']) {
+                $query->where('order_id', $filters['order_id']);
             }
-            if ($request->filled('from_date')) {
-                $query->whereDate('created_at', '>=', $request->from_date);
+            if ($filters['from_date']) {
+                $query->whereDate('created_at', '>=', $filters['from_date']);
             }
-            if ($request->filled('to_date')) {
-                $query->whereDate('created_at', '<=', $request->to_date);
+            if ($filters['to_date']) {
+                $query->whereDate('created_at', '<=', $filters['to_date']);
             }
 
             $paginator = $query->orderBy('created_at', 'desc')
-                ->paginate($request->integer('per_page', 15));
+                ->paginate($filters['per_page']);
 
             // Preserve paginator structure in cache
             return OrderHistoryResource::collection($paginator)
