@@ -31,6 +31,7 @@ class OrderAuditNotification extends Notification implements ShouldQueue
             'reviewed' => 'Audit: Order reviewed',
 'delivered' => 'Audit: Order delivered',
             'received' => 'Audit: Order received',
+            'paid' => 'Audit: Order paid',
             default => 'Audit: Order event',
         };
 
