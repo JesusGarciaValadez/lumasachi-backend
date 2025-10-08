@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\UserRole;
@@ -142,6 +144,35 @@ final class Order extends Model
     public function services(): HasManyThrough
     {
         return $this->hasManyThrough(OrderService::class, OrderItem::class, 'order_id', 'order_item_id');
+    }
+
+    /**
+     * Recalculate liquidation totals based on completed services.
+     * - total_cost = sum of net_price for completed services
+     * - is_fully_paid = total_cost <= down_payment
+     */
+    public function recalculateTotals(): void
+    {
+        // Sum of completed services' net price
+        $total = (float) $this->services()
+            ->where('is_completed', true)
+            ->sum('net_price');
+
+        $info = $this->motorInfo()->first();
+        if (! $info) {
+            // Create a motor info record if not exists
+            $info = $this->motorInfo()->create([
+                'down_payment' => 0,
+                'total_cost' => $total,
+                'is_fully_paid' => false,
+            ]);
+        } else {
+            $info->total_cost = $total;
+        }
+
+        // Determine if fully paid
+        $info->is_fully_paid = (float) $info->down_payment >= $total;
+        $info->save();
     }
 
     /**
