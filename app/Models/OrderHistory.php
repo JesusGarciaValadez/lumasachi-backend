@@ -43,6 +43,13 @@ final class OrderHistory extends Model
 
     public const FIELD_CATEGORIES = 'categories';
 
+    // Extended fields for item/service tracking
+    public const FIELD_ITEM_RECEIVED = 'item_received';
+    public const FIELD_ITEM_COMPONENT_RECEIVED = 'item_component_received';
+    public const FIELD_SERVICE_BUDGETED = 'service_budgeted';
+    public const FIELD_SERVICE_AUTHORIZED = 'service_authorized';
+    public const FIELD_SERVICE_COMPLETED = 'service_completed';
+
     /**
      * The primary key associated with the table.
      *
@@ -254,6 +261,22 @@ final class OrderHistory extends Model
                 sort($ids);
 
                 return json_encode($ids);
+            case self::FIELD_ITEM_RECEIVED:
+            case self::FIELD_ITEM_COMPONENT_RECEIVED:
+            case self::FIELD_SERVICE_BUDGETED:
+            case self::FIELD_SERVICE_AUTHORIZED:
+            case self::FIELD_SERVICE_COMPLETED:
+                // normalize common boolean-like values
+                if (is_string($value)) {
+                    $lower = strtolower($value);
+                    if (in_array($lower, ['true', '1', 'yes'], true)) {
+                        return true;
+                    }
+                    if (in_array($lower, ['false', '0', 'no'], true)) {
+                        return false;
+                    }
+                }
+                return (bool) $value;
             default:
                 return $value;
         }
@@ -270,6 +293,10 @@ final class OrderHistory extends Model
 
         if ($value instanceof BackedEnum) {
             return $value->value;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
         }
 
         if ($value instanceof \Carbon\Carbon) {

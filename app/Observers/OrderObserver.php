@@ -11,6 +11,7 @@ use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderReviewedNotification;
 use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderDeliveredNotification;
+use App\Notifications\OrderReceivedNotification;
 use App\Notifications\OrderAuditNotification;
 use Illuminate\Support\Str;
 use Illuminate\Notifications\Notification;
@@ -115,6 +116,14 @@ class OrderObserver
 
                 // Auto-transition to Awaiting Customer Approval
                 $order->update(['status' => OrderStatus::AWAITING_CUSTOMER_APPROVAL->value]);
+            }
+
+            // Received: notify customer and audit admins
+            if ($newStatus === OrderStatus::RECEIVED->value) {
+                if ($order->customer) {
+                    $order->customer->notify(new OrderReceivedNotification($order));
+                }
+                $this->notifyAdmins(new OrderAuditNotification($order, 'received'));
             }
 
             // Ready for delivery: notify customer
