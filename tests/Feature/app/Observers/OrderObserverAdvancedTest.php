@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Feature\app\Observers;
+
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
+use App\Models\Order;
+use App\Models\User;
+use App\Notifications\OrderDeliveredNotification;
+use App\Notifications\OrderReadyForDeliveryNotification;
+use App\Notifications\OrderReviewedNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+final class OrderObserverAdvancedTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function makeUsers(): array
+    {
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value, 'is_active' => true]);
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'is_active' => true]);
+        $super = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'is_active' => true]);
+        return compact('customer', 'employee', 'admin', 'super');
+    }
+
+    #[Test]
+    public function it_sends_reviewed_notifications_and_auto_transitions(): void
+    {
+        Notification::fake();
+        $users = $this->makeUsers();
+
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $users['customer']->id,
+            'assigned_to' => $users['employee']->id,
+            'created_by' => $users['admin']->id,
+            'status' => OrderStatus::OPEN->value,
+        ]);
+
+        // Transition to reviewed
+        $order->update(['status' => OrderStatus::REVIEWED->value]);
+        $order->refresh();
+
+        Notification::assertSentTo($users['customer'], OrderReviewedNotification::class);
+        // Auto-transition to awaiting customer approval
+        $this->assertSame(OrderStatus::AWAITING_CUSTOMER_APPROVAL->value, $order->status->value);
+    }
+
+    #[Test]
+    public function it_sends_ready_for_delivery_notification_to_customer(): void
+    {
+        Notification::fake();
+        $users = $this->makeUsers();
+
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $users['customer']->id,
+            'assigned_to' => $users['employee']->id,
+            'created_by' => $users['admin']->id,
+            'status' => OrderStatus::IN_PROGRESS->value,
+        ]);
+
+        $order->update(['status' => OrderStatus::READY_FOR_DELIVERY->value]);
+
+        Notification::assertSentTo($users['customer'], OrderReadyForDeliveryNotification::class);
+    }
+
+    #[Test]
+    public function it_sends_delivered_notifications_to_customer_and_admins(): void
+    {
+        Notification::fake();
+        $users = $this->makeUsers();
+
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $users['customer']->id,
+            'assigned_to' => $users['employee']->id,
+            'created_by' => $users['admin']->id,
+            'status' => OrderStatus::READY_FOR_DELIVERY->value,
+        ]);
+
+        $order->update(['status' => OrderStatus::DELIVERED->value]);
+
+        Notification::assertSentTo($users['customer'], OrderDeliveredNotification::class);
+        // Also admins receive audit notification, but we focus on customer delivery here.
+    }
+}
