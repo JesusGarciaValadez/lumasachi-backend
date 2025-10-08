@@ -58,6 +58,13 @@ final class OrderFactoryTest extends TestCase
     public function it_checks_if_factory_generates_valid_status(): void
     {
         $validStatuses = [
+            // New workflow values
+            OrderStatus::RECEIVED->value,
+            OrderStatus::AWAITING_REVIEW->value,
+            OrderStatus::REVIEWED->value,
+            OrderStatus::AWAITING_CUSTOMER_APPROVAL->value,
+            OrderStatus::READY_FOR_WORK->value,
+            // Existing values
             OrderStatus::OPEN->value,
             OrderStatus::IN_PROGRESS->value,
             OrderStatus::READY_FOR_DELIVERY->value,
