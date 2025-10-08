@@ -129,6 +129,21 @@ final class Order extends Model
         return $this->belongsToMany(Category::class, 'order_category')->withTimestamps();
     }
 
+    public function motorInfo(): HasOne
+    {
+        return $this->hasOne(OrderMotorInfo::class, 'order_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
+    }
+
+    public function services(): HasManyThrough
+    {
+        return $this->hasManyThrough(OrderService::class, OrderItem::class, 'order_id', 'order_item_id');
+    }
+
     /**
      * Create a new factory instance for the model.
      *
