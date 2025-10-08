@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Enums\OrderItemType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 final class ServiceCatalog extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'service_catalog';
 
@@ -56,5 +57,10 @@ final class ServiceCatalog extends Model
         $base = (float) $this->base_price;
         $tax = (float) $this->tax_percentage;
         return round($base * (1 + ($tax / 100)), 2);
+    }
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
     }
 }
