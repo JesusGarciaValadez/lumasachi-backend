@@ -29,7 +29,8 @@ class OrderAuditNotification extends Notification implements ShouldQueue
         $subject = match ($this->event) {
             'created' => 'Audit: Order created',
             'reviewed' => 'Audit: Order reviewed',
-            'delivered' => 'Audit: Order delivered',
+'delivered' => 'Audit: Order delivered',
+            'received' => 'Audit: Order received',
             default => 'Audit: Order event',
         };
 
