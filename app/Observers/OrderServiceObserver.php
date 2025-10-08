@@ -33,6 +33,11 @@ final class OrderServiceObserver
             // Optional: notify admins for audit when a service is completed
             $this->notifyAdmins(new OrderAuditNotification($service->orderItem->order, 'service_completed'));
         }
+
+        // Recalculate order totals if any relevant change occurred
+        if ($changed) {
+            $service->orderItem->order->recalculateTotals();
+        }
     }
 
     private function createHistory(OrderService $service, string $field, bool $old, bool $new): void
