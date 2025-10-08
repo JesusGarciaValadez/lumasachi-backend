@@ -12,6 +12,7 @@ use App\Notifications\OrderReviewedNotification;
 use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderDeliveredNotification;
 use App\Notifications\OrderReceivedNotification;
+use App\Notifications\OrderPaidNotification;
 use App\Notifications\OrderAuditNotification;
 use Illuminate\Support\Str;
 use Illuminate\Notifications\Notification;
@@ -139,6 +140,14 @@ class OrderObserver
                     $order->customer->notify(new OrderDeliveredNotification($order));
                 }
                 $this->notifyAdmins(new OrderAuditNotification($order, 'delivered'));
+            }
+
+            // Paid: notify customer and audit admins
+            if ($newStatus === OrderStatus::PAID->value) {
+                if ($order->customer) {
+                    $order->customer->notify(new OrderPaidNotification($order));
+                }
+                $this->notifyAdmins(new OrderAuditNotification($order, 'paid'));
             }
         }
 
