@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Pennant\Feature;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class CatalogControllerTest extends TestCase
@@ -46,9 +47,10 @@ class CatalogControllerTest extends TestCase
             'role' => UserRole::EMPLOYEE->value,
         ]);
 
-        $response = $this->actingAs($employee)
-            ->withHeaders(['Accept-Language' => 'es'])
-            ->getJson('/api/catalog/engine-options?item_type=engine_block');
+        Sanctum::actingAs($employee);
+
+        $response = $this->withHeaders(['Accept-Language' => 'es'])
+            ->getJson('/api/v1/catalog/engine-options?item_type=engine_block');
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -76,9 +78,10 @@ class CatalogControllerTest extends TestCase
             'role' => UserRole::CUSTOMER->value,
         ]);
 
-        $response = $this->actingAs($customer)
-            ->withHeaders(['Accept-Language' => 'en'])
-            ->getJson('/api/catalog/engine-options?item_type=engine_block');
+        Sanctum::actingAs($customer);
+
+        $response = $this->withHeaders(['Accept-Language' => 'en'])
+            ->getJson('/api/v1/catalog/engine-options?item_type=engine_block');
 
         $response->assertStatus(403);
     }

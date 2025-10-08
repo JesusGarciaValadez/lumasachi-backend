@@ -25,4 +25,60 @@ enum OrderItemType: string
             self::OTHERS => 'Others',
         };
     }
+
+    /**
+     * Return the component keys available for this item type.
+     * Keys follow the architecture document.
+     *
+     * @return array<string>
+     */
+    public function getComponents(): array
+    {
+        return match ($this) {
+            self::CYLINDER_HEAD => [
+                'camshaft_covers',
+                'bolts',
+                'rocker_arm_shaft',
+                'wedges',
+                'springs',
+                'shims',
+                'valves',
+                'guides',
+            ],
+            self::ENGINE_BLOCK => [
+                'bearing_caps',
+                'cap_bolts',
+                'camshaft',
+                'guides',
+                'bearings',
+                'camshaft_key',
+                'camshaft_gear',
+            ],
+            self::CRANKSHAFT => [
+                'iron_gear',
+                'bronze_gear',
+                'lock',
+                'key',
+                'flywheel',
+                'bolt',
+                'deflector',
+            ],
+            self::CONNECTING_RODS => [
+                'bolts',
+                'nuts',
+                'pistons',
+                'locks',
+                'bearings',
+            ],
+            self::OTHERS => [
+                'water_pump',
+                'oil_pump',
+                'oil_pan',
+                'windage_tray',
+                'intake_manifold',
+                'exhaust_manifold',
+                'timing_covers',
+            ],
+        };
+    }
 }

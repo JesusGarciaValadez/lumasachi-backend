@@ -18,6 +18,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Resources\UserResource;
 
 Route::group(['prefix' => 'v1'], function () {
@@ -120,6 +121,11 @@ Route::group(['prefix' => 'v1'], function () {
             ->name('api.attachments.preview');
         Route::delete('/{attachment:uuid}', [AttachmentController::class, 'destroy'])
             ->name('api.attachments.destroy');
+    });
+
+    // Catalog Routes
+    Route::scopeBindings()->middleware('auth:sanctum')->prefix('catalog')->group(function () {
+        Route::get('/engine-options', [CatalogController::class, 'index'])->name('api.catalog.engine-options');
     });
 
     // Health Check Routes
