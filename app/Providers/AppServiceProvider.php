@@ -25,6 +25,7 @@ use App\Policies\OrderPolicy;
 use App\Policies\OrderHistoryPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\CategoryPolicy;
+use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -59,6 +60,9 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPolicies();
         $this->registerRelations();
         $this->configureDocumentation();
+
+        // Discover class-based features in app/Features
+        Feature::discover();
     }
 
     /**

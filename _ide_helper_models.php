@@ -240,7 +240,7 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	class IdeHelperOrderHistory {}
+	final class IdeHelperOrderHistory {}
 }
 
 namespace App\Models{
