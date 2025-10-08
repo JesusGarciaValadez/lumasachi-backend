@@ -31,6 +31,9 @@ class DatabaseSeeder extends Seeder
         // Seed categories
         $this->call(CategorySeeder::class);
 
+        // Seed service catalog (engine services)
+        $this->call(ServiceCatalogSeeder::class);
+
         // Create Super Administrator
         $superAdmin = User::factory()->create([
             'first_name' => 'Super',
