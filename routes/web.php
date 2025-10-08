@@ -15,6 +15,11 @@ Route::get('dashboard', function () {
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
 
+// Catalog engine options (web)
+Route::middleware(['auth', 'verified', 'can:viewAny,App\\Models\\Order'])->get('catalog/engine-options', function () {
+    return Inertia::render('Orders/EngineOptions');
+})->name('web.catalog.engine-options');
+
 // Orders index (web) - requires ability to view any orders
 Route::middleware(['auth', 'verified', 'can:viewAny,App\\Models\\Order'])->get('orders', function () {
     return Inertia::render('Orders/Index');
