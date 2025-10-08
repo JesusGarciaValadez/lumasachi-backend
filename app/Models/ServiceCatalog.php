@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Enums\OrderItemType;
+use App\Observers\ServiceCatalogObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+#[ObservedBy([ServiceCatalogObserver::class])]
 final class ServiceCatalog extends Model
 {
     use HasFactory, HasUuids;
