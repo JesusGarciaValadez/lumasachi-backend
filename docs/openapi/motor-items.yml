@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Motor Items Catalog API (Mini Spec)
+  version: 1.0.0
+  description: |
+    Minimal OpenAPI spec covering the new catalog endpoint for motor items.
+    Authentication via Laravel Sanctum bearer tokens. Feature-gated by App\Features\MotorItems.
+servers:
+  - url: /
+    description: Relative to application base URL
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      description: Response language. Defaults to `en`.
+      required: false
+      schema:
+        type: string
+        enum: [en, es]
+    ItemType:
+      name: item_type
+      in: query
+      description: Optional item type filter.
+      required: false
+      schema:
+        type: string
+        enum: [cylinder_head, engine_block, crankshaft, connecting_rods, others]
+  schemas:
+    Service:
+      type: object
+      properties:
+        service_key:
+          type: string
+        service_name:
+          type: string
+        base_price:
+          type: string
+          example: "600.00"
+        net_price:
+          type: string
+          example: "696.00"
+        requires_measurement:
+          type: boolean
+        display_order:
+          type: integer
+        item_type:
+          type: string
+          enum: [cylinder_head, engine_block, crankshaft, connecting_rods, others]
+    Component:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+    EngineOptionsWithType:
+      type: object
+      properties:
+        item_type:
+          type: string
+          enum: [cylinder_head, engine_block, crankshaft, connecting_rods, others]
+        item_type_label:
+          type: string
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+    EngineOptionsAll:
+      type: object
+      properties:
+        item_types:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+        components_by_type:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Component'
+        services_by_type:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Service'
+paths:
+  /api/v1/catalog/engine-options:
+    get:
+      summary: Get engine items catalog
+      description: |
+        Returns components and services for a specific item type, or the full catalog if `item_type` is omitted.
+        Requires authentication and the Motor Items feature to be enabled.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/ItemType'
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-Cache:
+              schema:
+                type: string
+                enum: [HIT, MISS]
+              description: Indicates whether the response was served from cache.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EngineOptionsWithType'
+                  - $ref: '#/components/schemas/EngineOptionsAll'
+              examples:
+                with_item_type:
+                  summary: Engine block (English)
+                  value:
+                    item_type: engine_block
+                    item_type_label: Engine Block
+                    components:
+                      - { key: camshaft_covers, label: Camshaft covers }
+                      - { key: bolts, label: Bolts }
+                    services:
+                      - { service_key: wash_block, service_name: Wash engine block, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block }
+                all_types:
+                  summary: Full catalog (Spanish)
+                  value:
+                    item_types:
+                      - { key: engine_block, label: Bloque de motor }
+                    components_by_type:
+                      engine_block:
+                        - { key: camshaft_covers, label: Tapa de árbol de levas }
+                    services_by_type:
+                      engine_block:
+                        - { service_key: wash_block, service_name: Lavado de bloque, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block }
+        '403':
+          description: Forbidden (customers or guests)
+        '404':
+          description: Not found (feature disabled)
+        '422':
+          description: Invalid item_type
