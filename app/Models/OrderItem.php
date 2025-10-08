@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Enums\OrderItemType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class OrderItem extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'order_id',
@@ -39,5 +40,10 @@ final class OrderItem extends Model
     public function services(): HasMany
     {
         return $this->hasMany(OrderService::class);
+    }
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
     }
 }

@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class OrderMotorInfo extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'order_motor_info';
 
@@ -48,5 +49,10 @@ final class OrderMotorInfo extends Model
     public function getRemainingBalanceAttribute(): float
     {
         return max(0, (float)$this->total_cost - (float)$this->down_payment);
+    }
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
     }
 }

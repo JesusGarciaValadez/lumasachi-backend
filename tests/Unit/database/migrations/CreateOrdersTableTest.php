@@ -167,6 +167,11 @@ final class CreateOrdersTableTest extends TestCase
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
         Schema::dropIfExists('order_category');
+        // New dependent tables introduced by motor items architecture
+        Schema::dropIfExists('order_services');
+        Schema::dropIfExists('order_item_components');
+        Schema::dropIfExists('order_items');
+        Schema::dropIfExists('order_motor_info');
 
         // Run down method
         $migration = include base_path('database/migrations/2025_07_27_164818_create_orders_table.php');
