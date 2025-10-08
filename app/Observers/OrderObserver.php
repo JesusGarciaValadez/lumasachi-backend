@@ -13,6 +13,7 @@ use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderDeliveredNotification;
 use App\Notifications\OrderAuditNotification;
 use Illuminate\Support\Str;
+use Illuminate\Notifications\Notification;
 use App\Traits\CachesOrders;
 
 class OrderObserver
@@ -68,18 +69,23 @@ class OrderObserver
         unset(self::$originals[$order->getKey()]);
 
         foreach ($trackedFields as $field) {
+            // Only record history for fields that actually changed in this update
+            if (! $order->wasChanged($field)) {
+                continue;
+            }
+
             $old = $original[$field] ?? null;
             $new = $order->getAttribute($field);
 
             // Normalize Carbon instances to strings for comparison
-            if ($old instanceof \\Carbon\\CarbonInterface) {
+            if ($old instanceof \Carbon\CarbonInterface) {
                 $old = $old->toISOString();
             }
-            if ($new instanceof \\Carbon\\CarbonInterface) {
+            if ($new instanceof \Carbon\CarbonInterface) {
                 $new = $new->toISOString();
             }
             // Normalize enums to values
-            if ($new instanceof \\BackedEnum) {
+            if ($new instanceof \BackedEnum) {
                 $new = $new->value;
             }
 
