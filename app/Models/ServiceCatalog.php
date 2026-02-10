@@ -1,15 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\ServiceCatalogObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 #[ObservedBy([ServiceCatalogObserver::class])]
+/**
+ * @mixin IdeHelperServiceCatalog
+ */
 final class ServiceCatalog extends Model
 {
     use HasFactory, HasUuids;
@@ -27,17 +32,6 @@ final class ServiceCatalog extends Model
         'display_order',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'base_price' => 'decimal:2',
-            'tax_percentage' => 'decimal:2',
-            'requires_measurement' => 'boolean',
-            'is_active' => 'boolean',
-            'item_type' => OrderItemType::class,
-        ];
-    }
-
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -52,6 +46,7 @@ final class ServiceCatalog extends Model
     {
         $key = $this->service_name_key;
         $translated = __($key);
+
         return is_string($translated) && $translated !== $key ? $translated : ($this->attributes['service_key'] ?? $this->service_key);
     }
 
@@ -59,11 +54,23 @@ final class ServiceCatalog extends Model
     {
         $base = (float) $this->base_price;
         $tax = (float) $this->tax_percentage;
+
         return round($base * (1 + ($tax / 100)), 2);
     }
 
     public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'base_price' => 'decimal:2',
+            'tax_percentage' => 'decimal:2',
+            'requires_measurement' => 'boolean',
+            'is_active' => 'boolean',
+            'item_type' => OrderItemType::class,
+        ];
     }
 }

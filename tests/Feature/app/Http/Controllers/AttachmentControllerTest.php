@@ -57,7 +57,7 @@ final class AttachmentControllerTest extends TestCase
             'customer_id' => $this->customer->id,
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
         ]);
 
         $this->otherOrder = Order::factory()->createQuietly([
@@ -65,7 +65,7 @@ final class AttachmentControllerTest extends TestCase
             'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
             'created_by' => $this->employee2->id,
             'assigned_to' => $this->employee2->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
         ]);
     }
 

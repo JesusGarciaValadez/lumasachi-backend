@@ -32,8 +32,8 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Customer requested priority handling',
             'created_by' => $admin->id
         ]);
@@ -139,13 +139,13 @@ class OrderHistoryApiIntegrationTest extends TestCase
         $order = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
             'customer_id' => $customer->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value
         ]);
 
         // Update order status (should trigger OrderObserver to create history)
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::DELIVERED->value
+            'status' => OrderStatus::Delivered->value
         ]);
 
         $response->assertStatus(200);
@@ -189,8 +189,8 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $admin->id
         ]);
 

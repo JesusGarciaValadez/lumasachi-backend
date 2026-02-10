@@ -1,17 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\OrderItemObserver;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ObservedBy([OrderItemObserver::class])]
+/**
+ * @mixin IdeHelperOrderItem
+ */
 final class OrderItem extends Model
 {
     use HasFactory, HasUuids;
@@ -21,14 +26,6 @@ final class OrderItem extends Model
         'item_type',
         'is_received',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'is_received' => 'boolean',
-            'item_type' => OrderItemType::class,
-        ];
-    }
 
     public function order(): BelongsTo
     {
@@ -48,5 +45,13 @@ final class OrderItem extends Model
     public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_received' => 'boolean',
+            'item_type' => OrderItemType::class,
+        ];
     }
 }

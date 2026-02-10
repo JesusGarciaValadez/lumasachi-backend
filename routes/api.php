@@ -1,10 +1,8 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use App\Models\User;
+declare(strict_types=1);
+
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -13,13 +11,18 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
-use App\Http\Controllers\AttachmentController;
-use App\Http\Controllers\HealthController;
-use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\PublicOrderController;
 use App\Http\Resources\UserResource;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 
 Route::group(['prefix' => 'v1'], function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
@@ -111,7 +114,19 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/{order:uuid}/history', [OrderController::class, 'history'])->middleware('can:view,order')->name('api.orders.history');
         Route::get('/{order:uuid}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order')->name('api.orders.attachments.index');
         Route::post('/{order:uuid}/attachments', [AttachmentController::class, 'store'])->middleware('can:update,order')->name('api.orders.attachments.store');
+
+        // Lifecycle endpoints
+        Route::post('/{order:uuid}/budget', [OrderController::class, 'submitBudget'])->middleware('can:update,order')->name('api.orders.budget');
+        Route::post('/{order:uuid}/customer-approval', [OrderController::class, 'customerApproval'])->middleware('can:update,order')->name('api.orders.customer-approval');
+        Route::post('/{order:uuid}/work-completed', [OrderController::class, 'markWorkCompleted'])->middleware('can:update,order')->name('api.orders.work-completed');
+        Route::post('/{order:uuid}/ready-for-delivery', [OrderController::class, 'markReadyForDelivery'])->middleware('can:update,order')->name('api.orders.ready-for-delivery');
+        Route::post('/{order:uuid}/deliver', [OrderController::class, 'deliverOrder'])->middleware('can:update,order')->name('api.orders.deliver');
     });
+
+    // Public order tracking (no auth)
+    Route::post('/orders/track', [PublicOrderController::class, 'lookup'])
+        ->middleware('throttle:10,1')
+        ->name('api.orders.track');
 
     // Attachment Routes (outside of orders prefix)
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('attachments')->group(function () {
@@ -134,8 +149,7 @@ Route::group(['prefix' => 'v1'], function () {
 
     // Users by company endpoints
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('users')->group(function () {
-        Route::get('/employees', [\App\Http\Controllers\UsersController::class, 'employees'])->name('api.users.employees');
-        Route::get('/customers', [\App\Http\Controllers\UsersController::class, 'customers'])->name('api.users.customers');
+        Route::get('/employees', [App\Http\Controllers\UsersController::class, 'employees'])->name('api.users.employees');
+        Route::get('/customers', [App\Http\Controllers\UsersController::class, 'customers'])->name('api.users.customers');
     });
 });
-

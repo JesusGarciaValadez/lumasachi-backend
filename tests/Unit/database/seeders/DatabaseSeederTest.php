@@ -101,31 +101,31 @@ final class DatabaseSeederTest extends TestCase
         // Test specific orders exist
         $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
         $this->assertNotNull($urgentOrder);
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $urgentOrder->status->value);
+        $this->assertEquals(OrderStatus::InProgress->value, $urgentOrder->status->value);
         $this->assertEquals(OrderPriority::URGENT->value, $urgentOrder->priority->value);
         $this->assertNotNull($urgentOrder->assigned_to);
 
         // Test order in ready for delivery status
         $readyOrder = Order::where('title', 'Business Card Design')->first();
         $this->assertNotNull($readyOrder);
-        $this->assertEquals(OrderStatus::READY_FOR_DELIVERY->value, $readyOrder->status->value);
+        $this->assertEquals(OrderStatus::ReadyForDelivery->value, $readyOrder->status->value);
 
         // Test completed and paid order
         $paidOrder = Order::where('title', 'Logo Design Project')->first();
         $this->assertNotNull($paidOrder);
-        $this->assertEquals(OrderStatus::PAID->value, $paidOrder->status->value);
+        $this->assertEquals(OrderStatus::Paid->value, $paidOrder->status->value);
         $this->assertNotNull($paidOrder->actual_completion);
 
         // Test open unassigned order
         $openOrder = Order::where('title', 'Marketing Campaign Materials')->first();
         $this->assertNotNull($openOrder);
-        $this->assertEquals(OrderStatus::OPEN->value, $openOrder->status->value);
+        $this->assertEquals(OrderStatus::Open->value, $openOrder->status->value);
         $this->assertNotNull($openOrder->assigned_to);
 
         // Test cancelled order
         $cancelledOrder = Order::where('title', 'Product Photography')->first();
         $this->assertNotNull($cancelledOrder);
-        $this->assertEquals(OrderStatus::CANCELLED->value, $cancelledOrder->status->value);
+        $this->assertEquals(OrderStatus::Cancelled->value, $cancelledOrder->status->value);
     }
 
     /**
@@ -140,7 +140,7 @@ final class DatabaseSeederTest extends TestCase
         $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
         $creationHistory = OrderHistory::where('order_id', $urgentOrder->id)
             ->where('field_changed', 'status')
-            ->where('new_value', OrderStatus::OPEN->value)
+            ->where('new_value', OrderStatus::Open->value)
             ->whereNull('old_value')
             ->first();
         $this->assertNotNull($creationHistory);
@@ -152,7 +152,7 @@ final class DatabaseSeederTest extends TestCase
 
         // Verify payment history exists
         $paymentHistory = $paidOrderHistories->where('field_changed', 'status')
-            ->where('new_value', OrderStatus::PAID->value)->first();
+            ->where('new_value', OrderStatus::Paid->value)->first();
         $this->assertNotNull($paymentHistory);
         $this->assertStringContainsString('Payment received', $paymentHistory->comment);
     }
@@ -262,12 +262,12 @@ final class DatabaseSeederTest extends TestCase
 
         // Test that specific completed orders from seeder have actual completion dates
         $logoOrder = Order::where('title', 'Logo Design Project')->first();
-        if ($logoOrder && $logoOrder->status === OrderStatus::PAID->value) {
+        if ($logoOrder && $logoOrder->status === OrderStatus::Paid->value) {
             $this->assertNotNull($logoOrder->actual_completion);
         }
 
         // Test that cancelled orders don't have assigned employees
-        $cancelledOrders = Order::where('status', OrderStatus::CANCELLED->value)
+        $cancelledOrders = Order::where('status', OrderStatus::Cancelled->value)
             ->whereNotNull('assigned_to')
             ->count();
         $this->assertGreaterThanOrEqual(1, $cancelledOrders);

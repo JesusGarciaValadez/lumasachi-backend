@@ -163,8 +163,8 @@ final class OrderTest extends TestCase
         OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN,
-            'new_value' => OrderStatus::IN_PROGRESS,
+            'old_value' => OrderStatus::Open,
+            'new_value' => OrderStatus::InProgress,
             'comment' => 'Order started',
             'created_by' => User::factory()->create()->id
         ]);
@@ -172,8 +172,8 @@ final class OrderTest extends TestCase
         OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::IN_PROGRESS,
-            'new_value' => OrderStatus::READY_FOR_DELIVERY,
+            'old_value' => OrderStatus::InProgress,
+            'new_value' => OrderStatus::ReadyForDelivery,
             'comment' => 'Order ready',
             'created_by' => User::factory()->create()->id
         ]);
@@ -305,7 +305,7 @@ final class OrderTest extends TestCase
             'customer_id' => $customer->id,
             'title' => 'Test Order',
             'description' => 'Test Description',
-            'status' => OrderStatus::OPEN,
+            'status' => OrderStatus::Open,
             'priority' => OrderPriority::HIGH,
             'estimated_completion' => now()->addDays(7),
             'notes' => 'Test notes',
@@ -336,7 +336,7 @@ final class OrderTest extends TestCase
             'customer_id' => $customer->id,
             'title' => 'Minimal Order',
             'description' => 'Minimal Description',
-            'status' => OrderStatus::OPEN,
+            'status' => OrderStatus::Open,
             'priority' => OrderPriority::NORMAL,
             'estimated_completion' => now()->addDays(3),
             'created_by' => $creator->id,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use App\Models\Order;
@@ -8,16 +10,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OrderAuditNotification extends Notification implements ShouldQueue
+final class OrderAuditNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public int $tries = 3;
+
     public int $timeout = 120;
 
-    public function __construct(public readonly Order $order, public readonly string $event)
-    {
-    }
+    public function __construct(public readonly Order $order, public readonly string $event) {}
 
     public function via(object $notifiable): array
     {
@@ -29,9 +30,13 @@ class OrderAuditNotification extends Notification implements ShouldQueue
         $subject = match ($this->event) {
             'created' => 'Audit: Order created',
             'reviewed' => 'Audit: Order reviewed',
-'delivered' => 'Audit: Order delivered',
+            'ready_for_work' => 'Audit: Order ready for work',
+            'customer_approved' => 'Audit: Customer approved services',
+            'work_completed' => 'Audit: Work completed on order',
+            'delivered' => 'Audit: Order delivered',
             'received' => 'Audit: Order received',
             'paid' => 'Audit: Order paid',
+            'service_completed' => 'Audit: Service completed',
             default => 'Audit: Order event',
         };
 

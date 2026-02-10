@@ -382,8 +382,8 @@ final class HasAttachmentsTest extends TestCase
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed',
             'created_by' => $this->user->id
         ]);

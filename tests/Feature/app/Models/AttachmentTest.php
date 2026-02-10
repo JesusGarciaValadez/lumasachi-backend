@@ -113,8 +113,8 @@ final class AttachmentTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Started working on the order - Customer approved the design',
             'created_by' => $user->id,
         ]);
@@ -163,8 +163,8 @@ final class AttachmentTest extends TestCase
             $history = OrderHistory::create([
                 'order_id' => $order->id,
                 'field_changed' => 'status',
-                'old_value' => $i == 1 ? OrderStatus::OPEN->value : OrderStatus::IN_PROGRESS->value,
-                'new_value' => OrderStatus::IN_PROGRESS->value,
+                'old_value' => $i == 1 ? OrderStatus::Open->value : OrderStatus::InProgress->value,
+                'new_value' => OrderStatus::InProgress->value,
                 'comment' => "Update {$i}",
                 'created_by' => $user->id,
             ]);

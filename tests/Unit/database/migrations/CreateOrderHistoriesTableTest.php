@@ -77,8 +77,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN,
-            'new_value' => OrderStatus::IN_PROGRESS,
+            'old_value' => OrderStatus::Open,
+            'new_value' => OrderStatus::InProgress,
             'created_by' => $user->id,
             // Comment is nullable and left as null
         ]);
@@ -100,8 +100,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN,
-            'new_value' => OrderStatus::IN_PROGRESS,
+            'old_value' => OrderStatus::Open,
+            'new_value' => OrderStatus::InProgress,
             'comment' => 'Status changed',
             'created_by' => $user->id,
         ]);
@@ -125,8 +125,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed - Customer requested urgent handling',
             'created_by' => $user->id,
         ]);
@@ -152,8 +152,8 @@ final class CreateOrderHistoriesTableTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN,
-            'new_value' => OrderStatus::IN_PROGRESS,
+            'old_value' => OrderStatus::Open,
+            'new_value' => OrderStatus::InProgress,
             'created_by' => $user->id,
         ]);
 

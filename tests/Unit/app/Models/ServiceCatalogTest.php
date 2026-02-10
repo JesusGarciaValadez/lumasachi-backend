@@ -19,7 +19,7 @@ final class ServiceCatalogTest extends TestCase
         ServiceCatalog::create([
             'service_key' => 'wash_block',
             'service_name_key' => 'services.wash_block',
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'base_price' => 600.00,
             'tax_percentage' => 16.00,
             'requires_measurement' => false,
@@ -31,7 +31,7 @@ final class ServiceCatalogTest extends TestCase
         $active = ServiceCatalog::create([
             'service_key' => 'wash_block_active',
             'service_name_key' => 'services.wash_block', // likely missing translation -> fallback to service_key
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'base_price' => 600.00,
             'tax_percentage' => 16.00,
             'requires_measurement' => false,
@@ -39,7 +39,7 @@ final class ServiceCatalogTest extends TestCase
             'display_order' => 2,
         ]);
 
-        $records = ServiceCatalog::active()->forItemType(OrderItemType::ENGINE_BLOCK)->get();
+        $records = ServiceCatalog::active()->forItemType(OrderItemType::EngineBlock)->get();
         $this->assertCount(1, $records);
         $this->assertEquals('wash_block_active', $records->first()->service_key);
 

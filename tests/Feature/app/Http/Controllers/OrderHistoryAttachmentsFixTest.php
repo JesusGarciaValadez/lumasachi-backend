@@ -39,13 +39,13 @@ class OrderHistoryAttachmentsFixTest extends TestCase
             'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
             'created_by' => $admin->id,
             'assigned_to' => $admin->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
         ]);
         $order->categories()->attach([$category->id, $category2->id]);
 
         // 1. Make a non-attachment change (status change)
         $resp1 = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::IN_PROGRESS->value,
+            'status' => OrderStatus::InProgress->value,
             'categories' => [$category->id] // Update to reflect actual categories being sent
         ]);
         $resp1->assertOk();

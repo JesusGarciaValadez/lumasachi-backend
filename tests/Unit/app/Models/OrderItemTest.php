@@ -22,12 +22,12 @@ final class OrderItemTest extends TestCase
         $order = Order::factory()->createQuietly();
         $item = OrderItem::create([
             'order_id' => $order->id,
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'is_received' => true,
         ]);
 
         $this->assertTrue($item->is_received);
-        $this->assertEquals(OrderItemType::ENGINE_BLOCK, $item->item_type);
+        $this->assertEquals(OrderItemType::EngineBlock, $item->item_type);
         $this->assertEquals($order->id, $item->order->id);
 
         // Components
@@ -42,7 +42,7 @@ final class OrderItemTest extends TestCase
         ServiceCatalog::create([
             'service_key' => 'wash_block_active',
             'service_name_key' => 'services.wash_block',
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'base_price' => 600.00,
             'tax_percentage' => 16.00,
             'requires_measurement' => false,

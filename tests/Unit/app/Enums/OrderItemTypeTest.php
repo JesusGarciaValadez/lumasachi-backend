@@ -23,11 +23,11 @@ final class OrderItemTypeTest extends TestCase
             'others',
         ], $values);
 
-        $this->assertSame('Cylinder Head', OrderItemType::CYLINDER_HEAD->label());
-        $this->assertSame('Engine Block', OrderItemType::ENGINE_BLOCK->label());
-        $this->assertSame('Crankshaft', OrderItemType::CRANKSHAFT->label());
-        $this->assertSame('Connecting Rods', OrderItemType::CONNECTING_RODS->label());
-        $this->assertSame('Others', OrderItemType::OTHERS->label());
+        $this->assertSame('Cylinder Head', OrderItemType::CylinderHead->label());
+        $this->assertSame('Engine Block', OrderItemType::EngineBlock->label());
+        $this->assertSame('Crankshaft', OrderItemType::Crankshaft->label());
+        $this->assertSame('Connecting Rods', OrderItemType::ConnectingRods->label());
+        $this->assertSame('Others', OrderItemType::Others->label());
     }
 
     #[Test]

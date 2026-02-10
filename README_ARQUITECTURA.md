@@ -38,8 +38,8 @@ Diagramas visuales:
 - Arquitectura de capas
 - Mockups UI
 
-### 4️⃣ **LEEME_PRIMERO.md** (este archivo)
-Guía de navegación
+### 4️⃣ **README_ARQUITECTURA.md** (this file)
+Guide and navigation
 
 ### 5️⃣ **PLAN_IMPLEMENTACION_MOTOR_ITEMS.md**
 Plan de implementación paso a paso para "Ítems de Motor" y flujo de cotización.
@@ -50,7 +50,7 @@ Plan de implementación paso a paso para "Ítems de Motor" y flujo de cotizació
 
 ### Para Desarrolladores:
 ```
-1. LEEME_PRIMERO.md (5 min)
+1. README_ARQUITECTURA.md (5 min)
 2. ARQUITECTURA_FINAL.md (60 min) ← Principal
 3. ARQUITECTURA_CORRECCIONES_I18N.md (30 min) ← i18n
 4. ARQUITECTURA_DIAGRAMAS.md (20 min) ← Visual
@@ -58,7 +58,7 @@ Plan de implementación paso a paso para "Ítems de Motor" y flujo de cotizació
 
 ### Para Product Managers:
 ```
-1. LEEME_PRIMERO.md (5 min)
+1. README_ARQUITECTURA.md (5 min)
 2. ARQUITECTURA_FINAL.md (solo "Resumen Ejecutivo" - 10 min)
 3. ARQUITECTURA_DIAGRAMAS.md (20 min)
 ```
