@@ -30,8 +30,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 
@@ -70,8 +70,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 
@@ -112,8 +112,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         $orderHistoryData = [
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::DELIVERED->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::Delivered->value,
             'comment' => 'Order delivered to customer',
         ];
 
@@ -139,8 +139,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         $this->assertDatabaseHas('order_histories', [
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::DELIVERED->value
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::Delivered->value
         ]);
     }
 
@@ -158,8 +158,8 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 

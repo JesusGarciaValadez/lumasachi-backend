@@ -81,14 +81,14 @@ final class OrderStatusTest extends TestCase
     public function it_checks_if_get_label_returns_correct_labels(): void
     {
         $testCases = [
-            ['status' => OrderStatus::OPEN, 'expected' => 'Open'],
-            ['status' => OrderStatus::IN_PROGRESS, 'expected' => 'In Progress'],
-            ['status' => OrderStatus::READY_FOR_DELIVERY, 'expected' => 'Ready for delivery'],
-            ['status' => OrderStatus::DELIVERED, 'expected' => 'Delivered'],
-            ['status' => OrderStatus::PAID, 'expected' => 'Paid'],
-            ['status' => OrderStatus::RETURNED, 'expected' => 'Returned'],
-            ['status' => OrderStatus::NOT_PAID, 'expected' => 'Not paid'],
-            ['status' => OrderStatus::CANCELLED, 'expected' => 'Cancelled'],
+            ['status' => OrderStatus::Open, 'expected' => 'Open'],
+            ['status' => OrderStatus::InProgress, 'expected' => 'In Progress'],
+            ['status' => OrderStatus::ReadyForDelivery, 'expected' => 'Ready for delivery'],
+            ['status' => OrderStatus::Delivered, 'expected' => 'Delivered'],
+            ['status' => OrderStatus::Paid, 'expected' => 'Paid'],
+            ['status' => OrderStatus::Returned, 'expected' => 'Returned'],
+            ['status' => OrderStatus::NotPaid, 'expected' => 'Not paid'],
+            ['status' => OrderStatus::Cancelled, 'expected' => 'Cancelled'],
         ];
 
         foreach ($testCases as $testCase) {
@@ -163,13 +163,13 @@ final class OrderStatusTest extends TestCase
     #[Test]
     public function it_checks_if_status_enum_value_comparison(): void
     {
-        $openStatus = OrderStatus::OPEN;
-        $inProgressStatus = OrderStatus::IN_PROGRESS;
-        $deliveredStatus = OrderStatus::DELIVERED;
+        $openStatus = OrderStatus::Open;
+        $inProgressStatus = OrderStatus::InProgress;
+        $deliveredStatus = OrderStatus::Delivered;
 
         // Test same status comparison
-        $this->assertTrue($openStatus->value === OrderStatus::OPEN->value);
-        $this->assertTrue($inProgressStatus->value === OrderStatus::IN_PROGRESS->value);
+        $this->assertTrue($openStatus->value === OrderStatus::Open->value);
+        $this->assertTrue($inProgressStatus->value === OrderStatus::InProgress->value);
 
         // Test different status comparison
         $this->assertFalse($openStatus->value === $deliveredStatus->value);
@@ -183,18 +183,18 @@ final class OrderStatusTest extends TestCase
     public function it_checks_if_status_enum_with_match_expression(): void
     {
         $testCases = [
-            ['status' => OrderStatus::OPEN, 'expectedHours' => 48],
-            ['status' => OrderStatus::IN_PROGRESS, 'expectedHours' => 24],
-            ['status' => OrderStatus::READY_FOR_DELIVERY, 'expectedHours' => 8],
-            ['status' => OrderStatus::DELIVERED, 'expectedHours' => 0],
+            ['status' => OrderStatus::Open, 'expectedHours' => 48],
+            ['status' => OrderStatus::InProgress, 'expectedHours' => 24],
+            ['status' => OrderStatus::ReadyForDelivery, 'expectedHours' => 8],
+            ['status' => OrderStatus::Delivered, 'expectedHours' => 0],
         ];
 
         foreach ($testCases as $testCase) {
             $hoursToComplete = match ($testCase['status']) {
-                OrderStatus::OPEN => 48,
-                OrderStatus::IN_PROGRESS => 24,
-                OrderStatus::READY_FOR_DELIVERY => 8,
-                OrderStatus::DELIVERED => 0,
+                OrderStatus::Open => 48,
+                OrderStatus::InProgress => 24,
+                OrderStatus::ReadyForDelivery => 8,
+                OrderStatus::Delivered => 0,
                 default => null,
             };
 
@@ -218,7 +218,7 @@ final class OrderStatusTest extends TestCase
             'customer_id' => $user->id,
             'title' => 'Test Order for JSON',
             'description' => 'Testing JSON serialization',
-            'status' => OrderStatus::PAID,
+            'status' => OrderStatus::Paid,
             'priority' => 'Normal',
             'created_by' => $user->id,
             'assigned_to' => $user->id

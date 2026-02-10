@@ -1,15 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\Order;
-use App\Models\User;
 
-class StoreOrderRequest extends FormRequest
+final class StoreOrderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -30,23 +31,12 @@ class StoreOrderRequest extends FormRequest
             'customer_id' => 'required|exists:users,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'status' => 'required|string|in:' . implode(',', [
-                OrderStatus::OPEN->value,
-                OrderStatus::IN_PROGRESS->value,
-                OrderStatus::READY_FOR_DELIVERY->value,
-                OrderStatus::DELIVERED->value,
-                OrderStatus::COMPLETED->value,
-                OrderStatus::PAID->value,
-                OrderStatus::RETURNED->value,
-                OrderStatus::NOT_PAID->value,
-                OrderStatus::ON_HOLD->value,
-                OrderStatus::CANCELLED->value
-            ]),
-            'priority' => 'required|string|in:' . implode(',', [
+            'status' => 'required|string|in:'.implode(',', OrderStatus::getStatuses()),
+            'priority' => 'required|string|in:'.implode(',', [
                 OrderPriority::LOW->value,
                 OrderPriority::NORMAL->value,
                 OrderPriority::HIGH->value,
-                OrderPriority::URGENT->value
+                OrderPriority::URGENT->value,
             ]),
             'categories' => 'sometimes|required|array',
             'categories.*' => [
@@ -65,14 +55,12 @@ class StoreOrderRequest extends FormRequest
             'estimated_completion' => 'nullable|date|after:today',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
-            'assigned_to' => 'required|exists:users,id'
+            'assigned_to' => 'required|exists:users,id',
         ];
     }
 
     /**
      * Get custom messages for validator errors.
-     *
-     * @return array
      */
     public function messages(): array
     {
@@ -90,7 +78,7 @@ class StoreOrderRequest extends FormRequest
             'categories.*.integer' => 'Each category ID must be an integer.',
             'categories.*.distinct' => 'Duplicate categories are not allowed.',
             'estimated_completion.after' => 'The estimated completion date must be in the future.',
-            'assigned_to.exists' => 'The selected employee does not exist.'
+            'assigned_to.exists' => 'The selected employee does not exist.',
         ];
     }
 }

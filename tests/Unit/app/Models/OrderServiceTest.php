@@ -21,14 +21,14 @@ final class OrderServiceTest extends TestCase
         $order = Order::factory()->createQuietly();
         $item = OrderItem::create([
             'order_id' => $order->id,
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'is_received' => true,
         ]);
 
         $catalog = ServiceCatalog::create([
             'service_key' => 'wash_block_active',
             'service_name_key' => 'services.wash_block',
-            'item_type' => OrderItemType::ENGINE_BLOCK,
+            'item_type' => OrderItemType::EngineBlock,
             'base_price' => 600.00,
             'tax_percentage' => 16.00,
             'requires_measurement' => false,

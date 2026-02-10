@@ -29,13 +29,13 @@ final class CatalogSeederIntegrationTest extends TestCase
         $this->actingAs($employee);
 
         $response = $this->withHeaders(['Accept-Language' => 'en'])
-            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::ENGINE_BLOCK->value);
+            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::EngineBlock->value);
 
         $response->assertOk();
         $service = collect($response->json('services'))
             ->firstWhere('service_key', 'wash_block');
         $this->assertNotNull($service);
-        $this->assertSame('Wash engine block', $service['service_name']);
+        $this->assertSame('Engine block wash', $service['service_name']);
         $this->assertSame('600.00', $service['base_price']);
         $this->assertSame('696.00', $service['net_price']); // 600 * 1.16
     }
@@ -49,12 +49,12 @@ final class CatalogSeederIntegrationTest extends TestCase
         $this->actingAs($employee);
 
         $response = $this->withHeaders(['Accept-Language' => 'es'])
-            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::ENGINE_BLOCK->value);
+            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::EngineBlock->value);
 
         $response->assertOk();
         $services = $response->json('services');
-        $this->assertSame('Lavado de bloque', $services[0]['service_name']); // display_order = 1
-        $this->assertSame('Bruñido de cilindros', $services[1]['service_name']); // display_order = 2
+        $this->assertSame('Lavado de block', $services[0]['service_name']); // display_order = 1
+        $this->assertSame('Rectificado por cilindro (P.U.)', $services[1]['service_name']); // display_order = 2
         $this->assertTrue($services[1]['requires_measurement']);
     }
 }

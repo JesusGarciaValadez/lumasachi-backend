@@ -2,7 +2,7 @@
 
 ## 📐 Diagrama de Base de Datos
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            ARQUITECTURA DE DATOS                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -104,13 +104,13 @@
 │ new_value            │
 │ created_by (FK)      │
 └──────────────────────┘
-```
+```text
 
 ---
 
 ## 🔄 Diagrama de Flujo de Estados
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         FLUJO DE ESTADOS DE ORDEN                        │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -170,13 +170,13 @@
     ┌──────────────────┐
     │   CANCELADA      │
     └──────────────────┘
-```
+```text
 
 ---
 
 ## 💰 Diagrama de Cálculo de Totales
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                      CÁLCULO DE TOTALES POR ESTADO                       │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -216,13 +216,13 @@ Totales:
 │ ───────────────────────  │ ──────────── │
 │ PENDIENTE DE PAGO        │   -$247.20   │ ← (Realizado - Anticipo)
 └──────────────────────────┴──────────────┘
-```
+```text
 
 ---
 
 ## 🏗️ Diagrama de Capas de la Aplicación
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        FRONTEND (Vue + Inertia)                  │
 ├─────────────────────────────────────────────────────────────────┤
@@ -290,13 +290,13 @@ Totales:
 │  order_item_components  │  order_services  │  service_catalog   │
 │  order_histories  │  users  │  ...                              │
 └─────────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
 ## 📊 Diagrama de Relaciones Eloquent
 
-```
+```text
 Order (1) ──────────── (1) OrderMotorInfo
   │
   │
@@ -322,13 +322,13 @@ Order (1) ──────────── (1) OrderMotorInfo
 
 
 ServiceCatalog ◄──(referencia)── OrderService
-```
+```text
 
 ---
 
 ## 🔐 Diagrama de Seguridad y Autorización
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                      FLUJO DE AUTORIZACIÓN                       │
 └─────────────────────────────────────────────────────────────────┘
@@ -386,13 +386,13 @@ ROLES Y PERMISOS:
 └──────────────────┴──────────┴──────────┴──────────┴──────────┘
 
 * Solo para su propia orden
-```
+```text
 
 ---
 
 ## 📱 Diagrama de Interfaz de Usuario
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                PANTALLA: CREAR/EDITAR ORDEN                      │
 └─────────────────────────────────────────────────────────────────┘
@@ -481,7 +481,7 @@ ROLES Y PERMISOS:
 
 ---
 
-**Documento**: Diagramas de Arquitectura  
-**Proyecto**: Lumasachi Backend  
-**Versión**: 1.0  
+**Documento**: Diagramas de Arquitectura
+**Proyecto**: Lumasachi Backend
+**Versión**: 1.0
 **Fecha**: 2025

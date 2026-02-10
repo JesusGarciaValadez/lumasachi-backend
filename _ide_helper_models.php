@@ -177,8 +177,13 @@ namespace App\Models{
  * @property-read int|null $categories_count
  * @property-read \App\Models\User $createdBy
  * @property-read \App\Models\User $customer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItem> $items
+ * @property-read int|null $items_count
+ * @property-read \App\Models\OrderMotorInfo|null $motorInfo
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderHistory> $orderHistories
  * @property-read int|null $order_histories_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderService> $services
+ * @property-read int|null $services_count
  * @property-read \App\Models\User|null $updatedBy
  * @method static \Database\Factories\OrderFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
@@ -241,6 +246,195 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	final class IdeHelperOrderHistory {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property int $order_id
+ * @property \App\Enums\OrderItemType $item_type
+ * @property bool $is_received
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItemComponent> $components
+ * @property-read int|null $components_count
+ * @property-read \App\Models\Order $order
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderService> $services
+ * @property-read int|null $services_count
+ * @method static \Database\Factories\OrderItemFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereIsReceived($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereItemType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereOrderId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereUuid($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperOrderItem {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property int $order_item_id
+ * @property string $component_name
+ * @property bool $is_received
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\OrderItem $orderItem
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereComponentName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereIsReceived($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereOrderItemId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereUuid($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperOrderItemComponent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property int $order_id
+ * @property string|null $brand
+ * @property string|null $liters
+ * @property string|null $year
+ * @property string|null $model
+ * @property string|null $cylinder_count
+ * @property numeric|null $down_payment
+ * @property numeric|null $total_cost
+ * @property bool $is_fully_paid
+ * @property string|null $center_torque
+ * @property string|null $rod_torque
+ * @property string|null $first_gap
+ * @property string|null $second_gap
+ * @property string|null $third_gap
+ * @property string|null $center_clearance
+ * @property string|null $rod_clearance
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read float $remaining_balance
+ * @property-read \App\Models\Order $order
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereBrand($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCenterClearance($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCenterTorque($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCylinderCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereDownPayment($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereFirstGap($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereIsFullyPaid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereLiters($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereModel($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereOrderId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereRodClearance($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereRodTorque($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereSecondGap($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereThirdGap($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereTotalCost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereUuid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereYear($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperOrderMotorInfo {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property int $order_item_id
+ * @property string $service_key
+ * @property string|null $measurement
+ * @property bool $is_budgeted
+ * @property bool $is_authorized
+ * @property bool $is_completed
+ * @property string|null $notes
+ * @property numeric|null $base_price
+ * @property numeric|null $net_price
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\ServiceCatalog|null $catalogItem
+ * @property-read \App\Models\OrderItem $orderItem
+ * @method static \Database\Factories\OrderServiceFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereBasePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsAuthorized($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsBudgeted($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsCompleted($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereMeasurement($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereNetPrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereOrderItemId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereServiceKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUuid($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperOrderService {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $service_key
+ * @property string $service_name_key
+ * @property \App\Enums\OrderItemType $item_type
+ * @property numeric $base_price
+ * @property numeric $tax_percentage
+ * @property bool $requires_measurement
+ * @property bool $is_active
+ * @property int $display_order
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read float $net_price
+ * @property-read string $service_name
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog forItemType(\App\Enums\OrderItemType $type)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereBasePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereDisplayOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereItemType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereRequiresMeasurement($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereServiceKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereServiceNameKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereTaxPercentage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereUuid($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperServiceCatalog {}
 }
 
 namespace App\Models{

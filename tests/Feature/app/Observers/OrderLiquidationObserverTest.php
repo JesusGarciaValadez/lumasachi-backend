@@ -28,7 +28,7 @@ final class OrderLiquidationObserverTest extends TestCase
 
         $item = OrderItem::factory()->create([
             'order_id' => $order->id,
-            'item_type' => OrderItemType::ENGINE_BLOCK->value,
+            'item_type' => OrderItemType::EngineBlock->value,
         ]);
 
         // Two services, completed, with net prices

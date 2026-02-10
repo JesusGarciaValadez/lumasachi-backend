@@ -151,8 +151,8 @@ final class OrderHistoryFactoryTest extends TestCase
     {
         $customComment = 'Custom comment for this history entry';
         $customFieldChanged = 'status';
-        $customOldValue = OrderStatus::OPEN->value;
-        $customNewValue = OrderStatus::DELIVERED->value;
+        $customOldValue = OrderStatus::Open->value;
+        $customNewValue = OrderStatus::Delivered->value;
 
         $orderHistory = OrderHistory::factory()->create([
             'comment' => $customComment,
@@ -318,20 +318,20 @@ final class OrderHistoryFactoryTest extends TestCase
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'created_by' => $customer->id,
-            'status' => OrderStatus::OPEN->value
+            'status' => OrderStatus::Open->value
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Order processing started'
         ]);
 
         $this->assertEquals('status', $orderHistory->field_changed);
-        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $orderHistory->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $orderHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::InProgress->value, $orderHistory->getRawOriginal('new_value'));
         $this->assertEquals('Order processing started', $orderHistory->comment);
     }
 

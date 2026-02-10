@@ -1,15 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use App\Observers\OrderMotorInfoObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[ObservedBy([OrderMotorInfoObserver::class])]
+/**
+ * @mixin IdeHelperOrderMotorInfo
+ */
 final class OrderMotorInfo extends Model
 {
     use HasFactory, HasUuids;
@@ -35,15 +40,6 @@ final class OrderMotorInfo extends Model
         'rod_clearance',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'down_payment' => 'decimal:2',
-            'total_cost' => 'decimal:2',
-            'is_fully_paid' => 'boolean',
-        ];
-    }
-
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
@@ -51,11 +47,20 @@ final class OrderMotorInfo extends Model
 
     public function getRemainingBalanceAttribute(): float
     {
-        return max(0, (float)$this->total_cost - (float)$this->down_payment);
+        return max(0, (float) $this->total_cost - (float) $this->down_payment);
     }
 
     public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'down_payment' => 'decimal:2',
+            'total_cost' => 'decimal:2',
+            'is_fully_paid' => 'boolean',
+        ];
     }
 }

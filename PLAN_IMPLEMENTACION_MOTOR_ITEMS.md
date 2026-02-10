@@ -32,27 +32,27 @@ Checklist
 
 ## 🗃️ Fase 1 — Base de datos y Enums (2–3 días)
 Migraciones nuevas
-1) order_motor_info
+1. order_motor_info
 - order_id (FK UNIQUE), brand, liters, year, model, cylinder_count
 - down_payment decimal(10,2), total_cost decimal(10,2), is_fully_paid bool
 - center_torque, rod_torque, first_gap, second_gap, third_gap, center_clearance, rod_clearance
 - uuid UNIQUE, timestamps, índices (order_id único, is_fully_paid)
 
-2) order_items
+2. order_items
 - order_id (FK), item_type enum (OrderItemType), is_received bool
 - uuid UNIQUE, timestamps, índices (order_id, item_type) y UNIQUE(order_id, item_type)
 
-3) order_item_components
+3. order_item_components
 - order_item_id (FK), component_name string, is_received bool
 - uuid UNIQUE, timestamps, índices y UNIQUE(order_item_id, component_name)
 
-4) service_catalog
+4. service_catalog
 - service_key UNIQUE, service_name_key, item_type enum (OrderItemType)
 - base_price decimal(10,2), tax_percentage decimal(5,2) default 16.00
 - requires_measurement bool, is_active bool, display_order int
 - uuid UNIQUE, timestamps, índices (item_type, is_active), (display_order)
 
-5) order_services
+5. order_services
 - order_item_id (FK), service_key (FK lógica a service_catalog.service_key)
 - measurement string nullable, is_budgeted bool, is_authorized bool, is_completed bool
 - notes text nullable, base_price decimal(10,2), net_price decimal(10,2)

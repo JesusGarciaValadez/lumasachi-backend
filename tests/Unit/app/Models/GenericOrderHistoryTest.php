@@ -25,21 +25,21 @@ class GenericOrderHistoryTest extends TestCase
         $history = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Started working on the order',
             'created_by' => $user->id,
         ]);
 
         $this->assertEquals(OrderHistory::FIELD_STATUS, $history->field_changed);
-        $this->assertEquals(OrderStatus::OPEN->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $history->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::InProgress->value, $history->getRawOriginal('new_value'));
 
         // Test automatic casting
         $this->assertInstanceOf(OrderStatus::class, $history->old_value);
         $this->assertInstanceOf(OrderStatus::class, $history->new_value);
-        $this->assertEquals(OrderStatus::OPEN, $history->old_value);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $history->new_value);
+        $this->assertEquals(OrderStatus::Open, $history->old_value);
+        $this->assertEquals(OrderStatus::InProgress, $history->new_value);
     }
 
     #[Test]
@@ -177,8 +177,8 @@ class GenericOrderHistoryTest extends TestCase
         $history1 = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id,
         ]);
 
@@ -241,14 +241,14 @@ class GenericOrderHistoryTest extends TestCase
         $history->created_by = $user->id;
 
         // Test setting enum directly
-        $history->old_value = OrderStatus::OPEN;
-        $history->new_value = OrderStatus::DELIVERED;
+        $history->old_value = OrderStatus::Open;
+        $history->new_value = OrderStatus::Delivered;
 
         $history->save();
 
         // Verify stored as string values
-        $this->assertEquals(OrderStatus::OPEN->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::DELIVERED->value, $history->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::Delivered->value, $history->getRawOriginal('new_value'));
 
         // Verify retrieved as enums
         $freshHistory = OrderHistory::find($history->id);
@@ -318,12 +318,12 @@ class GenericOrderHistoryTest extends TestCase
 
         // Test status change state
         $statusHistory = OrderHistory::factory()
-            ->statusChange(OrderStatus::OPEN->value, OrderStatus::DELIVERED->value)
+            ->statusChange(OrderStatus::Open->value, OrderStatus::Delivered->value)
             ->create(['order_id' => $order->id]);
 
         $this->assertEquals(OrderHistory::FIELD_STATUS, $statusHistory->field_changed);
-        $this->assertEquals(OrderStatus::OPEN->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::DELIVERED->value, $statusHistory->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::Delivered->value, $statusHistory->getRawOriginal('new_value'));
 
         // Test priority change state
         $priorityHistory = OrderHistory::factory()

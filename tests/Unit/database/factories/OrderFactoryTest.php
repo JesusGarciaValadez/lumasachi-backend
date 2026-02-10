@@ -59,22 +59,22 @@ final class OrderFactoryTest extends TestCase
     {
         $validStatuses = [
             // New workflow values
-            OrderStatus::RECEIVED->value,
-            OrderStatus::AWAITING_REVIEW->value,
-            OrderStatus::REVIEWED->value,
-            OrderStatus::AWAITING_CUSTOMER_APPROVAL->value,
-            OrderStatus::READY_FOR_WORK->value,
+            OrderStatus::Received->value,
+            OrderStatus::AwaitingReview->value,
+            OrderStatus::Reviewed->value,
+            OrderStatus::AwaitingCustomerApproval->value,
+            OrderStatus::ReadyForWork->value,
             // Existing values
-            OrderStatus::OPEN->value,
-            OrderStatus::IN_PROGRESS->value,
-            OrderStatus::READY_FOR_DELIVERY->value,
-            OrderStatus::DELIVERED->value,
-            OrderStatus::PAID->value,
-            OrderStatus::RETURNED->value,
-            OrderStatus::NOT_PAID->value,
-            OrderStatus::CANCELLED->value,
-            OrderStatus::ON_HOLD->value,
-            OrderStatus::COMPLETED->value,
+            OrderStatus::Open->value,
+            OrderStatus::InProgress->value,
+            OrderStatus::ReadyForDelivery->value,
+            OrderStatus::Delivered->value,
+            OrderStatus::Paid->value,
+            OrderStatus::Returned->value,
+            OrderStatus::NotPaid->value,
+            OrderStatus::Cancelled->value,
+            OrderStatus::OnHold->value,
+            OrderStatus::Completed->value,
         ];
 
         $order = Order::factory()->createQuietly();
@@ -121,7 +121,7 @@ final class OrderFactoryTest extends TestCase
     {
         $order = Order::factory()->completed()->createQuietly();
 
-        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
+        $this->assertEquals(OrderStatus::Delivered->value, $order->status->value);
         $this->assertNotNull($order->actual_completion);
         $this->assertInstanceOf(CarbonImmutable::class, $order->actual_completion);
         $this->assertLessThanOrEqual(Carbon::now(), $order->actual_completion);
@@ -136,7 +136,7 @@ final class OrderFactoryTest extends TestCase
     {
         $order = Order::factory()->open()->createQuietly();
 
-        $this->assertEquals(OrderStatus::OPEN->value, $order->status->value);
+        $this->assertEquals(OrderStatus::Open->value, $order->status->value);
         $this->assertNull($order->actual_completion);
     }
 
@@ -196,7 +196,7 @@ final class OrderFactoryTest extends TestCase
     public function it_checks_if_factory_can_override_attributes(): void
     {
         $customTitle = 'Custom Order Title';
-        $customStatus = OrderStatus::PAID->value;
+        $customStatus = OrderStatus::Paid->value;
         $customPriority = OrderPriority::URGENT->value;
 
         $order = Order::factory()->createQuietly([
@@ -297,7 +297,7 @@ final class OrderFactoryTest extends TestCase
             ->completed()
             ->createQuietly(['priority' => OrderPriority::URGENT->value]);
 
-        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
+        $this->assertEquals(OrderStatus::Delivered->value, $order->status->value);
         $this->assertNotNull($order->actual_completion);
         $this->assertEquals(OrderPriority::URGENT->value, $order->priority->value);
     }

@@ -39,30 +39,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "order_id": {
-                                            "type": "integer"
-                                        },
-                                        "attachments": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/AttachmentResource"
-                                            }
-                                        },
-                                        "total_size": {
-                                            "type": "integer"
-                                        },
-                                        "total_size_formatted": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "order_id",
-                                        "attachments",
-                                        "total_size",
-                                        "total_size_formatted"
-                                    ]
+                                    "type": "object"
                                 }
                             }
                         }
@@ -96,7 +73,6 @@
                     }
                 ],
                 "requestBody": {
-                    "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
@@ -116,7 +92,7 @@
                                         "message": {
                                             "type": "string",
                                             "enum": [
-                                                "Failed to upload file."
+                                                "Failed to upload file(s)."
                                             ]
                                         },
                                         "error": {
@@ -136,21 +112,46 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "enum": [
-                                                "File uploaded successfully."
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "Files uploaded successfully."
+                                                    ]
+                                                },
+                                                "attachments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/AttachmentResource"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "message",
+                                                "attachments"
                                             ]
                                         },
-                                        "attachment": {
-                                            "$ref": "#/components/schemas/AttachmentResource"
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "File uploaded successfully."
+                                                    ]
+                                                },
+                                                "attachment": {
+                                                    "$ref": "#/components/schemas/AttachmentResource"
+                                                }
+                                            },
+                                            "required": [
+                                                "message",
+                                                "attachment"
+                                            ]
                                         }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "attachment"
                                     ]
                                 }
                             }
@@ -262,9 +263,10 @@
                     "200": {
                         "description": "",
                         "content": {
-                            "application/json": {
+                            "application/octet-stream": {
                                 "schema": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }
@@ -491,6 +493,82 @@
                 }
             }
         },
+        "/catalog/engine-options": {
+            "get": {
+                "operationId": "catalog.engine-options",
+                "tags": [
+                    "Catalog"
+                ],
+                "parameters": [
+                    {
+                        "name": "item_type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Invalid item_type"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/categories": {
             "get": {
                 "operationId": "category.index",
@@ -504,7 +582,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "string"
+                                    "type": "object"
                                 }
                             }
                         }
@@ -822,14 +900,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Array of `OrderResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/OrderResource"
-                                    }
+                                    "type": "object"
                                 }
                             }
                         }
@@ -916,11 +991,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "`OrderResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrderResource"
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1379,24 +1454,34 @@
                 ],
                 "parameters": [
                     {
-                        "name": "per_page",
+                        "name": "order_id",
                         "in": "query",
                         "schema": {
-                            "type": "string",
-                            "default": 15
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `OrderHistoryResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/OrderHistoryResource"
-                                    }
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1480,15 +1565,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/OrderHistoryResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1631,10 +1708,7 @@
                                     "type": "object",
                                     "properties": {
                                         "attachments": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/AttachmentResource"
-                                            }
+                                            "type": "string"
                                         }
                                     },
                                     "required": [
@@ -2194,6 +2268,11 @@
             "OrderStatus": {
                 "type": "string",
                 "enum": [
+                    "Received",
+                    "Awaiting Review",
+                    "Reviewed",
+                    "Awaiting Customer Approval",
+                    "Ready for Work",
                     "Open",
                     "In Progress",
                     "Ready for delivery",
@@ -2360,8 +2439,7 @@
                     "description",
                     "status",
                     "priority",
-                    "assigned_to",
-                    "categories"
+                    "assigned_to"
                 ],
                 "title": "StoreOrderRequest"
             },
@@ -2425,7 +2503,6 @@
                     },
                     "categories": {
                         "type": "array",
-                        "description": "'category_id' => 'sometimes|required|exists:categories,id',",
                         "items": {
                             "type": "integer"
                         }
@@ -2471,6 +2548,7 @@
                         "type": "string",
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
+                        "description": "Single file (backward compatible)",
                         "maxLength": 10240
                     },
                     "name": {
@@ -2478,6 +2556,7 @@
                             "string",
                             "null"
                         ],
+                        "description": "Optional naming (single or multiple)",
                         "maxLength": 255
                     },
                     "description": {
@@ -2486,11 +2565,45 @@
                             "null"
                         ],
                         "maxLength": 500
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "Multiple files support",
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        },
+                        "minItems": 1
+                    },
+                    "names": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    "descriptions": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 500
+                        }
                     }
                 },
-                "required": [
-                    "file"
-                ],
                 "title": "UploadAttachmentRequest"
             },
             "UserResource": {

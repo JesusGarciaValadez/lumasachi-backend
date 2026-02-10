@@ -142,20 +142,20 @@ final class OrderHistoryTest extends TestCase
         $statusHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed to in progress',
             'created_by' => $user->id
         ]);
 
         $this->assertEquals('status', $statusHistory->field_changed);
-        $this->assertEquals(OrderStatus::OPEN->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $statusHistory->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::InProgress->value, $statusHistory->getRawOriginal('new_value'));
         // Check that getters return enum instances
         $this->assertInstanceOf(OrderStatus::class, $statusHistory->old_value);
         $this->assertInstanceOf(OrderStatus::class, $statusHistory->new_value);
-        $this->assertEquals(OrderStatus::OPEN, $statusHistory->old_value);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $statusHistory->new_value);
+        $this->assertEquals(OrderStatus::Open, $statusHistory->old_value);
+        $this->assertEquals(OrderStatus::InProgress, $statusHistory->new_value);
 
         // Create order history for priority change
         $priorityHistory = OrderHistory::create([
@@ -201,17 +201,17 @@ final class OrderHistoryTest extends TestCase
             'order_id' => $order->id,
             'field_changed' => 'status',
             'old_value' => null,
-            'new_value' => OrderStatus::OPEN->value,
+            'new_value' => OrderStatus::Open->value,
             'comment' => 'Initial order creation',
             'created_by' => $user->id
         ]);
 
         $this->assertNull($orderHistory->old_value);
-        $this->assertEquals(OrderStatus::OPEN->value, $orderHistory->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $orderHistory->getRawOriginal('new_value'));
         $this->assertEquals('status', $orderHistory->field_changed);
         // Check that getter returns enum instance
         $this->assertInstanceOf(OrderStatus::class, $orderHistory->new_value);
-        $this->assertEquals(OrderStatus::OPEN, $orderHistory->new_value);
+        $this->assertEquals(OrderStatus::Open, $orderHistory->new_value);
     }
 
     /**
@@ -236,8 +236,8 @@ final class OrderHistoryTest extends TestCase
         $data = [
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Order status updated - Customer requested urgent delivery',
             'created_by' => $user->id
         ];
@@ -273,8 +273,8 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 
@@ -303,8 +303,8 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 
@@ -356,8 +356,8 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Employee started working on order',
             'created_by' => $employee->id
         ]);
@@ -392,8 +392,8 @@ final class OrderHistoryTest extends TestCase
         $orderHistory = OrderHistory::create([
             'order_id' => $order->id,
             'field_changed' => 'status',
-            'old_value' => OrderStatus::OPEN->value,
-            'new_value' => OrderStatus::IN_PROGRESS->value,
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $user->id
         ]);
 

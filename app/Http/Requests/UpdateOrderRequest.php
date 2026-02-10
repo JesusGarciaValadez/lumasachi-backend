@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateOrderRequest extends FormRequest
+final class UpdateOrderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,35 +29,24 @@ class UpdateOrderRequest extends FormRequest
             'customer_id' => 'sometimes|required|exists:users,id',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
-            'status' => 'sometimes|required|string|in:' . implode(',', [
-                OrderStatus::OPEN->value,
-                OrderStatus::IN_PROGRESS->value,
-                OrderStatus::READY_FOR_DELIVERY->value,
-                OrderStatus::DELIVERED->value,
-                OrderStatus::PAID->value,
-                OrderStatus::RETURNED->value,
-                OrderStatus::NOT_PAID->value,
-                OrderStatus::CANCELLED->value
-            ]),
-            'priority' => 'sometimes|required|string|in:' . implode(',', [
+            'status' => 'sometimes|required|string|in:'.implode(',', OrderStatus::getStatuses()),
+            'priority' => 'sometimes|required|string|in:'.implode(',', [
                 OrderPriority::LOW->value,
                 OrderPriority::NORMAL->value,
                 OrderPriority::HIGH->value,
-                OrderPriority::URGENT->value
+                OrderPriority::URGENT->value,
             ]),
             'categories' => 'sometimes|required|array',
             'categories.*' => 'exists:categories,id',
             'estimated_completion' => 'nullable|date',
             'actual_completion' => 'nullable|date',
             'notes' => 'nullable|string',
-            'assigned_to' => 'sometimes|exists:users,id'
+            'assigned_to' => 'sometimes|exists:users,id',
         ];
     }
 
     /**
      * Get custom messages for validator errors.
-     *
-     * @return array
      */
     public function messages(): array
     {
@@ -70,7 +61,7 @@ class UpdateOrderRequest extends FormRequest
             'categories.required' => 'At least one category is required.',
             'categories.array' => 'Categories must be an array.',
             'categories.*.exists' => 'One or more selected categories do not exist.',
-            'assigned_to.exists' => 'The selected employee does not exist.'
+            'assigned_to.exists' => 'The selected employee does not exist.',
         ];
     }
 }

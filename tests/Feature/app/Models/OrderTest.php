@@ -111,14 +111,14 @@ class OrderTest extends TestCase
     #[Test]
     public function it_checks_order_status_transitions()
     {
-        $order = Order::factory()->createQuietly(['status' => OrderStatus::OPEN->value]);
-        $order->update(['status' => OrderStatus::IN_PROGRESS->value]);
+        $order = Order::factory()->createQuietly(['status' => OrderStatus::Open->value]);
+        $order->update(['status' => OrderStatus::InProgress->value]);
 
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $order->status->value);
+        $this->assertEquals(OrderStatus::InProgress->value, $order->status->value);
 
-        $order->update(['status' => OrderStatus::DELIVERED->value]);
+        $order->update(['status' => OrderStatus::Delivered->value]);
 
-        $this->assertEquals(OrderStatus::DELIVERED->value, $order->status->value);
+        $this->assertEquals(OrderStatus::Delivered->value, $order->status->value);
     }
 
     /**
@@ -230,12 +230,12 @@ class OrderTest extends TestCase
     {
         // Test completed state
         $completedOrder = Order::factory()->completed()->createQuietly();
-        $this->assertEquals(OrderStatus::DELIVERED->value, $completedOrder->status->value);
+        $this->assertEquals(OrderStatus::Delivered->value, $completedOrder->status->value);
         $this->assertNotNull($completedOrder->actual_completion);
 
         // Test open state
         $openOrder = Order::factory()->open()->createQuietly();
-        $this->assertEquals(OrderStatus::OPEN->value, $openOrder->status->value);
+        $this->assertEquals(OrderStatus::Open->value, $openOrder->status->value);
         $this->assertNull($openOrder->actual_completion);
     }
 
@@ -389,16 +389,16 @@ class OrderTest extends TestCase
     public function it_checks_order_status_values()
     {
         $statuses = [
-            OrderStatus::OPEN->value,
-            OrderStatus::IN_PROGRESS->value,
-            OrderStatus::READY_FOR_DELIVERY->value,
-            OrderStatus::DELIVERED->value,
-            OrderStatus::PAID->value,
-            OrderStatus::RETURNED->value,
-            OrderStatus::NOT_PAID->value,
-            OrderStatus::CANCELLED->value,
-            OrderStatus::ON_HOLD->value,
-            OrderStatus::COMPLETED->value,
+            OrderStatus::Open->value,
+            OrderStatus::InProgress->value,
+            OrderStatus::ReadyForDelivery->value,
+            OrderStatus::Delivered->value,
+            OrderStatus::Paid->value,
+            OrderStatus::Returned->value,
+            OrderStatus::NotPaid->value,
+            OrderStatus::Cancelled->value,
+            OrderStatus::OnHold->value,
+            OrderStatus::Completed->value,
         ];
 
         foreach ($statuses as $status) {

@@ -19,6 +19,10 @@ Nuevos valores (enum OrderStatus)
 - Nuevos del flujo: received, awaiting_review, reviewed, awaiting_customer_approval, ready_for_work
 
 Estrategia (segura)
+
+Pre-step: create a backup/snapshot of the data that will be mutated
+- Before any schema or data changes, create a snapshot/export of the `orders` table (or a full DB dump) so you can restore pre-migration data if necessary. Example: use `pg_dump --table=orders` or a full `pg_dump` and retain the file alongside migration run metadata. Ensure the temporary column name `status_new` is included in the backup scope.
+
 1) Crear columna temporal status_new (string)
 2) Backfill con mapeo:
    - UPDATE orders SET status_new = 'open' WHERE status = 'Open';

@@ -29,13 +29,13 @@ class OrderHistoryTrackingTest extends TestCase
         $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
             'created_by' => $user->id,
         ]);
         $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::IN_PROGRESS->value,
+            'status' => OrderStatus::InProgress->value,
         ]);
 
         $response->assertOk();
@@ -46,8 +46,8 @@ class OrderHistoryTrackingTest extends TestCase
             ->first();
 
         $this->assertNotNull($history);
-        $this->assertEquals(OrderStatus::OPEN->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::IN_PROGRESS->value, $history->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::InProgress->value, $history->getRawOriginal('new_value'));
         $this->assertEquals($user->id, $history->created_by);
     }
 
@@ -95,14 +95,14 @@ class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::LOW->value,
             'title' => 'Original Title',
         ]);
         $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::DELIVERED->value,
+            'status' => OrderStatus::Delivered->value,
             'priority' => OrderPriority::HIGH->value,
             'title' => 'Updated Title',
             'categories' => [$newCategory->id],
@@ -128,8 +128,8 @@ class OrderHistoryTrackingTest extends TestCase
         // Verify each field change
         $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
         $this->assertNotNull($statusHistory);
-        $this->assertEquals(OrderStatus::OPEN->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::DELIVERED->value, $statusHistory->getRawOriginal('new_value'));
+        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
+        $this->assertEquals(OrderStatus::Delivered->value, $statusHistory->getRawOriginal('new_value'));
 
         $priorityHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_PRIORITY);
         $this->assertNotNull($priorityHistory);
@@ -231,7 +231,7 @@ class OrderHistoryTrackingTest extends TestCase
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
         ]);
@@ -242,7 +242,7 @@ class OrderHistoryTrackingTest extends TestCase
 
         // Update with same values
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
         ]);
@@ -392,13 +392,13 @@ class OrderHistoryTrackingTest extends TestCase
 
         $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
-            'status' => OrderStatus::OPEN->value,
+            'status' => OrderStatus::Open->value,
         ]);
         $order->categories()->attach($category->id);
 
         // Create a status change
         $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::DELIVERED->value,
+            'status' => OrderStatus::Delivered->value,
         ]);
 
         $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");

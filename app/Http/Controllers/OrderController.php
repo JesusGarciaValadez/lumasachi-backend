@@ -1,34 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
-use App\Enums\OrderStatus;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\AssignOrderRequest;
+use App\Http\Requests\CustomerApprovalRequest;
+use App\Http\Requests\DeliverOrderRequest;
+use App\Http\Requests\MarkWorkCompletedRequest;
+use App\Http\Requests\StoreOrderWithItemsRequest;
+use App\Http\Requests\SubmitBudgetRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusRequest;
-use App\Http\Requests\AssignOrderRequest;
-use App\Http\Resources\OrderResource;
 use App\Http\Resources\OrderHistoryResource;
+use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\User;
+use App\Services\OrderLifecycleService;
 use App\Traits\CachesOrders;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class OrderController extends Controller
 {
     use CachesOrders;
+
+    public function __construct(private OrderLifecycleService $lifecycleService) {}
+
     /**
      * Display a listing of all orders.
-     *
-     * @return JsonResponse
      */
-public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -44,7 +49,7 @@ public function index(Request $request): JsonResponse
                     $query->where('assigned_to', $user->id)
                         ->orWhere('created_by', $user->id);
                 })
-                ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) use ($user) {
+                ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) {
                     // No additional query modification needed for administrators
                 })
                 ->get();
@@ -57,53 +62,110 @@ public function index(Request $request): JsonResponse
     }
 
     /**
-     * Store a newly created order in storage.
-     *
-     * @param StoreOrderRequest $request
-     * @return JsonResponse
+     * Store a newly created order with motor info, items, and components.
      */
-    public function store(StoreOrderRequest $request): JsonResponse
+    public function store(StoreOrderWithItemsRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        $categories = $validated['categories'] ?? [];
-        unset($validated['categories']);
-
-        $order = DB::transaction(function () use ($validated, $request, $categories) {
-            $order = Order::create(array_merge($validated, [
-                'uuid' => method_exists(Str::class, 'uuid7')
-                    ? Str::uuid7()->toString()
-                    : (method_exists(Str::class, 'orderedUuid')
-                        ? (string) Str::orderedUuid()
-                        : (string) Str::uuid()),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id
-            ]));
-            if (!empty($categories)) {
-                $order->categories()->sync($categories);
-            }
-            return $order;
-        });
+        $order = $this->lifecycleService->createOrderWithMotorItems(
+            $request->validated(),
+            $request->user()
+        );
 
         return response()->json([
             'message' => 'Order created successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'categories']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'categories', 'motorInfo', 'items.components'])),
         ], 201);
     }
 
     /**
-     * Display the specified order.
-     *
-     * @param Order $order
-     * @return JsonResponse
+     * Submit budget for an order (services with prices from catalog).
      */
-public function show(Order $order): JsonResponse
+    public function submitBudget(SubmitBudgetRequest $request, Order $order): JsonResponse
+    {
+        $order = $this->lifecycleService->submitBudget(
+            $order,
+            $request->validated('services'),
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Budget submitted successfully.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services'])),
+        ]);
+    }
+
+    /**
+     * Customer approval of selected services.
+     */
+    public function customerApproval(CustomerApprovalRequest $request, Order $order): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $order = $this->lifecycleService->customerApproval(
+            $order,
+            $validated['authorized_service_ids'],
+            $validated['down_payment'] ?? null
+        );
+
+        return response()->json([
+            'message' => 'Services approved successfully.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services'])),
+        ]);
+    }
+
+    /**
+     * Mark selected services as work completed.
+     */
+    public function markWorkCompleted(MarkWorkCompletedRequest $request, Order $order): JsonResponse
+    {
+        $order = $this->lifecycleService->markWorkCompleted(
+            $order,
+            $request->validated('completed_service_ids'),
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Work marked as completed.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services'])),
+        ]);
+    }
+
+    /**
+     * Mark order as ready for delivery.
+     */
+    public function markReadyForDelivery(Request $request, Order $order): JsonResponse
+    {
+        $order = $this->lifecycleService->markReadyForDelivery($order, $request->user());
+
+        return response()->json([
+            'message' => 'Order marked as ready for delivery.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo'])),
+        ]);
+    }
+
+    /**
+     * Deliver order.
+     */
+    public function deliverOrder(DeliverOrderRequest $request, Order $order): JsonResponse
+    {
+        $order = $this->lifecycleService->deliverOrder($order, $request->user());
+
+        return response()->json([
+            'message' => 'Order delivered successfully.',
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo'])),
+        ]);
+    }
+
+    /**
+     * Display the specified order.
+     */
+    public function show(Order $order): JsonResponse
     {
         $key = self::showKeyFor($order->uuid);
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order) {
-            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])))->resolve();
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories', 'motorInfo', 'items.components', 'services'])))->resolve();
         });
 
         return response()->json($payload)
@@ -112,10 +174,6 @@ public function show(Order $order): JsonResponse
 
     /**
      * Update the specified order in storage.
-     *
-     * @param UpdateOrderRequest $request
-     * @param Order $order
-     * @return JsonResponse
      */
     public function update(UpdateOrderRequest $request, Order $order): JsonResponse
     {
@@ -129,7 +187,7 @@ public function show(Order $order): JsonResponse
 
         DB::transaction(function () use ($order, $validated, $request, $categories, $categoriesProvided, $oldIds) {
             $order->update(array_merge($validated, [
-                'updated_by' => $request->user()->id
+                'updated_by' => $request->user()->id,
             ]));
 
             if ($categoriesProvided) {
@@ -147,7 +205,7 @@ public function show(Order $order): JsonResponse
                         'field_changed' => OrderHistory::FIELD_CATEGORIES,
                         'old_value' => $sortedOldIds,
                         'new_value' => $sortedNewIds,
-                        'created_by' => $request->user()->id
+                        'created_by' => $request->user()->id,
                     ]);
                 }
             }
@@ -155,31 +213,24 @@ public function show(Order $order): JsonResponse
 
         return response()->json([
             'message' => 'Order updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
         ]);
     }
 
     /**
      * Remove the specified order from storage.
-     *
-     * @param Order $order
-     * @return JsonResponse
      */
     public function destroy(Order $order): JsonResponse
     {
         $order->delete();
 
         return response()->json([
-            'message' => 'Order deleted successfully.'
+            'message' => 'Order deleted successfully.',
         ]);
     }
 
     /**
      * Update the status of an order.
-     *
-     * @param UpdateOrderStatusRequest $request
-     * @param Order $order
-     * @return JsonResponse
      */
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
     {
@@ -188,21 +239,17 @@ public function show(Order $order): JsonResponse
         // Update order status (observer will handle history tracking)
         $order->update([
             'status' => $validated['status'],
-            'updated_by' => $request->user()->id
+            'updated_by' => $request->user()->id,
         ]);
 
         return response()->json([
             'message' => 'Order status updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
         ]);
     }
 
     /**
      * Assign an order to an employee.
-     *
-     * @param AssignOrderRequest $request
-     * @param Order $order
-     * @return JsonResponse
      */
     public function assign(AssignOrderRequest $request, Order $order): JsonResponse
     {
@@ -211,20 +258,18 @@ public function show(Order $order): JsonResponse
         // Update order assignment (observer will handle history tracking)
         $order->update([
             'assigned_to' => $validated['assigned_to'],
-            'updated_by' => $request->user()->id
+            'updated_by' => $request->user()->id,
         ]);
 
         return response()->json([
             'message' => 'Order assigned successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories']))
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
         ]);
     }
 
     /**
      * Get the history of an order.
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function history(Request $request, Order $order)
@@ -243,5 +288,4 @@ public function show(Order $order): JsonResponse
 
         return OrderHistoryResource::collection($history);
     }
-
 }

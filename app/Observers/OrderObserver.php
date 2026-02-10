@@ -1,26 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Observers;
 
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
-use App\Enums\OrderStatus;
-use App\Enums\UserRole;
-use App\Notifications\OrderCreatedNotification;
-use App\Notifications\OrderReviewedNotification;
-use App\Notifications\OrderReadyForDeliveryNotification;
-use App\Notifications\OrderDeliveredNotification;
-use App\Notifications\OrderReceivedNotification;
-use App\Notifications\OrderPaidNotification;
 use App\Notifications\OrderAuditNotification;
-use Illuminate\Support\Str;
-use Illuminate\Notifications\Notification;
+use App\Notifications\OrderCreatedNotification;
+use App\Notifications\OrderDeliveredNotification;
+use App\Notifications\OrderPaidNotification;
+use App\Notifications\OrderReadyForDeliveryNotification;
+use App\Notifications\OrderReadyForWorkNotification;
+use App\Notifications\OrderReceivedNotification;
+use App\Notifications\OrderReviewedNotification;
 use App\Traits\CachesOrders;
+use BackedEnum;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
-class OrderObserver
+final class OrderObserver
 {
     use CachesOrders;
+
     /**
      * Store original values during updating to compute history afterwards.
      */
@@ -87,7 +92,7 @@ class OrderObserver
                 $new = $new->toISOString();
             }
             // Normalize enums to values
-            if ($new instanceof \BackedEnum) {
+            if ($new instanceof BackedEnum) {
                 $new = $new->value;
             }
 
@@ -109,33 +114,41 @@ class OrderObserver
 
         if ($oldStatus !== $newStatus && $newStatus) {
             // Reviewed: notify customer and admins, then auto-transition to Awaiting Customer Approval
-            if ($newStatus === OrderStatus::REVIEWED->value) {
+            if ($newStatus === OrderStatus::Reviewed->value) {
                 if ($order->customer) {
                     $order->customer->notify(new OrderReviewedNotification($order));
                 }
                 $this->notifyAdmins(new OrderAuditNotification($order, 'reviewed'));
 
                 // Auto-transition to Awaiting Customer Approval
-                $order->update(['status' => OrderStatus::AWAITING_CUSTOMER_APPROVAL->value]);
+                $order->update(['status' => OrderStatus::AwaitingCustomerApproval->value]);
             }
 
             // Received: notify customer and audit admins
-            if ($newStatus === OrderStatus::RECEIVED->value) {
+            if ($newStatus === OrderStatus::Received->value) {
                 if ($order->customer) {
                     $order->customer->notify(new OrderReceivedNotification($order));
                 }
                 $this->notifyAdmins(new OrderAuditNotification($order, 'received'));
             }
 
+            // Ready for Work: notify customer and audit admins
+            if ($newStatus === OrderStatus::ReadyForWork->value) {
+                if ($order->customer) {
+                    $order->customer->notify(new OrderReadyForWorkNotification($order));
+                }
+                $this->notifyAdmins(new OrderAuditNotification($order, 'ready_for_work'));
+            }
+
             // Ready for delivery: notify customer
-            if ($newStatus === OrderStatus::READY_FOR_DELIVERY->value) {
+            if ($newStatus === OrderStatus::ReadyForDelivery->value) {
                 if ($order->customer) {
                     $order->customer->notify(new OrderReadyForDeliveryNotification($order));
                 }
             }
 
             // Delivered: notify customer and admins
-            if ($newStatus === OrderStatus::DELIVERED->value) {
+            if ($newStatus === OrderStatus::Delivered->value) {
                 if ($order->customer) {
                     $order->customer->notify(new OrderDeliveredNotification($order));
                 }
@@ -143,7 +156,7 @@ class OrderObserver
             }
 
             // Paid: notify customer and audit admins
-            if ($newStatus === OrderStatus::PAID->value) {
+            if ($newStatus === OrderStatus::Paid->value) {
                 if ($order->customer) {
                     $order->customer->notify(new OrderPaidNotification($order));
                 }
@@ -181,6 +194,7 @@ class OrderObserver
         // Invalidate orders cache namespace
         self::bumpVersion();
     }
+
     /**
      * Notify admin and super admin users.
      */

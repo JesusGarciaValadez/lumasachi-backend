@@ -4,11 +4,11 @@ namespace App\Enums;
 
 enum OrderItemType: string
 {
-    case CYLINDER_HEAD = 'cylinder_head';
-    case ENGINE_BLOCK = 'engine_block';
-    case CRANKSHAFT = 'crankshaft';
-    case CONNECTING_RODS = 'connecting_rods';
-    case OTHERS = 'others';
+    case CylinderHead = 'cylinder_head';
+    case EngineBlock = 'engine_block';
+    case Crankshaft = 'crankshaft';
+    case ConnectingRods = 'connecting_rods';
+    case Others = 'others';
 
     public static function getValues(): array
     {
@@ -18,11 +18,11 @@ enum OrderItemType: string
     public function label(): string
     {
         return match ($this) {
-            self::CYLINDER_HEAD => 'Cylinder Head',
-            self::ENGINE_BLOCK => 'Engine Block',
-            self::CRANKSHAFT => 'Crankshaft',
-            self::CONNECTING_RODS => 'Connecting Rods',
-            self::OTHERS => 'Others',
+            self::CylinderHead => 'Cylinder Head',
+            self::EngineBlock => 'Engine Block',
+            self::Crankshaft => 'Crankshaft',
+            self::ConnectingRods => 'Connecting Rods',
+            self::Others => 'Others',
         };
     }
 
@@ -35,7 +35,7 @@ enum OrderItemType: string
     public function getComponents(): array
     {
         return match ($this) {
-            self::CYLINDER_HEAD => [
+            self::CylinderHead => [
                 'camshaft_covers',
                 'bolts',
                 'rocker_arm_shaft',
@@ -45,7 +45,7 @@ enum OrderItemType: string
                 'valves',
                 'guides',
             ],
-            self::ENGINE_BLOCK => [
+            self::EngineBlock => [
                 'bearing_caps',
                 'cap_bolts',
                 'camshaft',
@@ -54,7 +54,7 @@ enum OrderItemType: string
                 'camshaft_key',
                 'camshaft_gear',
             ],
-            self::CRANKSHAFT => [
+            self::Crankshaft => [
                 'iron_gear',
                 'bronze_gear',
                 'lock',
@@ -63,14 +63,14 @@ enum OrderItemType: string
                 'bolt',
                 'deflector',
             ],
-            self::CONNECTING_RODS => [
+            self::ConnectingRods => [
                 'bolts',
                 'nuts',
                 'pistons',
                 'locks',
                 'bearings',
             ],
-            self::OTHERS => [
+            self::Others => [
                 'water_pump',
                 'oil_pump',
                 'oil_pan',

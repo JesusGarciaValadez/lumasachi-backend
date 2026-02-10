@@ -38,7 +38,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => OrderStatus::DELIVERED->value,
+                'status' => OrderStatus::Delivered->value,
                 'actual_completion' => $this->faker->dateTimeBetween('-7 days', 'now'),
             ];
         });
@@ -48,7 +48,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => OrderStatus::OPEN->value,
+                'status' => OrderStatus::Open->value,
                 'actual_completion' => null,
             ];
         });
