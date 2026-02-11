@@ -92,7 +92,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import route from 'ziggy-js'
+import { route } from 'ziggy-js'
 
 interface ItemType { key: string; label: string }
 interface ComponentItem { key: string; label: string }
