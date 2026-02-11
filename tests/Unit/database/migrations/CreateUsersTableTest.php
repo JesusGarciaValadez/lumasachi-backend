@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\migrations;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Tests\TestCase;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CreateUsersTableTest extends TestCase
 {
@@ -205,7 +207,7 @@ final class CreateUsersTableTest extends TestCase
                 'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User',
-                'email' => 'test' . uniqid() . '@example.com',
+                'email' => fake()->unique()->safeEmail(),
                 'password' => bcrypt('password'),
                 'role' => $role,
                 'is_active' => true,

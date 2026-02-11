@@ -8,6 +8,8 @@ info:
 servers:
   - url: /
     description: Relative to application base URL
+security:
+  - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
@@ -18,11 +20,18 @@ components:
     AcceptLanguage:
       name: Accept-Language
       in: header
-      description: Response language. Defaults to `en`.
+      description: |
+        Optional locale hint. The first language tag is taken (before commas/quality values), underscores are normalized to dashes, and the value is lowercased. If omitted, the application locale is used.
       required: false
       schema:
         type: string
-        enum: [en, es]
+    Locale:
+      name: locale
+      in: query
+      description: Optional explicit locale; same normalization rules as Accept-Language.
+      required: false
+      schema:
+        type: string
     ItemType:
       name: item_type
       in: query
@@ -110,6 +119,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Locale'
         - $ref: '#/components/parameters/ItemType'
       responses:
         '200':
@@ -133,21 +143,21 @@ paths:
                     item_type: engine_block
                     item_type_label: Engine Block
                     components:
-                      - { key: camshaft_covers, label: Camshaft covers }
-                      - { key: bolts, label: Bolts }
+                      - {key: camshaft_covers, label: Camshaft covers}
+                      - {key: bolts, label: Bolts}
                     services:
-                      - { service_key: wash_block, service_name: Wash engine block, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block }
+                      - {service_key: wash_block, service_name: Wash engine block, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block}
                 all_types:
                   summary: Full catalog (Spanish)
                   value:
                     item_types:
-                      - { key: engine_block, label: Bloque de motor }
+                      - {key: engine_block, label: Bloque de motor}
                     components_by_type:
                       engine_block:
-                        - { key: camshaft_covers, label: Tapa de árbol de levas }
+                        - {key: camshaft_covers, label: Tapa de árbol de levas}
                     services_by_type:
                       engine_block:
-                        - { service_key: wash_block, service_name: Lavado de bloque, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block }
+                        - {service_key: wash_block, service_name: Lavado de bloque, base_price: '600.00', net_price: '696.00', requires_measurement: false, display_order: 1, item_type: engine_block}
         '403':
           description: Forbidden (customers or guests)
         '404':

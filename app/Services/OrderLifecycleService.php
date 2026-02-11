@@ -128,12 +128,12 @@ final class OrderLifecycleService
      *
      * @param  array<int>  $authorizedServiceIds
      */
-    public function customerApproval(Order $order, array $authorizedServiceIds, ?float $downPayment): Order
+    public function customerApproval(Order $order, array $authorizedServiceIds, ?float $downPayment, User $approver): Order
     {
         $this->assertStatus($order, [OrderStatus::AwaitingCustomerApproval]);
 
         DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment) {
-            OrderService::whereIn('id', $authorizedServiceIds)->update(['is_authorized' => true]);
+            $order->services()->whereIn('order_services.id', $authorizedServiceIds)->update(['is_authorized' => true]);
 
             if ($downPayment !== null) {
                 $order->motorInfo->update(['down_payment' => $downPayment]);
@@ -144,7 +144,7 @@ final class OrderLifecycleService
 
         $order->update([
             'status' => OrderStatus::ReadyForWork->value,
-            'updated_by' => auth()?->id() ?? $order->updated_by,
+            'updated_by' => $approver->id,
         ]);
 
         return $order;
@@ -159,12 +159,15 @@ final class OrderLifecycleService
     {
         $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
 
-        foreach ($completedServiceIds as $serviceId) {
-            $service = OrderService::findOrFail($serviceId);
-            $service->update(['is_completed' => true, 'updated_by' => $technician->id]);
-        }
+        DB::transaction(function () use ($order, $completedServiceIds): void {
+            $services = $order->services()
+                ->whereIn('order_services.id', $completedServiceIds)
+                ->get();
 
-        $order->recalculateTotals();
+            foreach ($services as $service) {
+                $service->update(['is_completed' => true]);
+            }
+        });
 
         return $order;
     }

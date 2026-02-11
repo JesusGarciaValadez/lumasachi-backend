@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class CategoryOrderTest extends TestCase
+final class CategoryOrderTest extends TestCase
 {
     use RefreshDatabase;
 

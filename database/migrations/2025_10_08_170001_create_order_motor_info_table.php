@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -28,8 +30,8 @@ return new class extends Migration
             $table->string('cylinder_count')->nullable();
 
             // Financial data
-            $table->decimal('down_payment', 10, 2)->nullable()->default(0);
-            $table->decimal('total_cost', 10, 2)->nullable()->default(0);
+            $table->decimal('down_payment', 10, 2)->default(0);
+            $table->decimal('total_cost', 10, 2)->default(0);
             $table->boolean('is_fully_paid')->default(false);
 
             // Torque specifications

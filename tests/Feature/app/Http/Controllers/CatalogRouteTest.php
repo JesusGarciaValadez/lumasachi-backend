@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\UserRole;
@@ -18,8 +20,7 @@ final class CatalogRouteTest extends TestCase
 
         $response = $this->get('/catalog/engine-options');
         $response->assertOk();
-        $response->assertInertia(fn (InertiaAssert $page) =>
-$page->component('Orders/EngineOptions')
+        $response->assertInertia(fn (InertiaAssert $page) => $page->component('Orders/EngineOptions')
         );
     }
 

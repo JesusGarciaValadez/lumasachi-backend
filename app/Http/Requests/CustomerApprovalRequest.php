@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class CustomerApprovalRequest extends FormRequest
 {
@@ -26,12 +27,12 @@ final class CustomerApprovalRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator) {
             $order = $this->route('order');
 
-            if ($order && $order->status !== OrderStatus::AWAITING_CUSTOMER_APPROVAL) {
+            if ($order && $order->status !== OrderStatus::AwaitingCustomerApproval) {
                 $validator->errors()->add('status', 'Order must be in Awaiting Customer Approval status.');
             }
         });

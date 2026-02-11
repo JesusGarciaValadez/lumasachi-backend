@@ -2,7 +2,7 @@
 
 Alineado con ARQUITECTURA_FINAL.md. Documento vivo para coordinar cambios de base de datos, modelos, endpoints, notificaciones, y pruebas (unitarias y de características) del nuevo flujo de recepción, revisión, cotización, autorización, trabajo realizado y entrega.
 
-Actualizado: 2025-10-08
+Actualizado: 2026-02-11
 
 ---
 

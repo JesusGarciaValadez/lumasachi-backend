@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Company;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class UserTest extends TestCase
+final class UserTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -33,14 +35,14 @@ class UserTest extends TestCase
     public function user_can_be_created_without_company()
     {
         $user = User::factory()->create([
-            'company_id' => null
+            'company_id' => null,
         ]);
 
         $this->assertNull($user->company_id);
         $this->assertNull($user->company);
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
-            'company_id' => null
+            'company_id' => null,
         ]);
     }
 
@@ -52,7 +54,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         $this->assertEquals($company->id, $user->company_id);
@@ -76,12 +78,12 @@ class UserTest extends TestCase
             'state' => 'TS',
             'postal_code' => '12345',
             'country' => 'Test Country',
-            'website' => 'https://testcompany.com'
+            'website' => 'https://testcompany.com',
         ];
 
         $company = Company::factory()->create($companyData);
         $user = User::factory()->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         $this->assertEquals($companyData['name'], $user->company->name);
@@ -103,7 +105,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $users = User::factory()->count(3)->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         foreach ($users as $user) {
@@ -128,7 +130,7 @@ class UserTest extends TestCase
         $company2 = Company::factory()->create(['name' => 'Company 2']);
 
         $user = User::factory()->create([
-            'company_id' => $company1->id
+            'company_id' => $company1->id,
         ]);
 
         // Initial state
@@ -152,7 +154,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         // Initial state
@@ -175,7 +177,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         User::factory()->count(3)->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         // Test that eager loading prevents N+1 queries
@@ -211,17 +213,17 @@ class UserTest extends TestCase
 
         // Create users for company 1
         User::factory()->count(2)->create([
-            'company_id' => $company1->id
+            'company_id' => $company1->id,
         ]);
 
         // Create users for company 2
         User::factory()->count(3)->create([
-            'company_id' => $company2->id
+            'company_id' => $company2->id,
         ]);
 
         // Create users without company
         User::factory()->count(1)->create([
-            'company_id' => null
+            'company_id' => null,
         ]);
 
         // Query users by company
@@ -242,7 +244,7 @@ class UserTest extends TestCase
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
-            'company_id' => $company->id
+            'company_id' => $company->id,
         ]);
 
         // Initial state
@@ -257,7 +259,7 @@ class UserTest extends TestCase
         $this->assertNull($user->company);
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
-            'company_id' => null
+            'company_id' => null,
         ]);
     }
 }

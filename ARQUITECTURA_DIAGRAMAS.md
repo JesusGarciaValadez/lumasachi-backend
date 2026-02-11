@@ -104,7 +104,7 @@
 │ new_value            │
 │ created_by (FK)      │
 └──────────────────────┘
-```text
+```
 
 ---
 
@@ -170,7 +170,7 @@
     ┌──────────────────┐
     │   CANCELADA      │
     └──────────────────┘
-```text
+```
 
 ---
 
@@ -216,7 +216,7 @@ Totales:
 │ ───────────────────────  │ ──────────── │
 │ PENDIENTE DE PAGO        │   -$247.20   │ ← (Realizado - Anticipo)
 └──────────────────────────┴──────────────┘
-```text
+```
 
 ---
 
@@ -290,7 +290,7 @@ Totales:
 │  order_item_components  │  order_services  │  service_catalog   │
 │  order_histories  │  users  │  ...                              │
 └─────────────────────────────────────────────────────────────────┘
-```text
+```
 
 ---
 
@@ -322,7 +322,7 @@ Order (1) ──────────── (1) OrderMotorInfo
 
 
 ServiceCatalog ◄──(referencia)── OrderService
-```text
+```
 
 ---
 
@@ -386,7 +386,7 @@ ROLES Y PERMISOS:
 └──────────────────┴──────────┴──────────┴──────────┴──────────┘
 
 * Solo para su propia orden
-```text
+```
 
 ---
 
@@ -481,7 +481,9 @@ ROLES Y PERMISOS:
 
 ---
 
-**Documento**: Diagramas de Arquitectura
-**Proyecto**: Lumasachi Backend
-**Versión**: 1.0
-**Fecha**: 2025
+| Campo | Valor |
+|---|---|
+| **Documento** | Diagramas de Arquitectura |
+| **Proyecto** | Lumasachi Backend |
+| **Versión** | 1.0 |
+| **Fecha** | 2026 |

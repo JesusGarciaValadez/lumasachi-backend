@@ -30,7 +30,7 @@ final class PublicOrderController extends Controller
         }
 
         return response()->json([
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo'])),
         ]);
     }
 }

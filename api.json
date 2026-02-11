@@ -126,7 +126,8 @@
                                                     "type": "array",
                                                     "items": {
                                                         "$ref": "#/components/schemas/AttachmentResource"
-                                                    }
+                                                    },
+                                                    "maxItems": 10
                                                 }
                                             },
                                             "required": [
@@ -510,11 +511,93 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "Engine options catalog",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "string"
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "item_type": {
+                                                    "type": "string"
+                                                },
+                                                "item_type_label": {
+                                                    "type": "string"
+                                                },
+                                                "components": {
+                                                    "type": "array",
+                                                    "maxItems": 100,
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "services": {
+                                                    "type": "array",
+                                                    "maxItems": 100,
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/ServiceCatalogItem"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "item_types": {
+                                                    "type": "array",
+                                                    "maxItems": 50,
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "components_by_type": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "array",
+                                                        "maxItems": 100,
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "services_by_type": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "array",
+                                                        "maxItems": 100,
+                                                        "items": {
+                                                            "$ref": "#/components/schemas/ServiceCatalogItem"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -1894,6 +1977,40 @@
     },
     "components": {
         "schemas": {
+            "ServiceCatalogItem": {
+                "type": "object",
+                "properties": {
+                    "service_key": {
+                        "type": "string"
+                    },
+                    "service_name": {
+                        "type": "string"
+                    },
+                    "base_price": {
+                        "type": "string",
+                        "example": "600.00"
+                    },
+                    "net_price": {
+                        "type": "string",
+                        "example": "696.00"
+                    },
+                    "requires_measurement": {
+                        "type": "boolean"
+                    },
+                    "display_order": {
+                        "type": "integer"
+                    },
+                    "item_type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "service_key",
+                    "service_name",
+                    "base_price"
+                ],
+                "title": "ServiceCatalogItem"
+            },
             "AssignOrderRequest": {
                 "type": "object",
                 "properties": {
@@ -2275,13 +2392,13 @@
                     "Ready for Work",
                     "Open",
                     "In Progress",
-                    "Ready for delivery",
+                    "Ready for Delivery",
                     "Completed",
                     "Delivered",
                     "Paid",
                     "Returned",
-                    "Not paid",
-                    "On hold",
+                    "Not Paid",
+                    "On Hold",
                     "Cancelled"
                 ],
                 "title": "OrderStatus"
@@ -2384,13 +2501,13 @@
                         "enum": [
                             "Open",
                             "In Progress",
-                            "Ready for delivery",
+                            "Ready for Delivery",
                             "Delivered",
                             "Completed",
                             "Paid",
                             "Returned",
-                            "Not paid",
-                            "On hold",
+                            "Not Paid",
+                            "On Hold",
                             "Cancelled"
                         ]
                     },
@@ -2461,11 +2578,11 @@
                         "enum": [
                             "Open",
                             "In Progress",
-                            "Ready for delivery",
+                            "Ready for Delivery",
                             "Delivered",
                             "Paid",
                             "Returned",
-                            "Not paid",
+                            "Not Paid",
                             "Cancelled"
                         ]
                     },
@@ -2518,13 +2635,13 @@
                         "enum": [
                             "Open",
                             "In Progress",
-                            "Ready for delivery",
+                            "Ready for Delivery",
                             "Delivered",
                             "Paid",
                             "Returned",
-                            "Not paid",
+                            "Not Paid",
                             "Cancelled",
-                            "On hold",
+                            "On Hold",
                             "Completed"
                         ]
                     },

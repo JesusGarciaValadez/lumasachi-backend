@@ -1,25 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
-use App\Models\OrderHistory;
-use App\Models\Order;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
+use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryTest extends TestCase
+final class OrderHistoryTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $employee;
+
     protected User $customer;
+
     protected Order $order;
 
     protected function setUp(): void
@@ -35,7 +39,7 @@ class OrderHistoryTest extends TestCase
             'customer_id' => $this->customer->id,
             'assigned_to' => $this->employee->id,
             'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value
+            'priority' => OrderPriority::NORMAL->value,
         ]);
     }
 
@@ -51,7 +55,7 @@ class OrderHistoryTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed to in progress - Customer requested urgent processing',
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertInstanceOf(OrderHistory::class, $orderHistory);
@@ -61,7 +65,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Status changed to in progress - Customer requested urgent processing'
+            'comment' => 'Status changed to in progress - Customer requested urgent processing',
         ]);
     }
 
@@ -73,7 +77,7 @@ class OrderHistoryTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         // Test order relationship
@@ -96,7 +100,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::Delivered->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertEquals('status', $orderHistory->field_changed);
@@ -115,7 +119,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::LOW->value,
             'new_value' => OrderPriority::URGENT->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertEquals('priority', $orderHistory->field_changed);
@@ -134,7 +138,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
             // comment is nullable
         ]);
 
@@ -151,7 +155,7 @@ class OrderHistoryTest extends TestCase
 
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         // Test attaching a file
@@ -183,7 +187,7 @@ class OrderHistoryTest extends TestCase
                 'old_value' => $change['from'],
                 'new_value' => $change['to'],
                 'comment' => "Status changed from {$change['from']} to {$change['to']}",
-                'created_by' => $this->employee->id
+                'created_by' => $this->employee->id,
             ]);
         }
 
@@ -210,7 +214,7 @@ class OrderHistoryTest extends TestCase
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::URGENT->value,
             'comment' => 'Priority escalated due to customer request - Customer called and requested urgent processing',
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertEquals(OrderPriority::NORMAL->value, $orderHistory->getRawOriginal('old_value'));
@@ -228,19 +232,19 @@ class OrderHistoryTest extends TestCase
         $history1 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id,
-            'created_at' => now()->subDays(2)
+            'created_at' => now()->subDays(2),
         ]);
 
         $history2 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id,
-            'created_at' => now()->subDay()
+            'created_at' => now()->subDay(),
         ]);
 
         $history3 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id,
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         $histories = OrderHistory::where('order_id', $this->order->id)
@@ -264,19 +268,19 @@ class OrderHistoryTest extends TestCase
         $history1 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $this->employee->id,
-            'comment' => 'Initial assignment'
+            'comment' => 'Initial assignment',
         ]);
 
         $history2 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $admin->id,
-            'comment' => 'Admin review'
+            'comment' => 'Admin review',
         ]);
 
         $history3 = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
             'created_by' => $employee2->id,
-            'comment' => 'Reassigned to another employee'
+            'comment' => 'Reassigned to another employee',
         ]);
 
         // Verify different users created entries
@@ -297,7 +301,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         OrderHistory::factory()->create([
@@ -305,7 +309,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::HIGH->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         OrderHistory::factory()->create([
@@ -313,7 +317,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::InProgress->value,
             'new_value' => OrderStatus::Delivered->value,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         // Filter only status changes
@@ -335,11 +339,11 @@ class OrderHistoryTest extends TestCase
     {
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $this->order->id,
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertIsString($orderHistory->uuid);
-        $this->assertEquals(36, strlen($orderHistory->uuid)); // UUID length with hyphens
+        $this->assertEquals(36, mb_strlen($orderHistory->uuid)); // UUID length with hyphens
         // Laravel uses UUID v7 (ordered UUIDs) by default
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
@@ -394,7 +398,7 @@ class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Custom comment'
+            'comment' => 'Custom comment',
         ]);
 
         $this->assertEquals($this->order->id, $specificHistory->order_id);
@@ -416,7 +420,7 @@ class OrderHistoryTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status change only',
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertEquals('status', $orderHistory->field_changed);
@@ -436,7 +440,7 @@ class OrderHistoryTest extends TestCase
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::HIGH->value,
             'comment' => 'Priority change only',
-            'created_by' => $this->employee->id
+            'created_by' => $this->employee->id,
         ]);
 
         $this->assertEquals('priority', $orderHistory->field_changed);

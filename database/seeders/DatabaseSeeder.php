@@ -1,24 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\Order;
 use App\Models\Attachment;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\OrderHistory;
-use Database\Seeders\CompanySeeder;
-use Database\Seeders\CategorySeeder;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class DatabaseSeeder extends Seeder
+final class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
@@ -230,11 +229,13 @@ class DatabaseSeeder extends Seeder
         $order5->categories()->attach(Category::where('name', 'Otros')->first()->id);
 
         // Create more random orders
-        Order::factory()->count(10)->createQuietly([
-            'assigned_to' => User::factory(),
-        ])->each(function ($order) {
-            $order->categories()->attach(Category::inRandomOrder()->limit(rand(1, 3))->pluck('id'));
-        });
+        Order::factory()
+            ->count(10)
+            ->createQuietly([
+                'assigned_to' => User::factory()->createQuietly()->id,
+            ])->each(function ($order) {
+                $order->categories()->attach(Category::inRandomOrder()->limit(rand(1, 3))->pluck('id'));
+            });
 
         // Create Order History entries
 
@@ -277,7 +278,7 @@ class DatabaseSeeder extends Seeder
             'order_id' => $order1->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => null,
-            'new_value' => (string) $employee1->id,
+            'new_value' => $employee1->id,
             'comment' => 'Assigned to Maria Garcia for immediate attention',
             'created_by' => $admin->id,
             'created_at' => $order1->created_at->addHours(2),
@@ -312,7 +313,7 @@ class DatabaseSeeder extends Seeder
             'order_id' => $order3->id,
             'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
             'old_value' => null,
-            'new_value' => (string) $employee3->id,
+            'new_value' => $employee3->id,
             'comment' => 'Assigned to Ana Rodriguez',
             'created_by' => $admin->id,
             'created_at' => $order3->created_at->addHours(1),

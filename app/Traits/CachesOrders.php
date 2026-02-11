@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
 use App\Models\User;
@@ -11,23 +13,12 @@ use Illuminate\Support\Facades\Cache;
 trait CachesOrders
 {
     /**
-     * The global version cache key for Orders cache namespace.
-     */
-    protected static function versionKey(): string
-    {
-        return 'orders:version';
-    }
-
-    /**
      * Get current global version for Orders cache keys.
      */
     public static function currentVersion(): int
     {
         $key = self::versionKey();
-
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-        }
+        Cache::add($key, 1);
 
         return (int) Cache::get($key, 1);
     }
@@ -40,11 +31,7 @@ trait CachesOrders
     public static function bumpVersion(): int
     {
         $key = self::versionKey();
-
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-            return 1;
-        }
+        Cache::add($key, 0);
 
         return (int) Cache::increment($key);
     }
@@ -68,8 +55,7 @@ trait CachesOrders
     /**
      * Build cache key for listing orders for a user and optional filters.
      *
-     * @param User $user
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public static function indexKeyFor(User $user, array $filters = []): string
     {
@@ -87,10 +73,10 @@ trait CachesOrders
             $roleSlug = 'super_administrator';
         }
 
-        if (!empty($filters)) {
+        if (! empty($filters)) {
             ksort($filters);
         }
-        $filtersPart = !empty($filters) ? ':filters:' . md5(json_encode($filters)) : '';
+        $filtersPart = ! empty($filters) ? ':filters:'.md5(json_encode($filters)) : '';
 
         return "orders:index:v{$version}:role:{$roleSlug}:user:{$user->id}{$filtersPart}";
     }
@@ -103,5 +89,13 @@ trait CachesOrders
         $version = self::currentVersion();
 
         return "orders:show:v{$version}:uuid:{$uuid}";
+    }
+
+    /**
+     * The global version cache key for Orders cache namespace.
+     */
+    protected static function versionKey(): string
+    {
+        return 'orders:version';
     }
 }

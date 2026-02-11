@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\UserRole;
@@ -11,7 +13,7 @@ use Laravel\Pennant\Feature;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-class CatalogControllerTest extends TestCase
+final class CatalogControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -126,10 +128,10 @@ class CatalogControllerTest extends TestCase
             'item_type',
             'item_type_label',
             'components' => [
-                ['key', 'label']
+                ['key', 'label'],
             ],
             'services' => [
-                ['service_key', 'service_name', 'base_price', 'net_price', 'requires_measurement', 'display_order', 'item_type']
+                ['service_key', 'service_name', 'base_price', 'net_price', 'requires_measurement', 'display_order', 'item_type'],
             ],
         ]);
 

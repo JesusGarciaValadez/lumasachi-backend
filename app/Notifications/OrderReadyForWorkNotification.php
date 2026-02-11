@@ -28,12 +28,13 @@ final class OrderReadyForWorkNotification extends Notification implements Should
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your order has been approved and is ready for work')
-            ->greeting('Hello!')
-            ->line('Your work order has been approved and work will begin shortly.')
-            ->line('Order: '.$this->order->uuid)
-            ->line('Status: '.$this->order->status->value)
-            ->salutation('Regards');
+            ->subject(__('notifications.order_ready_for_work.subject'))
+            ->greeting(__('notifications.greeting'))
+            ->line(__('notifications.order_ready_for_work.line'))
+            ->line(__('notifications.order_label', ['uuid' => $this->order->uuid]))
+            ->line(__('notifications.status_label', ['status' => $this->order->status->value]))
+            ->action(__('notifications.view_order'), route('web.orders.show', $this->order))
+            ->salutation(__('notifications.salutation'));
     }
 
     public function toArray(object $notifiable): array

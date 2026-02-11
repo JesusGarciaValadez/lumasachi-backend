@@ -1,28 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Company;
 use App\Enums\UserRole;
+use App\Models\Company;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class UsersControllerTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function authUserWithCompany(?int $companyId = null): User
-    {
-        $user = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-            'company_id' => $companyId,
-            'is_active' => true,
-        ]);
-        $this->actingAs($user);
-        return $user;
-    }
 
     #[Test]
     public function it_returns_employees_of_same_company(): void
@@ -147,5 +138,16 @@ final class UsersControllerTest extends TestCase
         $this->getJson('/api/v1/users/employees')->assertUnauthorized();
         $this->getJson('/api/v1/users/customers')->assertUnauthorized();
     }
-}
 
+    private function authUserWithCompany(?int $companyId = null): User
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $companyId,
+            'is_active' => true,
+        ]);
+        $this->actingAs($user);
+
+        return $user;
+    }
+}

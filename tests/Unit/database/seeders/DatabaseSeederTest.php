@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\seeders;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\User;
+use App\Models\Attachment;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\Attachment;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
-use App\Models\Category;
+use Tests\TestCase;
 
 final class DatabaseSeederTest extends TestCase
 {
@@ -48,7 +50,7 @@ final class DatabaseSeederTest extends TestCase
             'maria.garcia@email.com',
             'carlos.martinez@email.com',
             'ana.rodriguez@email.com',
-            'pedro.sanchez@email.com'
+            'pedro.sanchez@email.com',
         ])->get();
 
         $this->assertEquals(4, $seederEmployees->count());
@@ -187,6 +189,7 @@ final class DatabaseSeederTest extends TestCase
 
     /**
      * Test that orders have categories attached by the seeder.
+     *
      * @SuppressWarnings(PHPMD.CamelCaseMethodName)
      */
     #[Test]
@@ -372,4 +375,3 @@ final class DatabaseSeederTest extends TestCase
         $this->assertGreaterThanOrEqual(2, $reassignments, 'Should have at least 2 reassignment entries');
     }
 }
-

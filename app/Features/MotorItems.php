@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features;
 
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
+use InvalidArgumentException;
 
-class MotorItems
+final class MotorItems
 {
     /**
      * The stored name of the feature.
-     *
-     * @var string
      */
     public string $name = 'motor-items';
 
@@ -27,8 +28,14 @@ class MotorItems
         }
 
         $rollout = Config::get('features.motor-items.rollout_date');
-        if ($rollout && Carbon::parse($rollout)->isPast()) {
-            return true;
+        if ($rollout) {
+            try {
+                if (Carbon::parse($rollout)->isPast()) {
+                    return true;
+                }
+            } catch (InvalidArgumentException) {
+                return false;
+            }
         }
 
         return null; // defer to stored value or resolver
@@ -40,7 +47,7 @@ class MotorItems
     public function resolve(?User $user): mixed
     {
         // Default rollout: enabled for staff (employee/admin/super_admin), disabled for customers / guests
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 

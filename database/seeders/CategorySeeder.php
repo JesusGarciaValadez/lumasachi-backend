@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class CategorySeeder extends Seeder
+final class CategorySeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -17,7 +19,7 @@ class CategorySeeder extends Seeder
         // Get first user to use as creator/updater
         $user = User::first();
 
-        if (!$user) {
+        if (! $user) {
             $user = User::factory()->create();
         }
 

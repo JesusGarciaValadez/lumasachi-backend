@@ -174,7 +174,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::AWAITING_REVIEW);
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         $catalog = $this->createCatalogService('wash_block', 600.00);
 
@@ -192,7 +192,7 @@ final class OrderLifecycleControllerTest extends TestCase
 
         // Order should transition through REVIEWED to AWAITING_CUSTOMER_APPROVAL
         $order->refresh();
-        $this->assertEquals(OrderStatus::AWAITING_CUSTOMER_APPROVAL, $order->status);
+        $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
     }
 
     #[Test]
@@ -200,7 +200,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
             'services' => [],
@@ -218,7 +218,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::AWAITING_CUSTOMER_APPROVAL);
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         $svc = OrderService::factory()->budgeted()->create([
             'order_item_id' => $item->id,
@@ -234,7 +234,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $response->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::READY_FOR_WORK, $order->status);
+        $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
         $this->assertEquals(300.00, (float) $order->motorInfo->down_payment);
     }
 
@@ -243,7 +243,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
             'authorized_service_ids' => [1],
@@ -261,7 +261,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::READY_FOR_WORK);
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         $svc = OrderService::factory()->budgeted()->authorized()->create([
             'order_item_id' => $item->id,
@@ -288,14 +288,14 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::IN_PROGRESS);
+        $order = $this->createOrderInStatus(OrderStatus::InProgress);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
 
         $response->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::READY_FOR_DELIVERY, $order->status);
+        $this->assertEquals(OrderStatus::ReadyForDelivery, $order->status);
     }
 
     // ---------------------------------------------------------------
@@ -307,14 +307,14 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::READY_FOR_DELIVERY);
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
         $response->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::DELIVERED, $order->status);
+        $this->assertEquals(OrderStatus::Delivered, $order->status);
     }
 
     #[Test]
@@ -322,7 +322,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
@@ -367,7 +367,7 @@ final class OrderLifecycleControllerTest extends TestCase
 
         $order = Order::firstWhere('title', 'Full Lifecycle Test');
         $order->refresh();
-        $this->assertEquals(OrderStatus::AWAITING_REVIEW, $order->status);
+        $this->assertEquals(OrderStatus::AwaitingReview, $order->status);
 
         $item = $order->items->first();
 
@@ -384,7 +384,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $budgetResponse->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::AWAITING_CUSTOMER_APPROVAL, $order->status);
+        $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
 
         // Step 3: Customer approval
         $serviceId = $order->services->first()->id;
@@ -395,7 +395,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $approvalResponse->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::READY_FOR_WORK, $order->status);
+        $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
 
         // Step 4: Mark work completed
         $workResponse = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
@@ -408,14 +408,14 @@ final class OrderLifecycleControllerTest extends TestCase
         $readyResponse->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::READY_FOR_DELIVERY, $order->status);
+        $this->assertEquals(OrderStatus::ReadyForDelivery, $order->status);
 
         // Step 6: Deliver
         $deliverResponse = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
         $deliverResponse->assertOk();
 
         $order->refresh();
-        $this->assertEquals(OrderStatus::DELIVERED, $order->status);
+        $this->assertEquals(OrderStatus::Delivered, $order->status);
     }
 
     // ---------------------------------------------------------------
@@ -427,7 +427,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $order = $this->createOrderInStatus(OrderStatus::AWAITING_REVIEW);
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
             'services' => [],
@@ -445,7 +445,7 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::AWAITING_REVIEW);
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         OrderService::factory()->budgeted()->create([
             'order_item_id' => $item->id,

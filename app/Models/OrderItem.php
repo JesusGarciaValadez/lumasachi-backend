@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[ObservedBy([OrderItemObserver::class])]
 /**
  * @mixin IdeHelperOrderItem
  */
+#[ObservedBy([OrderItemObserver::class])]
 final class OrderItem extends Model
 {
     use HasFactory, HasUuids;

@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\User;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\Category;
-use Laravel\Sanctum\Sanctum;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryTrackingTest extends TestCase
+final class OrderHistoryTrackingTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -373,7 +375,7 @@ class OrderHistoryTrackingTest extends TestCase
         ]);
 
         // Filter by status field
-        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=" . OrderHistory::FIELD_STATUS);
+        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=".OrderHistory::FIELD_STATUS);
 
         $response->assertOk();
         $this->assertCount(5, $response->json('data'));

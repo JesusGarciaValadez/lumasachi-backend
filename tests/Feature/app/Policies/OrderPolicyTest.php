@@ -1,16 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Policies;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\UserRole;
 use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\User;
+use App\Enums\UserRole;
 use App\Models\Order;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class OrderPolicyTest extends TestCase
 {

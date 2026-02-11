@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\migrations;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CreateOrderHistoriesTableTest extends TestCase
 {
@@ -175,7 +177,7 @@ final class CreateOrderHistoriesTableTest extends TestCase
 
         // Run the specific migration down
         $this->artisan('migrate:rollback', [
-            '--path' => 'database/migrations/2025_07_27_165842_create_order_histories_table.php'
+            '--path' => 'database/migrations/2025_07_27_165842_create_order_histories_table.php',
         ]);
 
         // Check the table no longer exists

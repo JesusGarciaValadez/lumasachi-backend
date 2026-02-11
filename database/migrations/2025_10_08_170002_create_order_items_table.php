@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\OrderItemType;
 
 return new class extends Migration
 {
@@ -20,12 +21,11 @@ return new class extends Migration
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
 
-            $table->enum('item_type', OrderItemType::getValues());
+            $table->string('item_type');
             $table->boolean('is_received')->default(false);
 
             $table->timestamps();
 
-            $table->index(['order_id', 'item_type']);
             $table->unique(['order_id', 'item_type']);
         });
     }

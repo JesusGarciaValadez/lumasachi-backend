@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\OrderHistory;
-use App\Models\Order;
-use App\Models\User;
 
-class OrderHistoryFactory extends Factory
+final class OrderHistoryFactory extends Factory
 {
     protected $model = OrderHistory::class;
 
-    public function definition()
+    public function definition(): array
     {
         $field = $this->faker->randomElement([
             OrderHistory::FIELD_STATUS,
@@ -36,8 +38,8 @@ class OrderHistoryFactory extends Factory
                 $newValue = $this->faker->randomElement(OrderPriority::cases());
                 break;
             case OrderHistory::FIELD_ASSIGNED_TO:
-                $oldValue = User::factory();
-                $newValue = User::factory();
+                $oldValue = User::factory()->createQuietly()->id;
+                $newValue = User::factory()->createQuietly()->id;
                 break;
             case OrderHistory::FIELD_TITLE:
                 $oldValue = $this->faker->sentence;
@@ -56,7 +58,7 @@ class OrderHistoryFactory extends Factory
         ];
     }
 
-    public function statusChange($oldStatus, $newStatus)
+    public function statusChange(OrderStatus $oldStatus, OrderStatus $newStatus): self
     {
         return $this->state(function (array $attributes) use ($oldStatus, $newStatus) {
             return [
@@ -67,7 +69,7 @@ class OrderHistoryFactory extends Factory
         });
     }
 
-    public function priorityChange($oldPriority, $newPriority)
+    public function priorityChange(OrderPriority $oldPriority, OrderPriority $newPriority): self
     {
         return $this->state(function (array $attributes) use ($oldPriority, $newPriority) {
             return [
@@ -78,13 +80,13 @@ class OrderHistoryFactory extends Factory
         });
     }
 
-    public function assignmentChange($oldAssignee, $newAssignee)
+    public function assignmentChange(User $oldAssignee, User $newAssignee): self
     {
         return $this->state(function (array $attributes) use ($oldAssignee, $newAssignee) {
             return [
                 'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
-                'old_value' => $oldAssignee,
-                'new_value' => $newAssignee,
+                'old_value' => $oldAssignee->id,
+                'new_value' => $newAssignee->id,
             ];
         });
     }

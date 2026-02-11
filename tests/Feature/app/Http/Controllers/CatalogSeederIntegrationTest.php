@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\OrderItemType;
@@ -29,7 +31,7 @@ final class CatalogSeederIntegrationTest extends TestCase
         $this->actingAs($employee);
 
         $response = $this->withHeaders(['Accept-Language' => 'en'])
-            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::EngineBlock->value);
+            ->getJson('/api/v1/catalog/engine-options?item_type='.OrderItemType::EngineBlock->value);
 
         $response->assertOk();
         $service = collect($response->json('services'))
@@ -49,7 +51,7 @@ final class CatalogSeederIntegrationTest extends TestCase
         $this->actingAs($employee);
 
         $response = $this->withHeaders(['Accept-Language' => 'es'])
-            ->getJson('/api/v1/catalog/engine-options?item_type=' . OrderItemType::EngineBlock->value);
+            ->getJson('/api/v1/catalog/engine-options?item_type='.OrderItemType::EngineBlock->value);
 
         $response->assertOk();
         $services = $response->json('services');

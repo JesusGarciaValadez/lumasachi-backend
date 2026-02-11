@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Enums;
 
 use App\Enums\OrderItemType;
@@ -15,7 +17,7 @@ final class OrderItemTypeTest extends TestCase
     public function it_checks_if_all_values_and_labels_are_defined(): void
     {
         $values = array_map(fn ($c) => $c->value, OrderItemType::cases());
-        $this->assertEquals([
+        $this->assertSame([
             'cylinder_head',
             'engine_block',
             'crankshaft',

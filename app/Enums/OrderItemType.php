@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 enum OrderItemType: string
@@ -10,6 +12,9 @@ enum OrderItemType: string
     case ConnectingRods = 'connecting_rods';
     case Others = 'others';
 
+    /**
+     * @return array<string>
+     */
     public static function getValues(): array
     {
         return array_column(self::cases(), 'value');

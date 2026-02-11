@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
 use App\Enums\OrderItemType;
@@ -51,6 +53,6 @@ final class OrderServiceTest extends TestCase
         $this->assertSame(696.00, (float) $service->net_price);
 
         $this->assertNotNull($service->catalogItem);
-        $this->assertEquals($catalog->service_key, $service->catalogItem->service_key);
+        $this->assertSame($catalog->service_key, $service->catalogItem->service_key);
     }
 }

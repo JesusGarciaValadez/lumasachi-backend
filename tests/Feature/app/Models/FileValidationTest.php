@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class FileValidationTest extends TestCase
 {
@@ -149,13 +151,13 @@ final class FileValidationTest extends TestCase
         foreach ($testCases as $testCase) {
             $attachment = Attachment::create([
                 'attachable_type' => Order::class,
-            'attachable_id' => $order->id,
-            'file_name' => $testCase['filename'],
-            'file_path' => 'attachments/' . $testCase['filename'],
-            'file_size' => 1024,
-            'mime_type' => 'application/octet-stream',
-            'uploaded_by' => $user->id
-        ]);
+                'attachable_id' => $order->id,
+                'file_name' => $testCase['filename'],
+                'file_path' => 'attachments/'.$testCase['filename'],
+                'file_size' => 1024,
+                'mime_type' => 'application/octet-stream',
+                'uploaded_by' => $user->id,
+            ]);
 
             $this->assertEquals($testCase['expected'], $attachment->getExtension(),
                 "Failed for filename: {$testCase['filename']}");
@@ -283,7 +285,7 @@ final class FileValidationTest extends TestCase
                 'file_path' => 'attachments/test_file',
                 'file_size' => 1024,
                 'mime_type' => $test['mime'],
-                'uploaded_by' => $user->id
+                'uploaded_by' => $user->id,
             ]);
 
             $this->assertEquals($test['isImage'], $attachment->isImage(),

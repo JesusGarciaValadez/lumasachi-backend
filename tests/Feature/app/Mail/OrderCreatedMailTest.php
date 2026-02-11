@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Mail;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use App\Enums\UserRole;
 use App\Mail\OrderCreatedMail;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderCreatedMailTest extends TestCase
+final class OrderCreatedMailTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -25,7 +27,7 @@ class OrderCreatedMailTest extends TestCase
         // Create a customer user with the CUSTOMER role
         $customer = User::factory()->create([
             'role' => UserRole::CUSTOMER->value,
-            'email' => 'customer@example.com'
+            'email' => 'customer@example.com',
         ]);
         $order = Order::factory()->create(['customer_id' => $customer->id]);
 
@@ -54,7 +56,7 @@ class OrderCreatedMailTest extends TestCase
 
                 // Verify the envelope (subject and recipient)
                 $envelope = $mail->envelope();
-                $this->assertEquals('New Order Created: #' . $order->uuid, $envelope->subject);
+                $this->assertEquals('New Order Created: #'.$order->uuid, $envelope->subject);
 
                 // Verify the mail will be sent to the correct email
                 $this->assertEquals($customer->email, $mail->to[0]['address']);

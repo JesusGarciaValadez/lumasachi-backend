@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Enums\UserRole;
+use App\Enums\UserType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Enums\UserRole;
-use App\Enums\UserType;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
-class UserFactory extends Factory
+final class UserFactory extends Factory
 {
     /**
      * The current password being used by the factory.
@@ -26,12 +28,12 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'uuid' => Str::uuid7(),
+            'uuid' => (string) Str::uuid7(),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => self::$password ??= Hash::make('password'),
             'role' => fake()->randomElement(UserRole::cases()),
             'phone_number' => fake()->phoneNumber(),
             'is_active' => fake()->boolean(),

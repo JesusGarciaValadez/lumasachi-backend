@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Enums;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 use App\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+use ValueError;
 
 final class UserRoleTest extends TestCase
 {
@@ -34,8 +37,8 @@ final class UserRoleTest extends TestCase
             $user = User::create([
                 'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
-                'last_name' => 'User' . $index,
-                'email' => 'test' . $index . '@example.com',
+                'last_name' => 'User'.$index,
+                'email' => 'test'.$index.'@example.com',
                 'password' => bcrypt('password'),
                 'role' => $role,
                 'is_active' => true,
@@ -52,7 +55,7 @@ final class UserRoleTest extends TestCase
     #[Test]
     public function it_checks_if_invalid_role_values_are_rejected(): void
     {
-        $this->expectException(\ValueError::class);
+        $this->expectException(ValueError::class);
 
         User::create([
             'uuid' => Str::uuid7()->toString(),
@@ -210,7 +213,7 @@ final class UserRoleTest extends TestCase
                 'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
                 'last_name' => 'User',
-                'email' => 'test_' . uniqid() . '@example.com',
+                'email' => 'test_'.uniqid().'@example.com',
                 'password' => bcrypt('password'),
                 'role' => $role,
                 'is_active' => true,
@@ -240,8 +243,8 @@ final class UserRoleTest extends TestCase
             User::create([
                 'uuid' => Str::uuid7()->toString(),
                 'first_name' => 'Test',
-                'last_name' => 'User' . $index,
-                'email' => 'user' . $index . '@example.com',
+                'last_name' => 'User'.$index,
+                'email' => 'user'.$index.'@example.com',
                 'password' => bcrypt('password'),
                 'role' => $role->value,
                 'is_active' => true,

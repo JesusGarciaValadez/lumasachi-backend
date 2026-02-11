@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Observers;
 
 use App\Enums\OrderItemType;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\OrderService;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;

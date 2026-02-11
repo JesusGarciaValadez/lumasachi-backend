@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
 use Illuminate\Support\Facades\Cache;
@@ -9,27 +11,19 @@ use Illuminate\Support\Facades\Cache;
  */
 trait CachesCategories
 {
-    protected static function versionKey(): string
-    {
-        return 'categories:version';
-    }
-
     public static function currentVersion(): int
     {
         $key = self::versionKey();
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-        }
+        Cache::add($key, 1);
+
         return (int) Cache::get($key, 1);
     }
 
     public static function bumpVersion(): int
     {
         $key = self::versionKey();
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-            return 1;
-        }
+        Cache::add($key, 0);
+
         return (int) Cache::increment($key);
     }
 
@@ -41,6 +35,12 @@ trait CachesCategories
     public static function indexKeyForCompany(int $companyId): string
     {
         $version = self::currentVersion();
+
         return "categories:index:v{$version}:company:{$companyId}";
+    }
+
+    protected static function versionKey(): string
+    {
+        return 'categories:version';
     }
 }

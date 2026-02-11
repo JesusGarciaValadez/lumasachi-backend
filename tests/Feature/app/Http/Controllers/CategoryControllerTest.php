@@ -1,22 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Laravel\Sanctum\Sanctum;
-use Illuminate\Support\Facades\Cache;
 use App\Enums\UserRole;
-use App\Models\User;
 use App\Models\Category;
 use App\Models\Company;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class CategoryControllerTest extends TestCase
+final class CategoryControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $user;
+
     protected $company;
 
     protected function setUp(): void
@@ -122,7 +125,7 @@ class CategoryControllerTest extends TestCase
                 ['name' => 'Category A', 'description' => 'Description A'],
                 ['name' => 'Category B', 'is_active' => false],
                 ['name' => 'Category C'],
-            ]
+            ],
         ];
 
         $v1 = (int) Cache::get('categories:version', 0);
@@ -151,7 +154,7 @@ class CategoryControllerTest extends TestCase
                 ['name' => ''], // Name cannot be empty
                 ['name' => 'Unique Category'],
                 ['name' => 'Unique Category'], // Name must be unique
-            ]
+            ],
         ];
 
         $response = $this->postJson('/api/v1/categories/bulk', $invalidData);
@@ -160,7 +163,7 @@ class CategoryControllerTest extends TestCase
             ->assertJsonValidationErrors([
                 'categories.0.name',
                 'categories.1.name',
-                'categories.3.name'
+                'categories.3.name',
             ]);
     }
 
@@ -168,7 +171,7 @@ class CategoryControllerTest extends TestCase
     public function it_returns_a_401_error_for_unauthenticated_users_on_bulk_store(): void
     {
         $response = $this->postJson('/api/v1/categories/bulk', [
-            'categories' => [['name' => 'Test']]
+            'categories' => [['name' => 'Test']],
         ]);
         $response->assertStatus(401);
     }
@@ -244,4 +247,3 @@ class CategoryControllerTest extends TestCase
         $response->assertStatus(403);
     }
 }
-

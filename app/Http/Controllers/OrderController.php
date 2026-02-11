@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AssignOrderRequest;
 use App\Http\Requests\CustomerApprovalRequest;
 use App\Http\Requests\DeliverOrderRequest;
+use App\Http\Requests\MarkReadyForDeliveryRequest;
 use App\Http\Requests\MarkWorkCompletedRequest;
 use App\Http\Requests\StoreOrderWithItemsRequest;
 use App\Http\Requests\SubmitBudgetRequest;
@@ -104,7 +105,8 @@ final class OrderController extends Controller
         $order = $this->lifecycleService->customerApproval(
             $order,
             $validated['authorized_service_ids'],
-            $validated['down_payment'] ?? null
+            $validated['down_payment'] ?? null,
+            $request->user()
         );
 
         return response()->json([
@@ -133,7 +135,7 @@ final class OrderController extends Controller
     /**
      * Mark order as ready for delivery.
      */
-    public function markReadyForDelivery(Request $request, Order $order): JsonResponse
+    public function markReadyForDelivery(MarkReadyForDeliveryRequest $request, Order $order): JsonResponse
     {
         $order = $this->lifecycleService->markReadyForDelivery($order, $request->user());
 

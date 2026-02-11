@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'order' => 'Orden',
     'orders' => 'Órdenes',
@@ -18,16 +20,25 @@ return [
     'history' => 'Historial',
 
     'status_labels' => [
+        'Received' => 'Recibida',
+        'Awaiting Review' => 'Esperando revisión',
+        'Reviewed' => 'Revisada',
+        'Awaiting Customer Approval' => 'Esperando aprobación del cliente',
+        'Ready for Work' => 'Lista para trabajo',
         'Open' => 'Abierta',
         'In Progress' => 'En progreso',
-        'Ready for delivery' => 'Lista para entrega',
+        'Ready for Delivery' => 'Lista para entrega',
         'Completed' => 'Completada',
         'Delivered' => 'Entregada',
         'Paid' => 'Pagada',
         'Returned' => 'Devuelta',
-        'Not paid' => 'No pagada',
-        'On hold' => 'En espera',
+        'Not Paid' => 'No pagada',
+        'On Hold' => 'En espera',
         'Cancelled' => 'Cancelada',
+    ],
+
+    'validation' => [
+        'mark_ready_for_delivery_status' => 'La orden debe estar en estado En progreso o Lista para trabajo.',
     ],
 
     'priority_labels' => [

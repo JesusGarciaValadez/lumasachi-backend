@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Tests\TestCase;
-use App\Enums\UserRole;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\User;
-use App\Models\OrderHistory;
-use App\Models\Order;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryApiIntegrationTest extends TestCase
+final class OrderHistoryApiIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -35,7 +37,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Customer requested priority handling',
-            'created_by' => $admin->id
+            'created_by' => $admin->id,
         ]);
 
         // Test 1: GET /api/v1/history (index)
@@ -59,7 +61,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::URGENT->value,
-            'comment' => 'Customer escalation'
+            'comment' => 'Customer escalation',
         ]);
 
         $response->assertStatus(201)
@@ -96,7 +98,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'old_value' => null,
             'new_value' => $employee->id,
             'comment' => 'Assigning to available employee',
-            'created_by' => $admin->id
+            'created_by' => $admin->id,
         ]);
 
         $response = $this->getJson("/api/v1/history/{$orderHistory->uuid}");
@@ -117,12 +119,12 @@ class OrderHistoryApiIntegrationTest extends TestCase
                     'creator' => [
                         'id',
                         'full_name',
-                        'email'
-                    ]
-                ]
+                        'email',
+                    ],
+                ],
             ])
             ->assertJsonPath('data.field_changed', 'assigned_to')
-            ->assertJsonPath('data.description', 'Assigned to set to: ' . $employee->id)
+            ->assertJsonPath('data.description', 'Assigned to set to: '.$employee->id)
             ->assertJsonPath('data.comment', 'Assigning to available employee');
     }
 
@@ -140,12 +142,12 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'uuid' => Str::uuid7()->toString(),
             'customer_id' => $customer->id,
             'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value
+            'priority' => OrderPriority::NORMAL->value,
         ]);
 
         // Update order status (should trigger OrderObserver to create history)
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::Delivered->value
+            'status' => OrderStatus::Delivered->value,
         ]);
 
         $response->assertStatus(200);
@@ -191,7 +193,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $admin->id
+            'created_by' => $admin->id,
         ]);
 
         OrderHistory::factory()->create([
@@ -200,7 +202,7 @@ class OrderHistoryApiIntegrationTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::HIGH->value,
-            'created_by' => $admin->id
+            'created_by' => $admin->id,
         ]);
 
         // Filter by status changes

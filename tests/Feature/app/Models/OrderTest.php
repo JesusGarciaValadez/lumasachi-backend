@@ -1,26 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
+use App\Models\Attachment;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\Attachment;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Factories\Sequence;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
-use App\Models\Category;
+use Tests\TestCase;
 
 /**
-  * @SuppressWarnings(PHPMD.CamelCaseMethodName)
-  */
-class OrderTest extends TestCase
+ * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+ */
+final class OrderTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -147,7 +149,7 @@ class OrderTest extends TestCase
 
         $files = [
             UploadedFile::fake()->create('document1.pdf', 100, 'application/pdf'),
-            UploadedFile::fake()->create('document2.pdf', 200, 'application/pdf')
+            UploadedFile::fake()->create('document2.pdf', 200, 'application/pdf'),
         ];
 
         foreach ($files as $file) {
@@ -356,7 +358,7 @@ class OrderTest extends TestCase
             'notes',
             'created_by',
             'updated_by',
-            'assigned_to'
+            'assigned_to',
         ];
 
         $order = new Order();
@@ -373,7 +375,7 @@ class OrderTest extends TestCase
             OrderPriority::LOW->value,
             OrderPriority::NORMAL->value,
             OrderPriority::HIGH->value,
-            OrderPriority::URGENT->value
+            OrderPriority::URGENT->value,
         ];
 
         foreach ($priorities as $priority) {
@@ -416,7 +418,7 @@ class OrderTest extends TestCase
         $order = Order::factory()->createQuietly([
             'actual_completion' => null,
             'notes' => null,
-            'assigned_to' => User::factory()->create()->id
+            'assigned_to' => User::factory()->create()->id,
         ]);
 
         $this->assertNull($order->actual_completion);

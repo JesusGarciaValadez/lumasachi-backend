@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class MarkWorkCompletedRequest extends FormRequest
 {
@@ -25,12 +26,12 @@ final class MarkWorkCompletedRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator) {
             $order = $this->route('order');
 
-            if ($order && ! in_array($order->status, [OrderStatus::READY_FOR_WORK, OrderStatus::IN_PROGRESS], true)) {
+            if ($order && ! in_array($order->status, [OrderStatus::ReadyForWork, OrderStatus::InProgress], true)) {
                 $validator->errors()->add('status', 'Order must be in Ready for Work or In Progress status.');
             }
         });

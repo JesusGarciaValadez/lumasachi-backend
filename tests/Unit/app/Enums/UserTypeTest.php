@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Enums;
 
 use App\Enums\UserType;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use ValueError;
 
 final class UserTypeTest extends TestCase
 {
@@ -73,7 +76,7 @@ final class UserTypeTest extends TestCase
     #[Test]
     public function it_checks_if_invalid_string_throws_exception(): void
     {
-        $this->expectException(\ValueError::class);
+        $this->expectException(ValueError::class);
         UserType::from('InvalidType');
     }
 
@@ -130,10 +133,10 @@ final class UserTypeTest extends TestCase
             $this->assertNotEmpty($label, "Label for {$type->name} should not be empty");
 
             // Check that label starts with uppercase letter
-            $this->assertMatchesRegularExpression('/^[A-Z]/', $label, "Label should start with uppercase letter");
+            $this->assertMatchesRegularExpression('/^[A-Z]/', $label, 'Label should start with uppercase letter');
 
             // Check that label contains only letters and spaces
-            $this->assertMatchesRegularExpression('/^[A-Za-z\s]+$/', $label, "Label should contain only letters and spaces");
+            $this->assertMatchesRegularExpression('/^[A-Za-z\s]+$/', $label, 'Label should contain only letters and spaces');
         }
     }
 }

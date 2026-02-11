@@ -1,15 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Policies;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\UserRole;
 use App\Enums\UserType;
-use App\Models\Company;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class UserPolicyTest extends TestCase
 {
@@ -137,7 +138,6 @@ final class UserPolicyTest extends TestCase
     }
 
     /**
-     *
      * Test delete user permissions.
      */
     #[Test]
@@ -172,7 +172,6 @@ final class UserPolicyTest extends TestCase
         $this->assertFalse($customer->can('delete', $employee));
         $this->assertFalse($customer->can('delete', $admin));
     }
-
 
     /**
      * Test edge cases with inactive users.

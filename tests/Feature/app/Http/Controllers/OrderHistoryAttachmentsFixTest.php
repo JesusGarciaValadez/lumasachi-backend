@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
+use App\Models\Category;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use App\Enums\OrderStatus;
-use App\Enums\UserRole;
-use App\Models\Order;
-use App\Models\User;
-use App\Models\Category;
 use Laravel\Sanctum\Sanctum;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryAttachmentsFixTest extends TestCase
+final class OrderHistoryAttachmentsFixTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -46,7 +48,7 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         // 1. Make a non-attachment change (status change)
         $resp1 = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::InProgress->value,
-            'categories' => [$category->id] // Update to reflect actual categories being sent
+            'categories' => [$category->id], // Update to reflect actual categories being sent
         ]);
         $resp1->assertOk();
 
@@ -54,14 +56,14 @@ class OrderHistoryAttachmentsFixTest extends TestCase
         $file = UploadedFile::fake()->image('test-image.jpg', 100, 100);
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/attachments", [
             'file' => $file,
-            'name' => 'test-image.jpg'
+            'name' => 'test-image.jpg',
         ]);
         $response->assertCreated();
 
         // 3. Make another non-attachment change
         $resp2 = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'title' => 'Updated Title',
-            'categories' => [$category2->id] // Update to reflect actual categories being sent
+            'categories' => [$category2->id], // Update to reflect actual categories being sent
         ]);
         $resp2->assertOk();
 
