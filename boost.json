@@ -1,0 +1,19 @@
+{
+    "agents": [
+        "junie",
+        "cursor",
+        "claude_code",
+        "codex",
+        "copilot",
+        "opencode",
+        "gemini"
+    ],
+    "guidelines": true,
+    "herd_mcp": false,
+    "mcp": true,
+    "sail": true,
+    "skills": [
+        "pennant-development",
+        "tailwindcss-development"
+    ]
+}
