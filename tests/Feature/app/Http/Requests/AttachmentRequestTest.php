@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Requests;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\WithFaker;
+use App\Http\Requests\AttachmentRequest;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Models\User;
-use App\Models\Order;
-use App\Http\Requests\AttachmentRequest;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionMethod;
+use Tests\TestCase;
 
 final class AttachmentRequestTest extends TestCase
 {
@@ -36,18 +38,7 @@ final class AttachmentRequestTest extends TestCase
     }
 
     /**
-     * Create a validator instance with the request rules.
-     */
-    private function makeValidator($data)
-    {
-        $request = new AttachmentRequest();
-        return Validator::make($data, $request->rules(), $request->messages());
-    }
-
-    /**
      * Test that validation passes with valid data.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_validation_passes_with_valid_data(): void
@@ -67,8 +58,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test that file is required.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_file_is_required(): void
@@ -89,8 +78,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test file size validation.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_file_size_validation(): void
@@ -113,8 +100,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test allowed file types based on configuration.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_allowed_file_types(): void
@@ -133,8 +118,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test that attachable_type is required and must be valid.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_attachable_type_validation(): void
@@ -167,8 +150,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test that attachable_id is required and must be positive integer.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_attachable_id_validation(): void
@@ -201,8 +182,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test optional name and description fields.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_optional_fields_validation(): void
@@ -246,14 +225,12 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test that all configured mime types have corresponding extensions.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_all_mime_types_have_extensions(): void
     {
         $request = new AttachmentRequest();
-        $method = new \ReflectionMethod($request, 'getAllowedExtensions');
+        $method = new ReflectionMethod($request, 'getAllowedExtensions');
         $method->setAccessible(true);
 
         $extensions = $method->invoke($request);
@@ -270,8 +247,6 @@ final class AttachmentRequestTest extends TestCase
 
     /**
      * Test authorization checks create permission.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_authorization_checks_create_permission(): void
@@ -289,5 +264,16 @@ final class AttachmentRequestTest extends TestCase
         // For now, let's just check that authorize method exists
         $this->assertIsBool($request->authorize());
     }
-}
 
+    /**
+     * Create a validator instance with the request rules.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function makeValidator(array $data): \Illuminate\Validation\Validator
+    {
+        $request = new AttachmentRequest();
+
+        return Validator::make($data, $request->rules(), $request->messages());
+    }
+}

@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Http\Controllers;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Enums\UserRole;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
-use App\Models\User;
-use App\Models\OrderHistory;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
 use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class OrderHistoryDescriptionFieldTest extends TestCase
+final class OrderHistoryDescriptionFieldTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -32,27 +34,27 @@ class OrderHistoryDescriptionFieldTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Test show endpoint
-        $response = $this->getJson('/api/v1/history/' . $orderHistory->uuid);
+        $response = $this->getJson('/api/v1/history/'.$orderHistory->uuid);
 
         $response->assertStatus(200)
-                ->assertJsonPath('data.description', 'Status changed from Open to In Progress')
-                ->assertJsonStructure([
-                    'data' => [
-                        'id',
-                        'order_id',
-                        'field_changed',
-                        'old_value',
-                        'new_value',
-                        'comment',
-                        'description',
-                        'created_by',
-                        'created_at'
-                    ]
-                ]);
+            ->assertJsonPath('data.description', 'Status changed from Open to In Progress')
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'order_id',
+                    'field_changed',
+                    'old_value',
+                    'new_value',
+                    'comment',
+                    'description',
+                    'created_by',
+                    'created_at',
+                ],
+            ]);
     }
 
     /**
@@ -72,7 +74,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         OrderHistory::factory()->create([
@@ -80,11 +82,11 @@ class OrderHistoryDescriptionFieldTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::URGENT->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Test index endpoint
-        $response = $this->getJson('/api/v1/orders/' . $order->uuid . '/history');
+        $response = $this->getJson('/api/v1/orders/'.$order->uuid.'/history');
 
         $response->assertStatus(200);
 
@@ -120,27 +122,27 @@ class OrderHistoryDescriptionFieldTest extends TestCase
         $response = $this->postJson('/api/v1/history', $orderHistoryData);
 
         $response->assertStatus(201)
-                ->assertJsonPath('data.description', 'Status changed from Open to Delivered')
-                ->assertJsonStructure([
-                    'data' => [
-                        'id',
-                        'order_id',
-                        'field_changed',
-                        'old_value',
-                        'new_value',
-                        'comment',
-                        'description',
-                        'created_by',
-                        'created_at'
-                    ]
-                ]);
+            ->assertJsonPath('data.description', 'Status changed from Open to Delivered')
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'order_id',
+                    'field_changed',
+                    'old_value',
+                    'new_value',
+                    'comment',
+                    'description',
+                    'created_by',
+                    'created_at',
+                ],
+            ]);
 
         // Verify it was saved to the database
         $this->assertDatabaseHas('order_histories', [
             'order_id' => $order->id,
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::Delivered->value
+            'new_value' => OrderStatus::Delivered->value,
         ]);
     }
 
@@ -160,7 +162,7 @@ class OrderHistoryDescriptionFieldTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Test order history endpoint

@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Company;
 use App\Enums\UserRole;
+use App\Models\Company;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class UserCompanyTest extends TestCase
+final class UserCompanyTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -23,7 +25,7 @@ class UserCompanyTest extends TestCase
         $company = Company::factory()->create([
             'name' => 'Acme Corporation',
             'email' => 'info@acme.com',
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         // Create multiple users with different roles for the company
@@ -31,21 +33,21 @@ class UserCompanyTest extends TestCase
             'company_id' => $company->id,
             'role' => UserRole::ADMINISTRATOR,
             'first_name' => 'John',
-            'last_name' => 'Admin'
+            'last_name' => 'Admin',
         ]);
 
         $employee = User::factory()->create([
             'company_id' => $company->id,
             'role' => UserRole::EMPLOYEE,
             'first_name' => 'Jane',
-            'last_name' => 'Employee'
+            'last_name' => 'Employee',
         ]);
 
         $customer = User::factory()->create([
             'company_id' => $company->id,
             'role' => UserRole::CUSTOMER,
             'first_name' => 'Bob',
-            'last_name' => 'Customer'
+            'last_name' => 'Customer',
         ]);
 
         // Test that all users are associated with the company
@@ -90,13 +92,13 @@ class UserCompanyTest extends TestCase
         // Create active users
         $activeUsers = User::factory()->count(3)->create([
             'company_id' => $company->id,
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         // Create inactive users
         $inactiveUsers = User::factory()->count(2)->create([
             'company_id' => $company->id,
-            'is_active' => false
+            'is_active' => false,
         ]);
 
         // Test total users
@@ -125,21 +127,21 @@ class UserCompanyTest extends TestCase
         // Create multiple companies
         $techCompany = Company::factory()->create([
             'name' => 'Tech Corp',
-            'city' => 'San Francisco'
+            'city' => 'San Francisco',
         ]);
 
         $retailCompany = Company::factory()->create([
             'name' => 'Retail Inc',
-            'city' => 'New York'
+            'city' => 'New York',
         ]);
 
         // Create users for each company
         User::factory()->count(2)->create([
-            'company_id' => $techCompany->id
+            'company_id' => $techCompany->id,
         ]);
 
         User::factory()->count(3)->create([
-            'company_id' => $retailCompany->id
+            'company_id' => $retailCompany->id,
         ]);
 
         // Query users with companies in specific cities
@@ -174,32 +176,32 @@ class UserCompanyTest extends TestCase
         // Create companies with different statuses
         $activeCompany = Company::factory()->create([
             'name' => 'Active Company',
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         $inactiveCompany = Company::factory()->create([
             'name' => 'Inactive Company',
-            'is_active' => false
+            'is_active' => false,
         ]);
 
         // Create administrators for active company
         User::factory()->count(2)->create([
             'company_id' => $activeCompany->id,
             'role' => UserRole::ADMINISTRATOR,
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         // Create employees for active company
         User::factory()->count(3)->create([
             'company_id' => $activeCompany->id,
             'role' => UserRole::EMPLOYEE,
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         // Create users for inactive company
         User::factory()->count(2)->create([
             'company_id' => $inactiveCompany->id,
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         // Query active administrators from active companies
@@ -242,13 +244,13 @@ class UserCompanyTest extends TestCase
     {
         $company = Company::factory()->create([
             'name' => 'Test Company',
-            'email' => 'test@example.com'
+            'email' => 'test@example.com',
         ]);
 
         $user = User::factory()->create([
             'company_id' => $company->id,
             'first_name' => 'Test',
-            'last_name' => 'User'
+            'last_name' => 'User',
         ]);
 
         // Load company relationship

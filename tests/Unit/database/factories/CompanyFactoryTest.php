@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\factories;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Company;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CompanyFactoryTest extends TestCase
 {
@@ -59,7 +61,7 @@ final class CompanyFactoryTest extends TestCase
             'contact_email',
             'contact_phone',
             'notes',
-            'settings'
+            'settings',
         ];
 
         $fieldStats = [];
@@ -111,7 +113,7 @@ final class CompanyFactoryTest extends TestCase
             'contact_email' => 0.8,
             'contact_phone' => 0.8,
             'notes' => 0.5,
-            'settings' => 0.9
+            'settings' => 0.9,
         ];
 
         $sampleSize = 1000;
@@ -185,5 +187,4 @@ final class CompanyFactoryTest extends TestCase
         $this->assertArrayHasKey('date_format', $completeCompany->settings);
         $this->assertArrayHasKey('time_format', $completeCompany->settings);
     }
-
 }

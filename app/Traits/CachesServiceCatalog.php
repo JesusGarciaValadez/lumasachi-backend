@@ -12,27 +12,19 @@ use Illuminate\Support\Facades\Cache;
  */
 trait CachesServiceCatalog
 {
-    protected static function versionKey(): string
-    {
-        return 'service_catalog:version';
-    }
-
     public static function currentVersion(): int
     {
         $key = self::versionKey();
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-        }
+        Cache::add($key, 1);
+
         return (int) Cache::get($key, 1);
     }
 
     public static function bumpVersion(): int
     {
         $key = self::versionKey();
-        if (! Cache::has($key)) {
-            Cache::forever($key, 1);
-            return 1;
-        }
+        Cache::add($key, 0);
+
         return (int) Cache::increment($key);
     }
 
@@ -45,6 +37,12 @@ trait CachesServiceCatalog
     {
         $version = self::currentVersion();
         $type = $itemType?->value ?? 'all';
+
         return "service_catalog:engine_options:v{$version}:locale:{$locale}:type:{$type}";
+    }
+
+    protected static function versionKey(): string
+    {
+        return 'service_catalog:version';
     }
 }

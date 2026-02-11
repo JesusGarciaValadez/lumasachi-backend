@@ -1,25 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
-use Tests\TestCase;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Order;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
-use Database\Factories\OrderFactory;
 use Carbon\CarbonImmutable;
-use PHPUnit\Framework\Attributes\Test;
+use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
+use Tests\TestCase;
 
 /**
-  * @SuppressWarnings(PHPMD.CamelCaseMethodName)
-  */
+ * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+ */
 final class OrderTest extends TestCase
 {
     use RefreshDatabase;
@@ -63,7 +66,7 @@ final class OrderTest extends TestCase
             'notes',
             'created_by',
             'updated_by',
-            'assigned_to'
+            'assigned_to',
         ];
 
         $this->assertEquals($expectedFillable, $fillable);
@@ -166,7 +169,7 @@ final class OrderTest extends TestCase
             'old_value' => OrderStatus::Open,
             'new_value' => OrderStatus::InProgress,
             'comment' => 'Order started',
-            'created_by' => User::factory()->create()->id
+            'created_by' => User::factory()->create()->id,
         ]);
 
         OrderHistory::create([
@@ -175,7 +178,7 @@ final class OrderTest extends TestCase
             'old_value' => OrderStatus::InProgress,
             'new_value' => OrderStatus::ReadyForDelivery,
             'comment' => 'Order ready',
-            'created_by' => User::factory()->create()->id
+            'created_by' => User::factory()->create()->id,
         ]);
 
         $this->assertCount(2, $order->orderHistories);
@@ -257,7 +260,7 @@ final class OrderTest extends TestCase
     {
         $date = now()->addDays(5);
         $order = Order::factory()->createQuietly([
-            'estimated_completion' => $date
+            'estimated_completion' => $date,
         ]);
 
         $this->assertInstanceOf(CarbonImmutable::class, $order->estimated_completion);
@@ -272,7 +275,7 @@ final class OrderTest extends TestCase
     {
         $date = now()->subDays(2);
         $order = Order::factory()->createQuietly([
-            'actual_completion' => $date
+            'actual_completion' => $date,
         ]);
 
         $this->assertInstanceOf(CarbonImmutable::class, $order->actual_completion);
@@ -286,7 +289,7 @@ final class OrderTest extends TestCase
     public function it_checks_if_actual_completion_can_be_null(): void
     {
         $order = Order::factory()->createQuietly([
-            'actual_completion' => null
+            'actual_completion' => null,
         ]);
 
         $this->assertNull($order->actual_completion);
@@ -394,10 +397,10 @@ final class OrderTest extends TestCase
     #[Test]
     public function it_checks_if_all_status_values_are_unique(): void
     {
-        $reflection = new \ReflectionClass(Order::class);
+        $reflection = new ReflectionClass(Order::class);
         $constants = $reflection->getConstants();
 
-        $statusConstants = array_filter($constants, function($key) {
+        $statusConstants = array_filter($constants, function ($key) {
             return str_starts_with($key, 'STATUS_');
         }, ARRAY_FILTER_USE_KEY);
 
@@ -413,10 +416,10 @@ final class OrderTest extends TestCase
     #[Test]
     public function it_checks_if_all_priority_values_are_unique(): void
     {
-        $reflection = new \ReflectionClass(Order::class);
+        $reflection = new ReflectionClass(Order::class);
         $constants = $reflection->getConstants();
 
-        $priorityConstants = array_filter($constants, function($key) {
+        $priorityConstants = array_filter($constants, function ($key) {
             return str_starts_with($key, 'PRIORITY_');
         }, ARRAY_FILTER_USE_KEY);
 

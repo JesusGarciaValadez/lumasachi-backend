@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Observers;
 
 use App\Enums\OrderStatus;
@@ -18,15 +20,6 @@ use Tests\TestCase;
 final class OrderObserversPhase3Test extends TestCase
 {
     use RefreshDatabase;
-
-    private function users(): array
-    {
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
-        $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'is_active' => true]);
-        $super = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'is_active' => true]);
-        return compact('customer', 'employee', 'admin', 'super');
-    }
 
     #[Test]
     public function it_sends_received_notifications_to_customer_and_admins(): void
@@ -116,5 +109,17 @@ final class OrderObserversPhase3Test extends TestCase
         ]);
 
         Notification::assertSentTo($users['admin'], OrderAuditNotification::class);
+    }
+
+    /**
+     * @return array{customer: User, employee: User, admin: User}
+     */
+    private function users(): array
+    {
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value, 'is_active' => true]);
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'is_active' => true]);
+
+        return compact('customer', 'employee', 'admin');
     }
 }

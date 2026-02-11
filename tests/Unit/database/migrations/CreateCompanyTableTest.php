@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\migrations;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CreateCompanyTableTest extends TestCase
 {
@@ -59,4 +61,3 @@ final class CreateCompanyTableTest extends TestCase
         }
     }
 }
-

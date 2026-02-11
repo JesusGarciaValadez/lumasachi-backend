@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Enums;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Enums\OrderPriority;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 use ValueError;
 
 final class OrderPriorityTest extends TestCase
@@ -28,7 +30,7 @@ final class OrderPriorityTest extends TestCase
             'LOW' => 'Low',
             'NORMAL' => 'Normal',
             'HIGH' => 'High',
-            'URGENT' => 'Urgent'
+            'URGENT' => 'Urgent',
         ];
 
         foreach ($priorities as $priority) {
@@ -83,12 +85,12 @@ final class OrderPriorityTest extends TestCase
         foreach (OrderPriority::cases() as $priority) {
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Test Order with ' . $priority->value . ' priority',
-                'description' => 'Testing priority: ' . $priority->value,
+                'title' => 'Test Order with '.$priority->value.' priority',
+                'description' => 'Testing priority: '.$priority->value,
                 'status' => 'Open',
                 'priority' => $priority,
                 'created_by' => $user->id,
-                'assigned_to' => $user->id
+                'assigned_to' => $user->id,
             ]);
 
             $this->assertNotNull($order);
@@ -97,7 +99,7 @@ final class OrderPriorityTest extends TestCase
             // Verify it's stored correctly in the database
             $this->assertDatabaseHas('orders', [
                 'id' => $order->id,
-                'priority' => $priority->value
+                'priority' => $priority->value,
             ]);
         }
     }
@@ -119,7 +121,7 @@ final class OrderPriorityTest extends TestCase
             'status' => 'Open',
             'priority' => 'InvalidPriority', // This should fail
             'created_by' => $user->id,
-            'assigned_to' => $user->id
+            'assigned_to' => $user->id,
         ]);
     }
 
@@ -187,7 +189,7 @@ final class OrderPriorityTest extends TestCase
             'status' => 'Open',
             'priority' => OrderPriority::HIGH,
             'created_by' => $user->id,
-            'assigned_to' => $user->id
+            'assigned_to' => $user->id,
         ]);
 
         $jsonData = $order->toJson();
@@ -208,7 +210,7 @@ final class OrderPriorityTest extends TestCase
         foreach (OrderPriority::cases() as $priority) {
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Order with ' . $priority->value,
+                'title' => 'Order with '.$priority->value,
                 'description' => 'Testing enum value assignment',
                 'status' => 'Open',
                 'priority' => $priority,

@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\database\factories;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\OrderHistory;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class OrderHistoryFactoryTest extends TestCase
 {
@@ -60,7 +62,7 @@ final class OrderHistoryFactoryTest extends TestCase
             'estimated_completion',
             'actual_completion',
             'notes',
-            'categories'
+            'categories',
         ];
 
         $orderHistory = OrderHistory::factory()->make();
@@ -80,7 +82,7 @@ final class OrderHistoryFactoryTest extends TestCase
             $orderHistory = OrderHistory::factory()->make();
 
             if ($orderHistory->field_changed === 'status') {
-                $validStatuses = array_map(fn($status) => $status->value, OrderStatus::cases());
+                $validStatuses = array_map(fn ($status) => $status->value, OrderStatus::cases());
                 // Handle the case where getter returns enum instance
                 $oldValue = $orderHistory->old_value instanceof OrderStatus ? $orderHistory->old_value->value : $orderHistory->old_value;
                 $newValue = $orderHistory->new_value instanceof OrderStatus ? $orderHistory->new_value->value : $orderHistory->new_value;
@@ -89,7 +91,7 @@ final class OrderHistoryFactoryTest extends TestCase
                 }
                 $this->assertContains($newValue, $validStatuses);
             } elseif ($orderHistory->field_changed === 'priority') {
-                $validPriorities = array_map(fn($priority) => $priority->value, OrderPriority::cases());
+                $validPriorities = array_map(fn ($priority) => $priority->value, OrderPriority::cases());
                 // Handle the case where getter returns enum instance
                 $oldValue = $orderHistory->old_value instanceof OrderPriority ? $orderHistory->old_value->value : $orderHistory->old_value;
                 $newValue = $orderHistory->new_value instanceof OrderPriority ? $orderHistory->new_value->value : $orderHistory->new_value;
@@ -176,7 +178,7 @@ final class OrderHistoryFactoryTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'created_by' => $customer->id
+            'created_by' => $customer->id,
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
@@ -236,12 +238,12 @@ final class OrderHistoryFactoryTest extends TestCase
             'estimated_completion',
             'actual_completion',
             'notes',
-            'categories'
+            'categories',
         ]);
 
         // If comment exists, it should be meaningful
         if ($orderHistory->comment !== null) {
-            $this->assertGreaterThan(10, strlen($orderHistory->comment));
+            $this->assertGreaterThan(10, mb_strlen($orderHistory->comment));
         }
     }
 
@@ -255,12 +257,12 @@ final class OrderHistoryFactoryTest extends TestCase
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'created_by' => $customer->id
+            'created_by' => $customer->id,
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
             'order_id' => $order->id,
-            'created_by' => $employee->id
+            'created_by' => $employee->id,
         ]);
 
         // Test order relationship
@@ -318,7 +320,7 @@ final class OrderHistoryFactoryTest extends TestCase
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'created_by' => $customer->id,
-            'status' => OrderStatus::Open->value
+            'status' => OrderStatus::Open->value,
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
@@ -326,7 +328,7 @@ final class OrderHistoryFactoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Order processing started'
+            'comment' => 'Order processing started',
         ]);
 
         $this->assertEquals('status', $orderHistory->field_changed);
@@ -344,7 +346,7 @@ final class OrderHistoryFactoryTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'created_by' => $customer->id
+            'created_by' => $customer->id,
         ]);
 
         $orderHistory = OrderHistory::factory()->create([
@@ -352,7 +354,7 @@ final class OrderHistoryFactoryTest extends TestCase
             'field_changed' => 'priority',
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::URGENT->value,
-            'comment' => 'Priority escalated to urgent'
+            'comment' => 'Priority escalated to urgent',
         ]);
 
         $this->assertEquals('priority', $orderHistory->field_changed);
@@ -369,7 +371,7 @@ final class OrderHistoryFactoryTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
-            'created_by' => $customer->id
+            'created_by' => $customer->id,
         ]);
 
         $histories = OrderHistory::factory()

@@ -1,20 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\migrations;
 
+use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
-use App\Models\Order;
-use App\Models\Category;
-use App\Models\User;
-use App\Enums\UserRole;
 use PHPUnit\Framework\Attributes\Test;
-
-use function PHPSTORM_META\map;
+use Tests\TestCase;
 
 final class CreateOrdersTableTest extends TestCase
 {
@@ -140,7 +139,7 @@ final class CreateOrdersTableTest extends TestCase
         $indexes = [
             'orders_status_priority_index',
             'orders_created_by_status_index',
-            'orders_assigned_to_status_index'
+            'orders_assigned_to_status_index',
         ];
 
         foreach ($indexes as $index) {
@@ -209,7 +208,7 @@ final class CreateOrdersTableTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'title' => 'Test Order',
-            'description' => 'This is a test order.'
+            'description' => 'This is a test order.',
         ]);
     }
 
@@ -281,7 +280,7 @@ final class CreateOrdersTableTest extends TestCase
                 Order::factory()->createQuietly($data);
 
                 $this->fail("Field '{$field}' should not accept null values");
-            } catch (\Illuminate\Database\QueryException $e) {
+            } catch (QueryException $e) {
                 // Expected exception for null constraint violation
                 $this->assertTrue(true);
             }
@@ -306,7 +305,7 @@ final class CreateOrdersTableTest extends TestCase
             'priority' => OrderPriority::HIGH->value,
             'created_by' => $employee->id,
             'updated_by' => $employee->id,
-            'assigned_to' => $employee->id
+            'assigned_to' => $employee->id,
         ]);
 
         $this->assertEquals($customer->id, $order->customer_id);
@@ -323,7 +322,7 @@ final class CreateOrdersTableTest extends TestCase
             'description' => 'This should fail',
             'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value,
-            'created_by' => $employee->id
+            'created_by' => $employee->id,
         ]);
     }
 
@@ -339,8 +338,8 @@ final class CreateOrdersTableTest extends TestCase
         foreach ($statuses as $status) {
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Status Test: ' . $status,
-                'description' => 'Testing status value: ' . $status,
+                'title' => 'Status Test: '.$status,
+                'description' => 'Testing status value: '.$status,
                 'status' => $status,
                 'priority' => OrderPriority::NORMAL->value,
                 'created_by' => $user->id,
@@ -348,8 +347,8 @@ final class CreateOrdersTableTest extends TestCase
             ]);
 
             $this->assertDatabaseHas('orders', [
-                'title' => 'Status Test: ' . $status,
-                'status' => $status
+                'title' => 'Status Test: '.$status,
+                'status' => $status,
             ]);
         }
     }
@@ -366,8 +365,8 @@ final class CreateOrdersTableTest extends TestCase
         foreach ($priorities as $priority) {
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Priority Test: ' . $priority,
-                'description' => 'Testing priority value: ' . $priority,
+                'title' => 'Priority Test: '.$priority,
+                'description' => 'Testing priority value: '.$priority,
                 'status' => OrderStatus::Open->value,
                 'priority' => $priority,
                 'created_by' => $user->id,
@@ -375,8 +374,8 @@ final class CreateOrdersTableTest extends TestCase
             ]);
 
             $this->assertDatabaseHas('orders', [
-                'title' => 'Priority Test: ' . $priority,
-                'priority' => $priority
+                'title' => 'Priority Test: '.$priority,
+                'priority' => $priority,
             ]);
         }
     }
@@ -416,10 +415,10 @@ final class CreateOrdersTableTest extends TestCase
     public function it_checks_if_foreign_key_behaviors(): void
     {
         $customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
         $employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value
+            'role' => UserRole::EMPLOYEE->value,
         ]);
 
         $order = Order::factory()->createQuietly([
@@ -429,7 +428,7 @@ final class CreateOrdersTableTest extends TestCase
             'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value,
             'created_by' => $employee->id,
-            'assigned_to' => $employee->id
+            'assigned_to' => $employee->id,
         ]);
 
         // The migration specifies nullOnDelete for customer_id
@@ -441,4 +440,3 @@ final class CreateOrdersTableTest extends TestCase
         $this->assertEquals($employee->id, $order->createdBy->id);
     }
 }
-

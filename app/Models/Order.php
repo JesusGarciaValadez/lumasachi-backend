@@ -1,26 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use App\Models\User;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Model;
-use App\Enums\UserRole;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
-use App\Models\Attachment;
-use App\Models\OrderHistory;
+use App\Enums\UserRole;
 use App\Observers\OrderObserver;
 use App\Traits\HasAttachments;
 use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @mixin IdeHelperOrder
@@ -28,7 +27,7 @@ use Database\Factories\OrderFactory;
 #[ObservedBy([OrderObserver::class])]
 final class Order extends Model
 {
-    use HasFactory, HasUuids, HasAttachments;
+    use HasAttachments, HasFactory, HasUuids;
 
     /**
      * The primary key associated with the table.
@@ -74,7 +73,7 @@ final class Order extends Model
         'notes',
         'created_by',
         'updated_by',
-        'assigned_to'
+        'assigned_to',
     ];
 
     /**
@@ -92,8 +91,6 @@ final class Order extends Model
 
     /**
      * Get the columns that should receive a unique identifier.
-     *
-     * @return array
      */
     public function uniqueIds(): array
     {
@@ -153,32 +150,29 @@ final class Order extends Model
      */
     public function recalculateTotals(): void
     {
-        // Sum of completed services' net price
-        $total = (float) $this->services()
-            ->where('is_completed', true)
-            ->sum('net_price');
+        $services = $this->relationLoaded('services')
+            ? $this->services
+            : $this->services()->get(['net_price', 'is_completed']);
 
-        $info = $this->motorInfo()->first();
-        if (! $info) {
-            // Create a motor info record if not exists
-            $info = $this->motorInfo()->create([
-                'down_payment' => 0,
-                'total_cost' => $total,
-                'is_fully_paid' => false,
-            ]);
-        } else {
-            $info->total_cost = $total;
+        $total = (float) $services
+            ->where('is_completed', true)
+            ->sum(fn ($service) => (float) $service->net_price);
+
+        $info = $this->motorInfo()->firstOrNew();
+
+        if (! $info->exists && $info->down_payment === null) {
+            $info->down_payment = 0;
         }
 
-        // Determine if fully paid
-        $info->is_fully_paid = (float) $info->down_payment >= $total;
+        $info->total_cost = $total;
+        $info->is_fully_paid = bccomp((string) ($info->down_payment ?? 0), (string) $total, 2) >= 0;
         $info->save();
     }
 
     /**
      * Create a new factory instance for the model.
      *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
+     * @return Factory<static>
      */
     protected static function newFactory(): Factory
     {

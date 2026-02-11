@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\migrations;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
 use App\Models\Attachment;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CreateAttachmentsTableTest extends TestCase
 {
@@ -150,12 +152,12 @@ final class CreateAttachmentsTableTest extends TestCase
             'file_path' => 'attachments/test.pdf',
             'file_size' => 1024,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $user->id
+            'uploaded_by' => $user->id,
         ]);
 
         $this->assertDatabaseHas('attachments', [
             'file_name' => 'test.pdf',
-            'uploaded_by' => $user->id
+            'uploaded_by' => $user->id,
         ]);
 
         // Test that we cannot create attachment with non-existent user
@@ -168,7 +170,7 @@ final class CreateAttachmentsTableTest extends TestCase
             'file_path' => 'attachments/test2.pdf',
             'file_size' => 1024,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => 99999 // Non-existent user ID
+            'uploaded_by' => 99999, // Non-existent user ID
         ]);
     }
 
@@ -189,7 +191,7 @@ final class CreateAttachmentsTableTest extends TestCase
             'file_path' => 'attachments/cascade_test.pdf',
             'file_size' => 1024,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $user->id
+            'uploaded_by' => $user->id,
         ]);
 
         // Update user ID (this is just to test the constraint, normally IDs don't change)
@@ -216,7 +218,7 @@ final class CreateAttachmentsTableTest extends TestCase
             'file_path' => 'invoices/2024/01/invoice_2024_001.pdf',
             'file_size' => 2048576, // 2MB
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $user->id
+            'uploaded_by' => $user->id,
         ]);
 
         $this->assertInstanceOf(Attachment::class, $attachment);
@@ -242,7 +244,7 @@ final class CreateAttachmentsTableTest extends TestCase
             'file_path',
             'file_size',
             'mime_type',
-            'uploaded_by'
+            'uploaded_by',
         ];
 
         foreach ($requiredFields as $field) {
@@ -254,7 +256,7 @@ final class CreateAttachmentsTableTest extends TestCase
                     'file_path' => 'test/test.pdf',
                     'file_size' => 1024,
                     'mime_type' => 'application/pdf',
-                    'uploaded_by' => $user->id
+                    'uploaded_by' => $user->id,
                 ];
 
                 // Set the current field to null
@@ -270,4 +272,3 @@ final class CreateAttachmentsTableTest extends TestCase
         }
     }
 }
-

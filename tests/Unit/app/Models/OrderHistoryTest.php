@@ -1,20 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
-use Tests\TestCase;
-use Database\Factories\OrderHistoryFactory;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\OrderHistory;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\User;
+use Database\Factories\OrderHistoryFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use PHPUnit\Framework\Attributes\Test;
-use Illuminate\Support\Facades\Mail;
+use Tests\TestCase;
 
 final class OrderHistoryTest extends TestCase
 {
@@ -22,8 +22,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory uses required traits
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_uses_required_traits(): void
@@ -37,8 +35,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory has correct fillable attributes
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_has_correct_fillable_attributes(): void
@@ -52,7 +48,7 @@ final class OrderHistoryTest extends TestCase
             'old_value',
             'new_value',
             'comment',
-            'created_by'
+            'created_by',
         ];
 
         $this->assertEquals($expected, $orderHistory->getFillable());
@@ -60,8 +56,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory has correct casts
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_has_correct_casts(): void
@@ -76,8 +70,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory belongs to Order
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_belongs_to_order(): void
@@ -92,8 +84,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory belongs to User as createdBy
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_belongs_to_user_as_created_by(): void
@@ -108,8 +98,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory can be created with factory
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_can_be_created_with_factory(): void
@@ -121,21 +109,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory field tracking works correctly
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_field_tracking_works_correctly(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Create order history for status change
@@ -145,7 +131,7 @@ final class OrderHistoryTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed to in progress',
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $this->assertEquals('status', $statusHistory->field_changed);
@@ -164,7 +150,7 @@ final class OrderHistoryTest extends TestCase
             'old_value' => OrderPriority::NORMAL->value,
             'new_value' => OrderPriority::HIGH->value,
             'comment' => 'Priority increased',
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $this->assertEquals('priority', $priorityHistory->field_changed);
@@ -179,21 +165,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory can have null values
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_can_have_null_values(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Create order history with null old_value (for initial creation)
@@ -203,7 +187,7 @@ final class OrderHistoryTest extends TestCase
             'old_value' => null,
             'new_value' => OrderStatus::Open->value,
             'comment' => 'Initial order creation',
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $this->assertNull($orderHistory->old_value);
@@ -216,21 +200,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory can be created through mass assignment
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_can_be_created_through_mass_assignment(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $data = [
@@ -239,7 +221,7 @@ final class OrderHistoryTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Order status updated - Customer requested urgent delivery',
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ];
 
         $orderHistory = OrderHistory::create($data);
@@ -252,21 +234,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory comment field is nullable
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_comment_field_is_nullable(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Create order history without comment
@@ -275,7 +255,7 @@ final class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $this->assertNull($orderHistory->comment);
@@ -283,21 +263,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory generates UUID
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_generates_uuid(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $orderHistory = OrderHistory::create([
@@ -305,7 +283,7 @@ final class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $this->assertNotNull($orderHistory->uuid);
@@ -317,8 +295,6 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory has correct table name
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_has_correct_table_name(): void
@@ -330,26 +306,24 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory relationships load correctly
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_relationships_load_correctly(): void
     {
         // Create users
         $customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         $employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value
+            'role' => UserRole::EMPLOYEE->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'created_by' => $customer->id,
-            'assigned_to' => $employee->id
+            'assigned_to' => $employee->id,
         ]);
 
         // Create order history
@@ -359,7 +333,7 @@ final class OrderHistoryTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Employee started working on order',
-            'created_by' => $employee->id
+            'created_by' => $employee->id,
         ]);
 
         // Load relationships
@@ -371,21 +345,19 @@ final class OrderHistoryTest extends TestCase
 
     /**
      * Test that OrderHistory cascades on order delete
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_order_history_cascades_on_order_delete(): void
     {
         // Create a user with customer role
         $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value
+            'role' => UserRole::CUSTOMER->value,
         ]);
 
         // Create an order
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         // Create order history
@@ -394,7 +366,7 @@ final class OrderHistoryTest extends TestCase
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id
+            'created_by' => $user->id,
         ]);
 
         $orderHistoryId = $orderHistory->id;

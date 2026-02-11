@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use App\Models\Company;
 use Faker\Factory as Faker;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class CompanySeeder extends Seeder
+final class CompanySeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -106,4 +108,3 @@ class CompanySeeder extends Seeder
         }
     }
 }
-

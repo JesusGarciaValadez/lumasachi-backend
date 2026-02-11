@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
-use App\Models\OrderHistory;
+use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class GenericOrderHistoryTest extends TestCase
+final class GenericOrderHistoryTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -225,7 +227,7 @@ class GenericOrderHistoryTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $expectedDescription = 'Estimated completion set to: ' . $date->format('Y-m-d H:i');
+        $expectedDescription = 'Estimated completion set to: '.$date->format('Y-m-d H:i');
         $this->assertEquals($expectedDescription, $history->description);
     }
 
@@ -318,7 +320,7 @@ class GenericOrderHistoryTest extends TestCase
 
         // Test status change state
         $statusHistory = OrderHistory::factory()
-            ->statusChange(OrderStatus::Open->value, OrderStatus::Delivered->value)
+            ->statusChange(OrderStatus::Open, OrderStatus::Delivered)
             ->create(['order_id' => $order->id]);
 
         $this->assertEquals(OrderHistory::FIELD_STATUS, $statusHistory->field_changed);
@@ -327,7 +329,7 @@ class GenericOrderHistoryTest extends TestCase
 
         // Test priority change state
         $priorityHistory = OrderHistory::factory()
-            ->priorityChange(OrderPriority::LOW->value, OrderPriority::HIGH->value)
+            ->priorityChange(OrderPriority::LOW, OrderPriority::HIGH)
             ->create(['order_id' => $order->id]);
 
         $this->assertEquals(OrderHistory::FIELD_PRIORITY, $priorityHistory->field_changed);
@@ -335,12 +337,15 @@ class GenericOrderHistoryTest extends TestCase
         $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
 
         // Test assignment change state
+        $oldAssignee = User::factory()->createQuietly();
+        $newAssignee = User::factory()->createQuietly();
+
         $assignmentHistory = OrderHistory::factory()
-            ->assignmentChange(null, 123)
+            ->assignmentChange($oldAssignee, $newAssignee)
             ->create(['order_id' => $order->id]);
 
         $this->assertEquals(OrderHistory::FIELD_ASSIGNED_TO, $assignmentHistory->field_changed);
-        $this->assertNull($assignmentHistory->old_value);
-        $this->assertNotNull($assignmentHistory->new_value);
+        $this->assertEquals($oldAssignee->id, $assignmentHistory->getRawOriginal('old_value'));
+        $this->assertEquals($newAssignee->id, $assignmentHistory->getRawOriginal('new_value'));
     }
 }

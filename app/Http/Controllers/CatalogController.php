@@ -1,14 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Enums\OrderItemType;
-use App\Enums\UserRole;
 use App\Features\MotorItems;
+use App\Http\Requests\CatalogRequest;
 use App\Models\ServiceCatalog;
 use App\Traits\CachesServiceCatalog;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Pennant\Feature;
@@ -17,28 +18,21 @@ final class CatalogController extends Controller
 {
     use CachesServiceCatalog;
 
-    public function index(Request $request): JsonResponse
+    public function index(CatalogRequest $request): JsonResponse
     {
         // Feature flag check
         if (! Feature::active(MotorItems::class)) {
             abort(404);
         }
 
-        // Authz: Employees/Admins/SuperAdmins only
-        $user = $request->user();
-        if (! $user || $user->role === UserRole::CUSTOMER) {
-            abort(403);
-        }
-
-        // Locale from header
-        $locale = $request->header('Accept-Language', config('app.locale', 'en'));
+        // Prefer validated inputs from FormRequest, fallback to headers/config
+        $validated = $request->validated();
+        $locale = $validated['locale'] ?? $request->header('Accept-Language') ?? config('app.locale', 'en');
         App::setLocale($locale);
 
-        $itemTypeParam = $request->query('item_type');
+        $itemTypeParam = $validated['item_type'] ?? null;
         if ($itemTypeParam) {
-            // Validate item type
-            $type = collect(OrderItemType::cases())
-                ->first(fn ($c) => $c->value === $itemTypeParam);
+            $type = OrderItemType::tryFrom($itemTypeParam);
             if (! $type) {
                 return response()->json(['message' => 'Invalid item_type'], 422);
             }
@@ -46,33 +40,11 @@ final class CatalogController extends Controller
             $key = self::engineOptionsKey($locale, $type);
             $hit = Cache::has($key);
             $payload = Cache::remember($key, now()->addSeconds(self::ttlEngineOptions()), function () use ($type) {
-                $components = array_map(fn ($key) => [
-                    'key' => $key,
-                    'label' => $this->componentLabel($type, $key),
-                ], $type->getComponents());
-
-                $services = ServiceCatalog::query()
-                    ->active()
-                    ->forItemType($type)
-                    ->orderBy('display_order')
-                    ->get()
-                    ->map(fn (ServiceCatalog $s) => [
-                        'service_key' => $s->service_key,
-                        'service_name' => $s->service_name,
-                        'base_price' => number_format((float)$s->base_price, 2, '.', ''),
-                        'net_price' => number_format((float)$s->net_price, 2, '.', ''),
-                        'requires_measurement' => (bool) $s->requires_measurement,
-                        'display_order' => (int) $s->display_order,
-                        'item_type' => $s->item_type->value,
-                    ])
-                    ->values()
-                    ->all();
-
                 return [
                     'item_type' => $type->value,
                     'item_type_label' => $this->itemTypeLabel($type),
-                    'components' => $components,
-                    'services' => $services,
+                    'components' => $this->mapComponentsForItemType($type),
+                    'services' => $this->mapServicesForItemType($type),
                 ];
             });
 
@@ -93,25 +65,8 @@ final class CatalogController extends Controller
             $servicesByType = [];
 
             foreach ($types as $t) {
-                $componentsByType[$t->value] = array_map(fn ($key) => [
-                    'key' => $key,
-                    'label' => $this->componentLabel($t, $key),
-                ], $t->getComponents());
-
-                $servicesByType[$t->value] = ServiceCatalog::query()
-                    ->active()
-                    ->forItemType($t)
-                    ->orderBy('display_order')
-                    ->get()
-                    ->map(fn (ServiceCatalog $s) => [
-                        'service_key' => $s->service_key,
-                        'service_name' => $s->service_name,
-                        'base_price' => number_format((float)$s->base_price, 2, '.', ''),
-                        'net_price' => number_format((float)$s->net_price, 2, '.', ''),
-                        'requires_measurement' => (bool) $s->requires_measurement,
-                        'display_order' => (int) $s->display_order,
-                        'item_type' => $s->item_type->value,
-                    ])->all();
+                $componentsByType[$t->value] = $this->mapComponentsForItemType($t);
+                $servicesByType[$t->value] = $this->mapServicesForItemType($t);
             }
 
             return [
@@ -124,10 +79,45 @@ final class CatalogController extends Controller
         return response()->json($payload)->header('X-Cache', $hit ? 'HIT' : 'MISS');
     }
 
+    /**
+     * @return array<int, array{service_key: string, service_name: string, base_price: string, net_price: string, requires_measurement: bool, display_order: int, item_type: string}>
+     */
+    private function mapServicesForItemType(OrderItemType $type): array
+    {
+        return ServiceCatalog::query()
+            ->active()
+            ->forItemType($type)
+            ->orderBy('display_order')
+            ->get()
+            ->map(fn (ServiceCatalog $s) => [
+                'service_key' => $s->service_key,
+                'service_name' => $s->service_name,
+                'base_price' => number_format((float) $s->base_price, 2, '.', ''),
+                'net_price' => number_format((float) $s->net_price, 2, '.', ''),
+                'requires_measurement' => (bool) $s->requires_measurement,
+                'display_order' => (int) $s->display_order,
+                'item_type' => $s->item_type->value,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    private function mapComponentsForItemType(OrderItemType $type): array
+    {
+        return array_map(fn ($key) => [
+            'key' => $key,
+            'label' => $this->componentLabel($type, $key),
+        ], $type->getComponents());
+    }
+
     private function itemTypeLabel(OrderItemType $type): string
     {
         $key = "motor.item_types.{$type->value}";
         $translated = __($key);
+
         return is_string($translated) && $translated !== $key ? $translated : $type->label();
     }
 
@@ -135,6 +125,7 @@ final class CatalogController extends Controller
     {
         $key = "motor.components.{$type->value}.{$componentKey}";
         $translated = __($key);
+
         return is_string($translated) && $translated !== $key ? $translated : ucfirst(str_replace('_', ' ', $componentKey));
     }
 }

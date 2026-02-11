@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
 use App\Enums\OrderItemType;
@@ -41,7 +43,7 @@ final class ServiceCatalogTest extends TestCase
 
         $records = ServiceCatalog::active()->forItemType(OrderItemType::EngineBlock)->get();
         $this->assertCount(1, $records);
-        $this->assertEquals('wash_block_active', $records->first()->service_key);
+        $this->assertSame('wash_block_active', $records->first()->service_key);
 
         // Net price calculation (IVA 16%)
         $this->assertSame(696.00, $records->first()->net_price);

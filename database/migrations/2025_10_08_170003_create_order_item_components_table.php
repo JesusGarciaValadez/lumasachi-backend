@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -22,7 +24,6 @@ return new class extends Migration
             $table->boolean('is_received')->default(false);
             $table->timestamps();
 
-            $table->index('order_item_id');
             $table->unique(['order_item_id', 'component_name']);
         });
     }

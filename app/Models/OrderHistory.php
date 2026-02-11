@@ -45,9 +45,13 @@ final class OrderHistory extends Model
 
     // Extended fields for item/service tracking
     public const FIELD_ITEM_RECEIVED = 'item_received';
+
     public const FIELD_ITEM_COMPONENT_RECEIVED = 'item_component_received';
+
     public const FIELD_SERVICE_BUDGETED = 'service_budgeted';
+
     public const FIELD_SERVICE_AUTHORIZED = 'service_authorized';
+
     public const FIELD_SERVICE_COMPLETED = 'service_completed';
 
     /**
@@ -153,18 +157,28 @@ final class OrderHistory extends Model
         $newValue = $this->getFormattedValue($this->field_changed, $this->new_value);
 
         if ($this->field_changed === self::FIELD_CATEGORIES) {
-            $oldCategoryNames = $this->getCategoryNames($this->old_value);
-            $newCategoryNames = $this->getCategoryNames($this->new_value);
+            // Normalize to ID arrays for accurate comparison, then resolve names for messages
+            $oldIds = is_null($this->old_value) ? [] : (is_string($this->old_value) ? json_decode($this->old_value, true) : (array) $this->old_value);
+            $newIds = is_null($this->new_value) ? [] : (is_string($this->new_value) ? json_decode($this->new_value, true) : (array) $this->new_value);
+            $oldIds = array_values(array_map('intval', (array) $oldIds));
+            $newIds = array_values(array_map('intval', (array) $newIds));
+            sort($oldIds);
+            sort($newIds);
 
-            if ($oldCategoryNames === $newCategoryNames) {
+            if ($oldIds === $newIds) {
                 return 'Categories unchanged';
             }
-            if (empty($oldCategoryNames)) {
+
+            $oldCategoryNames = $this->getCategoryNames(json_encode($oldIds));
+            $newCategoryNames = $this->getCategoryNames(json_encode($newIds));
+
+            if (empty($oldIds)) {
                 return 'Categories added: '.implode(', ', $newCategoryNames);
             }
-            if (empty($newCategoryNames)) {
+            if (empty($newIds)) {
                 return 'Categories removed (was: '.implode(', ', $oldCategoryNames).')';
             }
+
             $added = array_values(array_diff($newCategoryNames, $oldCategoryNames));
             $removed = array_values(array_diff($oldCategoryNames, $newCategoryNames));
             $changes = [];
@@ -268,7 +282,7 @@ final class OrderHistory extends Model
             case self::FIELD_SERVICE_COMPLETED:
                 // normalize common boolean-like values
                 if (is_string($value)) {
-                    $lower = strtolower($value);
+                    $lower = mb_strtolower($value);
                     if (in_array($lower, ['true', '1', 'yes'], true)) {
                         return true;
                     }
@@ -276,6 +290,7 @@ final class OrderHistory extends Model
                         return false;
                     }
                 }
+
                 return (bool) $value;
             default:
                 return $value;

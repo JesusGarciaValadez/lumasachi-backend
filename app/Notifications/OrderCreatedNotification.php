@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
+use App\Mail\OrderCreatedMail;
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use App\Mail\OrderCreatedMail;
-use App\Models\Order;
 
-class OrderCreatedNotification extends Notification implements ShouldQueue
+final class OrderCreatedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -31,8 +33,7 @@ class OrderCreatedNotification extends Notification implements ShouldQueue
      */
     public function __construct(
         public readonly Order $order
-    ) {
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.

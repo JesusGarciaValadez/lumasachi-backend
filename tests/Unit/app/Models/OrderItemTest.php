@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
 use App\Enums\OrderItemType;
@@ -27,8 +29,8 @@ final class OrderItemTest extends TestCase
         ]);
 
         $this->assertTrue($item->is_received);
-        $this->assertEquals(OrderItemType::EngineBlock, $item->item_type);
-        $this->assertEquals($order->id, $item->order->id);
+        $this->assertSame(OrderItemType::EngineBlock, $item->item_type);
+        $this->assertSame($order->id, $item->order->id);
 
         // Components
         OrderItemComponent::create([
@@ -59,6 +61,6 @@ final class OrderItemTest extends TestCase
         ]);
 
         $this->assertCount(1, $item->services);
-        $this->assertEquals('wash_block_active', $item->services->first()->service_key);
+        $this->assertSame('wash_block_active', $item->services->first()->service_key);
     }
 }

@@ -803,37 +803,45 @@ namespace App\Enums;
 
 enum OrderItemType: string
 {
-    case CYLINDER_HEAD = 'cylinder_head';
-    case ENGINE_BLOCK = 'engine_block';
-    case CRANKSHAFT = 'crankshaft';
-    case CONNECTING_RODS = 'connecting_rods';
-    case OTHERS = 'others';
-    
-    /**
-     * Get the translated label for this item type.
-     */
-    public function label(): string
-    {
-        return __("motor.item_types.{$this->value}");
-    }
-    
+    case CylinderHead = 'cylinder_head';
+    case EngineBlock = 'engine_block';
+    case Crankshaft = 'crankshaft';
+    case ConnectingRods = 'connecting_rods';
+    case Others = 'others';
+
     /**
      * Get all possible enum values.
+     *
+     * @return array<string>
      */
     public static function getValues(): array
     {
         return array_column(self::cases(), 'value');
     }
-    
+
+    /**
+     * Get the human-readable label for this item type.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::CylinderHead => 'Cylinder Head',
+            self::EngineBlock => 'Engine Block',
+            self::Crankshaft => 'Crankshaft',
+            self::ConnectingRods => 'Connecting Rods',
+            self::Others => 'Others',
+        };
+    }
+
     /**
      * Get the available components for this item type.
-     * 
+     *
      * @return array<string> Component keys
      */
     public function getComponents(): array
     {
-        return match($this) {
-            self::CYLINDER_HEAD => [
+        return match ($this) {
+            self::CylinderHead => [
                 'camshaft_covers',
                 'bolts',
                 'rocker_arm_shaft',
@@ -843,7 +851,7 @@ enum OrderItemType: string
                 'valves',
                 'guides',
             ],
-            self::ENGINE_BLOCK => [
+            self::EngineBlock => [
                 'bearing_caps',
                 'cap_bolts',
                 'camshaft',
@@ -852,7 +860,7 @@ enum OrderItemType: string
                 'camshaft_key',
                 'camshaft_gear',
             ],
-            self::CRANKSHAFT => [
+            self::Crankshaft => [
                 'iron_gear',
                 'bronze_gear',
                 'lock',
@@ -861,14 +869,14 @@ enum OrderItemType: string
                 'bolt',
                 'deflector',
             ],
-            self::CONNECTING_RODS => [
+            self::ConnectingRods => [
                 'bolts',
                 'nuts',
                 'pistons',
                 'locks',
                 'bearings',
             ],
-            self::OTHERS => [
+            self::Others => [
                 'water_pump',
                 'oil_pump',
                 'oil_pan',
@@ -878,14 +886,6 @@ enum OrderItemType: string
                 'timing_covers',
             ],
         };
-    }
-    
-    /**
-     * Get the translated component label.
-     */
-    public function getComponentLabel(string $componentKey): string
-    {
-        return __("motor.components.{$this->value}.{$componentKey}");
     }
 }
 ```
@@ -900,24 +900,24 @@ namespace App\Enums;
 enum OrderStatus: string
 {
     // New workflow states
-    case RECEIVED = 'received';
-    case AWAITING_REVIEW = 'awaiting_review';
-    case REVIEWED = 'reviewed';
-    case AWAITING_CUSTOMER_APPROVAL = 'awaiting_customer_approval';
-    case READY_FOR_WORK = 'ready_for_work';
-    
+    case Received = 'Received';
+    case AwaitingReview = 'Awaiting Review';
+    case Reviewed = 'Reviewed';
+    case AwaitingCustomerApproval = 'Awaiting Customer Approval';
+    case ReadyForWork = 'Ready for Work';
+
     // Existing states
-    case OPEN = 'open';
-    case IN_PROGRESS = 'in_progress';
-    case READY_FOR_DELIVERY = 'ready_for_delivery';
-    case DELIVERED = 'delivered';
-    case COMPLETED = 'completed';
-    case PAID = 'paid';
-    case RETURNED = 'returned';
-    case NOT_PAID = 'not_paid';
-    case ON_HOLD = 'on_hold';
-    case CANCELLED = 'cancelled';
-    
+    case Open = 'Open';
+    case InProgress = 'In Progress';
+    case ReadyForDelivery = 'Ready for Delivery';
+    case Completed = 'Completed';
+    case Delivered = 'Delivered';
+    case Paid = 'Paid';
+    case Returned = 'Returned';
+    case NotPaid = 'Not Paid';
+    case OnHold = 'On Hold';
+    case Cancelled = 'Cancelled';
+
     /**
      * Get all possible status values.
      */
@@ -925,38 +925,30 @@ enum OrderStatus: string
     {
         return array_column(self::cases(), 'value');
     }
-    
+
     /**
-     * Get the translated label for this status.
+     * Get the human-readable label for this status.
+     * Currently returns the same as ->value (hardcoded).
      */
-    public function label(): string
+    public function getLabel(): string
     {
-        return __("orders.status.{$this->value}");
-    }
-    
-    /**
-     * Check if customer should be notified for this status.
-     */
-    public function shouldNotifyCustomer(): bool
-    {
-        return in_array($this, [
-            self::RECEIVED,
-            self::REVIEWED,
-            self::READY_FOR_DELIVERY,
-            self::DELIVERED,
-        ]);
-    }
-    
-    /**
-     * Check if admins should be notified for this status.
-     */
-    public function shouldNotifyAdmins(): bool
-    {
-        return in_array($this, [
-            self::RECEIVED,
-            self::REVIEWED,
-            self::DELIVERED,
-        ]);
+        return match ($this) {
+            self::Received => 'Received',
+            self::AwaitingReview => 'Awaiting Review',
+            self::Reviewed => 'Reviewed',
+            self::AwaitingCustomerApproval => 'Awaiting Customer Approval',
+            self::ReadyForWork => 'Ready for Work',
+            self::Open => 'Open',
+            self::InProgress => 'In Progress',
+            self::ReadyForDelivery => 'Ready for Delivery',
+            self::Completed => 'Completed',
+            self::Delivered => 'Delivered',
+            self::Paid => 'Paid',
+            self::Returned => 'Returned',
+            self::NotPaid => 'Not Paid',
+            self::OnHold => 'On Hold',
+            self::Cancelled => 'Cancelled',
+        };
     }
 }
 ```

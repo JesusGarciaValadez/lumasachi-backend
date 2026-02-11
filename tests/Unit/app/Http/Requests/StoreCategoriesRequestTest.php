@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Http\Requests;
 
+use App\Http\Requests\StoreCategoriesRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Requests\StoreCategoriesRequest;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class StoreCategoriesRequestTest extends TestCase
+final class StoreCategoriesRequestTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -19,21 +21,6 @@ class StoreCategoriesRequestTest extends TestCase
     {
         parent::setUp();
         $this->request = new StoreCategoriesRequest();
-    }
-
-    #[Test]
-    public function authorize_should_return_true(): void
-    {
-        $this->assertTrue($this->request->authorize());
-    }
-
-    #[Test]
-    #[DataProvider('validationDataProvider')]
-    public function test_validation_rules(array $data, bool $shouldPass): void
-    {
-        $validator = Validator::make($data, $this->request->rules());
-
-        $this->assertEquals($shouldPass, $validator->passes());
     }
 
     public static function validationDataProvider(): array
@@ -93,5 +80,20 @@ class StoreCategoriesRequestTest extends TestCase
                 'shouldPass' => true,
             ],
         ];
+    }
+
+    #[Test]
+    public function authorize_should_return_true(): void
+    {
+        $this->assertTrue($this->request->authorize());
+    }
+
+    #[Test]
+    #[DataProvider('validationDataProvider')]
+    public function validation_rules(array $data, bool $shouldPass): void
+    {
+        $validator = Validator::make($data, $this->request->rules());
+
+        $this->assertEquals($shouldPass, $validator->passes());
     }
 }

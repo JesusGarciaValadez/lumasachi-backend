@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
-use Tests\TestCase;
 use App\Enums\OrderStatus;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class AttachmentTest extends TestCase
 {
@@ -129,7 +131,7 @@ final class AttachmentTest extends TestCase
         $this->assertTrue($history->hasAttachments());
 
         // Verify that the file is correctly stored
-        $expectedPath = 'attachments/OrderHistory/' . $history->id;
+        $expectedPath = 'attachments/OrderHistory/'.$history->id;
         $this->assertStringContainsString($expectedPath, $attachment->file_path);
         Storage::disk('public')->assertExists($attachment->file_path);
 
@@ -163,7 +165,7 @@ final class AttachmentTest extends TestCase
             $history = OrderHistory::create([
                 'order_id' => $order->id,
                 'field_changed' => 'status',
-                'old_value' => $i == 1 ? OrderStatus::Open->value : OrderStatus::InProgress->value,
+                'old_value' => $i === 1 ? OrderStatus::Open->value : OrderStatus::InProgress->value,
                 'new_value' => OrderStatus::InProgress->value,
                 'comment' => "Update {$i}",
                 'created_by' => $user->id,
@@ -284,7 +286,6 @@ final class AttachmentTest extends TestCase
      * Test referential integrity
      */
     #[Test]
-
     public function it_checks_referential_integrity()
     {
         $user = User::factory()->create();

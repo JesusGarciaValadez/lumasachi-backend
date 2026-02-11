@@ -19,7 +19,7 @@ Deployment Steps
 1) Migrate database
    - php artisan migrate --force
    - New tables: order_motor_info, order_items, order_item_components, service_catalog, order_services
-   - Indexes confirmed: 
+   - Indexes confirmed:
      - order_items(order_id, item_type) UNIQUE(order_id, item_type)
      - order_services(order_item_id, is_budgeted, is_authorized, is_completed)
      - service_catalog(item_type, is_active), display_order

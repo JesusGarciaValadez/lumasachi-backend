@@ -1,25 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Traits;
 
-use Tests\TestCase;
 use App\Enums\OrderStatus;
+use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\Attachment;
 use App\Models\User;
 use App\Traits\HasAttachments;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Database\Eloquent\Model;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class HasAttachmentsTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Order $order;
+
     protected User $user;
 
     protected function setUp(): void
@@ -47,7 +50,7 @@ final class HasAttachmentsTest extends TestCase
             'file_path' => 'attachments/test.pdf',
             'file_size' => 1024,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->user->id
+            'uploaded_by' => $this->user->id,
         ]);
 
         $this->order->refresh();
@@ -72,7 +75,7 @@ final class HasAttachmentsTest extends TestCase
         $this->assertEquals($this->user->id, $attachment->uploaded_by);
 
         // Check file path format
-        $this->assertStringContainsString('attachments/Order/' . $this->order->id, $attachment->file_path);
+        $this->assertStringContainsString('attachments/Order/'.$this->order->id, $attachment->file_path);
 
         // Verify file was stored
         Storage::disk('public')->assertExists($attachment->file_path);
@@ -231,7 +234,7 @@ final class HasAttachmentsTest extends TestCase
             'file_path' => 'attachments/file1.pdf',
             'file_size' => 1024,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->user->id
+            'uploaded_by' => $this->user->id,
         ]);
 
         Attachment::create([
@@ -241,7 +244,7 @@ final class HasAttachmentsTest extends TestCase
             'file_path' => 'attachments/file2.pdf',
             'file_size' => 2048,
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->user->id
+            'uploaded_by' => $this->user->id,
         ]);
 
         $this->order->refresh();
@@ -265,7 +268,7 @@ final class HasAttachmentsTest extends TestCase
             'file_path' => 'attachments/file.pdf',
             'file_size' => 1536, // 1.5 KB
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->user->id
+            'uploaded_by' => $this->user->id,
         ]);
 
         $this->order->refresh();
@@ -279,12 +282,12 @@ final class HasAttachmentsTest extends TestCase
             'file_path' => 'attachments/large_file.pdf',
             'file_size' => 1048576, // 1 MB
             'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->user->id
+            'uploaded_by' => $this->user->id,
         ]);
 
         $this->order->refresh();
         $totalSizeBytes = 1536 + 1048576;
-        $expectedSize = round($totalSizeBytes / 1024 / 1024, 2) . ' MB';
+        $expectedSize = round($totalSizeBytes / 1024 / 1024, 2).' MB';
         $this->assertEquals($expectedSize, $this->order->getTotalAttachmentsSizeFormatted());
     }
 
@@ -298,7 +301,7 @@ final class HasAttachmentsTest extends TestCase
         $files = [
             UploadedFile::fake()->image('photo1.jpg'),
             UploadedFile::fake()->image('photo2.jpg'),
-            UploadedFile::fake()->create('document.pdf', 100, 'application/pdf')
+            UploadedFile::fake()->create('document.pdf', 100, 'application/pdf'),
         ];
 
         $filePaths = [];
@@ -385,7 +388,7 @@ final class HasAttachmentsTest extends TestCase
             'old_value' => OrderStatus::Open->value,
             'new_value' => OrderStatus::InProgress->value,
             'comment' => 'Status changed',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         // OrderHistory model should have the attachments method

@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\seeders;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\Company;
 use Database\Seeders\CompanySeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CompanySeederTest extends TestCase
 {
@@ -29,8 +30,7 @@ final class CompanySeederTest extends TestCase
         // Ensure that inactive companies exist
         $this->assertDatabaseHas('companies', [
             'name' => 'Legacy Enterprises',
-            'is_active' => false
+            'is_active' => false,
         ]);
     }
 }
-

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
 use App\Models\Attachment;
@@ -12,8 +14,6 @@ trait HasAttachments
 {
     /**
      * Get all of the attachments for the model.
-     *
-     * @return MorphMany
      */
     public function attachments(): MorphMany
     {
@@ -23,16 +23,14 @@ trait HasAttachments
     /**
      * Attach a file to the model.
      *
-     * @param UploadedFile $file
-     * @param int $uploadedBy User ID who uploaded the file
-     * @param string|null $disk Storage disk to use (default: 'public')
-     * @return Attachment
+     * @param  int  $uploadedBy  User ID who uploaded the file
+     * @param  string|null  $disk  Storage disk to use (default: 'public')
      */
     public function attach(UploadedFile $file, int $uploadedBy, ?string $disk = 'public'): Attachment
     {
         // Generate a unique file name to avoid conflicts
         $fileName = $file->getClientOriginalName();
-        $uniqueFileName = Str::uuid7() . '_' . $fileName;
+        $uniqueFileName = Str::uuid7().'_'.$fileName;
 
         // Determine the storage path based on the model type and ID
         $modelType = class_basename($this);
@@ -48,21 +46,18 @@ trait HasAttachments
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
-            'uploaded_by' => $uploadedBy
+            'uploaded_by' => $uploadedBy,
         ]);
     }
 
     /**
      * Detach (delete) an attachment by ID.
-     *
-     * @param string $attachmentId
-     * @return bool
      */
-    public function detach(string $attachmentId): bool
+    public function detach(string|int $attachmentId): bool
     {
         $attachment = $this->attachments()->find($attachmentId);
 
-        if (!$attachment) {
+        if (! $attachment) {
             return false;
         }
 
@@ -72,8 +67,6 @@ trait HasAttachments
 
     /**
      * Check if the model has any attachments.
-     *
-     * @return bool
      */
     public function hasAttachments(): bool
     {
@@ -83,15 +76,14 @@ trait HasAttachments
     /**
      * Get attachments filtered by MIME type.
      *
-     * @param string $mimeType Can be exact type (e.g., 'application/pdf') or partial (e.g., 'image')
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param  string  $mimeType  Can be exact type (e.g., 'application/pdf') or partial (e.g., 'image')
      */
     public function getAttachmentsByType(string $mimeType): \Illuminate\Database\Eloquent\Collection
     {
         // Check if it's a partial type (e.g., 'image', 'application')
-        if (!str_contains($mimeType, '/')) {
+        if (! str_contains($mimeType, '/')) {
             return $this->attachments()
-                ->where('mime_type', 'like', $mimeType . '%')
+                ->where('mime_type', 'like', $mimeType.'%')
                 ->get();
         }
 
@@ -103,8 +95,6 @@ trait HasAttachments
 
     /**
      * Get all image attachments.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getImageAttachments(): \Illuminate\Database\Eloquent\Collection
     {
@@ -113,8 +103,6 @@ trait HasAttachments
 
     /**
      * Get all document attachments.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getDocumentAttachments(): \Illuminate\Database\Eloquent\Collection
     {
@@ -123,8 +111,6 @@ trait HasAttachments
 
     /**
      * Get the total size of all attachments in bytes.
-     *
-     * @return int
      */
     public function getTotalAttachmentsSize(): int
     {
@@ -133,8 +119,6 @@ trait HasAttachments
 
     /**
      * Get the total size of all attachments in human-readable format.
-     *
-     * @return string
      */
     public function getTotalAttachmentsSizeFormatted(): string
     {
@@ -147,7 +131,7 @@ trait HasAttachments
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**

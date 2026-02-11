@@ -310,7 +310,7 @@ Para dudas:
 | **ARQUITECTURA_FINAL.md** | ~26KB | ⭐ Documento principal completo |
 | **ARQUITECTURA_CORRECCIONES_I18N.md** | ~31KB | Guía completa de i18n |
 | **ARQUITECTURA_DIAGRAMAS.md** | ~32KB | Diagramas visuales |
-| **LEEME_PRIMERO.md** | ~8KB | Este archivo (navegación) |
+| **README_ARQUITECTURA.md** | ~8KB | Este archivo (navegación) |
 
 **Total**: 4 archivos, ~97KB de documentación
 

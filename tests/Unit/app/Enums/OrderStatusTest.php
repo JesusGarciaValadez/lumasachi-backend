@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Enums;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 use ValueError;
 
 final class OrderStatusTest extends TestCase
@@ -27,22 +29,22 @@ final class OrderStatusTest extends TestCase
 
         $expectedStatuses = [
             // New workflow
-            'RECEIVED' => 'Received',
-            'AWAITING_REVIEW' => 'Awaiting Review',
-            'REVIEWED' => 'Reviewed',
-            'AWAITING_CUSTOMER_APPROVAL' => 'Awaiting Customer Approval',
-            'READY_FOR_WORK' => 'Ready for Work',
+            'Received' => 'Received',
+            'AwaitingReview' => 'Awaiting Review',
+            'Reviewed' => 'Reviewed',
+            'AwaitingCustomerApproval' => 'Awaiting Customer Approval',
+            'ReadyForWork' => 'Ready for Work',
             // Existing
-            'OPEN' => 'Open',
-            'IN_PROGRESS' => 'In Progress',
-            'READY_FOR_DELIVERY' => 'Ready for delivery',
-            'DELIVERED' => 'Delivered',
-            'PAID' => 'Paid',
-            'RETURNED' => 'Returned',
-            'NOT_PAID' => 'Not paid',
-            'CANCELLED' => 'Cancelled',
-            'ON_HOLD' => 'On hold',
-            'COMPLETED' => 'Completed',
+            'Open' => 'Open',
+            'InProgress' => 'In Progress',
+            'ReadyForDelivery' => 'Ready for Delivery',
+            'Delivered' => 'Delivered',
+            'Paid' => 'Paid',
+            'Returned' => 'Returned',
+            'NotPaid' => 'Not Paid',
+            'Cancelled' => 'Cancelled',
+            'OnHold' => 'On Hold',
+            'Completed' => 'Completed',
         ];
 
         foreach ($statuses as $status) {
@@ -63,7 +65,7 @@ final class OrderStatusTest extends TestCase
         // Now includes 15 values (first 5 are the new workflow states)
         $this->assertCount(15, $values);
 
-        $expectedMustContain = ['Open', 'In Progress', 'Ready for delivery', 'Completed', 'Delivered', 'Paid', 'Returned', 'Not paid', 'On hold', 'Cancelled'];
+        $expectedMustContain = ['Open', 'In Progress', 'Ready for Delivery', 'Completed', 'Delivered', 'Paid', 'Returned', 'Not Paid', 'On Hold', 'Cancelled'];
         foreach ($expectedMustContain as $v) {
             $this->assertTrue(in_array($v, $values, true), "Statuses should contain '{$v}'");
         }
@@ -83,11 +85,11 @@ final class OrderStatusTest extends TestCase
         $testCases = [
             ['status' => OrderStatus::Open, 'expected' => 'Open'],
             ['status' => OrderStatus::InProgress, 'expected' => 'In Progress'],
-            ['status' => OrderStatus::ReadyForDelivery, 'expected' => 'Ready for delivery'],
+            ['status' => OrderStatus::ReadyForDelivery, 'expected' => 'Ready for Delivery'],
             ['status' => OrderStatus::Delivered, 'expected' => 'Delivered'],
             ['status' => OrderStatus::Paid, 'expected' => 'Paid'],
             ['status' => OrderStatus::Returned, 'expected' => 'Returned'],
-            ['status' => OrderStatus::NotPaid, 'expected' => 'Not paid'],
+            ['status' => OrderStatus::NotPaid, 'expected' => 'Not Paid'],
             ['status' => OrderStatus::Cancelled, 'expected' => 'Cancelled'],
         ];
 
@@ -109,7 +111,7 @@ final class OrderStatusTest extends TestCase
         $user = User::factory()->create();
 
         // Database schema currently supports the 10 existing values only
-        $dbAllowed = ['Open','In Progress','Ready for delivery','Completed','Delivered','Paid','Returned','Not paid','On hold','Cancelled'];
+        $dbAllowed = ['Open', 'In Progress', 'Ready for Delivery', 'Completed', 'Delivered', 'Paid', 'Returned', 'Not Paid', 'On Hold', 'Cancelled'];
         foreach (OrderStatus::cases() as $status) {
             if (! in_array($status->value, $dbAllowed, true)) {
                 continue; // skip the 5 new workflow values for DB storage test until column is migrated
@@ -117,12 +119,12 @@ final class OrderStatusTest extends TestCase
 
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Test Order with ' . $status->value . ' status',
-                'description' => 'Testing status: ' . $status->value,
+                'title' => 'Test Order with '.$status->value.' status',
+                'description' => 'Testing status: '.$status->value,
                 'status' => $status,
                 'priority' => 'Normal',
                 'created_by' => $user->id,
-                'assigned_to' => $user->id
+                'assigned_to' => $user->id,
             ]);
 
             $this->assertNotNull($order);
@@ -131,7 +133,7 @@ final class OrderStatusTest extends TestCase
             // Verify it's stored correctly in the database
             $this->assertDatabaseHas('orders', [
                 'id' => $order->id,
-                'status' => $status->value
+                'status' => $status->value,
             ]);
         }
     }
@@ -153,7 +155,7 @@ final class OrderStatusTest extends TestCase
             'status' => 'InvalidStatus', // This should fail
             'priority' => 'Normal',
             'created_by' => $user->id,
-            'assigned_to' => $user->id
+            'assigned_to' => $user->id,
         ]);
     }
 
@@ -221,7 +223,7 @@ final class OrderStatusTest extends TestCase
             'status' => OrderStatus::Paid,
             'priority' => 'Normal',
             'created_by' => $user->id,
-            'assigned_to' => $user->id
+            'assigned_to' => $user->id,
         ]);
 
         $jsonData = $order->toJson();
@@ -242,7 +244,7 @@ final class OrderStatusTest extends TestCase
         foreach (OrderStatus::cases() as $status) {
             $order = Order::factory()->createQuietly([
                 'customer_id' => $user->id,
-                'title' => 'Order with ' . $status->value,
+                'title' => 'Order with '.$status->value,
                 'description' => 'Testing enum value assignment',
                 'status' => $status,
                 'priority' => 'Normal',

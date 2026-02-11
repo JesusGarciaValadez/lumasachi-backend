@@ -1,20 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\app\Models;
 
 use App\Models\Company;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class CompanyTest extends TestCase
+final class CompanyTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
      * Test company creation.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_create_company(): void
@@ -44,14 +44,12 @@ class CompanyTest extends TestCase
         $this->assertTrue($company->is_active);
         $this->assertDatabaseHas('companies', [
             'name' => 'Test Company',
-            'email' => 'test@example.com'
+            'email' => 'test@example.com',
         ]);
     }
 
     /**
      * Test company retrieval.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_read_company(): void
@@ -70,20 +68,18 @@ class CompanyTest extends TestCase
 
     /**
      * Test company update.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_update_company(): void
     {
         $company = Company::factory()->create([
-            'name' => 'Original Name'
+            'name' => 'Original Name',
         ]);
 
         // Update the company
         $company->update([
             'name' => 'Updated Name',
-            'description' => 'Updated description'
+            'description' => 'Updated description',
         ]);
 
         // Refresh the model to get the latest data
@@ -93,14 +89,12 @@ class CompanyTest extends TestCase
         $this->assertEquals('Updated description', $company->description);
         $this->assertDatabaseHas('companies', [
             'uuid' => $company->uuid,
-            'name' => 'Updated Name'
+            'name' => 'Updated Name',
         ]);
     }
 
     /**
      * Test company deletion.
-     *
-     * @return void
      */
     #[Test]
     public function it_checks_if_delete_company(): void
@@ -119,4 +113,3 @@ class CompanyTest extends TestCase
         $this->assertNull($deletedCompany);
     }
 }
-

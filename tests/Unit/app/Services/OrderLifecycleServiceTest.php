@@ -74,18 +74,18 @@ final class OrderLifecycleServiceTest extends TestCase
 
         // Order created with correct status
         $this->assertInstanceOf(Order::class, $order);
-        $this->assertEquals($this->customer->id, $order->customer_id);
-        $this->assertEquals('Test Motor Order', $order->title);
+        $this->assertSame($this->customer->id, $order->customer_id);
+        $this->assertSame('Test Motor Order', $order->title);
 
         // Motor info created
         $this->assertNotNull($order->motorInfo);
-        $this->assertEquals('Honda', $order->motorInfo->brand);
-        $this->assertEquals('2.0', $order->motorInfo->liters);
-        $this->assertEquals('2020', $order->motorInfo->year);
+        $this->assertSame('Honda', $order->motorInfo->brand);
+        $this->assertSame('2.0', $order->motorInfo->liters);
+        $this->assertSame('2020', $order->motorInfo->year);
 
         // Items created
         $this->assertCount(2, $order->items);
-            $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
+        $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
         $this->assertNotNull($cylinderHead);
         $this->assertTrue($cylinderHead->is_received);
 
@@ -101,7 +101,7 @@ final class OrderLifecycleServiceTest extends TestCase
         $order = $this->service->createOrderWithMotorItems($data, $this->employee);
         $order->refresh();
 
-            $this->assertEquals(OrderStatus::AwaitingReview, $order->status);
+        $this->assertSame(OrderStatus::AwaitingReview, $order->status);
     }
 
     #[Test]
@@ -155,8 +155,8 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->assertCount(1, $result->services);
         $svc = $result->services->first();
         $this->assertTrue($svc->is_budgeted);
-        $this->assertEquals(600.00, (float) $svc->base_price);
-        $this->assertEquals($catalog->net_price, (float) $svc->net_price);
+        $this->assertSame(600.00, (float) $svc->base_price);
+        $this->assertSame($catalog->net_price, (float) $svc->net_price);
     }
 
     #[Test]
@@ -172,7 +172,7 @@ final class OrderLifecycleServiceTest extends TestCase
 
         $order->refresh();
         // Observer auto-transitions REVIEWED → AWAITING_CUSTOMER_APPROVAL
-            $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
+        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->status);
     }
 
     #[Test]
@@ -200,24 +200,24 @@ final class OrderLifecycleServiceTest extends TestCase
             'net_price' => 580.00,
         ]);
 
-        $result = $this->service->customerApproval($order, [$svc->id], 200.00);
+        $result = $this->service->customerApproval($order, [$svc->id], 200.00, $this->customer);
 
         $svc->refresh();
         $this->assertTrue($svc->is_authorized);
 
         $result->refresh();
-        $this->assertEquals(200.00, (float) $result->motorInfo->down_payment);
-            $this->assertEquals(OrderStatus::ReadyForWork, $result->status);
+        $this->assertSame(200.00, (float) $result->motorInfo->down_payment);
+        $this->assertSame(OrderStatus::ReadyForWork, $result->status);
     }
 
     #[Test]
     public function it_rejects_approval_for_wrong_status(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $this->expectException(InvalidArgumentException::class);
 
-        $this->service->customerApproval($order, [], null);
+        $this->service->customerApproval($order, [], null, $this->customer);
     }
 
     // ---------------------------------------------------------------
@@ -227,7 +227,7 @@ final class OrderLifecycleServiceTest extends TestCase
     #[Test]
     public function it_marks_services_as_completed(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::READY_FOR_WORK);
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         $svc = OrderService::factory()->budgeted()->authorized()->create([
             'order_item_id' => $item->id,
@@ -244,7 +244,7 @@ final class OrderLifecycleServiceTest extends TestCase
     #[Test]
     public function it_marks_work_completed_from_in_progress(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::IN_PROGRESS);
+        $order = $this->createOrderInStatus(OrderStatus::InProgress);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
         $svc = OrderService::factory()->budgeted()->authorized()->create([
             'order_item_id' => $item->id,
@@ -261,7 +261,7 @@ final class OrderLifecycleServiceTest extends TestCase
     #[Test]
     public function it_rejects_work_completed_for_wrong_status(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $this->expectException(InvalidArgumentException::class);
 
@@ -275,29 +275,29 @@ final class OrderLifecycleServiceTest extends TestCase
     #[Test]
     public function it_marks_order_ready_for_delivery(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::IN_PROGRESS);
+        $order = $this->createOrderInStatus(OrderStatus::InProgress);
 
         $result = $this->service->markReadyForDelivery($order, $this->employee);
 
         $result->refresh();
-            $this->assertEquals(OrderStatus::ReadyForDelivery, $result->status);
+        $this->assertSame(OrderStatus::ReadyForDelivery, $result->status);
     }
 
     #[Test]
     public function it_marks_ready_for_delivery_from_ready_for_work(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::READY_FOR_WORK);
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
 
         $result = $this->service->markReadyForDelivery($order, $this->employee);
 
         $result->refresh();
-            $this->assertEquals(OrderStatus::ReadyForDelivery, $result->status);
+        $this->assertSame(OrderStatus::ReadyForDelivery, $result->status);
     }
 
     #[Test]
     public function it_rejects_ready_for_delivery_from_wrong_status(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $this->expectException(InvalidArgumentException::class);
 
@@ -311,18 +311,18 @@ final class OrderLifecycleServiceTest extends TestCase
     #[Test]
     public function it_delivers_order(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::READY_FOR_DELIVERY);
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
 
         $result = $this->service->deliverOrder($order, $this->employee);
 
         $result->refresh();
-            $this->assertEquals(OrderStatus::Delivered, $result->status);
+        $this->assertSame(OrderStatus::Delivered, $result->status);
     }
 
     #[Test]
     public function it_rejects_deliver_from_wrong_status(): void
     {
-        $order = $this->createOrderInStatus(OrderStatus::OPEN);
+        $order = $this->createOrderInStatus(OrderStatus::Open);
 
         $this->expectException(InvalidArgumentException::class);
 

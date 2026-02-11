@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\factories;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\UserRole;
-use App\Enums\OrderStatus;
 use App\Enums\OrderPriority;
+use App\Enums\OrderStatus;
+use App\Enums\UserRole;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
-use PHPUnit\Framework\Attributes\Test;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use App\Models\Category;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class OrderFactoryTest extends TestCase
 {
@@ -272,7 +274,7 @@ final class OrderFactoryTest extends TestCase
         $this->assertLessThanOrEqual(10, $wordCount);
 
         // Description should be a paragraph
-        $this->assertGreaterThan(10, strlen($order->description));
+        $this->assertGreaterThan(10, mb_strlen($order->description));
 
         // Check that categories relationship exists and is not empty
         $this->assertNotNull($order->categories);
@@ -318,7 +320,7 @@ final class OrderFactoryTest extends TestCase
             'customer_id' => $customer->id,
             'created_by' => $creator->id,
             'updated_by' => $updater->id,
-            'assigned_to' => $employee->id
+            'assigned_to' => $employee->id,
         ]);
 
         // Test customer relationship

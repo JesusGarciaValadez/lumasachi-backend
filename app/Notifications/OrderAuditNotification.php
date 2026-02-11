@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Lang;
 
 final class OrderAuditNotification extends Notification implements ShouldQueue
 {
@@ -27,27 +28,18 @@ final class OrderAuditNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $subject = match ($this->event) {
-            'created' => 'Audit: Order created',
-            'reviewed' => 'Audit: Order reviewed',
-            'ready_for_work' => 'Audit: Order ready for work',
-            'customer_approved' => 'Audit: Customer approved services',
-            'work_completed' => 'Audit: Work completed on order',
-            'delivered' => 'Audit: Order delivered',
-            'received' => 'Audit: Order received',
-            'paid' => 'Audit: Order paid',
-            'service_completed' => 'Audit: Service completed',
-            default => 'Audit: Order event',
-        };
+        $subject = Lang::has('notifications.audit.subjects.'.$this->event)
+            ? __('notifications.audit.subjects.'.$this->event)
+            : __('notifications.audit.subjects.default');
 
         return (new MailMessage)
             ->subject($subject)
-            ->greeting('Hello Admin')
-            ->line('An auditable event occurred for an order:')
-            ->line('Event: '.$this->event)
-            ->line('Order: '.$this->order->uuid)
-            ->line('Status: '.$this->order->status->value)
-            ->salutation('Regards');
+            ->greeting(__('notifications.greeting_admin'))
+            ->line(__('notifications.audit.line'))
+            ->line(__('notifications.audit.event', ['event' => $this->event]))
+            ->line(__('notifications.audit.order', ['uuid' => $this->order->uuid]))
+            ->line(__('notifications.audit.status', ['status' => $this->order->status->value]))
+            ->salutation(__('notifications.salutation'));
     }
 
     public function toArray(object $notifiable): array

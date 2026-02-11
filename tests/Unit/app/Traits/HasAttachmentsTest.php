@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Traits;
 
-use PHPUnit\Framework\TestCase;
 use App\Traits\HasAttachments;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 // Test class to verify formatting logic
-class HasAttachmentsFormattingTest
+final class HasAttachmentsFormattingTest
 {
     use HasAttachments;
 
@@ -27,15 +30,21 @@ class HasAttachmentsFormattingTest
 
 final class HasAttachmentsTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     /**
      * Test that trait has all required methods
      */
     #[Test]
     public function it_checks_if_trait_has_required_methods(): void
     {
-        $reflection = new \ReflectionClass(HasAttachments::class);
+        $reflection = new ReflectionClass(HasAttachments::class);
         $methods = $reflection->getMethods();
-        $methodNames = array_map(function($method) {
+        $methodNames = array_map(function ($method) {
             return $method->getName();
         }, $methods);
 
@@ -49,7 +58,7 @@ final class HasAttachmentsTest extends TestCase
             'getDocumentAttachments',
             'getTotalAttachmentsSize',
             'getTotalAttachmentsSizeFormatted',
-            'detachAll'
+            'detachAll',
         ];
 
         foreach ($expectedMethods as $method) {
@@ -109,11 +118,5 @@ final class HasAttachmentsTest extends TestCase
         // Test rounding
         $testObject->setTestSize(1126); // 1.099609375 KB
         $this->assertEquals('1.1 KB', $testObject->getTotalAttachmentsSizeFormatted());
-    }
-
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
     }
 }

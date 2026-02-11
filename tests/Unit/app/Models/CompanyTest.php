@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\app\Models;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class CompanyTest extends TestCase
 {
@@ -155,7 +157,7 @@ final class CompanyTest extends TestCase
             'city' => 'Sample City',
             'state' => 'State',
             'postal_code' => '12345',
-            'country' => 'Country'
+            'country' => 'Country',
         ]);
 
         $expectedFullAddress = '123 Main St, Sample City, State, 12345, Country';

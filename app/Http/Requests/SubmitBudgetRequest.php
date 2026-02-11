@@ -32,8 +32,8 @@ final class SubmitBudgetRequest extends FormRequest
         $validator->after(function ($validator) {
             $order = $this->route('order');
 
-            if ($order && $order->status !== OrderStatus::AWAITING_REVIEW) {
-                $validator->errors()->add('status', 'Order must be in Awaiting Review status to submit a budget.');
+            if ($order && $order->status !== OrderStatus::AwaitingReview) {
+                $validator->errors()->add('status', 'Order must be in Awaiting Review status.');
             }
         });
     }

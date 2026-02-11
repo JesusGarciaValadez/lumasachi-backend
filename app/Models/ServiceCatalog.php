@@ -7,14 +7,15 @@ namespace App\Models;
 use App\Enums\OrderItemType;
 use App\Observers\ServiceCatalogObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[ObservedBy([ServiceCatalogObserver::class])]
 /**
  * @mixin IdeHelperServiceCatalog
  */
+#[ObservedBy([ServiceCatalogObserver::class])]
 final class ServiceCatalog extends Model
 {
     use HasFactory, HasUuids;
@@ -32,12 +33,20 @@ final class ServiceCatalog extends Model
         'display_order',
     ];
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<ServiceCatalog>  $query
+     * @return Builder<ServiceCatalog>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeForItemType($query, OrderItemType $type)
+    /**
+     * @param  Builder<ServiceCatalog>  $query
+     * @return Builder<ServiceCatalog>
+     */
+    public function scopeForItemType(Builder $query, OrderItemType $type): Builder
     {
         return $query->where('item_type', $type->value);
     }

@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Enums\OrderStatus;
-use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\User;
 use App\Notifications\OrderAuditNotification;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderDeliveredNotification;
@@ -18,13 +16,14 @@ use App\Notifications\OrderReadyForWorkNotification;
 use App\Notifications\OrderReceivedNotification;
 use App\Notifications\OrderReviewedNotification;
 use App\Traits\CachesOrders;
+use App\Traits\NotifiesAdmins;
 use BackedEnum;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
 final class OrderObserver
 {
     use CachesOrders;
+    use NotifiesAdmins;
 
     /**
      * Store original values during updating to compute history afterwards.
@@ -109,59 +108,11 @@ final class OrderObserver
         }
 
         // After logging changes, handle status transition side-effects
-        $oldStatus = $original['status'] ?? null; // string or null
-        $newStatus = $order->status?->value; // string
+        $oldStatus = $original['status'] ?? null;
+        $newStatus = $order->status?->value;
 
         if ($oldStatus !== $newStatus && $newStatus) {
-            // Reviewed: notify customer and admins, then auto-transition to Awaiting Customer Approval
-            if ($newStatus === OrderStatus::Reviewed->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderReviewedNotification($order));
-                }
-                $this->notifyAdmins(new OrderAuditNotification($order, 'reviewed'));
-
-                // Auto-transition to Awaiting Customer Approval
-                $order->update(['status' => OrderStatus::AwaitingCustomerApproval->value]);
-            }
-
-            // Received: notify customer and audit admins
-            if ($newStatus === OrderStatus::Received->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderReceivedNotification($order));
-                }
-                $this->notifyAdmins(new OrderAuditNotification($order, 'received'));
-            }
-
-            // Ready for Work: notify customer and audit admins
-            if ($newStatus === OrderStatus::ReadyForWork->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderReadyForWorkNotification($order));
-                }
-                $this->notifyAdmins(new OrderAuditNotification($order, 'ready_for_work'));
-            }
-
-            // Ready for delivery: notify customer
-            if ($newStatus === OrderStatus::ReadyForDelivery->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderReadyForDeliveryNotification($order));
-                }
-            }
-
-            // Delivered: notify customer and admins
-            if ($newStatus === OrderStatus::Delivered->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderDeliveredNotification($order));
-                }
-                $this->notifyAdmins(new OrderAuditNotification($order, 'delivered'));
-            }
-
-            // Paid: notify customer and audit admins
-            if ($newStatus === OrderStatus::Paid->value) {
-                if ($order->customer) {
-                    $order->customer->notify(new OrderPaidNotification($order));
-                }
-                $this->notifyAdmins(new OrderAuditNotification($order, 'paid'));
-            }
+            $this->handleStatusTransition($order, $newStatus);
         }
 
         // Invalidate orders cache namespace
@@ -196,17 +147,55 @@ final class OrderObserver
     }
 
     /**
-     * Notify admin and super admin users.
+     * Handle status transition side-effects (notifications).
      */
-    private function notifyAdmins(Notification $notification): void
+    private function handleStatusTransition(Order $order, string $newStatus): void
     {
-        $admins = User::query()
-            ->whereIn('role', [UserRole::ADMINISTRATOR->value, UserRole::SUPER_ADMINISTRATOR->value])
-            ->where('is_active', true)
-            ->get();
+        /** @var array<string, array{notification: class-string, audit: string|null}> */
+        $transitions = [
+            OrderStatus::Received->value => [
+                'notification' => OrderReceivedNotification::class,
+                'audit' => 'received',
+            ],
+            OrderStatus::Reviewed->value => [
+                'notification' => OrderReviewedNotification::class,
+                'audit' => 'reviewed',
+            ],
+            OrderStatus::ReadyForWork->value => [
+                'notification' => OrderReadyForWorkNotification::class,
+                'audit' => 'ready_for_work',
+            ],
+            OrderStatus::ReadyForDelivery->value => [
+                'notification' => OrderReadyForDeliveryNotification::class,
+                'audit' => null,
+            ],
+            OrderStatus::Delivered->value => [
+                'notification' => OrderDeliveredNotification::class,
+                'audit' => 'delivered',
+            ],
+            OrderStatus::Paid->value => [
+                'notification' => OrderPaidNotification::class,
+                'audit' => 'paid',
+            ],
+        ];
 
-        foreach ($admins as $admin) {
-            $admin->notify($notification);
+        $transition = $transitions[$newStatus] ?? null;
+
+        if ($transition) {
+            $customer = $order->customer;
+
+            if ($customer) {
+                $customer->notify(new $transition['notification']($order));
+            }
+
+            if ($transition['audit']) {
+                $this->notifyAdmins(new OrderAuditNotification($order, $transition['audit']));
+            }
+        }
+
+        // Auto-transition: Reviewed → Awaiting Customer Approval
+        if ($newStatus === OrderStatus::Reviewed->value) {
+            $order->updateQuietly(['status' => OrderStatus::AwaitingCustomerApproval->value]);
         }
     }
 }

@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\database\factories;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Attachment;
-use App\Models\User;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 final class AttachmentFactoryTest extends TestCase
 {
@@ -181,7 +183,7 @@ final class AttachmentFactoryTest extends TestCase
     public function it_checks_if_file_path_includes_date_structure(): void
     {
         $attachment = Attachment::factory()->create();
-        $this->assertStringContainsString("attachments/", $attachment->file_path);
+        $this->assertStringContainsString('attachments/', $attachment->file_path);
     }
 
     /**
@@ -306,4 +308,3 @@ final class AttachmentFactoryTest extends TestCase
         $this->assertEquals($user->id, $attachment->uploadedBy->id);
     }
 }
-
