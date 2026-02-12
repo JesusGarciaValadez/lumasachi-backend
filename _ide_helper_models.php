@@ -315,8 +315,8 @@ namespace App\Models{
  * @property string|null $year
  * @property string|null $model
  * @property string|null $cylinder_count
- * @property numeric|null $down_payment
- * @property numeric|null $total_cost
+ * @property numeric $down_payment
+ * @property numeric $total_cost
  * @property bool $is_fully_paid
  * @property string|null $center_torque
  * @property string|null $rod_torque
@@ -373,6 +373,7 @@ namespace App\Models{
  * @property numeric|null $net_price
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property int|null $updated_by
  * @property-read \App\Models\ServiceCatalog|null $catalogItem
  * @property-read \App\Models\OrderItem $orderItem
  * @method static \Database\Factories\OrderServiceFactory factory($count = null, $state = [])
@@ -391,6 +392,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereOrderItemId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereServiceKey($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUpdatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUuid($value)
  * @mixin \Eloquent
  */
