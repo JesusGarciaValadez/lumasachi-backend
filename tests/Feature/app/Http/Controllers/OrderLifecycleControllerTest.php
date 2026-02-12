@@ -8,7 +8,6 @@ use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -68,18 +67,12 @@ final class OrderLifecycleControllerTest extends TestCase
     {
         $this->actingAs($this->employee);
 
-        $category = Category::factory()->create([
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-        ]);
-
         $payload = [
             'customer_id' => $this->customer->id,
             'title' => 'Motor Rebuild #1',
             'description' => 'Full engine rebuild',
             'priority' => OrderPriority::HIGH->value,
             'assigned_to' => $this->employee->id,
-            'categories' => [$category->id],
             'motor_info' => [
                 'brand' => 'Toyota',
                 'liters' => '3.5',

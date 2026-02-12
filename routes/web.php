@@ -30,7 +30,7 @@ Route::middleware(['auth', 'verified', 'can:view,order'])->group(function () {
     Route::get('orders/{order:uuid}', function (App\Models\Order $order) {
         return Inertia::render('Orders/Show', [
             // Resolve the resource to avoid { data: {...} } wrapping in props
-            'order' => (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])))->resolve(),
+            'order' => (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])))->resolve(),
         ]);
     })->name('web.orders.show');
 });

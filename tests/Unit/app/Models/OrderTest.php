@@ -7,14 +7,12 @@ namespace Tests\Unit\app\Models;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
@@ -60,7 +58,6 @@ final class OrderTest extends TestCase
             'description',
             'status',
             'priority',
-            // 'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',
@@ -81,7 +78,6 @@ final class OrderTest extends TestCase
         $order = new Order();
         $casts = $order->getCasts();
 
-        $this->assertArrayNotHasKey('category_id', $casts);
         $this->assertArrayHasKey('estimated_completion', $casts);
         $this->assertArrayHasKey('actual_completion', $casts);
         $this->assertStringContainsString('datetime', $casts['estimated_completion']);
@@ -186,57 +182,21 @@ final class OrderTest extends TestCase
     }
 
     /**
-     * Test order can have multiple categories
-     */
-    #[Test]
-    public function it_checks_order_has_many_categories(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $categories = Category::factory()->count(2)->create();
-        $order->categories()->attach($categories->pluck('id'));
-
-        $this->assertCount(2, $order->categories);
-        $this->assertTrue($order->categories->contains($categories->first()));
-        $this->assertTrue($order->categories->contains($categories->last()));
-    }
-
-    /**
      * Test order can be created
      */
     #[Test]
     public function it_checks_if_can_create_an_order(): void
     {
         $user = User::factory()->create();
-        $category = Category::factory()->create();
-
         $order = Order::factory()->createQuietly([
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
-        $order->categories()->attach($category->id);
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'created_by' => $user->id,
         ]);
-        $this->assertDatabaseHas('order_category', [
-            'order_id' => $order->id,
-            'category_id' => $category->id,
-        ]);
-    }
-
-    /**
-     * Test order has categories relationship
-     */
-    #[Test]
-    public function it_checks_if_order_has_categories_relationship(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $categories = Category::factory()->count(2)->create();
-        $order->categories()->attach($categories->pluck('id'));
-
-        $this->assertInstanceOf(BelongsToMany::class, $order->categories());
-        $this->assertEquals(2, $order->categories->count());
     }
 
     /**

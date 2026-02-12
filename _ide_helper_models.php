@@ -54,47 +54,6 @@ namespace App\Models{
  * @property int $id
  * @property string $uuid
  * @property string $name
- * @property string|null $description
- * @property bool $is_active
- * @property int $sort_order
- * @property string|null $color
- * @property int $created_by
- * @property int $updated_by
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\User $creator
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
- * @property-read int|null $orders_count
- * @property-read \App\Models\User $updater
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category active()
- * @method static \Database\Factories\CategoryFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category forCompany($companyId)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category ordered()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereColor($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereCreatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereSortOrder($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	class IdeHelperCategory {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property string $name
  * @property string $email
  * @property string $phone
  * @property string $address
@@ -173,8 +132,6 @@ namespace App\Models{
  * @property-read \App\Models\User $assignedTo
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attachment> $attachments
  * @property-read int|null $attachments_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
- * @property-read int|null $categories_count
  * @property-read \App\Models\User $createdBy
  * @property-read \App\Models\User $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItem> $items
@@ -498,4 +455,3 @@ namespace App\Models{
 	#[\AllowDynamicProperties]
 	class IdeHelperUser {}
 }
-

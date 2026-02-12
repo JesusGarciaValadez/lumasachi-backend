@@ -7,7 +7,6 @@ namespace Tests\Feature\app\Http\Controllers;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -28,13 +27,11 @@ final class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
-        $categories = Category::factory()->count(2)->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'status' => OrderStatus::Open->value,
             'created_by' => $user->id,
         ]);
-        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::InProgress->value,
@@ -60,14 +57,12 @@ final class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
-        $categories = Category::factory()->count(2)->create();
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'priority' => OrderPriority::NORMAL->value,
             'created_by' => $user->id,
         ]);
-        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'priority' => OrderPriority::URGENT->value,
@@ -92,8 +87,6 @@ final class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $categories = Category::factory()->count(2)->create();
-        $newCategory = Category::factory()->create();
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
@@ -101,13 +94,11 @@ final class OrderHistoryTrackingTest extends TestCase
             'priority' => OrderPriority::LOW->value,
             'title' => 'Original Title',
         ]);
-        $order->categories()->attach($categories->pluck('id'));
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'status' => OrderStatus::Delivered->value,
             'priority' => OrderPriority::HIGH->value,
             'title' => 'Updated Title',
-            'categories' => [$newCategory->id],
         ]);
 
         $response->assertOk();
@@ -115,14 +106,13 @@ final class OrderHistoryTrackingTest extends TestCase
         // Check that multiple history entries were created
         $histories = OrderHistory::where('order_id', $order->id)->get();
 
-        // Should have 4 history entries (status, priority, title, categories)
-        $this->assertCount(4, $histories);
+        // Should have 3 history entries (status, priority, title)
+        $this->assertCount(3, $histories);
         $this->assertEqualsCanonicalizing(
             [
                 OrderHistory::FIELD_STATUS,
                 OrderHistory::FIELD_PRIORITY,
                 OrderHistory::FIELD_TITLE,
-                OrderHistory::FIELD_CATEGORIES,
             ],
             $histories->pluck('field_changed')->toArray()
         );
@@ -142,13 +132,6 @@ final class OrderHistoryTrackingTest extends TestCase
         $this->assertNotNull($titleHistory);
         $this->assertEquals('Original Title', $titleHistory->old_value);
         $this->assertEquals('Updated Title', $titleHistory->new_value);
-
-        $categoryHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_CATEGORIES);
-        $this->assertNotNull($categoryHistory);
-        $oldCats = json_decode($categoryHistory->getRawOriginal('old_value'), true) ?? [];
-        $newCats = json_decode($categoryHistory->getRawOriginal('new_value'), true) ?? [];
-        $this->assertEqualsCanonicalizing($categories->pluck('id')->all(), $oldCats);
-        $this->assertEqualsCanonicalizing([$newCategory->id], $newCats);
     }
 
     #[Test]
@@ -159,14 +142,11 @@ final class OrderHistoryTrackingTest extends TestCase
         $employee = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'assigned_to' => $user->id,
-            // 'category_id' => $category->id,
             'created_by' => $user->id,
         ]);
-        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'assigned_to' => $employee->id,
@@ -191,7 +171,6 @@ final class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
         $oldDate = Carbon::now()->addDays(5);
         $newDate = Carbon::now()->addDays(10);
 
@@ -200,7 +179,6 @@ final class OrderHistoryTrackingTest extends TestCase
             'estimated_completion' => $oldDate,
             'created_by' => $user->id,
         ]);
-        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'estimated_completion' => $newDate->toISOString(),
@@ -230,14 +208,12 @@ final class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'status' => OrderStatus::Open->value,
             'priority' => OrderPriority::NORMAL->value,
             'title' => 'Test Order',
         ]);
-        $order->categories()->attach($category->id);
 
         // Count existing histories
         $initialHistoryCount = OrderHistory::where('order_id', $order->id)->count();
@@ -263,12 +239,10 @@ final class OrderHistoryTrackingTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'notes' => 'Some important notes',
         ]);
-        $order->categories()->attach($category->id);
 
         $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
             'notes' => null,
@@ -392,11 +366,9 @@ final class OrderHistoryTrackingTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         Sanctum::actingAs($user);
 
-        $category = Category::factory()->create();
         $order = Order::factory()->createQuietly([
             'status' => OrderStatus::Open->value,
         ]);
-        $order->categories()->attach($category->id);
 
         // Create a status change
         $this->putJson("/api/v1/orders/{$order->uuid}", [

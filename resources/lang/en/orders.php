@@ -14,7 +14,6 @@ return [
     'actual_completion' => 'Actual completion',
     'notes' => 'Notes',
     'no_notes' => 'No notes',
-    'categories' => 'Categories',
     'created_at' => 'Created at',
     'attachments' => 'Attachments',
     'history' => 'History',

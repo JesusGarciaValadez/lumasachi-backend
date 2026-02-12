@@ -308,14 +308,12 @@ final class CreateUsersTableTest extends TestCase
         // Drop dependent tables first to avoid foreign key constraint issues
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
-        Schema::dropIfExists('order_category');
         // New dependent tables introduced by motor items architecture
         Schema::dropIfExists('order_services');
         Schema::dropIfExists('order_item_components');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('order_motor_info');
         Schema::dropIfExists('orders');
-        Schema::dropIfExists('categories');
 
         // Run down method
         $migration = include database_path('migrations/0001_01_01_000000_create_users_table.php');

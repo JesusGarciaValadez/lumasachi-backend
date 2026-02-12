@@ -14,7 +14,6 @@ return [
     'actual_completion' => 'Fecha real',
     'notes' => 'Notas',
     'no_notes' => 'Sin notas',
-    'categories' => 'Categorías',
     'created_at' => 'Creada',
     'attachments' => 'Adjuntos',
     'history' => 'Historial',

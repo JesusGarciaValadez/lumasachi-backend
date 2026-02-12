@@ -16,14 +16,12 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
-use App\Models\OrderHistory;
 use App\Services\OrderLifecycleService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 final class OrderController extends Controller
 {
@@ -42,7 +40,7 @@ final class OrderController extends Controller
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($user) {
-            $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'categories'])
+            $orders = Order::with(['customer', 'assignedTo', 'createdBy'])
                 ->when($user->isCustomer(), function ($query) use ($user) {
                     $query->where('customer_id', $user->id);
                 })
@@ -74,7 +72,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order created successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'categories', 'motorInfo', 'items.components'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'motorInfo', 'items.components'])),
         ], 201);
     }
 
@@ -167,7 +165,7 @@ final class OrderController extends Controller
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order) {
-            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories', 'motorInfo', 'items.components', 'services'])))->resolve();
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'items.components', 'services'])))->resolve();
         });
 
         return response()->json($payload)
@@ -181,41 +179,15 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        $categoriesProvided = array_key_exists('categories', $validated);
-        $categories = $categoriesProvided ? $validated['categories'] : null;
-        unset($validated['categories']);
-
-        $oldIds = $categoriesProvided ? $order->categories()->pluck('id')->toArray() : null;
-
-        DB::transaction(function () use ($order, $validated, $request, $categories, $categoriesProvided, $oldIds) {
+        DB::transaction(function () use ($order, $validated, $request) {
             $order->update(array_merge($validated, [
                 'updated_by' => $request->user()->id,
             ]));
-
-            if ($categoriesProvided) {
-                $order->categories()->sync($categories);
-                $newIds = $order->categories()->pluck('id')->toArray();
-
-                $sortedOldIds = $oldIds;
-                $sortedNewIds = $newIds;
-                sort($sortedOldIds);
-                sort($sortedNewIds);
-                if ($sortedOldIds !== $sortedNewIds) {
-                    OrderHistory::create([
-                        'uuid' => Str::uuid7()->toString(),
-                        'order_id' => $order->id,
-                        'field_changed' => OrderHistory::FIELD_CATEGORIES,
-                        'old_value' => $sortedOldIds,
-                        'new_value' => $sortedNewIds,
-                        'created_by' => $request->user()->id,
-                    ]);
-                }
-            }
         });
 
         return response()->json([
             'message' => 'Order updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }
 
@@ -246,7 +218,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order status updated successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }
 
@@ -265,7 +237,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order assigned successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'categories'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }
 

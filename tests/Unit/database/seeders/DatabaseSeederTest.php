@@ -9,7 +9,6 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\Attachment;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -188,35 +187,6 @@ final class DatabaseSeederTest extends TestCase
     }
 
     /**
-     * Test that orders have categories attached by the seeder.
-     *
-     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
-     */
-    #[Test]
-    public function it_checks_if_orders_have_categories_attached_by_seeder(): void
-    {
-        $this->seed(DatabaseSeeder::class);
-
-        $orders = Order::with('categories')->has('categories')->get();
-        $this->assertGreaterThan(0, $orders->count());
-
-        foreach ($orders as $order) {
-            $this->assertGreaterThan(0, $order->categories->count());
-            $this->assertInstanceOf(Category::class, $order->categories->first());
-        }
-
-        // Check specific order categories
-        $urgentOrder = Order::with('categories')->where('title', 'Urgent Website Redesign')->first();
-        $this->assertNotNull($urgentOrder, 'Urgent Website Redesign order not found');
-        $devCategoryId = Category::where('name', 'Desarrollo')->value('id');
-        $this->assertNotNull($devCategoryId, 'Desarrollo category not found');
-        $this->assertTrue(
-            $urgentOrder->categories->contains('id', $devCategoryId),
-            'Urgent order should contain Desarrollo category'
-        );
-    }
-
-    /**
      * Test that the seeder creates relationships correctly
      */
     #[Test]
@@ -290,8 +260,8 @@ final class DatabaseSeederTest extends TestCase
         // Orders: 5 specific + 10 random = 15
         $this->assertGreaterThanOrEqual(15, Order::count());
 
-        // Order histories: at least 23 specific entries (8 original + 15 new diverse entries)
-        $this->assertGreaterThanOrEqual(23, OrderHistory::count());
+        // Order histories: at least 22 specific entries (8 original + 14 new diverse entries)
+        $this->assertGreaterThanOrEqual(22, OrderHistory::count());
 
         // Attachments: at least 7 specific + some random
         $this->assertGreaterThanOrEqual(7, Attachment::count());
@@ -312,7 +282,6 @@ final class DatabaseSeederTest extends TestCase
         $expectedFields = [
             OrderHistory::FIELD_ACTUAL_COMPLETION,
             OrderHistory::FIELD_ASSIGNED_TO,
-            OrderHistory::FIELD_CATEGORIES,
             OrderHistory::FIELD_ESTIMATED_COMPLETION,
             OrderHistory::FIELD_NOTES,
             OrderHistory::FIELD_PRIORITY,
@@ -352,13 +321,6 @@ final class DatabaseSeederTest extends TestCase
             ->whereNotNull('new_value')
             ->first();
         $this->assertNotNull($notesChange);
-
-        // Category change
-        $categoryChange = OrderHistory::where('field_changed', OrderHistory::FIELD_CATEGORIES)
-            ->whereNotNull('old_value')
-            ->whereNotNull('new_value')
-            ->first();
-        $this->assertNotNull($categoryChange);
 
         // Priority downgrade
         $priorityDowngrade = OrderHistory::where('field_changed', OrderHistory::FIELD_PRIORITY)

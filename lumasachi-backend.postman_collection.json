@@ -554,124 +554,6 @@
 			]
 		},
 		{
-			"name": "Categories",
-			"item": [
-				{
-					"name": "Index",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Store Bulk",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "categories[0][name]",
-									"value": "Categoria 7",
-									"contentType": "",
-									"type": "text"
-								},
-								{
-									"key": "categories[0][is_active]",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "categories[1][name]",
-									"value": "Categoria 8",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/bulk",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"bulk"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Destroy",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/8",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"8"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Health",
 			"item": [
 				{
@@ -916,11 +798,6 @@
 								{
 									"key": "description",
 									"value": "Reparación de frenos para auto",
-									"type": "text"
-								},
-								{
-									"key": "category_id",
-									"value": "1",
 									"type": "text"
 								},
 								{

@@ -41,8 +41,6 @@ final class OrderHistory extends Model
 
     public const FIELD_NOTES = 'notes';
 
-    public const FIELD_CATEGORIES = 'categories';
-
     // Extended fields for item/service tracking
     public const FIELD_ITEM_RECEIVED = 'item_received';
 
@@ -156,42 +154,6 @@ final class OrderHistory extends Model
         $oldValue = $this->getFormattedValue($this->field_changed, $this->old_value);
         $newValue = $this->getFormattedValue($this->field_changed, $this->new_value);
 
-        if ($this->field_changed === self::FIELD_CATEGORIES) {
-            // Normalize to ID arrays for accurate comparison, then resolve names for messages
-            $oldIds = is_null($this->old_value) ? [] : (is_string($this->old_value) ? json_decode($this->old_value, true) : (array) $this->old_value);
-            $newIds = is_null($this->new_value) ? [] : (is_string($this->new_value) ? json_decode($this->new_value, true) : (array) $this->new_value);
-            $oldIds = array_values(array_map('intval', (array) $oldIds));
-            $newIds = array_values(array_map('intval', (array) $newIds));
-            sort($oldIds);
-            sort($newIds);
-
-            if ($oldIds === $newIds) {
-                return 'Categories unchanged';
-            }
-
-            $oldCategoryNames = $this->getCategoryNames(json_encode($oldIds));
-            $newCategoryNames = $this->getCategoryNames(json_encode($newIds));
-
-            if (empty($oldIds)) {
-                return 'Categories added: '.implode(', ', $newCategoryNames);
-            }
-            if (empty($newIds)) {
-                return 'Categories removed (was: '.implode(', ', $oldCategoryNames).')';
-            }
-
-            $added = array_values(array_diff($newCategoryNames, $oldCategoryNames));
-            $removed = array_values(array_diff($oldCategoryNames, $newCategoryNames));
-            $changes = [];
-            if (! empty($added)) {
-                $changes[] = 'added: '.implode(', ', $added);
-            }
-            if (! empty($removed)) {
-                $changes[] = 'removed: '.implode(', ', $removed);
-            }
-
-            return 'Categories updated ('.implode('; ', $changes).')';
-        }
-
         if (is_null($this->old_value)) {
             return ucfirst($field)." set to: {$newValue}";
         }
@@ -264,17 +226,6 @@ final class OrderHistory extends Model
                 }
 
                 return $value ? \Carbon\Carbon::parse($value) : null;
-            case self::FIELD_CATEGORIES:
-                $ids = match (true) {
-                    is_string($value) => json_decode($value, true) ?: [],
-                    $value instanceof \Illuminate\Support\Collection => $value->all(),
-                    is_array($value) => $value,
-                    default => [],
-                };
-                $ids = array_values(array_unique(array_map('intval', $ids)));
-                sort($ids);
-
-                return json_encode($ids);
             case self::FIELD_ITEM_RECEIVED:
             case self::FIELD_ITEM_COMPONENT_RECEIVED:
             case self::FIELD_SERVICE_BUDGETED:
@@ -318,44 +269,7 @@ final class OrderHistory extends Model
             return $value->toISOString();
         }
 
-        if ($field === self::FIELD_CATEGORIES) {
-            // Normalize to an array of integer IDs
-            if (is_string($value)) {
-                $value = json_decode($value, true) ?: [];
-            }
-            if ($value instanceof \Illuminate\Support\Collection) {
-                $value = $value->all();
-            }
-            $ids = array_map(
-                fn ($item) => is_object($item) ? (int) ($item->id ?? 0) : (int) $item,
-                (array) $value
-            );
-            $ids = array_values(array_unique(array_filter($ids)));
-            sort($ids);
-
-            return json_encode($ids);
-        }
-
         return (string) $value;
-    }
-
-    /**
-     * Get category names from a JSON string of category IDs.
-     */
-    protected function getCategoryNames(?string $value): array
-    {
-        if (is_null($value)) {
-            return [];
-        }
-
-        $categoryIds = is_string($value) ? json_decode($value, true) : (array) $value;
-        if (! is_array($categoryIds)) {
-            return [];
-        }
-
-        $categories = Category::whereIn('id', $categoryIds)->pluck('name')->toArray();
-
-        return $categories;
     }
 
     /**

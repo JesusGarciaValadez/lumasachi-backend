@@ -310,8 +310,6 @@ Order (1) ──────────── (1) OrderMotorInfo
   │
   ├──── (N) Attachment
   │
-  ├──── (N) Category (through order_category)
-  │
   ├──── (1) User (customer)
   │
   ├──── (1) User (created_by)

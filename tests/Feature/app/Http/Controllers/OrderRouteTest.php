@@ -19,7 +19,7 @@ final class OrderRouteTest extends TestCase
     public function it_redirects_guest_to_login_when_accessing_order_route(): void
     {
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->withCategories()->createQuietly(['customer_id' => $customer->id]);
+        $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
         $response = $this->get(route('web.orders.show', [$order->uuid]));
         $response->assertRedirect('/login');
     }
@@ -31,7 +31,7 @@ final class OrderRouteTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $this->actingAs($user);
 
-        $order = Order::factory()->withCategories()->createQuietly([
+        $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'created_by' => $user->id,
             'assigned_to' => $user->id,

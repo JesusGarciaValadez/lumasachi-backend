@@ -25,12 +25,10 @@ final class OrderLifecycleService
     {
         $motorInfo = $validated['motor_info'] ?? [];
         $items = $validated['items'] ?? [];
-        $categories = $validated['categories'] ?? [];
-
         // Remove nested data from top-level
-        unset($validated['motor_info'], $validated['items'], $validated['categories']);
+        unset($validated['motor_info'], $validated['items']);
 
-        $order = DB::transaction(function () use ($validated, $creator, $motorInfo, $items, $categories) {
+        $order = DB::transaction(function () use ($validated, $creator, $motorInfo, $items) {
             $order = Order::create(array_merge($validated, [
                 'uuid' => method_exists(Str::class, 'uuid7')
                     ? Str::uuid7()->toString()
@@ -39,10 +37,6 @@ final class OrderLifecycleService
                 'created_by' => $creator->id,
                 'updated_by' => $creator->id,
             ]));
-
-            if (! empty($categories)) {
-                $order->categories()->sync($categories);
-            }
 
             // Create motor info
             $order->motorInfo()->create(array_merge(
@@ -79,7 +73,7 @@ final class OrderLifecycleService
         ]);
 
         // Reload relationships for the caller
-        return $order->load(['motorInfo', 'items.components', 'categories']);
+        return $order->load(['motorInfo', 'items.components']);
     }
 
     /**

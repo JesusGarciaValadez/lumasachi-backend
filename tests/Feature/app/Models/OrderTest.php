@@ -8,7 +8,6 @@ use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Attachment;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -42,16 +41,12 @@ final class OrderTest extends TestCase
         $creator = User::factory()->create();
         $updater = User::factory()->create();
         $assignee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $categories = Category::factory()->count(2)->create();
-
         $order = Order::factory()->createQuietly([
             'customer_id' => $customer->id,
             'created_by' => $creator->id,
             'updated_by' => $updater->id,
             'assigned_to' => $assignee->id,
         ]);
-        $order->categories()->attach($categories->pluck('id'));
-        $order->refresh()->load('categories');
 
         $this->assertInstanceOf(User::class, $order->customer);
         $this->assertEquals($customer->id, $order->customer->id);
@@ -65,46 +60,6 @@ final class OrderTest extends TestCase
         $this->assertInstanceOf(User::class, $order->assignedTo);
         $this->assertEquals($assignee->id, $order->assignedTo->id);
 
-        $this->assertCount(2, $order->categories);
-        $this->assertTrue($order->categories->pluck('id')->contains($categories->first()->id));
-        $this->assertTrue($order->categories->pluck('id')->contains($categories->last()->id));
-    }
-
-    /**
-     * Test order can have multiple categories.
-     */
-    #[Test]
-    public function it_checks_order_can_have_multiple_categories()
-    {
-        $order = Order::factory()->createQuietly();
-        $categories = Category::factory()->count(3)->create();
-
-        $order->categories()->attach($categories->pluck('id'));
-
-        $order = $order->fresh('categories');
-        $this->assertCount(3, $order->categories);
-        foreach ($categories as $category) {
-            $this->assertTrue($order->categories->contains($category));
-        }
-    }
-
-    /**
-     * Test detaching categories from order.
-     */
-    #[Test]
-    public function it_checks_detaching_categories_from_order()
-    {
-        $order = Order::factory()->createQuietly();
-        $categories = Category::factory()->count(3)->create();
-
-        $order->categories()->attach($categories->pluck('id'));
-        $this->assertCount(3, $order->fresh()->categories);
-
-        $order->categories()->detach($categories->first()->id);
-        $this->assertCount(2, $order->fresh()->categories);
-
-        $order->categories()->detach(); // Detach all
-        $this->assertCount(0, $order->fresh()->categories);
     }
 
     /**
@@ -352,7 +307,6 @@ final class OrderTest extends TestCase
             'description',
             'status',
             'priority',
-            // 'category_id',
             'estimated_completion',
             'actual_completion',
             'notes',

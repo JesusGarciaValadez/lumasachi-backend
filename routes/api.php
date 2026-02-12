@@ -12,7 +12,6 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CatalogController;
-use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
@@ -81,13 +80,6 @@ Route::group(['prefix' => 'v1'], function () {
         }
 
         return $user->createToken($request->device_name)->plainTextToken;
-    });
-
-    // Category Routes
-    Route::scopeBindings()->middleware('auth:sanctum')->prefix('categories')->group(function () {
-        Route::get('/', [CategoryController::class, 'index']);
-        Route::post('/bulk', [CategoryController::class, 'storeBulk']);
-        Route::delete('/{category:uuid}', [CategoryController::class, 'destroy'])->middleware('can:delete,category');
     });
 
     // Order History Routes
