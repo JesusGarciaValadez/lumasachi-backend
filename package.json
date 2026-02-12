@@ -22,7 +22,7 @@
         "chokidar": "^5.0.0",
         "concurrently": "^9.0.1",
         "eslint": "^9.10.0",
-        "eslint-config-prettier": "^9.2.0",
+        "eslint-config-prettier": "^9.1.2",
         "eslint-plugin-vue": "^10.7.0",
         "prettier": "^3.8.1",
         "prettier-plugin-organize-imports": "^4.3.0",
