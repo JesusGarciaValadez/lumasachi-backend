@@ -3,9 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPriority;
 use App\Models\OrderHistory;
 use App\Models\Order;
 
@@ -26,7 +23,7 @@ class StoreOrderHistoryRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'exists:orders,id'],
-            'field_changed' => ['required', 'string', 'in:status,priority,title,category_id,assigned_to,estimated_completion,notes'],
+            'field_changed' => ['required', 'string', 'in:status,priority,title,assigned_to,estimated_completion,notes'],
             'old_value' => ['nullable', 'string'],
             'new_value' => ['nullable', 'string'],
             'comment' => ['nullable', 'string', 'max:1000'],
@@ -42,7 +39,7 @@ class StoreOrderHistoryRequest extends FormRequest
             'order_id.required' => 'The order ID is required.',
             'order_id.exists' => 'The specified order does not exist.',
             'field_changed.required' => 'The field changed is required.',
-            'field_changed.in' => 'The field changed must be one of: status, priority, title, category_id, assigned_to, estimated_completion, notes.',
+            'field_changed.in' => 'The field changed must be one of: status, priority, title, assigned_to, estimated_completion, notes.',
             'comment.max' => 'The comment cannot exceed 1000 characters.',
         ];
     }

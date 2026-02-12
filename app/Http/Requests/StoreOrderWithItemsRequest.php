@@ -6,7 +6,6 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,19 +27,6 @@ final class StoreOrderWithItemsRequest extends FormRequest
             'description' => 'required|string',
             'priority' => ['required', 'string', Rule::in(array_column(OrderPriority::cases(), 'value'))],
             'assigned_to' => 'required|exists:users,id',
-            'categories' => 'sometimes|array',
-            'categories.*' => [
-                'integer',
-                'distinct',
-                Rule::exists('categories', 'id')->where(function ($q) {
-                    $companyId = optional($this->user())->company_id ?? null;
-                    if ($companyId) {
-                        $q->whereIn('created_by', User::query()
-                            ->where('company_id', $companyId)
-                            ->select('id'));
-                    }
-                }),
-            ],
             'estimated_completion' => 'nullable|date|after:today',
             'notes' => 'nullable|string',
 
@@ -76,9 +62,6 @@ final class StoreOrderWithItemsRequest extends FormRequest
             'priority.in' => 'The selected priority is invalid.',
             'assigned_to.required' => 'An assigned employee is required.',
             'assigned_to.exists' => 'The selected employee does not exist.',
-            'categories.*.integer' => 'Each category must be a valid identifier.',
-            'categories.*.distinct' => 'Duplicate categories are not allowed.',
-            'categories.*.exists' => 'One or more selected categories do not exist.',
             'estimated_completion.date' => 'The estimated completion must be a valid date.',
             'estimated_completion.after' => 'The estimated completion date must be in the future.',
             'motor_info.brand.max' => 'The motor brand must not exceed 100 characters.',

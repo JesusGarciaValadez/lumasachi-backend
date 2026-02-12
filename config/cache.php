@@ -101,12 +101,6 @@ return [
         ],
     ],
 
-    'categories' => [
-        'ttl' => [
-            'index' => env('CATEGORIES_INDEX_TTL', 300),
-        ],
-    ],
-
     'order_histories' => [
         'ttl' => [
             'index' => env('ORDER_HISTORIES_INDEX_TTL', 120),

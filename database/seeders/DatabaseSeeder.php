@@ -9,7 +9,6 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\Attachment;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -26,9 +25,6 @@ final class DatabaseSeeder extends Seeder
     {
         // Seed companies first
         $this->call(CompanySeeder::class);
-
-        // Seed categories
-        $this->call(CategorySeeder::class);
 
         // Seed service catalog (engine services)
         $this->call(ServiceCatalogSeeder::class);
@@ -163,8 +159,6 @@ final class DatabaseSeeder extends Seeder
             'assigned_to' => $employee1->id,
             'notes' => 'Client needs this completed before product launch',
         ]);
-        $order1->categories()->attach(Category::where('name', 'Desarrollo')->firstOrFail()->id);
-
         // Order 2: Normal priority order ready for delivery
         $order2 = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
@@ -178,8 +172,6 @@ final class DatabaseSeeder extends Seeder
             'updated_by' => $employee2->id,
             'assigned_to' => $employee2->id,
         ]);
-        $order2->categories()->attach(Category::where('name', 'Otros')->firstOrFail()->id);
-
         // Order 3: Completed and paid order
         $order3 = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
@@ -195,8 +187,6 @@ final class DatabaseSeeder extends Seeder
             'assigned_to' => $employee3->id,
             'notes' => 'Customer very satisfied with the result',
         ]);
-        $order3->categories()->attach(Category::where('name', 'Consultoría')->firstOrFail()->id);
-
         // Order 4: Open order not yet assigned
         $order4 = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
@@ -210,8 +200,6 @@ final class DatabaseSeeder extends Seeder
             'updated_by' => $admin->id,
             'assigned_to' => $admin->id,
         ]);
-        $order4->categories()->attach(Category::where('name', 'Consultoría')->firstOrFail()->id);
-
         // Order 5: Cancelled order
         $order5 = Order::factory()->createQuietly([
             'uuid' => Str::uuid7()->toString(),
@@ -226,16 +214,12 @@ final class DatabaseSeeder extends Seeder
             'assigned_to' => $admin->id, // Cancelled orders shouldn't have assigned employees
             'notes' => 'Customer cancelled due to budget constraints',
         ]);
-        $order5->categories()->attach(Category::where('name', 'Otros')->first()->id);
-
         // Create more random orders
         Order::factory()
             ->count(10)
             ->createQuietly([
                 'assigned_to' => User::factory()->createQuietly()->id,
-            ])->each(function ($order) {
-                $order->categories()->attach(Category::inRandomOrder()->limit(rand(1, 3))->pluck('id'));
-            });
+            ]);
 
         // Create Order History entries
 
@@ -423,23 +407,6 @@ final class DatabaseSeeder extends Seeder
             'created_by' => $employee2->id,
             'created_at' => Carbon::now()->subDays(4),
         ]);
-
-        // Category change example
-        $developmentCategory = Category::where('name', 'Desarrollo')->first();
-        $consultingCategory = Category::where('name', 'Consultoría')->first();
-
-        if ($developmentCategory && $consultingCategory) {
-            OrderHistory::factory()->create([
-                'uuid' => Str::uuid7()->toString(),
-                'order_id' => $order4->id,
-                'field_changed' => OrderHistory::FIELD_CATEGORIES,
-                'old_value' => json_encode([$developmentCategory->id]),
-                'new_value' => json_encode([$consultingCategory->id]),
-                'comment' => 'Reclassified from development to consulting based on project scope',
-                'created_by' => $admin->id,
-                'created_at' => $order4->created_at->addHours(3),
-            ]);
-        }
 
         // Priority change example (downgrade)
         OrderHistory::factory()->create([
