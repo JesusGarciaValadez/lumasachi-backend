@@ -22,6 +22,11 @@
 			"type": "string"
 		},
 		{
+			"key": "orderHistory",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "attachment",
 			"value": "",
 			"type": "string"
@@ -450,15 +455,6 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"order_id\": 1,\n  \"field_changed\": \"status\",\n  \"old_value\": null,\n  \"new_value\": \"In Progress\",\n  \"comment\": \"Started work\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/logout",
 							"host": [
@@ -708,7 +704,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -716,7 +712,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}"
+								"{{orderHistory}}"
 							]
 						}
 					},
@@ -739,7 +735,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -747,7 +743,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}"
+								"{{orderHistory}}"
 							]
 						}
 					},
@@ -770,7 +766,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{{order}}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -778,7 +774,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}",
+								"{{orderHistory}}",
 								"order",
 								"{{order}}"
 							]
@@ -803,7 +799,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{{order}}/attachments",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}/attachments",
 							"host": [
 								"{{base_url}}"
 							],
@@ -811,7 +807,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}",
+								"{{orderHistory}}",
 								"order",
 								"{{order}}",
 								"attachments"
