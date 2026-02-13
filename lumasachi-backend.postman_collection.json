@@ -5,6 +5,28 @@
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "9427715"
 	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://localhost",
+			"type": "string"
+		},
+		{
+			"key": "bearerToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "order",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attachment",
+			"value": "",
+			"type": "string"
+		}
+	],
 	"item": [
 		{
 			"name": "Auth",
@@ -430,7 +452,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{}",
+							"raw": "{\n  \"order_id\": 1,\n  \"field_changed\": \"status\",\n  \"old_value\": null,\n  \"new_value\": \"In Progress\",\n  \"comment\": \"Started work\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -581,13 +603,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/up",
+							"raw": "{{base_url}}/api/v1/health/up",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
+								"health",
 								"up"
 							]
 						}
@@ -603,7 +626,18 @@
 					"name": "Index",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history",
 							"host": [
@@ -622,7 +656,18 @@
 					"name": "Store",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -650,7 +695,18 @@
 					"name": "Show",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
 							"host": [
@@ -670,7 +726,18 @@
 					"name": "Destroy",
 					"request": {
 						"method": "DELETE",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
 							"host": [
@@ -690,9 +757,20 @@
 					"name": "Order",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{order}",
+							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{{order}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -702,7 +780,7 @@
 								"history",
 								"{orderHistory}",
 								"order",
-								"{order}"
+								"{{order}}"
 							]
 						}
 					},
@@ -712,9 +790,20 @@
 					"name": "Order Attachments",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{order}/attachments",
+							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{{order}}/attachments",
 							"host": [
 								"{{base_url}}"
 							],
@@ -724,7 +813,7 @@
 								"history",
 								"{orderHistory}",
 								"order",
-								"{order}",
+								"{{order}}",
 								"attachments"
 							]
 						}
@@ -801,8 +890,23 @@
 									"type": "text"
 								},
 								{
+									"key": "priority",
+									"value": "High",
+									"type": "text"
+								},
+								{
 									"key": "assigned_to",
 									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "items[0][item_type]",
+									"value": "cylinder_head",
+									"type": "text"
+								},
+								{
+									"key": "items[0][components][0]",
+									"value": "bolts",
 									"type": "text"
 								}
 							]
@@ -838,7 +942,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/orders/{{order}}",
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/assign",
 							"host": [
 								"{{base_url}}"
 							],
@@ -846,7 +950,8 @@
 								"api",
 								"v1",
 								"orders",
-								"{{order}}"
+								"{{order}}",
+								"assign"
 							]
 						}
 					},
@@ -872,8 +977,23 @@
 							"mode": "urlencoded",
 							"urlencoded": [
 								{
+									"key": "title",
+									"value": "Orden actualizada",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "In Progress",
+									"type": "text"
+								},
+								{
+									"key": "priority",
+									"value": "Normal",
+									"type": "text"
+								},
+								{
 									"key": "notes",
-									"value": "Notas!!!",
+									"value": "Notas actualizadas",
 									"type": "text"
 								}
 							]
@@ -1116,12 +1236,369 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Budget",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "services[0][order_item_id]",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "services[0][service_key]",
+									"value": "wash_head_4cyl",
+									"type": "text"
+								},
+								{
+									"key": "services[0][measurement]",
+									"value": "0.25",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/budget",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"budget"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Approval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "authorized_service_ids[0]",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "down_payment",
+									"value": "500",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/customer-approval",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"customer-approval"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Work Completed",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "completed_service_ids[0]",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/work-completed",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"work-completed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Ready For Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/ready-for-delivery",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"ready-for-delivery"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deliver",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/deliver",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"deliver"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Track",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "uuid",
+									"value": "{{order}}",
+									"type": "text"
+								},
+								{
+									"key": "created_date",
+									"value": "2026-02-12",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/track",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"track"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Catalog",
+			"item": [
+				{
+					"name": "Engine Options",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/catalog/engine-options",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"engine-options"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "User",
 			"item": [
+				{
+					"name": "Employees",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/employees",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"employees"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"customers"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "Show",
 					"request": {
