@@ -13,12 +13,12 @@
 		},
 		{
 			"key": "bearerToken",
-			"value": "",
+			"value": "1|lumasachiGaPDp7FrtWzKb5pHhAFoRSeYWnCnGG8eKSI1NZmi0722fdf9",
 			"type": "string"
 		},
 		{
 			"key": "order",
-			"value": "",
+			"value": "019a5fa9-5dbd-7397-bdf3-140737d1447d",
 			"type": "string"
 		},
 		{
@@ -28,7 +28,7 @@
 		},
 		{
 			"key": "attachment",
-			"value": "",
+			"value": "01991272-7740-70b1-9178-b4349558fa45",
 			"type": "string"
 		}
 	],
@@ -622,18 +622,6 @@
 					"name": "Index",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history",
 							"host": [
@@ -652,18 +640,6 @@
 					"name": "Store",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -691,18 +667,6 @@
 					"name": "Show",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
@@ -722,18 +686,6 @@
 					"name": "Destroy",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
@@ -753,18 +705,6 @@
 					"name": "Order",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}",
 							"host": [
@@ -786,18 +726,6 @@
 					"name": "Order Attachments",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}/attachments",
 							"host": [
