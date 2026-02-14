@@ -7,7 +7,6 @@ namespace Tests\Feature\app\Http\Controllers;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Attachment;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -81,7 +80,6 @@ final class OrderHistoryControllerTest extends TestCase
         $order = Order::factory()->createQuietly([
             'assigned_to' => $user->id,
         ]);
-        $order->categories()->attach(Category::factory()->create()->id);
         $orderHistoryData = [
             'order_id' => $order->id,
             'field_changed' => 'status',
@@ -165,7 +163,6 @@ final class OrderHistoryControllerTest extends TestCase
         $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
         $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
         $orderHistory = OrderHistory::factory()->create(['order_id' => $order->id]);
-        $orderHistory->order->categories()->attach(Category::factory()->create()->id);
 
         $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
         $this->actingAs($user);
@@ -174,10 +171,8 @@ final class OrderHistoryControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'order' => ['id', 'status', 'categories'],
+                'order' => ['id', 'status'],
             ]);
-        $this->assertIsArray($response->json('order.categories'));
-        $this->assertGreaterThan(0, count($response->json('order.categories') ?? []));
     }
 
     /**

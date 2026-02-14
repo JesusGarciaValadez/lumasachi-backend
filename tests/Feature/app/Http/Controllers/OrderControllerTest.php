@@ -8,7 +8,6 @@ use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\User;
@@ -74,10 +73,6 @@ final class OrderControllerTest extends TestCase
             'assigned_to' => $this->employee->id,
             'created_by' => $this->admin->id,
         ]);
-        foreach ($orders as $order) {
-            $order->categories()->attach(Category::factory()->create()->id);
-        }
-
         // Create orders for another employee that should not be returned
         $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $otherOrders = Order::factory()->count(5)->createQuietly([
@@ -86,10 +81,6 @@ final class OrderControllerTest extends TestCase
             'assigned_to' => $otherEmployee->id,
             'created_by' => $this->admin->id,
         ]);
-        foreach ($otherOrders as $order) {
-            $order->categories()->attach(Category::factory()->create()->id);
-        }
-
         $response = $this->getJson('/api/v1/orders');
 
         $response->assertOk()
@@ -106,17 +97,11 @@ final class OrderControllerTest extends TestCase
 
         $this->actingAs($this->employee);
 
-        $category = Category::factory()->create([
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-        ]);
-
         $orderData = [
             'customer_id' => $this->customer->id,
             'title' => 'Test Order Title',
             'description' => 'Test order description',
             'priority' => OrderPriority::HIGH->value,
-            'categories' => [$category->id],
             'notes' => 'Some notes about the order',
             'assigned_to' => $this->employee->id,
             'items' => [
@@ -140,12 +125,7 @@ final class OrderControllerTest extends TestCase
         ]);
 
         $order = Order::firstWhere('title', 'Test Order Title');
-        $this->assertCount(1, $order->categories);
-        $this->assertEquals($category->id, $order->categories->first()->id);
-        $this->assertDatabaseHas('order_category', [
-            'order_id' => $order->id,
-            'category_id' => $category->id,
-        ]);
+        $this->assertNotNull($order);
 
         $this->employee->notify(new OrderCreatedNotification($order));
 
@@ -195,48 +175,6 @@ final class OrderControllerTest extends TestCase
     }
 
     /**
-     * Test creating an order with multiple categories.
-     */
-    #[Test]
-    public function it_checks_if_store_creates_order_with_multiple_categories(): void
-    {
-        $this->actingAs($this->employee);
-
-        $categories = Category::factory()->count(2)->create([
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-        ]);
-
-        $orderData = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Order with Multiple Categories',
-            'description' => 'This order has more than one category.',
-            'priority' => OrderPriority::NORMAL->value,
-            'categories' => $categories->pluck('id')->toArray(),
-            'assigned_to' => $this->employee->id,
-            'items' => [
-                ['item_type' => OrderItemType::CylinderHead->value],
-            ],
-        ];
-
-        $response = $this->postJson('/api/v1/orders', $orderData);
-
-        $response->assertCreated();
-
-        $order = Order::firstWhere('title', 'Order with Multiple Categories');
-        $this->assertCount(2, $order->categories);
-        $this->assertTrue($order->categories->contains($categories->first()));
-        $this->assertTrue($order->categories->contains($categories->last()));
-
-        foreach ($categories as $cat) {
-            $this->assertDatabaseHas('order_category', [
-                'order_id' => $order->id,
-                'category_id' => $cat->id,
-            ]);
-        }
-    }
-
-    /**
      * Test showing a specific order
      */
     #[Test]
@@ -250,7 +188,6 @@ final class OrderControllerTest extends TestCase
             'created_by' => $this->admin->id,
             'updated_by' => $this->admin->id,
         ]);
-        $order->categories()->attach(Category::factory()->create()->id);
 
         $response = $this->getJson('/api/v1/orders/'.$order->uuid);
 
@@ -261,9 +198,6 @@ final class OrderControllerTest extends TestCase
                 'description',
                 'status',
                 'priority',
-                'categories' => [
-                    '*' => ['id', 'name'],
-                ],
                 'customer' => ['id', 'first_name', 'last_name', 'email'],
                 'assigned_to' => ['id', 'first_name', 'last_name', 'email'],
                 'created_by' => ['id', 'first_name', 'last_name', 'email'],
@@ -285,14 +219,10 @@ final class OrderControllerTest extends TestCase
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
         ]);
-        $order->categories()->attach(Category::factory()->create()->id);
-
-        $newCategory = Category::factory()->create();
         $updateData = [
             'title' => 'Updated Order Title',
             'status' => OrderStatus::InProgress->value,
             'priority' => OrderPriority::URGENT->value,
-            'categories' => [$newCategory->id],
         ];
 
         $v1 = (int) Cache::get('orders:version', 0);
@@ -310,9 +240,6 @@ final class OrderControllerTest extends TestCase
                 'title' => 'Updated Order Title',
                 'status' => OrderStatus::InProgress->value,
                 'priority' => OrderPriority::URGENT->value,
-                'categories' => [
-                    ['id' => $newCategory->id, 'name' => $newCategory->name],
-                ],
             ],
         ]);
 
@@ -322,9 +249,6 @@ final class OrderControllerTest extends TestCase
             'title' => 'Updated Order Title',
             'updated_by' => $this->employee->id,
         ]);
-        $reloaded = $order->fresh('categories');
-        $this->assertCount(1, $reloaded->categories);
-        $this->assertTrue($reloaded->categories->contains($newCategory));
     }
 
     /**
@@ -342,7 +266,6 @@ final class OrderControllerTest extends TestCase
             'created_by' => $this->employee->id,
             'assigned_to' => $this->employee->id,
         ]);
-        $order->categories()->attach(Category::factory()->create()->id);
 
         $response = $this->putJson('/api/v1/orders/'.$order->uuid, [
             'title' => 'New Title Only',
@@ -366,7 +289,7 @@ final class OrderControllerTest extends TestCase
     {
         $this->actingAs($this->superAdmin);
 
-        $order = Order::factory()->withCategories()->createQuietly();
+        $order = Order::factory()->createQuietly();
 
         $v1 = (int) Cache::get('orders:version', 0);
 
@@ -423,9 +346,6 @@ final class OrderControllerTest extends TestCase
             'assigned_to' => $this->employee->id,
             'created_by' => $this->admin->id,
         ]);
-        foreach ($orders as $order) {
-            $order->categories()->attach(Category::factory()->create()->id);
-        }
 
         $first = $this->getJson('/api/v1/orders');
         $first->assertOk()->assertHeader('X-Cache', 'MISS');
@@ -444,17 +364,11 @@ final class OrderControllerTest extends TestCase
 
         $this->actingAs($this->employee);
 
-        $category = Category::factory()->create([
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-        ]);
-
         $orderData = [
             'customer_id' => $this->customer->id,
             'title' => 'Motor Order with Items',
             'description' => 'Order with motor info and items',
             'priority' => OrderPriority::HIGH->value,
-            'categories' => [$category->id],
             'assigned_to' => $this->employee->id,
             'motor_info' => [
                 'brand' => 'Nissan',
@@ -513,7 +427,6 @@ final class OrderControllerTest extends TestCase
             'assigned_to' => $this->employee->id,
             'created_by' => $this->admin->id,
         ]);
-        $order->categories()->attach(Category::factory()->create()->id);
 
         $first = $this->getJson('/api/v1/orders/'.$order->uuid);
         $first->assertOk()->assertHeader('X-Cache', 'MISS');

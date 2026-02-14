@@ -5,6 +5,33 @@
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "9427715"
 	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://localhost",
+			"type": "string"
+		},
+		{
+			"key": "bearerToken",
+			"value": "1|lumasachiGaPDp7FrtWzKb5pHhAFoRSeYWnCnGG8eKSI1NZmi0722fdf9",
+			"type": "string"
+		},
+		{
+			"key": "order",
+			"value": "019a5fa9-5dbd-7397-bdf3-140737d1447d",
+			"type": "string"
+		},
+		{
+			"key": "orderHistory",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attachment",
+			"value": "01991272-7740-70b1-9178-b4349558fa45",
+			"type": "string"
+		}
+	],
 	"item": [
 		{
 			"name": "Auth",
@@ -428,15 +455,6 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/logout",
 							"host": [
@@ -554,124 +572,6 @@
 			]
 		},
 		{
-			"name": "Categories",
-			"item": [
-				{
-					"name": "Index",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Store Bulk",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "categories[0][name]",
-									"value": "Categoria 7",
-									"contentType": "",
-									"type": "text"
-								},
-								{
-									"key": "categories[0][is_active]",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "categories[1][name]",
-									"value": "Categoria 8",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/bulk",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"bulk"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Destroy",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{bearerToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/8",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"8"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Health",
 			"item": [
 				{
@@ -699,13 +599,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/up",
+							"raw": "{{base_url}}/api/v1/health/up",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
+								"health",
 								"up"
 							]
 						}
@@ -721,7 +622,6 @@
 					"name": "Index",
 					"request": {
 						"method": "GET",
-						"header": [],
 						"url": {
 							"raw": "{{base_url}}/api/v1/history",
 							"host": [
@@ -740,7 +640,6 @@
 					"name": "Store",
 					"request": {
 						"method": "POST",
-						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{}",
@@ -768,9 +667,8 @@
 					"name": "Show",
 					"request": {
 						"method": "GET",
-						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -778,7 +676,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}"
+								"{{orderHistory}}"
 							]
 						}
 					},
@@ -788,9 +686,8 @@
 					"name": "Destroy",
 					"request": {
 						"method": "DELETE",
-						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -798,7 +695,7 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}"
+								"{{orderHistory}}"
 							]
 						}
 					},
@@ -808,9 +705,8 @@
 					"name": "Order",
 					"request": {
 						"method": "GET",
-						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{order}",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -818,9 +714,9 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}",
+								"{{orderHistory}}",
 								"order",
-								"{order}"
+								"{{order}}"
 							]
 						}
 					},
@@ -830,9 +726,8 @@
 					"name": "Order Attachments",
 					"request": {
 						"method": "GET",
-						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/history/{orderHistory}/order/{order}/attachments",
+							"raw": "{{base_url}}/api/v1/history/{{orderHistory}}/order/{{order}}/attachments",
 							"host": [
 								"{{base_url}}"
 							],
@@ -840,9 +735,9 @@
 								"api",
 								"v1",
 								"history",
-								"{orderHistory}",
+								"{{orderHistory}}",
 								"order",
-								"{order}",
+								"{{order}}",
 								"attachments"
 							]
 						}
@@ -919,13 +814,23 @@
 									"type": "text"
 								},
 								{
-									"key": "category_id",
-									"value": "1",
+									"key": "priority",
+									"value": "High",
 									"type": "text"
 								},
 								{
 									"key": "assigned_to",
 									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "items[0][item_type]",
+									"value": "cylinder_head",
+									"type": "text"
+								},
+								{
+									"key": "items[0][components][0]",
+									"value": "bolts",
 									"type": "text"
 								}
 							]
@@ -961,7 +866,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/orders/{{order}}",
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/assign",
 							"host": [
 								"{{base_url}}"
 							],
@@ -969,7 +874,8 @@
 								"api",
 								"v1",
 								"orders",
-								"{{order}}"
+								"{{order}}",
+								"assign"
 							]
 						}
 					},
@@ -995,8 +901,23 @@
 							"mode": "urlencoded",
 							"urlencoded": [
 								{
+									"key": "title",
+									"value": "Orden actualizada",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "In Progress",
+									"type": "text"
+								},
+								{
+									"key": "priority",
+									"value": "Normal",
+									"type": "text"
+								},
+								{
 									"key": "notes",
-									"value": "Notas!!!",
+									"value": "Notas actualizadas",
 									"type": "text"
 								}
 							]
@@ -1239,12 +1160,369 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Budget",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "services[0][order_item_id]",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "services[0][service_key]",
+									"value": "wash_head_4cyl",
+									"type": "text"
+								},
+								{
+									"key": "services[0][measurement]",
+									"value": "0.25",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/budget",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"budget"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Approval",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "authorized_service_ids[0]",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "down_payment",
+									"value": "500",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/customer-approval",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"customer-approval"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Work Completed",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "completed_service_ids[0]",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/work-completed",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"work-completed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Ready For Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/ready-for-delivery",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"ready-for-delivery"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deliver",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order}}/deliver",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order}}",
+								"deliver"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Track",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "uuid",
+									"value": "{{order}}",
+									"type": "text"
+								},
+								{
+									"key": "created_date",
+									"value": "2026-02-12",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/track",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"track"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Catalog",
+			"item": [
+				{
+					"name": "Engine Options",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/catalog/engine-options",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"engine-options"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "User",
 			"item": [
+				{
+					"name": "Employees",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/employees",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"employees"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{bearerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"customers"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "Show",
 					"request": {

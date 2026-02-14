@@ -26,7 +26,6 @@ final class OrderResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status?->value,
             'priority' => $this->priority?->value,
-            'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'estimated_completion' => $this->estimated_completion,
             'actual_completion' => $this->actual_completion,
             'notes' => $this->notes,

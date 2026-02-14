@@ -19,12 +19,10 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\Category;
 use App\Observers\OrderObserver;
 use App\Policies\OrderPolicy;
 use App\Policies\OrderHistoryPolicy;
 use App\Policies\UserPolicy;
-use App\Policies\CategoryPolicy;
 use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,7 +31,6 @@ class AppServiceProvider extends ServiceProvider
         Order::class => OrderPolicy::class,
         OrderHistory::class => OrderHistoryPolicy::class,
         User::class => UserPolicy::class,
-        Category::class => CategoryPolicy::class,
     ];
 
     /**

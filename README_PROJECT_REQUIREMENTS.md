@@ -480,7 +480,6 @@ class Order extends Model
         'description',
         'status',
         'priority',
-        'category',
         'estimated_completion',
         'actual_completion',
         'notes',
@@ -556,7 +555,6 @@ Schema::create('orders', function (Blueprint $table) {
         'Delivered', 'Paid', 'Returned', 'Not paid', 'Cancelled'
     ])->default('Open');
     $table->enum('priority', ['Low', 'Normal', 'High', 'Urgent'])->default('Normal');
-    $table->string('category')->nullable();
     $table->timestamp('estimated_completion')->nullable();
     $table->timestamp('actual_completion')->nullable();
     $table->text('notes')->nullable();
@@ -1846,7 +1844,6 @@ class CreateOrderRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'priority' => 'required|in:Low,Normal,High,Urgent',
-            'category' => 'nullable|string|max:100',
             'estimated_completion' => 'nullable|date|after:today',
             'assigned_to' => 'nullable|exists:users,id',
         ];
@@ -1943,7 +1940,6 @@ class OrderResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'priority' => $this->priority,
-            'category' => $this->category,
             'estimatedCompletion' => $this->estimated_completion,
             'actualCompletion' => $this->actual_completion,
             'createdBy' => new UserResource($this->whenLoaded('createdBy')),

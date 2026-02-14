@@ -7,7 +7,6 @@ namespace Tests\Unit\database\factories;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
-use App\Models\Category;
 use App\Models\Order;
 use App\Models\User;
 use Carbon\Carbon;
@@ -266,7 +265,7 @@ final class OrderFactoryTest extends TestCase
     #[Test]
     public function it_checks_if_factory_generates_realistic_data(): void
     {
-        $order = Order::factory()->withCategories()->createQuietly();
+        $order = Order::factory()->createQuietly();
 
         // Title should be a short sentence (3 words)
         $wordCount = str_word_count($order->title);
@@ -276,17 +275,6 @@ final class OrderFactoryTest extends TestCase
         // Description should be a paragraph
         $this->assertGreaterThan(10, mb_strlen($order->description));
 
-        // Check that categories relationship exists and is not empty
-        $this->assertNotNull($order->categories);
-        $this->assertGreaterThan(0, $order->categories->count());
-        $this->assertInstanceOf(Category::class, $order->categories->first());
-    }
-
-    #[Test]
-    public function it_attaches_the_requested_number_of_categories(): void
-    {
-        $order = Order::factory()->withCategories(3)->createQuietly();
-        $this->assertCount(3, $order->categories);
     }
 
     /**

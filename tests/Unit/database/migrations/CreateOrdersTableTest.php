@@ -165,7 +165,6 @@ final class CreateOrdersTableTest extends TestCase
         // Drop dependent tables first to avoid foreign key constraint issues
         Schema::dropIfExists('attachments');
         Schema::dropIfExists('order_histories');
-        Schema::dropIfExists('order_category');
         // New dependent tables introduced by motor items architecture
         Schema::dropIfExists('order_services');
         Schema::dropIfExists('order_item_components');
@@ -193,7 +192,7 @@ final class CreateOrdersTableTest extends TestCase
     public function it_checks_if_data_insertion_with_order_model(): void
     {
         $user = User::factory()->create();
-        $order = Order::factory()->withCategories()->createQuietly([
+        $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
             'title' => 'Test Order',
             'description' => 'This is a test order.',
@@ -235,8 +234,6 @@ final class CreateOrdersTableTest extends TestCase
             'assigned_to' => $creator->id,
         ]);
 
-        $order->load('categories');
-        $this->assertCount(0, $order->categories);
         $this->assertNull($order->estimated_completion);
         $this->assertNull($order->actual_completion);
         $this->assertNull($order->notes);
