@@ -6,16 +6,17 @@
         "codex",
         "copilot",
         "opencode",
-        "gemini"
+        "gemini",
+        "amp"
     ],
     "guidelines": true,
     "herd_mcp": false,
     "mcp": true,
+    "nightwatch_mcp": true,
     "sail": true,
     "skills": [
         "pennant-development",
         "inertia-vue-development",
-        "wayfinder-development",
         "tailwindcss-development"
     ]
 }

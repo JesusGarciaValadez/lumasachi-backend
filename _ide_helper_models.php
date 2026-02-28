@@ -246,6 +246,7 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \App\Models\OrderItem $orderItem
+ * @method static \Database\Factories\OrderItemComponentFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent query()
@@ -286,6 +287,7 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read float $remaining_balance
  * @property-read \App\Models\Order $order
+ * @method static \Database\Factories\OrderMotorInfoFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo query()
@@ -374,6 +376,7 @@ namespace App\Models{
  * @property-read float $net_price
  * @property-read string $service_name
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog active()
+ * @method static \Database\Factories\ServiceCatalogFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog forItemType(\App\Enums\OrderItemType $type)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newQuery()
@@ -455,3 +458,4 @@ namespace App\Models{
 	#[\AllowDynamicProperties]
 	class IdeHelperUser {}
 }
+

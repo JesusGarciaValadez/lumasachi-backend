@@ -2,3 +2,7 @@
 command = "vendor/bin/sail"
 args = ["artisan", "boost:mcp"]
 cwd = "/var/www/html"
+
+[mcp_servers.nightwatch]
+command = "npx"
+args = ["-y", "mcp-remote", "https://nightwatch.laravel.com/mcp"]
