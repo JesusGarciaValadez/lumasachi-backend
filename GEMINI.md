@@ -10,7 +10,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.4.17
-- inertiajs/inertia-laravel (INERTIA) - v2
+- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/framework (LARAVEL) - v12
 - laravel/horizon (HORIZON) - v5
 - laravel/nightwatch (NIGHTWATCH) - v1
@@ -27,8 +27,8 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - phpunit/phpunit (PHPUNIT) - v11
 - rector/rector (RECTOR) - v2
-- \@inertiajs/vue3 (INERTIA) - v2
-- \@laravel/vite-plugin-wayfinder (WAYFINDER) - v0
+- \@inertiajs/vue3 (INERTIA_VUE) - v2
+- \@laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
 - eslint (ESLINT) - v10
 - prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v4
@@ -40,7 +40,6 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - `pennant-development` — Manages feature flags with Laravel Pennant. Activates when creating, checking, or toggling feature flags; showing or hiding features conditionally; implementing A/B testing; working with @feature directive; or when the user mentions feature flags, feature toggles, Pennant, conditional features, rollouts, or gradually enabling features.
 - `inertia-vue-development` — Develops Inertia.js v2 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using &lt;Link&gt;, &lt;Form&gt;, useForm, or router; working with deferred props, prefetching, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
-- `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 
 ## Conventions
@@ -177,12 +176,10 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
-=== inertia-laravel/v2 rules ===
-
 # Inertia v2
 
 - Use all Inertia features from v1 and v2. Check the documentation before making changes to ensure the correct approach.
-- New features: deferred props, infinite scrolling (merging props + `WhenVisible`), lazy loading on scroll, polling, prefetching.
+- New features: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
 - When using deferred props, add an empty state with a pulsing or animated skeleton.
 
 === laravel/core rules ===
@@ -273,51 +270,11 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - IMPORTANT: Always use `search-docs` tool for version-specific Pennant documentation and updated code examples.
 - IMPORTANT: Activate `pennant-development` every time you're working with a Pennant or feature-flag-related task.
 
-=== boost/core rules ===
-
-# Laravel Boost
-
-- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
-
-## Artisan
-
-- Use the `list-artisan-commands` tool when you need to call an Artisan command to double-check the available parameters.
-
-## URLs
-
-- Whenever you share a project URL with the user, you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain/IP, and port.
-
-## Tinker / Debugging
-
-- You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
-- Use the `database-query` tool when you only need to read from the database.
-- Use the `database-schema` tool to inspect table structure before writing migrations or models.
-
-## Reading Browser Logs With the `browser-logs` Tool
-
-- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
-- Only recent browser logs will be useful - ignore old logs.
-
-## Searching Documentation (Critically Important)
-
-- Boost comes with a powerful `search-docs` tool you should use before trying other approaches when working with Laravel or Laravel ecosystem packages. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
-- Search the documentation before making code changes to ensure we are taking the correct approach.
-- Use multiple, broad, simple, topic-based queries at once. For example: `['rate limiting', 'routing rate limiting', 'routing']`. The most relevant results will be returned first.
-- Do not add package names to queries; package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
-
-### Available Search Syntax
-
-1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'.
-2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit".
-3. Quoted Phrases (Exact Position) - query="infinite scroll" - words must be adjacent and in that order.
-4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit".
-5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms.
-
 === pint/core rules ===
 
 # Laravel Pint Code Formatter
 
-- You must run `vendor/bin/sail bin pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
+- If you have modified any PHP files, you must run `vendor/bin/sail bin pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
 - Do not run `vendor/bin/sail bin pint --test --format agent`, simply run `vendor/bin/sail bin pint --format agent` to fix any formatting issues.
 
 === phpunit/core rules ===
@@ -344,18 +301,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
-
-=== wayfinder/core rules ===
-
-# Laravel Wayfinder
-
-Wayfinder generates TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
-
-- IMPORTANT: Activate `wayfinder-development` skill whenever referencing backend routes in frontend components.
-- Invokable Controllers: `import StorePost from '@/actions/.../StorePostController'; StorePost()`.
-- Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
-- Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
-- Inertia: Use `.form()` with `<Form>` component or `form.submit(store())` with useForm.
 
 === tailwindcss/core rules ===
 

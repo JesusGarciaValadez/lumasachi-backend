@@ -1,5 +1,5 @@
 {
-    "mcpServers": {
+    "amp.mcpServers": {
         "laravel-boost": {
             "command": "vendor/bin/sail",
             "args": [
@@ -8,7 +8,6 @@
             ]
         },
         "nightwatch": {
-            "type": "http",
             "url": "https://nightwatch.laravel.com/mcp"
         }
     }
