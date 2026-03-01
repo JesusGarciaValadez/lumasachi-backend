@@ -39,7 +39,9 @@ final class CatalogController extends Controller
 
             $key = self::engineOptionsKey($locale, $type);
             $hit = Cache::has($key);
-            $payload = Cache::remember($key, now()->addSeconds(self::ttlEngineOptions()), function () use ($type) {
+            $payload = Cache::remember($key, now()->addSeconds(self::ttlEngineOptions()), function () use ($type, $locale) {
+                App::setLocale($locale);
+
                 return [
                     'item_type' => $type->value,
                     'item_type_label' => $this->itemTypeLabel($type),
@@ -55,7 +57,8 @@ final class CatalogController extends Controller
         $types = OrderItemType::cases();
         $key = self::engineOptionsKey($locale, null);
         $hit = Cache::has($key);
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlEngineOptions()), function () use ($types) {
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlEngineOptions()), function () use ($types, $locale) {
+            App::setLocale($locale);
             $itemTypes = array_map(fn ($t) => [
                 'key' => $t->value,
                 'label' => $this->itemTypeLabel($t),

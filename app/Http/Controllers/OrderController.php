@@ -21,7 +21,6 @@ use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 final class OrderController extends Controller
 {
@@ -178,12 +177,9 @@ final class OrderController extends Controller
     public function update(UpdateOrderRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
-
-        DB::transaction(function () use ($order, $validated, $request) {
-            $order->update(array_merge($validated, [
-                'updated_by' => $request->user()->id,
-            ]));
-        });
+        $order->update(array_merge($validated, [
+            'updated_by' => $request->user()->id,
+        ]));
 
         return response()->json([
             'message' => 'Order updated successfully.',

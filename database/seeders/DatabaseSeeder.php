@@ -143,6 +143,9 @@ final class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Seed realistic catalog work orders based on work_order_* and price_list_* references
+        $this->call(CatalogOrderSeeder::class);
+
         // Create Orders with different statuses
 
         // Order 1: Urgent order in progress
