@@ -14,6 +14,11 @@
       "description": "Staging"
     }
   ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
   "paths": {
     "/orders/{order}/attachments": {
       "get": {
@@ -771,7 +776,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/health": {
@@ -787,12 +793,51 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string"
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "up"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "API is operational"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "php_version": {
+                      "type": "string"
+                    },
+                    "laravel_version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message",
+                    "timestamp",
+                    "environment",
+                    "version",
+                    "php_version",
+                    "laravel_version"
+                  ]
                 }
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/reset-password": {
@@ -1667,7 +1712,10 @@
                   "type": "object",
                   "properties": {
                     "attachments": {
-                      "type": "string"
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AttachmentResource"
+                      }
                     }
                   },
                   "required": [
@@ -1735,7 +1783,6 @@
     "/register": {
       "post": {
         "operationId": "registeredUser.store",
-        "description": "⚠️ Cannot generate request documentation: Undefined constant App\\Models\\User::class",
         "summary": "Handle an incoming registration request",
         "tags": [
           "RegisteredUser"
@@ -1753,6 +1800,45 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationException"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 255
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "password_confirmation": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "email",
+                  "password",
+                  "password_confirmation"
+                ]
+              }
+            }
           }
         }
       }
@@ -2346,7 +2432,9 @@
               "Paid",
               "Returned",
               "Not Paid",
-              "Cancelled"
+              "Cancelled",
+              "On Hold",
+              "Completed"
             ]
           },
           "priority": {
@@ -2688,6 +2776,13 @@
             }
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Token"
       }
     }
   }

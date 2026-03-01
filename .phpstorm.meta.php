@@ -3428,8 +3428,7 @@ namespace PHPSTORM_META {
 'api.users.customers','home','dashboard',
 'profile.edit','profile.update','profile.destroy','password.edit','password.update',
 'appearance','register','login',
-'password.request','password.email','password.reset','password.store','verification.notice',
-'verification.verify','verification.send','password.confirm','logout',
+'password.request','password.reset','password.confirm',
 'web.catalog.engine-options','web.orders.index','web.orders.show','storage.local','storage.local.upload',
 'scramble.docs.ui','scramble.docs.document',);
         registerArgumentsSet('views', 
@@ -3537,7 +3536,7 @@ namespace PHPSTORM_META {
 'DB_PORT','DB_DATABASE','DB_USERNAME','DB_PASSWORD','SESSION_DRIVER',
 'SESSION_LIFETIME','SESSION_ENCRYPT','SESSION_PATH','SESSION_DOMAIN','SESSION_SECURE_COOKIE',
 'BROADCAST_CONNECTION','FILESYSTEM_DISK','QUEUE_CONNECTION','CACHE_STORE','ORDERS_INDEX_TTL',
-'ORDERS_SHOW_TTL','CATEGORIES_INDEX_TTL','ORDER_HISTORIES_INDEX_TTL','ORDER_HISTORIES_SHOW_TTL','MEMCACHED_HOST',
+'ORDERS_SHOW_TTL','ORDER_HISTORIES_INDEX_TTL','ORDER_HISTORIES_SHOW_TTL','MEMCACHED_HOST',
 'REDIS_CLIENT','REDIS_HOST','REDIS_PASSWORD','REDIS_PORT','MAIL_MAILER',
 'MAIL_HOST','MAIL_PORT','MAIL_USERNAME','MAIL_PASSWORD','MAIL_ENCRYPTION',
 'MAIL_FROM_ADDRESS','MAIL_FROM_NAME','AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_DEFAULT_REGION',
