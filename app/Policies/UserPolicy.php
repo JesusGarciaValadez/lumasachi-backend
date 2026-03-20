@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
-use Illuminate\Auth\Access\Response;
 use App\Enums\UserRole;
+use App\Models\User;
 
 final class UserPolicy
 {
@@ -15,7 +16,7 @@ final class UserPolicy
     {
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 
@@ -32,7 +33,7 @@ final class UserPolicy
         // Only admins can view other users
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 
@@ -43,7 +44,7 @@ final class UserPolicy
     {
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 
@@ -60,7 +61,7 @@ final class UserPolicy
         // Only admins can update other users
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 
@@ -90,7 +91,7 @@ final class UserPolicy
         // Only admins can restore other users
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 
@@ -107,7 +108,7 @@ final class UserPolicy
         // Only admins can delete other users
         return in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR
+            UserRole::ADMINISTRATOR,
         ]);
     }
 }

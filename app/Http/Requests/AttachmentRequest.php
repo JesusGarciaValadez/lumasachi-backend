@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
+use App\Models\Attachment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
-use App\Models\Attachment;
 
 final class AttachmentRequest extends FormRequest
 {
@@ -36,7 +38,7 @@ final class AttachmentRequest extends FormRequest
             ],
             'name' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'attachable_type' => 'required|string|in:' . implode(',', $this->getAllowedAttachableTypes()),
+            'attachable_type' => 'required|string|in:'.implode(',', $this->getAllowedAttachableTypes()),
             'attachable_id' => 'required|integer|min:1',
         ];
     }
@@ -118,4 +120,3 @@ final class AttachmentRequest extends FormRequest
         ];
     }
 }
-

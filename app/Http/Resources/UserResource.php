@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class UserResource extends JsonResource
+final class UserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,8 +19,8 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
-            'company_uuid' => $this->whenNotNull($this->whenLoaded('company', fn($company) => $company->uuid)),
-            'company_name' => $this->whenNotNull($this->whenLoaded('company', fn($company) => $company->name)),
+            'company_uuid' => $this->whenNotNull($this->whenLoaded('company', fn ($company) => $company->uuid)),
+            'company_name' => $this->whenNotNull($this->whenLoaded('company', fn ($company) => $company->name)),
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'full_name' => $this->full_name,

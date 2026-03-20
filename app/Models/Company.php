@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Database\Factories\CompanyFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Database\Factories\CompanyFactory;
-use App\Models\User;
 
 /**
  * @mixin IdeHelperCompany
  */
-class Company extends Model
+final class Company extends Model
 {
     use HasFactory, HasUuids;
 
@@ -97,7 +98,7 @@ class Company extends Model
      */
     public function users()
     {
-        return $this->hasMany(\App\Models\User::class, 'company_id', 'id');
+        return $this->hasMany(User::class, 'company_id', 'id');
     }
 
     /**
@@ -105,7 +106,7 @@ class Company extends Model
      */
     public function activeUsers()
     {
-        return $this->hasMany(\App\Models\User::class, 'company_id', 'id')->where('is_active', true);
+        return $this->hasMany(User::class, 'company_id', 'id')->where('is_active', true);
     }
 
     /**
@@ -142,8 +143,6 @@ class Company extends Model
 
     /**
      * Get the columns that should receive a unique identifier.
-     *
-     * @return array
      */
     public function uniqueIds(): array
     {
@@ -160,4 +159,3 @@ class Company extends Model
         return CompanyFactory::new();
     }
 }
-

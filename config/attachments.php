@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -42,19 +44,19 @@ return [
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         'text/plain',
         'text/csv',
-        
+
         // Images
         'image/jpeg',
         'image/png',
         'image/gif',
         'image/svg+xml',
         'image/webp',
-        
+
         // Compressed files
         'application/zip',
         'application/x-rar-compressed',
         'application/x-7z-compressed',
-        
+
         // Other common formats
         'application/json',
         'application/xml',

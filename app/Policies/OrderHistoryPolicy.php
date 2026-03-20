@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
-use App\Models\OrderHistory;
 use App\Enums\UserRole;
+use App\Models\OrderHistory;
+use App\Models\User;
 
-class OrderHistoryPolicy
+final class OrderHistoryPolicy
 {
     /**
      * Determine whether the user can view any order histories.
@@ -67,7 +69,7 @@ class OrderHistoryPolicy
         return in_array($user->role, [
             UserRole::ADMINISTRATOR,
             UserRole::SUPER_ADMINISTRATOR,
-            UserRole::EMPLOYEE
+            UserRole::EMPLOYEE,
         ]);
     }
 

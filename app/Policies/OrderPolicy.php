@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 final class OrderPolicy
 {
@@ -18,7 +19,7 @@ final class OrderPolicy
             UserRole::SUPER_ADMINISTRATOR->value,
             UserRole::ADMINISTRATOR->value,
             UserRole::EMPLOYEE->value,
-            UserRole::CUSTOMER->value
+            UserRole::CUSTOMER->value,
         ]);
     }
 
@@ -43,7 +44,7 @@ final class OrderPolicy
         return in_array($user->role->value, [
             UserRole::SUPER_ADMINISTRATOR->value,
             UserRole::ADMINISTRATOR->value,
-            UserRole::EMPLOYEE->value
+            UserRole::EMPLOYEE->value,
         ]);
     }
 
@@ -103,7 +104,7 @@ final class OrderPolicy
     {
         return in_array($user->role->value, [
             UserRole::SUPER_ADMINISTRATOR->value,
-            UserRole::ADMINISTRATOR->value
+            UserRole::ADMINISTRATOR->value,
         ]);
     }
 }

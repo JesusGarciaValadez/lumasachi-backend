@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\User;
-use App\Models\Order;
 
-class AttachmentFactory extends Factory
+final class AttachmentFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
@@ -29,8 +31,8 @@ class AttachmentFactory extends Factory
             'uuid' => Str::uuid7(),
             'attachable_id' => $attachable->id,
             'attachable_type' => $attachable->getMorphClass(),
-            'file_name' => $this->faker->word . '.' . $this->faker->fileExtension,
-            'file_path' => 'attachments/' . date('Y/m/d') . '/' . Str::random(40) . '.' . $this->faker->fileExtension,
+            'file_name' => $this->faker->word.'.'.$this->faker->fileExtension,
+            'file_path' => 'attachments/'.date('Y/m/d').'/'.Str::random(40).'.'.$this->faker->fileExtension,
             'file_size' => $this->faker->numberBetween(100, 10000),
             'mime_type' => $this->faker->randomElement([
                 'application/pdf',
@@ -48,7 +50,7 @@ class AttachmentFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'mime_type' => 'application/pdf',
-                'file_name' => $this->faker->word . '.pdf',
+                'file_name' => $this->faker->word.'.pdf',
             ];
         });
     }
@@ -58,7 +60,7 @@ class AttachmentFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'mime_type' => 'image/png',
-                'file_name' => $this->faker->word . '.png',
+                'file_name' => $this->faker->word.'.png',
             ];
         });
     }
@@ -68,7 +70,7 @@ class AttachmentFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'file_name' => $this->faker->word . '.xlsx',
+                'file_name' => $this->faker->word.'.xlsx',
             ];
         });
     }
