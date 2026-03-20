@@ -109,7 +109,7 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	class IdeHelperCompany {}
+	final class IdeHelperCompany {}
 }
 
 namespace App\Models{
@@ -456,6 +456,6 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	class IdeHelperUser {}
+	final class IdeHelperUser {}
 }
 
