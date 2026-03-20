@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Attachment;
+use Illuminate\Foundation\Http\FormRequest;
 
-class UploadAttachmentRequest extends FormRequest
+final class UploadAttachmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -33,16 +35,16 @@ class UploadAttachmentRequest extends FormRequest
                 'required_without:files',
                 'file',
                 'max:10240', // 10MB max
-                'mimes:' . implode(',', Attachment::getAllowedExtensions()),
-                'mimetypes:' . implode(',', $allowedMimes)
+                'mimes:'.implode(',', Attachment::getAllowedExtensions()),
+                'mimetypes:'.implode(',', $allowedMimes),
             ],
             // Multiple files support
             'files' => ['required_without:file', 'array', 'min:1'],
             'files.*' => [
                 'file',
                 'max:10240',
-                'mimes:' . implode(',', Attachment::getAllowedExtensions()),
-                'mimetypes:' . implode(',', $allowedMimes)
+                'mimes:'.implode(',', Attachment::getAllowedExtensions()),
+                'mimetypes:'.implode(',', $allowedMimes),
             ],
             // Optional naming (single or multiple)
             'name' => 'nullable|string|max:255',
@@ -56,8 +58,6 @@ class UploadAttachmentRequest extends FormRequest
 
     /**
      * Get custom messages for validator errors.
-     *
-     * @return array
      */
     public function messages(): array
     {
@@ -65,7 +65,7 @@ class UploadAttachmentRequest extends FormRequest
             'file.required_without' => 'Please provide a file or files to upload.',
             'file.file' => 'The upload must be a valid file.',
             'file.max' => 'The file size cannot exceed 10MB.',
-            'file.mimes' => 'The file type is not allowed. Allowed types: ' . implode(', ', Attachment::getAllowedExtensions()),
+            'file.mimes' => 'The file type is not allowed. Allowed types: '.implode(', ', Attachment::getAllowedExtensions()),
             'file.mimetypes' => 'The file format is not supported.',
 
             'files.required_without' => 'Please provide a file or files to upload.',

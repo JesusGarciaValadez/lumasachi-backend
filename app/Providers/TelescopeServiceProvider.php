@@ -1,16 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
-use App\Models\User;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
-use App\Models\Sanctum\PersonalAccessToken;
-use Laravel\Sanctum\Sanctum;
 
-class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
+final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
     /**
      * Register any application services.
@@ -34,7 +34,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         Telescope::avatar(function (?string $id, ?string $email) {
             return ! is_null($id)
-                ? '/avatars/' . User::find($id)->avatar_path
+                ? '/avatars/'.User::find($id)->avatar_path
                 : '/generic-avatar.jpg';
         });
     }
@@ -66,7 +66,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     {
         Gate::define('viewTelescope', function ($user) {
             return in_array($user->email, [
-                'jesus.garciav@me.com'
+                'jesus.garciav@me.com',
             ]);
         });
     }

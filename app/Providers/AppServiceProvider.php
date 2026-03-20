@@ -1,31 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Enums\UserRole;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\User;
+use App\Policies\OrderHistoryPolicy;
+use App\Policies\OrderPolicy;
+use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Routing\Route;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Dedoc\Scramble\Scramble;
-use App\Enums\UserRole;
-use App\Models\User;
-use App\Models\Order;
-use App\Models\OrderHistory;
-use App\Observers\OrderObserver;
-use App\Policies\OrderPolicy;
-use App\Policies\OrderHistoryPolicy;
-use App\Policies\UserPolicy;
 use Laravel\Pennant\Feature;
 
-class AppServiceProvider extends ServiceProvider
+final class AppServiceProvider extends ServiceProvider
 {
     protected $policies = [
         Order::class => OrderPolicy::class,
@@ -128,32 +128,27 @@ class AppServiceProvider extends ServiceProvider
         // Gates for general permissions
         Gate::define(
             'users.create',
-            fn(User $user) =>
-            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+            fn (User $user) => in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
         );
 
         Gate::define(
             'users.delete',
-            fn(User $user) =>
-            $user->role === UserRole::SUPER_ADMINISTRATOR
+            fn (User $user) => $user->role === UserRole::SUPER_ADMINISTRATOR
         );
 
         Gate::define(
             'system.settings',
-            fn(User $user) =>
-            $user->role === UserRole::SUPER_ADMINISTRATOR
+            fn (User $user) => $user->role === UserRole::SUPER_ADMINISTRATOR
         );
 
         Gate::define(
             'reports.export',
-            fn(User $user) =>
-            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+            fn (User $user) => in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
         );
 
         Gate::define(
             'orders.assign',
-            fn(User $user) =>
-            in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+            fn (User $user) => in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
         );
 
         // Gate to verify if the user can perform a specific action

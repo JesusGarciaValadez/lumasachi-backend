@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     // Feature toggles managed by Laravel Pennant feature classes
     'motor-items' => [

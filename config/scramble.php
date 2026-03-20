@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
 
 return [
@@ -39,7 +41,7 @@ return [
         /*
          * Define the title of the documentation's website. App name is used when this config is `null`.
          */
-        'title' => env('APP_NAME') . ' API Documentation',
+        'title' => env('APP_NAME').' API Documentation',
 
         /*
          * Define the theme of the documentation. Available options are `light`, `dark`, and `system`.
@@ -90,8 +92,8 @@ return [
      * ```
      */
     'servers' => [
-        'Local' => env('APP_URL') . '/api/v1',
-        'Staging' => env('APP_STAGING') . '/api/v1',
+        'Local' => env('APP_URL').'/api/v1',
+        'Staging' => env('APP_STAGING').'/api/v1',
     ],
 
     /**

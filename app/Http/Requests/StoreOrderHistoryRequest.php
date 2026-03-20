@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use App\Models\OrderHistory;
 use App\Models\Order;
+use App\Models\OrderHistory;
+use Illuminate\Foundation\Http\FormRequest;
 
-class StoreOrderHistoryRequest extends FormRequest
+final class StoreOrderHistoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -53,7 +55,7 @@ class StoreOrderHistoryRequest extends FormRequest
             // Validate that the user has permission to modify the specific order
             if ($this->order_id) {
                 $order = Order::find($this->order_id);
-                if ($order && !$this->user()->can('update', $order)) {
+                if ($order && ! $this->user()->can('update', $order)) {
                     $validator->errors()->add('order_id', 'You do not have permission to add history to this order.');
                 }
             }

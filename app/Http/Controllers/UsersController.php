@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Enums\UserRole;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Enums\UserRole;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class UsersController extends Controller
 {
@@ -53,7 +55,7 @@ final class UsersController extends Controller
             // Different company or null
             $query->where(function ($q) use ($companyId) {
                 $q->where('company_id', '!=', $companyId)
-                  ->orWhereNull('company_id');
+                    ->orWhereNull('company_id');
             });
         }
 
@@ -65,4 +67,3 @@ final class UsersController extends Controller
         return response()->json(UserResource::collection($users));
     }
 }
-

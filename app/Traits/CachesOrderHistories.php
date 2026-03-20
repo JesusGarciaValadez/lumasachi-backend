@@ -20,6 +20,7 @@ trait CachesOrderHistories
         }
 
         Cache::add($key, 1); // Only sets if key doesn't exist (atomic)
+
         return (int) Cache::get($key, 1);
     }
 
@@ -27,7 +28,7 @@ trait CachesOrderHistories
     {
         $key = self::versionKey();
         // Atomic: add returns false if key exists, ensuring exactly-once initialization
-        $existed = !Cache::add($key, 0); // Start at 0 since we'll increment immediately
+        $existed = ! Cache::add($key, 0); // Start at 0 since we'll increment immediately
         $before = $existed ? (int) Cache::get($key) : 0;
         $after = (int) Cache::increment($key);
 

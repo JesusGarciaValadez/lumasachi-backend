@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Mail;
 
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Order;
 
-class OrderCreatedMail extends Mailable implements ShouldQueue
+final class OrderCreatedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -20,9 +22,7 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
      */
     public function __construct(
         public readonly Order $order
-    )
-    {
-    }
+    ) {}
 
     /**
      * Get the message envelope.
@@ -30,7 +30,7 @@ class OrderCreatedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Order Created: #' . $this->order->uuid,
+            subject: 'New Order Created: #'.$this->order->uuid,
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }

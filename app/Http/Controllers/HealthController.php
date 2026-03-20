@@ -1,22 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 final class HealthController extends Controller
 {
     /**
      * Simple health check endpoint.
      * Returns basic API status.
-     *
-     * @return JsonResponse
      */
     public function up(): JsonResponse
     {
@@ -27,15 +27,13 @@ final class HealthController extends Controller
             'environment' => App::environment(),
             'version' => config('app.version', '1.0.0'),
             'php_version' => PHP_VERSION,
-            'laravel_version' => app()->version()
+            'laravel_version' => app()->version(),
         ]);
     }
 
     /**
      * Comprehensive health check endpoint.
      * Checks various system components and returns detailed status.
-     *
-     * @return JsonResponse
      */
     public function health(): JsonResponse
     {
@@ -45,39 +43,39 @@ final class HealthController extends Controller
 
         // Database check
         $checks['database'] = $this->checkDatabase();
-        if (!$checks['database']['healthy']) {
+        if (! $checks['database']['healthy']) {
             $isHealthy = false;
         }
 
         // Cache check
         $checks['cache'] = $this->checkCache();
-        if (!$checks['cache']['healthy']) {
+        if (! $checks['cache']['healthy']) {
             $isHealthy = false;
         }
 
         // Storage check
         $checks['storage'] = $this->checkStorage();
-        if (!$checks['storage']['healthy']) {
+        if (! $checks['storage']['healthy']) {
             $isHealthy = false;
         }
 
         // Queue check (optional, only if queues are used)
         if (config('queue.default') !== 'sync') {
             $checks['queue'] = $this->checkQueue();
-            if (!$checks['queue']['healthy']) {
+            if (! $checks['queue']['healthy']) {
                 $isHealthy = false;
             }
         }
 
         // Memory usage check
         $checks['memory'] = $this->checkMemory();
-        if (!$checks['memory']['healthy']) {
+        if (! $checks['memory']['healthy']) {
             $isHealthy = false;
         }
 
         // Disk space check
         $checks['disk'] = $this->checkDiskSpace();
-        if (!$checks['disk']['healthy']) {
+        if (! $checks['disk']['healthy']) {
             $isHealthy = false;
         }
 
@@ -89,14 +87,12 @@ final class HealthController extends Controller
             'environment' => App::environment(),
             'version' => config('app.version', '1.0.0'),
             'execution_time_ms' => $executionTime,
-            'checks' => $checks
+            'checks' => $checks,
         ], $isHealthy ? 200 : 503);
     }
 
     /**
      * Check database connectivity and performance.
-     *
-     * @return array
      */
     private function checkDatabase(): array
     {
@@ -112,28 +108,27 @@ final class HealthController extends Controller
                 'healthy' => $healthy,
                 'message' => 'Database is responsive',
                 'response_time_ms' => $responseTime,
-                'connection' => config('database.default')
+                'connection' => config('database.default'),
             ];
-        } catch (\Exception $e) {
-            Log::error('Health check database error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Health check database error: '.$e->getMessage());
+
             return [
                 'healthy' => false,
                 'message' => 'Database connection failed',
-                'error' => App::environment('production') ? 'Connection error' : $e->getMessage()
+                'error' => App::environment('production') ? 'Connection error' : $e->getMessage(),
             ];
         }
     }
 
     /**
      * Check cache connectivity and performance.
-     *
-     * @return array
      */
     private function checkCache(): array
     {
         try {
-            $key = 'health_check_' . time();
-            $value = 'test_' . uniqid();
+            $key = 'health_check_'.time();
+            $value = 'test_'.uniqid();
 
             $start = microtime(true);
             Cache::put($key, $value, 10);
@@ -147,28 +142,27 @@ final class HealthController extends Controller
                 'healthy' => $healthy,
                 'message' => $healthy ? 'Cache is operational' : 'Cache performance issue',
                 'response_time_ms' => $responseTime,
-                'driver' => config('cache.default')
+                'driver' => config('cache.default'),
             ];
-        } catch (\Exception $e) {
-            Log::error('Health check cache error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Health check cache error: '.$e->getMessage());
+
             return [
                 'healthy' => false,
                 'message' => 'Cache operation failed',
-                'error' => App::environment('production') ? 'Cache error' : $e->getMessage()
+                'error' => App::environment('production') ? 'Cache error' : $e->getMessage(),
             ];
         }
     }
 
     /**
      * Check storage accessibility.
-     *
-     * @return array
      */
     private function checkStorage(): array
     {
         try {
-            $testFile = 'health_check_' . time() . '.txt';
-            $content = 'Health check at ' . now();
+            $testFile = 'health_check_'.time().'.txt';
+            $content = 'Health check at '.now();
 
             // Test write
             Storage::disk('local')->put($testFile, $content);
@@ -186,23 +180,22 @@ final class HealthController extends Controller
                 'message' => $healthy ? 'Storage is accessible' : 'Storage read/write failed',
                 'disks' => [
                     'local' => Storage::disk('local')->exists(''),
-                    'public' => Storage::disk('public')->exists('')
-                ]
+                    'public' => Storage::disk('public')->exists(''),
+                ],
             ];
-        } catch (\Exception $e) {
-            Log::error('Health check storage error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Health check storage error: '.$e->getMessage());
+
             return [
                 'healthy' => false,
                 'message' => 'Storage operation failed',
-                'error' => App::environment('production') ? 'Storage error' : $e->getMessage()
+                'error' => App::environment('production') ? 'Storage error' : $e->getMessage(),
             ];
         }
     }
 
     /**
      * Check queue connectivity (if applicable).
-     *
-     * @return array
      */
     private function checkQueue(): array
     {
@@ -219,22 +212,20 @@ final class HealthController extends Controller
                 'message' => $healthy ? 'Queue is operational' : 'Too many failed jobs',
                 'pending_jobs' => $queueSize,
                 'failed_jobs' => $failedJobs,
-                'driver' => config('queue.default')
+                'driver' => config('queue.default'),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Queue tables might not exist
             return [
                 'healthy' => true,
                 'message' => 'Queue not configured',
-                'driver' => config('queue.default')
+                'driver' => config('queue.default'),
             ];
         }
     }
 
     /**
      * Check memory usage.
-     *
-     * @return array
      */
     private function checkMemory(): array
     {
@@ -250,14 +241,12 @@ final class HealthController extends Controller
             'message' => 'Memory usage reported',
             'usage_mb' => round($memoryUsage / 1048576, 2),
             'limit_mb' => round($memoryLimit / 1048576, 2),
-            'usage_percentage' => $memoryUsagePercentage
+            'usage_percentage' => $memoryUsagePercentage,
         ];
     }
 
     /**
      * Check disk space.
-     *
-     * @return array
      */
     private function checkDiskSpace(): array
     {
@@ -273,26 +262,24 @@ final class HealthController extends Controller
             'message' => 'Disk usage reported',
             'free_gb' => round($freeSpace / 1073741824, 2),
             'total_gb' => round($totalSpace / 1073741824, 2),
-            'used_percentage' => $usedPercentage
+            'used_percentage' => $usedPercentage,
         ];
     }
 
     /**
      * Get memory limit in bytes.
-     *
-     * @return int
      */
     private function getMemoryLimit(): int
     {
         $memoryLimit = ini_get('memory_limit');
 
-        if ($memoryLimit == -1) {
+        if ($memoryLimit === -1) {
             return PHP_INT_MAX;
         }
 
         preg_match('/^(\d+)(.)$/', $memoryLimit, $matches);
         if (isset($matches[2])) {
-            switch (strtoupper($matches[2])) {
+            switch (mb_strtoupper($matches[2])) {
                 case 'G':
                     return $matches[1] * 1073741824;
                 case 'M':
@@ -302,6 +289,6 @@ final class HealthController extends Controller
             }
         }
 
-        return (int)$memoryLimit;
+        return (int) $memoryLimit;
     }
 }

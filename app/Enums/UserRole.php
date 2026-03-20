@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 enum UserRole: string
@@ -30,7 +32,7 @@ enum UserRole: string
                 'reports.view',
                 'reports.export',
                 'system.settings',
-                'system.logs'
+                'system.logs',
             ],
             self::ADMINISTRATOR => [
                 'users.create',
@@ -45,17 +47,17 @@ enum UserRole: string
                 'orders.assign',
                 'orders.status_change',
                 'reports.view',
-                'reports.export'
+                'reports.export',
             ],
             self::EMPLOYEE => [
                 'customers.read',
                 'orders.create',
                 'orders.read',
                 'orders.update',
-                'orders.status_change' // Only their assigned orders
+                'orders.status_change', // Only their assigned orders
             ],
             self::CUSTOMER => [
-                'orders.read' // Only their own orders
+                'orders.read', // Only their own orders
             ]
         };
     }

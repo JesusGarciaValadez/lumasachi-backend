@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AttachmentResource extends JsonResource
+final class AttachmentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -31,7 +33,7 @@ class AttachmentResource extends JsonResource
             'is_image' => $this->isImage(),
             'is_document' => $this->isDocument(),
             'is_pdf' => $this->isPdf(),
-            'extension' => $this->getExtension()
+            'extension' => $this->getExtension(),
         ];
     }
 }

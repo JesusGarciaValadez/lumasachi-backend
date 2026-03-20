@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class OrderHistoryResource extends JsonResource
+final class OrderHistoryResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -26,15 +28,13 @@ class OrderHistoryResource extends JsonResource
             'created_by' => $this->created_by,
             'creator' => new UserResource($this->whenLoaded('createdBy')),
             'created_at' => $this->created_at,
-            'attachments' => $this->getRelatedAttachments()
+            'attachments' => $this->getRelatedAttachments(),
         ];
     }
 
     /**
      * Get attachments related to this history entry.
      * Only returns attachments for attachment-related history entries.
-     *
-     * @return array
      */
     private function getRelatedAttachments(): array
     {
@@ -59,6 +59,7 @@ class OrderHistoryResource extends JsonResource
                     ->where('file_name', $filename)
                     ->filter(function ($attachment) use ($historyTime, $timeBuffer) {
                         $attachmentTime = $attachment->created_at;
+
                         return $attachmentTime->between(
                             $historyTime->copy()->subSeconds($timeBuffer),
                             $historyTime->copy()->addSeconds($timeBuffer)
