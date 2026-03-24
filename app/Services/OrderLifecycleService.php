@@ -97,6 +97,7 @@ final class OrderLifecycleService
                     ],
                     [
                         'measurement' => $svcData['measurement'] ?? null,
+                        'notes' => $svcData['notes'] ?? null,
                         'is_budgeted' => true,
                         'base_price' => $catalog->base_price,
                         'net_price' => $catalog->net_price,
@@ -113,7 +114,7 @@ final class OrderLifecycleService
             'updated_by' => $reviewer->id,
         ]);
 
-        return $order->load('services');
+        return $order->load('services.catalogItem');
     }
 
     /**
