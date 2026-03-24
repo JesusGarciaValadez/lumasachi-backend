@@ -20,6 +20,7 @@ use App\Services\OrderLifecycleService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
 
 final class OrderController extends Controller
@@ -88,7 +89,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Budget submitted successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services.catalogItem'])),
         ]);
     }
 
@@ -108,7 +109,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Services approved successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
 
@@ -125,7 +126,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Work marked as completed.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
 
@@ -164,7 +165,7 @@ final class OrderController extends Controller
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order) {
-            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'items.components', 'services'])))->resolve();
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'items.components', 'services.catalogItem'])))->resolve();
         });
 
         return response()->json($payload)
@@ -240,7 +241,7 @@ final class OrderController extends Controller
     /**
      * Get the history of an order.
      *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     * @return AnonymousResourceCollection
      */
     public function history(Request $request, Order $order)
     {

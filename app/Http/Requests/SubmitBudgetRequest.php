@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class SubmitBudgetRequest extends FormRequest
@@ -15,7 +16,7 @@ final class SubmitBudgetRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -24,6 +25,7 @@ final class SubmitBudgetRequest extends FormRequest
             'services.*.order_item_id' => 'required|exists:order_items,id',
             'services.*.service_key' => 'required|exists:service_catalog,service_key',
             'services.*.measurement' => 'nullable|string|max:50',
+            'services.*.notes' => 'nullable|string|max:500',
         ];
     }
 
