@@ -7,6 +7,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 final class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -114,22 +115,22 @@ final class User extends Authenticatable
     // Convenience methods
     public function isCustomer(): bool
     {
-        return $this->role === UserRole::CUSTOMER->value;
+        return $this->role === UserRole::CUSTOMER;
     }
 
     public function isEmployee(): bool
     {
-        return $this->role === UserRole::EMPLOYEE->value;
+        return $this->role === UserRole::EMPLOYEE;
     }
 
     public function isAdministrator(): bool
     {
-        return $this->role === UserRole::ADMINISTRATOR->value;
+        return $this->role === UserRole::ADMINISTRATOR;
     }
 
     public function isSuperAdministrator(): bool
     {
-        return $this->role === UserRole::SUPER_ADMINISTRATOR->value;
+        return $this->role === UserRole::SUPER_ADMINISTRATOR;
     }
 
     // Accessors
