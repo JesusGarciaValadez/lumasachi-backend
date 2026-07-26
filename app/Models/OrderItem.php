@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\OrderItemObserver;
+use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[ObservedBy([OrderItemObserver::class])]
 final class OrderItem extends Model
 {
+    /** @use HasFactory<OrderItemFactory> */
     use HasFactory, HasUuids;
 
     protected $fillable = [
@@ -27,21 +29,27 @@ final class OrderItem extends Model
         'is_received',
     ];
 
+    /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
+    /** @return HasMany<OrderItemComponent, $this> */
     public function components(): HasMany
     {
         return $this->hasMany(OrderItemComponent::class);
     }
 
+    /** @return HasMany<OrderService, $this> */
     public function services(): HasMany
     {
         return $this->hasMany(OrderService::class);
     }
 
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];

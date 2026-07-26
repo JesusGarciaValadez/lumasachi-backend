@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\OrderHistory;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin OrderHistory */
 final class OrderHistoryResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
+     * @return array<string, mixed>
      */
-    public function toArray($request)
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
@@ -35,6 +37,8 @@ final class OrderHistoryResource extends JsonResource
     /**
      * Get attachments related to this history entry.
      * Only returns attachments for attachment-related history entries.
+     *
+     * @return array<int, AttachmentResource>
      */
     private function getRelatedAttachments(): array
     {
@@ -47,6 +51,9 @@ final class OrderHistoryResource extends JsonResource
         if ($this->relationLoaded('order') && $this->order) {
             // Look for attachment created within 1 minute of this history entry
             $historyTime = $this->created_at;
+            if ($historyTime === null) {
+                return [];
+            }
             $timeBuffer = 60; // 60 seconds buffer
 
             // For upload events, new_value contains the filename
@@ -59,6 +66,10 @@ final class OrderHistoryResource extends JsonResource
                     ->where('file_name', $filename)
                     ->filter(function ($attachment) use ($historyTime, $timeBuffer) {
                         $attachmentTime = $attachment->created_at;
+
+                        if ($attachmentTime === null) {
+                            return false;
+                        }
 
                         return $attachmentTime->between(
                             $historyTime->copy()->subSeconds($timeBuffer),

@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -73,11 +74,14 @@ final class OrderHistoryController extends Controller
      */
     public function store(StoreOrderHistoryRequest $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
         $orderHistory = OrderHistory::create(array_merge(
             $request->validated(),
             [
                 'uuid' => Str::uuid7()->toString(),
-                'created_by' => $request->user()->id,
+                'created_by' => $user->id,
             ]
         ));
 
@@ -104,7 +108,7 @@ final class OrderHistoryController extends Controller
         if (! $hit) {
             $orderHistory->load(['createdBy', 'order.attachments']);
             $payload = ['data' => (new OrderHistoryResource($orderHistory))->resolve()];
-            \Illuminate\Support\Facades\DB::afterCommit(function () use ($key, $payload) {
+            DB::afterCommit(function () use ($key, $payload) {
                 Cache::put($key, $payload, now()->addSeconds(self::ttlShow()));
             });
         }

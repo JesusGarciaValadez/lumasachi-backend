@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class AssignOrderRequest extends FormRequest
@@ -21,7 +22,7 @@ final class AssignOrderRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -30,7 +31,7 @@ final class AssignOrderRequest extends FormRequest
                 'required',
                 'exists:users,id',
                 function ($attribute, $value, $fail) {
-                    $user = User::find($value);
+                    $user = User::query()->find((int)$value);
                     if ($user && ! in_array($user->role, [UserRole::EMPLOYEE, UserRole::ADMINISTRATOR, UserRole::SUPER_ADMINISTRATOR])) {
                         $fail('The selected user cannot be assigned to orders.');
                     }

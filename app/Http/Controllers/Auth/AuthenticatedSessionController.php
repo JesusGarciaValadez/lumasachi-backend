@@ -44,8 +44,11 @@ final class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse|JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
         if ($request->expectsJson()) {
-            $request->user()->tokens()->delete();
+            $user->tokens()->delete();
 
             return response()->json(['message' => 'Logout successful'], 200);
         }
@@ -54,12 +57,6 @@ final class AuthenticatedSessionController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        if ($request->expectsJson()) {
-            $request->user()->tokens()->delete();
-
-            return response()->json(['message' => 'Logout successful'], 200);
-        }
 
         return redirect('/');
     }

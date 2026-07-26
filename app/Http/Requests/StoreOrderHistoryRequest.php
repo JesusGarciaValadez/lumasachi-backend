@@ -7,6 +7,7 @@ namespace App\Http\Requests;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class StoreOrderHistoryRequest extends FormRequest
 {
@@ -15,11 +16,16 @@ final class StoreOrderHistoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create', OrderHistory::class);
+        $user = $this->user();
+
+        return $user !== null && $user->can('create', OrderHistory::class);
     }
 
     /**
      * Get the validation rules that apply to the request.
+     */
+    /**
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
@@ -49,13 +55,14 @@ final class StoreOrderHistoryRequest extends FormRequest
     /**
      * Configure the validator instance.
      */
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator): void {
             // Validate that the user has permission to modify the specific order
             if ($this->order_id) {
                 $order = Order::find($this->order_id);
-                if ($order && ! $this->user()->can('update', $order)) {
+                $user = $this->user();
+                if ($order && $user !== null && !$user->can('update', $order)) {
                     $validator->errors()->add('order_id', 'You do not have permission to add history to this order.');
                 }
             }

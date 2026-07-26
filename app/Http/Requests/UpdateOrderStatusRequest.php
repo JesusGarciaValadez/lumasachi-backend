@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
+use App\Models\Order;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class UpdateOrderStatusRequest extends FormRequest
 {
@@ -20,7 +23,7 @@ final class UpdateOrderStatusRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -48,13 +51,11 @@ final class UpdateOrderStatusRequest extends FormRequest
 
     /**
      * Configure the validator instance.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
      */
-    public function withValidator($validator)
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator): void {
+            /** @var Order|null $order */
             $order = $this->route('order');
             $newStatus = OrderStatus::tryFrom($this->status);
 
@@ -74,10 +75,8 @@ final class UpdateOrderStatusRequest extends FormRequest
 
     /**
      * Checks if the transition from the current status to the new status is valid.
-     *
-     * @return bool
      */
-    protected function isValidStatusTransition(OrderStatus $currentStatus, OrderStatus $newStatus)
+    protected function isValidStatusTransition(OrderStatus $currentStatus, OrderStatus $newStatus): bool
     {
         $allowedTransitions = [
             OrderStatus::Received->value => [OrderStatus::AwaitingReview, OrderStatus::Cancelled],

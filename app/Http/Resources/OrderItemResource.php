@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\OrderItem;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin OrderItem */
 final class OrderItemResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return array<string, mixed>
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,

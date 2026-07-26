@@ -30,9 +30,7 @@ final class OrderLifecycleService
 
         $order = DB::transaction(function () use ($validated, $creator, $motorInfo, $items) {
             $order = Order::create(array_merge($validated, [
-                'uuid' => method_exists(Str::class, 'uuid7')
-                    ? Str::uuid7()->toString()
-                    : (string) Str::uuid(),
+                'uuid' => Str::uuid7()->toString(),
                 'status' => OrderStatus::Received->value,
                 'created_by' => $creator->id,
                 'updated_by' => $creator->id,
@@ -131,7 +129,7 @@ final class OrderLifecycleService
             $order->services()->whereIn('order_services.id', $authorizedServiceIds)->update(['is_authorized' => true]);
 
             if ($downPayment !== null) {
-                $order->motorInfo->update(['down_payment' => $downPayment]);
+                $order->motorInfo()->firstOrFail()->update(['down_payment' => $downPayment]);
             }
         });
 

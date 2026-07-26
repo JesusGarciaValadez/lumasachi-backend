@@ -21,8 +21,11 @@ final class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -32,13 +35,16 @@ final class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse|JsonResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        abort_unless($user !== null, 401);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Profile updated!'], 200);
@@ -57,6 +63,7 @@ final class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        abort_unless($user !== null, 401);
 
         Auth::logout();
 

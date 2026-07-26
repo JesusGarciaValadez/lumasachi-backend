@@ -44,7 +44,7 @@ final class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'quote' => ['message' => mb_trim($message), 'author' => mb_trim($author)],
+            'quote' => ['message' => mb_trim((string)$message), 'author' => mb_trim((string)$author)],
             'auth' => [
                 'user' => $request->user(),
             ],

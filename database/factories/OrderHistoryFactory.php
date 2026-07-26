@@ -12,6 +12,9 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<OrderHistory>
+ */
 final class OrderHistoryFactory extends Factory
 {
     protected $model = OrderHistory::class;

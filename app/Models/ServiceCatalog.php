@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\ServiceCatalogObserver;
+use Database\Factories\ServiceCatalogFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 #[ObservedBy([ServiceCatalogObserver::class])]
 final class ServiceCatalog extends Model
 {
+    /** @use HasFactory<ServiceCatalogFactory> */
     use HasFactory, HasUuids;
 
     protected $table = 'service_catalog';
@@ -67,6 +69,9 @@ final class ServiceCatalog extends Model
         return round($base * (1 + ($tax / 100)), 2);
     }
 
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];

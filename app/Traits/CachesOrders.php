@@ -63,20 +63,20 @@ trait CachesOrders
 
         // Determine role slug using helper methods
         $roleSlug = 'unknown';
-        if (method_exists($user, 'isCustomer') && $user->isCustomer()) {
+        if ($user->isCustomer()) {
             $roleSlug = 'customer';
-        } elseif (method_exists($user, 'isEmployee') && $user->isEmployee()) {
+        } elseif ($user->isEmployee()) {
             $roleSlug = 'employee';
-        } elseif (method_exists($user, 'isAdministrator') && $user->isAdministrator()) {
+        } elseif ($user->isAdministrator()) {
             $roleSlug = 'administrator';
-        } elseif (method_exists($user, 'isSuperAdministrator') && $user->isSuperAdministrator()) {
+        } elseif ($user->isSuperAdministrator()) {
             $roleSlug = 'super_administrator';
         }
 
         if (! empty($filters)) {
             ksort($filters);
         }
-        $filtersPart = ! empty($filters) ? ':filters:'.md5(json_encode($filters)) : '';
+        $filtersPart = !empty($filters) ? ':filters:' . md5(json_encode($filters, JSON_THROW_ON_ERROR)) : '';
 
         return "orders:index:v{$version}:role:{$roleSlug}:user:{$user->id}{$filtersPart}";
     }

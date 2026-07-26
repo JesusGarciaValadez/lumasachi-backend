@@ -33,8 +33,11 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         });
 
         Telescope::avatar(function (?string $id, ?string $email) {
-            return ! is_null($id)
-                ? '/avatars/'.User::find($id)->avatar_path
+            $user = $id === null ? null : User::find($id);
+            $avatarPath = $user?->getAttribute('avatar_path');
+
+            return is_string($avatarPath) && $avatarPath !== ''
+                ? '/avatars/' . $avatarPath
                 : '/generic-avatar.jpg';
         });
     }

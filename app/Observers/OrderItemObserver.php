@@ -26,7 +26,7 @@ final class OrderItemObserver
                 'field_changed' => OrderHistory::FIELD_ITEM_RECEIVED,
                 'old_value' => (bool) $item->getOriginal('is_received'),
                 'new_value' => (bool) $item->is_received,
-                'created_by' => auth()->id() ?? $order?->updated_by ?? $order?->created_by,
+                'created_by' => auth()->id() ?? $order->updated_by ?? $order->created_by,
             ]);
         }
     }

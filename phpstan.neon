@@ -6,7 +6,9 @@ parameters:
 
     paths:
         - app/
-        - modules/
+
+    scanFiles:
+        - _ide_helper_models.php
 
     # Level 10 is the highest level
     level: 8

@@ -9,6 +9,9 @@ enum UserType: string
     case INDIVIDUAL = 'Individual';
     case BUSINESS = 'Business';
 
+    /**
+     * @return list<string>
+     */
     public static function getTypes(): array
     {
         return array_column(self::cases(), 'value');

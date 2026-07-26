@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Observers\OrderServiceObserver;
+use Database\Factories\OrderServiceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy([OrderServiceObserver::class])]
 final class OrderService extends Model
 {
+    /** @use HasFactory<OrderServiceFactory> */
     use HasFactory, HasUuids;
 
     protected $fillable = [
@@ -31,16 +33,21 @@ final class OrderService extends Model
         'net_price',
     ];
 
+    /** @return BelongsTo<OrderItem, $this> */
     public function orderItem(): BelongsTo
     {
         return $this->belongsTo(OrderItem::class);
     }
 
+    /** @return BelongsTo<ServiceCatalog, $this> */
     public function catalogItem(): BelongsTo
     {
         return $this->belongsTo(ServiceCatalog::class, 'service_key', 'service_key');
     }
 
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
+use App\Models\Order;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class SubmitBudgetRequest extends FormRequest
 {
@@ -29,9 +31,10 @@ final class SubmitBudgetRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator): void {
+            /** @var Order|null $order */
             $order = $this->route('order');
 
             if ($order && $order->status !== OrderStatus::AwaitingReview) {

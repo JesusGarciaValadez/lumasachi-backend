@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<Attachment>
+ */
 final class AttachmentFactory extends Factory
 {
     /**
@@ -16,7 +20,7 @@ final class AttachmentFactory extends Factory
      *
      * @var string
      */
-    protected $model = \App\Models\Attachment::class;
+    protected $model = Attachment::class;
 
     /**
      * Define the model's default state.

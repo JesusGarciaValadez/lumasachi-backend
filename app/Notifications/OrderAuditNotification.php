@@ -21,6 +21,7 @@ final class OrderAuditNotification extends Notification implements ShouldQueue
 
     public function __construct(public readonly Order $order, public readonly string $event) {}
 
+    /** @return list<string> */
     public function via(object $notifiable): array
     {
         return ['mail'];
@@ -42,6 +43,7 @@ final class OrderAuditNotification extends Notification implements ShouldQueue
             ->salutation(__('notifications.salutation'));
     }
 
+    /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
         return [

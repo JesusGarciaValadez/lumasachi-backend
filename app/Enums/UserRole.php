@@ -11,6 +11,9 @@ enum UserRole: string
     case EMPLOYEE = 'Employee';
     case CUSTOMER = 'Customer';
 
+    /**
+     * @return list<string>
+     */
     public static function getPermissions(UserRole $role): array
     {
         return match ($role) {

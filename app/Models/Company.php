@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\CompanyFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @mixin IdeHelperCompany
  */
 final class Company extends Model
 {
+    /** @use HasFactory<CompanyFactory> */
     use HasFactory, HasUuids;
 
     /**
@@ -47,7 +51,7 @@ final class Company extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'uuid',
@@ -87,7 +91,7 @@ final class Company extends Model
     /**
      * The attributes that should have default values.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'is_active' => true,
@@ -96,7 +100,8 @@ final class Company extends Model
     /**
      * Get all users that belong to this company.
      */
-    public function users()
+    /** @return HasMany<User, $this> */
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'company_id', 'id');
     }
@@ -104,23 +109,30 @@ final class Company extends Model
     /**
      * Get all active users that belong to this company.
      */
-    public function activeUsers()
+    /** @return HasMany<User, $this> */
+    public function activeUsers(): HasMany
     {
         return $this->hasMany(User::class, 'company_id', 'id')->where('is_active', true);
     }
 
     /**
      * Scope a query to only include active companies.
+     *
+     * @param Builder<Company> $query
+     * @return Builder<Company>
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
     /**
      * Scope a query to only include inactive companies.
+     *
+     * @param Builder<Company> $query
+     * @return Builder<Company>
      */
-    public function scopeInactive($query)
+    public function scopeInactive(Builder $query): Builder
     {
         return $query->where('is_active', false);
     }
@@ -144,6 +156,9 @@ final class Company extends Model
     /**
      * Get the columns that should receive a unique identifier.
      */
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];
@@ -152,9 +167,9 @@ final class Company extends Model
     /**
      * Create a new factory instance for the model.
      *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
+     * @return Factory<Company>
      */
-    protected static function newFactory()
+    protected static function newFactory(): Factory
     {
         return CompanyFactory::new();
     }

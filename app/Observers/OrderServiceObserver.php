@@ -50,7 +50,7 @@ final class OrderServiceObserver
             'field_changed' => $field,
             'old_value' => $old,
             'new_value' => $new,
-            'created_by' => auth()?->id() ?? $order->updated_by ?? $order->created_by,
+            'created_by' => auth()->id() ?? $order->updated_by ?? $order->created_by,
         ]);
     }
 }
