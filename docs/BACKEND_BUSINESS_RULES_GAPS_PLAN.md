@@ -18,7 +18,7 @@ these backend behaviors are complete.
     - `tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php`
     - `tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php`
 - For each step: implement the smallest coherent production change, run the focused tests, fix failures until green,
-  then run Pint and PHPStan before moving on.
+  then run PHPUnit, Pint and PHPStan before moving on.
 - Do not run the intentionally failing new specifications before implementing the corresponding step.
 
 ## Existing test specifications
@@ -60,7 +60,7 @@ changes, and attachments.
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
@@ -102,8 +102,8 @@ database ID from another order must not be accepted.
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='belongs_to_another_order'
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='belongs_to_another_order' --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
@@ -142,8 +142,8 @@ a mixed request must not partially update valid entries.
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='work_completion'
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='work_completion' --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
@@ -182,11 +182,22 @@ Block, Crankshaft, Connecting Rods, or Others.
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='component'
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='component' --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
+
+### Step 4 status
+
+- [x] Each submitted component is validated against its selected item type.
+- [x] Invalid components report errors on the exact nested component attribute.
+- [x] Omitted and empty component lists remain valid.
+- [x] Existing valid component creation behavior remains green.
+- [x] Related component, order creation, lifecycle, and enum tests passed.
+- [x] Pint passed.
+- [x] PHPStan passed with no errors.
+- [x] No additional Step 4 edge case remains unresolved.
 
 ## Step 5 — Require payment before delivery
 
@@ -215,9 +226,9 @@ An order may be delivered only when the remaining amount is zero. Partial paymen
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='delivery_requires'
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
-vendor/bin/sail artisan test --compact tests/Feature/app/Observers/OrderPaymentNotificationsTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='delivery_requires' --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Observers/OrderPaymentNotificationsTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
@@ -249,9 +260,9 @@ visible in the order history.
 ### Verification
 
 ```bash
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='reviewed_to_awaiting'
-vendor/bin/sail artisan test --compact tests/Feature/app/Observers/OrderObserverAdvancedTest.php
-vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderHistoryTrackingTest.php
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php --filter='reviewed_to_awaiting' --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Observers/OrderObserverAdvancedTest.php --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderHistoryTrackingTest.php --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
@@ -261,7 +272,7 @@ vendor/bin/sail composer test:types
 Run the complete suite only after all six implementations are complete and their focused tests are green:
 
 ```bash
-vendor/bin/sail artisan test --compact
+vendor/bin/sail artisan test --parallel --processes=8
 vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
