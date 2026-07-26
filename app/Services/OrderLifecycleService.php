@@ -192,6 +192,7 @@ final class OrderLifecycleService
     public function deliverOrder(Order $order, User $actor): Order
     {
         $this->assertStatus($order, [OrderStatus::ReadyForDelivery]);
+        $this->assertNoPendingPayment($order);
 
         $order->update([
             'status' => OrderStatus::Delivered->value,
@@ -216,6 +217,16 @@ final class OrderLifecycleService
             throw new InvalidArgumentException(
                 'Order must be in status ['.implode(', ', $labels)."] but is in [{$order->status->value}]."
             );
+        }
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function assertNoPendingPayment(Order $order): void
+    {
+        if ($order->motorInfo()->first()?->hasPendingPayment()) {
+            throw new InvalidArgumentException('Order must be fully paid before delivery.');
         }
     }
 

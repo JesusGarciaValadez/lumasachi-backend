@@ -383,7 +383,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $serviceId = $order->services->first()->id;
         $approvalResponse = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
             'authorized_service_ids' => [$serviceId],
-            'down_payment' => 200.00,
+            'down_payment' => $catalog->net_price,
         ]);
         $approvalResponse->assertOk();
 

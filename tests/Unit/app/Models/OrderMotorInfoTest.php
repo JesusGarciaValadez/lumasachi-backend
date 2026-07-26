@@ -37,5 +37,22 @@ final class OrderMotorInfoTest extends TestCase
 
         // remaining_balance = max(0, total_cost - down_payment) => 0
         $this->assertSame(0.0, $info->remaining_balance);
+        $this->assertFalse($info->hasPendingPayment());
+    }
+
+    #[Test]
+    public function it_compares_payment_amounts_at_currency_precision(): void
+    {
+        $order = Order::factory()->createQuietly();
+
+        $info = OrderMotorInfo::create([
+            'order_id' => $order->id,
+            'down_payment' => 0.10,
+            'total_cost' => 0.30,
+            'is_fully_paid' => false,
+        ]);
+
+        $this->assertTrue($info->hasPendingPayment());
+        $this->assertSame(0.20, $info->remaining_balance);
     }
 }

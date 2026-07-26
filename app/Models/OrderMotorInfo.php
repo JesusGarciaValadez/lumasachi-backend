@@ -50,7 +50,24 @@ final class OrderMotorInfo extends Model
 
     public function getRemainingBalanceAttribute(): float
     {
-        return max(0, (float) $this->total_cost - (float) $this->down_payment);
+        if (!$this->hasPendingPayment()) {
+            return 0.0;
+        }
+
+        return (float)bcsub(
+            (string)($this->total_cost ?? '0.00'),
+            (string)($this->down_payment ?? '0.00'),
+            2
+        );
+    }
+
+    public function hasPendingPayment(): bool
+    {
+        return bccomp(
+                (string)($this->total_cost ?? '0.00'),
+                (string)($this->down_payment ?? '0.00'),
+                2
+            ) === 1;
     }
 
     /**
