@@ -198,6 +198,23 @@ final class OrderObserver
         // Auto-transition: Reviewed → Awaiting Customer Approval
         if ($newStatus === OrderStatus::Reviewed->value) {
             $order->updateQuietly(['status' => OrderStatus::AwaitingCustomerApproval->value]);
+            $this->recordStatusHistory(
+                $order,
+                OrderStatus::Reviewed->value,
+                OrderStatus::AwaitingCustomerApproval->value
+            );
         }
+    }
+
+    private function recordStatusHistory(Order $order, string $oldStatus, string $newStatus): void
+    {
+        OrderHistory::create([
+            'uuid' => Str::uuid7()->toString(),
+            'order_id' => $order->id,
+            'field_changed' => OrderHistory::FIELD_STATUS,
+            'old_value' => $oldStatus,
+            'new_value' => $newStatus,
+            'created_by' => auth()->id() ?? $order->updated_by,
+        ]);
     }
 }

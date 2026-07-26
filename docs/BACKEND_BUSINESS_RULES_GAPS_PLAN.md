@@ -279,6 +279,18 @@ vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
 
+### Step 6 status
+
+- [x] The automatic Reviewed → Awaiting Customer Approval transition is auditable.
+- [x] Exactly two status-history rows are recorded for the reviewed transition.
+- [x] Nested observer updates do not create duplicate history rows.
+- [x] Reviewed notifications and the final persisted status remain unchanged.
+- [x] Unrelated status-history behavior remains green.
+- [x] Related transition, observer, and history tests passed.
+- [x] Pint passed.
+- [x] PHPStan passed with no errors.
+- [x] No additional Step 6 edge case remains unresolved.
+
 ## Final verification after steps 1–6
 
 Run the complete suite only after all six implementations are complete and their focused tests are green:
