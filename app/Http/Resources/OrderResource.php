@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Order;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin Order */
 final class OrderResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @return array<string, mixed>
      */
-    public function toArray($request)
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
@@ -35,6 +35,8 @@ final class OrderResource extends JsonResource
             'motor_info' => $this->whenLoaded('motorInfo'),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'services' => OrderServiceResource::collection($this->whenLoaded('services')),
+            'history' => OrderHistoryResource::collection($this->whenLoaded('orderHistories')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

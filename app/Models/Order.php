@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[ObservedBy([OrderObserver::class])]
 final class Order extends Model
 {
+    /** @use HasFactory<OrderFactory> */
     use HasAttachments, HasFactory, HasUuids;
 
     /**
@@ -59,7 +60,7 @@ final class Order extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'customer_id',
@@ -91,47 +92,59 @@ final class Order extends Model
     /**
      * Get the columns that should receive a unique identifier.
      */
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];
     }
 
     // Relationships - Updated for unified architecture
+
+    /** @return BelongsTo<User, $this> */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id')->where('role', UserRole::CUSTOMER->value);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    /** @return HasMany<OrderHistory, $this> */
     public function orderHistories(): HasMany
     {
         return $this->hasMany(OrderHistory::class);
     }
 
+    /** @return HasOne<OrderMotorInfo, $this> */
     public function motorInfo(): HasOne
     {
         return $this->hasOne(OrderMotorInfo::class, 'order_id');
     }
 
+    /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'order_id');
     }
 
+    /** @return HasManyThrough<OrderService, OrderItem, $this> */
     public function services(): HasManyThrough
     {
         return $this->hasManyThrough(OrderService::class, OrderItem::class, 'order_id', 'order_item_id');

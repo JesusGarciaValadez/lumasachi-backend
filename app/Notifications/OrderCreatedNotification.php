@@ -6,6 +6,7 @@ namespace App\Notifications;
 
 use App\Mail\OrderCreatedMail;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -50,6 +51,7 @@ final class OrderCreatedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): OrderCreatedMail
     {
+        /** @var User $notifiable */
         return (new OrderCreatedMail($this->order))
             ->to($notifiable->email);
     }

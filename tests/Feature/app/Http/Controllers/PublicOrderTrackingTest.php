@@ -74,6 +74,75 @@ final class PublicOrderTrackingTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_the_order_history_and_attachments(): void
+    {
+        $history = $this->order->orderHistories()->create([
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::ReadyForWork,
+            'new_value' => OrderStatus::InProgress,
+            'created_by' => $this->order->created_by,
+        ]);
+        $attachment = $this->order->attachments()->create([
+            'file_name' => 'work-order.pdf',
+            'file_path' => 'attachments/work-order.pdf',
+            'file_size' => 1024,
+            'mime_type' => 'application/pdf',
+            'uploaded_by' => $this->order->created_by,
+        ]);
+
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => $this->order->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'order' => [
+                    'history' => [
+                        '*' => [
+                            'uuid',
+                            'field_changed',
+                            'old_value',
+                            'new_value',
+                            'created_at',
+                            'creator',
+                        ],
+                    ],
+                    'attachments' => [
+                        '*' => [
+                            'uuid',
+                            'file_name',
+                            'mime_type',
+                            'file_size',
+                            'uploaded_by',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJsonFragment([
+                'uuid' => $history->uuid,
+                'field_changed' => 'status',
+            ])
+            ->assertJsonFragment([
+                'uuid' => $attachment->uuid,
+                'file_name' => 'work-order.pdf',
+            ]);
+    }
+
+    #[Test]
+    public function it_returns_empty_history_and_attachment_collections_when_none_exist(): void
+    {
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => $this->order->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('order.history', [])
+            ->assertJsonPath('order.attachments', []);
+    }
+
+    #[Test]
     public function it_returns_404_for_wrong_uuid(): void
     {
         $response = $this->postJson('/api/v1/orders/track', [

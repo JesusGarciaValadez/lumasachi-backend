@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Observers\AttachmentObserver;
 use Database\Factories\AttachmentFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 #[ObservedBy([AttachmentObserver::class])]
 final class Attachment extends Model
 {
+    /** @use HasFactory<AttachmentFactory> */
     use HasFactory, HasUuids;
 
     // File type constants
@@ -189,29 +191,48 @@ final class Attachment extends Model
     /**
      * Get the columns that should receive a unique identifier.
      */
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];
     }
 
     // Polymorphic relationships
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
     public function attachable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function uploadedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     // Scopes to filter files
-    public function scopeImages($query)
+
+    /**
+     * @param Builder<Attachment> $query
+     * @return Builder<Attachment>
+     */
+    public function scopeImages(Builder $query): Builder
     {
         return $query->where('mime_type', 'like', 'image%');
     }
 
-    public function scopeDocuments($query)
+    /**
+     * @param Builder<Attachment> $query
+     * @return Builder<Attachment>
+     */
+    public function scopeDocuments(Builder $query): Builder
     {
         return $query->where('mime_type', 'like', 'application%');
     }
@@ -288,8 +309,6 @@ final class Attachment extends Model
 
     /**
      * Delete the model and the physical file
-     *
-     * @return bool|null
      */
     public function delete(): bool
     {
@@ -299,15 +318,13 @@ final class Attachment extends Model
         }
 
         // Delete the database record
-        return parent::delete();
+        return (bool)parent::delete();
     }
 
     /**
      * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
      */
-    protected static function newFactory()
+    protected static function newFactory(): AttachmentFactory
     {
         return AttachmentFactory::new();
     }

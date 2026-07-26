@@ -20,6 +20,7 @@ final class OrderDeliveredNotification extends Notification implements ShouldQue
 
     public function __construct(public readonly Order $order) {}
 
+    /** @return list<string> */
     public function via(object $notifiable): array
     {
         return ['mail'];
@@ -37,6 +38,7 @@ final class OrderDeliveredNotification extends Notification implements ShouldQue
             ->salutation(__('notifications.salutation'));
     }
 
+    /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
         return [

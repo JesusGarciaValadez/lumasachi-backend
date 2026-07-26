@@ -18,6 +18,7 @@ final class UsersController extends Controller
     public function employees(Request $request): JsonResponse
     {
         $user = $request->user();
+        abort_unless($user instanceof User, 401);
         $companyId = $user->company_id;
 
         $query = User::query();
@@ -44,6 +45,7 @@ final class UsersController extends Controller
     public function customers(Request $request): JsonResponse
     {
         $user = $request->user();
+        abort_unless($user instanceof User, 401);
         $companyId = $user->company_id;
 
         $query = User::query();

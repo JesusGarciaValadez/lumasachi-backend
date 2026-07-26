@@ -11,6 +11,9 @@ enum OrderPriority: string
     case HIGH = 'High';
     case URGENT = 'Urgent';
 
+    /**
+     * @return list<string>
+     */
     public static function getPriorities(): array
     {
         return array_column(self::cases(), 'value');

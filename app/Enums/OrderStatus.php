@@ -22,6 +22,9 @@ enum OrderStatus: string
     case OnHold = 'On Hold';
     case Cancelled = 'Cancelled';
 
+    /**
+     * @return list<string>
+     */
     public static function getStatuses(): array
     {
         return array_column(self::cases(), 'value');

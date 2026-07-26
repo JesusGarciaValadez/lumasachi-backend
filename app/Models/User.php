@@ -8,6 +8,7 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -74,7 +75,7 @@ final class User extends Authenticatable
     /**
      * The attributes that should have default values.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'role' => UserRole::EMPLOYEE->value,
@@ -96,18 +97,30 @@ final class User extends Authenticatable
     /**
      * Get the columns that should receive a unique identifier.
      */
+    /**
+     * @return list<string>
+     */
     public function uniqueIds(): array
     {
         return ['uuid'];
     }
 
     // Scopes for easy queries
-    public function scopeCustomers($query)
+
+    /**
+     * @param Builder<User> $query
+     * @return Builder<User>
+     */
+    public function scopeCustomers(Builder $query): Builder
     {
         return $query->where('role', UserRole::CUSTOMER->value);
     }
 
-    public function scopeEmployees($query)
+    /**
+     * @param Builder<User> $query
+     * @return Builder<User>
+     */
+    public function scopeEmployees(Builder $query): Builder
     {
         return $query->where('role', UserRole::EMPLOYEE->value);
     }
@@ -140,21 +153,26 @@ final class User extends Authenticatable
     }
 
     // Relationships
+
+    /** @return HasMany<Order, $this> */
     public function createdOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'created_by');
     }
 
+    /** @return HasMany<Order, $this> */
     public function assignedOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'assigned_to');
     }
 
+    /** @return HasMany<Order, $this> */
     public function customerOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'customer_id');
     }
 
+    /** @return BelongsTo<Company, $this> */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id');

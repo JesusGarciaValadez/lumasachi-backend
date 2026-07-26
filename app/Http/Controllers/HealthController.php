@@ -94,6 +94,7 @@ final class HealthController extends Controller
     /**
      * Check database connectivity and performance.
      */
+    /** @return array<string, mixed> */
     private function checkDatabase(): array
     {
         try {
@@ -124,6 +125,7 @@ final class HealthController extends Controller
     /**
      * Check cache connectivity and performance.
      */
+    /** @return array<string, mixed> */
     private function checkCache(): array
     {
         try {
@@ -158,6 +160,7 @@ final class HealthController extends Controller
     /**
      * Check storage accessibility.
      */
+    /** @return array<string, mixed> */
     private function checkStorage(): array
     {
         try {
@@ -197,6 +200,7 @@ final class HealthController extends Controller
     /**
      * Check queue connectivity (if applicable).
      */
+    /** @return array<string, mixed> */
     private function checkQueue(): array
     {
         try {
@@ -227,6 +231,7 @@ final class HealthController extends Controller
     /**
      * Check memory usage.
      */
+    /** @return array<string, mixed> */
     private function checkMemory(): array
     {
         $memoryUsage = memory_get_usage(true);
@@ -248,10 +253,11 @@ final class HealthController extends Controller
     /**
      * Check disk space.
      */
+    /** @return array<string, mixed> */
     private function checkDiskSpace(): array
     {
-        $freeSpace = disk_free_space(storage_path());
-        $totalSpace = disk_total_space(storage_path());
+        $freeSpace = disk_free_space(storage_path()) ?: 0.0;
+        $totalSpace = disk_total_space(storage_path()) ?: 0.0;
         $usedPercentage = round((($totalSpace - $freeSpace) / $totalSpace) * 100, 2);
 
         // Treat disk as informational to avoid false negatives in CI/envs
@@ -273,19 +279,19 @@ final class HealthController extends Controller
     {
         $memoryLimit = ini_get('memory_limit');
 
-        if ($memoryLimit === -1) {
+        if ($memoryLimit === false || $memoryLimit === '-1') {
             return PHP_INT_MAX;
         }
 
-        preg_match('/^(\d+)(.)$/', $memoryLimit, $matches);
+        preg_match('/^(\d+)(.)$/', (string)$memoryLimit, $matches);
         if (isset($matches[2])) {
             switch (mb_strtoupper($matches[2])) {
                 case 'G':
-                    return $matches[1] * 1073741824;
+                    return (int)$matches[1] * 1073741824;
                 case 'M':
-                    return $matches[1] * 1048576;
+                    return (int)$matches[1] * 1048576;
                 case 'K':
-                    return $matches[1] * 1024;
+                    return (int)$matches[1] * 1024;
             }
         }
 

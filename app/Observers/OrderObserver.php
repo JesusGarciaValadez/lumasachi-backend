@@ -18,6 +18,7 @@ use App\Notifications\OrderReviewedNotification;
 use App\Traits\CachesOrders;
 use App\Traits\NotifiesAdmins;
 use BackedEnum;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
 final class OrderObserver
@@ -28,6 +29,7 @@ final class OrderObserver
     /**
      * Store original values during updating to compute history afterwards.
      */
+    /** @var array<int|string, array<string, mixed>> */
     protected static array $originals = [];
 
     /**
@@ -84,10 +86,10 @@ final class OrderObserver
             $new = $order->getAttribute($field);
 
             // Normalize Carbon instances to strings for comparison
-            if ($old instanceof \Carbon\CarbonInterface) {
+            if ($old instanceof CarbonInterface) {
                 $old = $old->toISOString();
             }
-            if ($new instanceof \Carbon\CarbonInterface) {
+            if ($new instanceof CarbonInterface) {
                 $new = $new->toISOString();
             }
             // Normalize enums to values
@@ -102,7 +104,7 @@ final class OrderObserver
                     'field_changed' => $field,
                     'old_value' => $old,
                     'new_value' => $new,
-                    'created_by' => auth()?->id() ?? $order->updated_by,
+                    'created_by' => auth()->id() ?? $order->updated_by,
                 ]);
             }
         }

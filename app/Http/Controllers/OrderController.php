@@ -16,6 +16,7 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\OrderLifecycleService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,7 @@ final class OrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
 
         $key = self::indexKeyFor($user);
         $hit = Cache::has($key);
@@ -67,7 +68,7 @@ final class OrderController extends Controller
     {
         $order = $this->lifecycleService->createOrderWithMotorItems(
             $request->validated(),
-            $request->user()
+            $this->authenticatedUser($request)
         );
 
         return response()->json([
@@ -84,7 +85,7 @@ final class OrderController extends Controller
         $order = $this->lifecycleService->submitBudget(
             $order,
             $request->validated('services'),
-            $request->user()
+            $this->authenticatedUser($request)
         );
 
         return response()->json([
@@ -104,7 +105,7 @@ final class OrderController extends Controller
             $order,
             $validated['authorized_service_ids'],
             $validated['down_payment'] ?? null,
-            $request->user()
+            $this->authenticatedUser($request)
         );
 
         return response()->json([
@@ -121,7 +122,7 @@ final class OrderController extends Controller
         $order = $this->lifecycleService->markWorkCompleted(
             $order,
             $request->validated('completed_service_ids'),
-            $request->user()
+            $this->authenticatedUser($request)
         );
 
         return response()->json([
@@ -135,7 +136,7 @@ final class OrderController extends Controller
      */
     public function markReadyForDelivery(MarkReadyForDeliveryRequest $request, Order $order): JsonResponse
     {
-        $order = $this->lifecycleService->markReadyForDelivery($order, $request->user());
+        $order = $this->lifecycleService->markReadyForDelivery($order, $this->authenticatedUser($request));
 
         return response()->json([
             'message' => 'Order marked as ready for delivery.',
@@ -148,7 +149,7 @@ final class OrderController extends Controller
      */
     public function deliverOrder(DeliverOrderRequest $request, Order $order): JsonResponse
     {
-        $order = $this->lifecycleService->deliverOrder($order, $request->user());
+        $order = $this->lifecycleService->deliverOrder($order, $this->authenticatedUser($request));
 
         return response()->json([
             'message' => 'Order delivered successfully.',
@@ -179,7 +180,7 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
         $order->update(array_merge($validated, [
-            'updated_by' => $request->user()->id,
+            'updated_by' => $this->authenticatedUser($request)->id,
         ]));
 
         return response()->json([
@@ -210,7 +211,7 @@ final class OrderController extends Controller
         // Update order status (observer will handle history tracking)
         $order->update([
             'status' => $validated['status'],
-            'updated_by' => $request->user()->id,
+            'updated_by' => $this->authenticatedUser($request)->id,
         ]);
 
         return response()->json([
@@ -229,7 +230,7 @@ final class OrderController extends Controller
         // Update order assignment (observer will handle history tracking)
         $order->update([
             'assigned_to' => $validated['assigned_to'],
-            'updated_by' => $request->user()->id,
+            'updated_by' => $this->authenticatedUser($request)->id,
         ]);
 
         return response()->json([
@@ -258,5 +259,14 @@ final class OrderController extends Controller
             ->paginate($request->input('per_page', 15));
 
         return OrderHistoryResource::collection($history);
+    }
+
+    private function authenticatedUser(Request $request): User
+    {
+        $user = $request->user();
+
+        abort_unless($user instanceof User, 401);
+
+        return $user;
     }
 }

@@ -36,7 +36,7 @@ trait CachesServiceCatalog
     public static function engineOptionsKey(string $locale, ?OrderItemType $itemType): string
     {
         $version = self::currentVersion();
-        $type = $itemType?->value ?? 'all';
+        $type = $itemType === null ? 'all' : $itemType->value;
 
         return "service_catalog:engine_options:v{$version}:locale:{$locale}:type:{$type}";
     }

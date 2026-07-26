@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Observers\OrderHistoryObserver;
 use App\Traits\HasAttachments;
 use BackedEnum;
+use Carbon\Carbon;
 use Database\Factories\OrderHistoryFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy([OrderHistoryObserver::class])]
 final class OrderHistory extends Model
 {
+    /** @use HasFactory<OrderHistoryFactory> */
     use HasAttachments, HasFactory, HasUuids;
 
     /**
@@ -83,7 +85,7 @@ final class OrderHistory extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'uuid',
@@ -107,6 +109,9 @@ final class OrderHistory extends Model
 
     /**
      * Get the columns that should receive a unique identifier.
+     */
+    /**
+     * @return list<string>
      */
     public function uniqueIds(): array
     {
@@ -165,11 +170,13 @@ final class OrderHistory extends Model
         return ucfirst($field)." changed from {$oldValue} to {$newValue}";
     }
 
+    /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -182,6 +189,7 @@ final class OrderHistory extends Model
      * DEPRECATED: Use order() instead. Returns a single Order, not a collection.
      * Maintained for backward compatibility only.
      */
+    /** @return BelongsTo<Order, $this> */
     public function orders(): BelongsTo
     {
         return $this->order();
@@ -189,8 +197,6 @@ final class OrderHistory extends Model
 
     /**
      * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
      */
     protected static function newFactory(): OrderHistoryFactory
     {
@@ -221,11 +227,11 @@ final class OrderHistory extends Model
                 return $value ? OrderPriority::tryFrom($value) : null;
             case self::FIELD_ESTIMATED_COMPLETION:
             case self::FIELD_ACTUAL_COMPLETION:
-                if ($value instanceof \Carbon\Carbon) {
+                if ($value instanceof Carbon) {
                     return $value;
                 }
 
-                return $value ? \Carbon\Carbon::parse($value) : null;
+                return $value ? Carbon::parse($value) : null;
             case self::FIELD_ITEM_RECEIVED:
             case self::FIELD_ITEM_COMPONENT_RECEIVED:
             case self::FIELD_SERVICE_BUDGETED:
@@ -258,14 +264,14 @@ final class OrderHistory extends Model
         }
 
         if ($value instanceof BackedEnum) {
-            return $value->value;
+            return (string)$value->value;
         }
 
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
 
-        if ($value instanceof \Carbon\Carbon) {
+        if ($value instanceof Carbon) {
             return $value->toISOString();
         }
 
@@ -287,7 +293,7 @@ final class OrderHistory extends Model
             return method_exists($castedValue, 'getLabel') ? $castedValue->getLabel() : $castedValue->value;
         }
 
-        if ($castedValue instanceof \Carbon\Carbon) {
+        if ($castedValue instanceof Carbon) {
             return $castedValue->format('Y-m-d H:i');
         }
 

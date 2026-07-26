@@ -27,6 +27,7 @@ use Laravel\Pennant\Feature;
 
 final class AppServiceProvider extends ServiceProvider
 {
+    /** @var array<class-string, class-string> */
     protected $policies = [
         Order::class => OrderPolicy::class,
         OrderHistory::class => OrderHistoryPolicy::class,
@@ -153,7 +154,7 @@ final class AppServiceProvider extends ServiceProvider
 
         // Gate to verify if the user can perform a specific action
         Gate::define('has-permission', function (User $user, string $permission) {
-            return in_array($permission, $user->role->getPermissions());
+            return in_array($permission, UserRole::getPermissions($user->role), true);
         });
     }
 
@@ -190,7 +191,7 @@ final class AppServiceProvider extends ServiceProvider
             });
 
         Gate::define('viewApiDocs', function (User $user) {
-            return in_array($user->email, [env('APP_MAINTAINER_EMAIL')]);
+            return in_array($user->email, [config('app.maintainer_email')], true);
         });
     }
 }

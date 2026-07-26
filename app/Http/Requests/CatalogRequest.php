@@ -18,6 +18,9 @@ final class CatalogRequest extends FormRequest
         return $user && $user->role !== UserRole::CUSTOMER;
     }
 
+    /**
+     * @return array<string, array<int, mixed>>
+     */
     public function rules(): array
     {
         return [
@@ -40,7 +43,7 @@ final class CatalogRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if ($this->hasHeader('Accept-Language') && ! $this->has('locale')) {
-            $raw = $this->header('Accept-Language');
+            $raw = (string)$this->header('Accept-Language');
 
             // Take the first language tag and drop quality values, normalizing case/underscores
             $first = explode(',', $raw)[0] ?? '';

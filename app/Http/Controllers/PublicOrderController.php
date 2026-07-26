@@ -20,7 +20,14 @@ final class PublicOrderController extends Controller
 
         $order = Order::where('uuid', $validated['uuid'])
             ->whereDate('created_at', $validated['created_date'])
-            ->with(['motorInfo', 'items.components', 'services', 'orderHistories'])
+            ->with([
+                'motorInfo',
+                'items.components',
+                'services',
+                'orderHistories.createdBy',
+                'orderHistories.order.attachments',
+                'attachments.uploadedBy',
+            ])
             ->first();
 
         if (! $order) {

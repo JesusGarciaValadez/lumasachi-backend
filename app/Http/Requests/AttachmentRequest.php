@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Attachment;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
 
@@ -12,20 +13,20 @@ final class AttachmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
-        return $this->user()->can('create', Attachment::class);
+        $user = $this->user();
+
+        return $user !== null && $user->can('create', Attachment::class);
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public function rules()
+    public function rules(): array
     {
         $maxSizeInKB = config('attachments.max_file_size') / 1024;
         $allowedMimes = config('attachments.allowed_mime_types');
@@ -48,7 +49,7 @@ final class AttachmentRequest extends FormRequest
      *
      * @return array<string, string>
      */
-    public function messages()
+    public function messages(): array
     {
         $maxSizeInMB = config('attachments.max_file_size') / (1024 * 1024);
 

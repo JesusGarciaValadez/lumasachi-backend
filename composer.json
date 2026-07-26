@@ -33,6 +33,7 @@
         "brianium/paratest": "^7.8",
         "fakerphp/faker": "^1.23",
         "friendsofphp/php-cs-fixer": "*",
+        "larastan/larastan": "^3.0",
         "laravel/boost": "^2.1",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
@@ -109,7 +110,7 @@
         "test:lint": "pint --test",
         "test:unit": "@php artisan test --parallel --testsuite=Unit",
         "test:feature": "@php artisan test --parallel --testsuite=Feature",
-        "test:types": "phpstan --configuration=./phpstan.neon",
+        "test:types": "phpstan --configuration=./phpstan.neon --memory-limit=2G",
         "test:typos": "peck",
         "test:refactor": "rector --dry-run",
         "test:complete": [

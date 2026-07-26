@@ -9,14 +9,17 @@ use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Models\User;
 use App\Traits\CachesAttachments;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class AttachmentController extends Controller
 {
@@ -53,6 +56,7 @@ final class AttachmentController extends Controller
     public function store(UploadAttachmentRequest $request, Order $order): JsonResponse
     {
         // Authorization is handled by middleware
+        $user = $this->authenticatedUser();
         $validated = $request->validated();
 
         DB::beginTransaction();
@@ -62,12 +66,18 @@ final class AttachmentController extends Controller
             // Determine if multiple files were provided
             $files = [];
             if ($request->hasFile('files')) {
-                $files = $request->file('files');
+                $uploadedFiles = $request->file('files');
+                $files = is_array($uploadedFiles) ? $uploadedFiles : [$uploadedFiles];
             } elseif ($request->hasFile('file')) {
-                $files = [$request->file('file')];
+                $uploadedFile = $request->file('file');
+                $files = $uploadedFile instanceof UploadedFile ? [$uploadedFile] : [];
             }
 
             foreach ($files as $index => $file) {
+                if (!$file instanceof UploadedFile) {
+                    continue;
+                }
+
                 // Determine name/description per file
                 $fileName = $validated['names'][$index] ?? ($validated['name'] ?? $file->getClientOriginalName());
 
@@ -81,7 +91,7 @@ final class AttachmentController extends Controller
                     'file_path' => $path,
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
-                    'uploaded_by' => $request->user()->id,
+                    'uploaded_by' => $user->id,
                 ]);
 
                 $attachments[] = $attachment;
@@ -94,7 +104,7 @@ final class AttachmentController extends Controller
                     'old_value' => null,
                     'new_value' => $attachment->file_name,
                     'comment' => "File '{$fileName}' was uploaded",
-                    'created_by' => request()->user()->id,
+                    'created_by' => $user->id,
                 ]);
             }
 
@@ -108,7 +118,7 @@ final class AttachmentController extends Controller
             }
 
             // Ensure we use an Eloquent Collection to support ->load()
-            $eloquentCollection = new \Illuminate\Database\Eloquent\Collection($attachments);
+            $eloquentCollection = new Collection($attachments);
 
             return response()->json([
                 'message' => 'Files uploaded successfully.',
@@ -126,10 +136,8 @@ final class AttachmentController extends Controller
 
     /**
      * Download an attachment.
-     *
-     * @return Response|\Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function download(Attachment $attachment)
+    public function download(Attachment $attachment): JsonResponse|BinaryFileResponse
     {
         // Check if user has permission to download this attachment
         if (! $this->canAccessAttachment($attachment)) {
@@ -161,10 +169,8 @@ final class AttachmentController extends Controller
 
     /**
      * Preview an attachment (for images and PDFs).
-     *
-     * @return Response|\Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function preview(Attachment $attachment)
+    public function preview(Attachment $attachment): JsonResponse|BinaryFileResponse
     {
         // Check if user has permission to preview this attachment
         if (! $this->canAccessAttachment($attachment)) {
@@ -223,7 +229,8 @@ final class AttachmentController extends Controller
         $order = $attachment->attachable;
 
         // Check authorization on the order
-        if ($order && ! request()->user()->can('update', $order)) {
+        $user = $this->authenticatedUser();
+        if ($order instanceof Order && !$user->can('update', $order)) {
             return response()->json([
                 'message' => 'Unauthorized to delete this attachment.',
             ], 403);
@@ -242,7 +249,7 @@ final class AttachmentController extends Controller
             $attachment->delete();
 
             // Create history record
-            if ($order) {
+            if ($order instanceof Order) {
                 OrderHistory::create([
                     'uuid' => Str::uuid7()->toString(),
                     'order_id' => $order->id,
@@ -250,7 +257,7 @@ final class AttachmentController extends Controller
                     'old_value' => $attachment->file_name,
                     'new_value' => null,
                     'comment' => "File '{$fileName}' was deleted",
-                    'created_by' => request()->user()->id,
+                    'created_by' => $user->id,
                 ]);
             }
 
@@ -276,6 +283,10 @@ final class AttachmentController extends Controller
     {
         $user = request()->user();
 
+        if (!$user instanceof User) {
+            return false;
+        }
+
         // If attachment doesn't belong to an order, deny access
         if ($attachment->attachable_type !== 'order') {
             return false;
@@ -284,11 +295,20 @@ final class AttachmentController extends Controller
         $order = $attachment->attachable;
 
         // If order doesn't exist, deny access
-        if (! $order) {
+        if (!$order instanceof Order) {
             return false;
         }
 
         // Use the order policy to check if user can view the order
         return $user->can('view', $order);
+    }
+
+    private function authenticatedUser(): User
+    {
+        $user = request()->user();
+
+        abort_unless($user instanceof User, 401);
+
+        return $user;
     }
 }

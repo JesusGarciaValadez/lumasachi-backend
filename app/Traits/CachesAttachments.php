@@ -59,7 +59,7 @@ trait CachesAttachments
         $version = self::currentVersion();
         // Normalize and hash filters to keep keys short and unique
         ksort($filters);
-        $signature = md5(json_encode($filters));
+        $signature = md5(json_encode($filters, JSON_THROW_ON_ERROR));
 
         return "attachments:index:v{$version}:f:{$signature}";
     }
@@ -77,7 +77,7 @@ trait CachesAttachments
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
 
         foreach ($bt as $frame) {
-            if (isset($frame['class'], $frame['function'])) {
+            if (isset($frame['class'])) {
                 // Skip internal cache trait frames
                 if (str_contains($frame['class'], 'CachesAttachments')) {
                     continue;

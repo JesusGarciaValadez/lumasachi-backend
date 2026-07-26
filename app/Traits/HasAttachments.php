@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use App\Models\Attachment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 trait HasAttachments
 {
     /**
      * Get all of the attachments for the model.
+     *
+     * @return MorphMany<Attachment, $this>
      */
     public function attachments(): MorphMany
     {
@@ -38,7 +40,7 @@ trait HasAttachments
         $storagePath = "attachments/{$modelType}/{$modelId}";
 
         // Store the file
-        $filePath = $file->storeAs($storagePath, $uniqueFileName, $disk);
+        $filePath = $file->storeAs($storagePath, $uniqueFileName, $disk ?? 'public');
 
         // Create the attachment record
         return $this->attachments()->create([
@@ -62,7 +64,7 @@ trait HasAttachments
         }
 
         // The delete method in Attachment model handles file deletion
-        return $attachment->delete();
+        return (bool)$attachment->delete();
     }
 
     /**
@@ -78,7 +80,10 @@ trait HasAttachments
      *
      * @param  string  $mimeType  Can be exact type (e.g., 'application/pdf') or partial (e.g., 'image')
      */
-    public function getAttachmentsByType(string $mimeType): \Illuminate\Database\Eloquent\Collection
+    /**
+     * @return Collection<int, Attachment>
+     */
+    public function getAttachmentsByType(string $mimeType): Collection
     {
         // Check if it's a partial type (e.g., 'image', 'application')
         if (! str_contains($mimeType, '/')) {
@@ -96,17 +101,23 @@ trait HasAttachments
     /**
      * Get all image attachments.
      */
-    public function getImageAttachments(): \Illuminate\Database\Eloquent\Collection
+    /**
+     * @return Collection<int, Attachment>
+     */
+    public function getImageAttachments(): Collection
     {
-        return $this->attachments()->images()->get();
+        return $this->attachments()->where('mime_type', 'like', 'image%')->get();
     }
 
     /**
      * Get all document attachments.
      */
-    public function getDocumentAttachments(): \Illuminate\Database\Eloquent\Collection
+    /**
+     * @return Collection<int, Attachment>
+     */
+    public function getDocumentAttachments(): Collection
     {
-        return $this->attachments()->documents()->get();
+        return $this->attachments()->where('mime_type', 'like', 'application%')->get();
     }
 
     /**
@@ -114,7 +125,7 @@ trait HasAttachments
      */
     public function getTotalAttachmentsSize(): int
     {
-        return $this->attachments()->sum('file_size');
+        return (int)$this->attachments()->sum('file_size');
     }
 
     /**
