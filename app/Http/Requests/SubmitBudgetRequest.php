@@ -7,7 +7,9 @@ namespace App\Http\Requests;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class SubmitBudgetRequest extends FormRequest
@@ -24,7 +26,16 @@ final class SubmitBudgetRequest extends FormRequest
     {
         return [
             'services' => 'required|array|min:1',
-            'services.*.order_item_id' => 'required|exists:order_items,id',
+            'services.*.order_item_id' => [
+                'required',
+                Rule::exists('order_items', 'id')->where(function (Builder $query): void {
+                    $order = $this->route('order');
+
+                    if ($order instanceof Order) {
+                        $query->where('order_id', $order->getKey());
+                    }
+                }),
+            ],
             'services.*.service_key' => 'required|exists:service_catalog,service_key',
             'services.*.measurement' => 'nullable|string|max:50',
             'services.*.notes' => 'nullable|string|max:500',

@@ -108,6 +108,17 @@ vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
 
+### Step 2 status
+
+- [x] Budget item IDs are validated against the route order.
+- [x] Approved service IDs are validated against the route order.
+- [x] Completed service IDs are validated against the route order.
+- [x] Lifecycle service methods reject foreign IDs before mutating data.
+- [x] Related feature and service tests passed.
+- [x] Pint passed.
+- [x] PHPStan passed with no errors.
+- [x] No additional Step 2 edge case remains unresolved.
+
 ## Step 3 — Require authorization before work completion
 
 ### Business requirement
