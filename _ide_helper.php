@@ -5,7 +5,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 12.55.1.
+ * Generated for Laravel 12.64.0.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -14131,7 +14131,6 @@ namespace Illuminate\Support\Facades {
 
             }
     /**
-     * @method static \BackedEnum|(\BackedEnum|null enum(string $key, string $enumClass, \BackedEnum|null $default = null)
      * @see \Illuminate\Http\Request
      */
     class Request {
@@ -15110,10 +15109,6 @@ namespace Illuminate\Support\Facades {
          * header value is a comma+space separated list of IP addresses, the left-most
          * being the original client, and each successive proxy that passed the request
          * adding the IP address where it received the request from.
-         *
-         * If your reverse proxy uses a different header name than "X-Forwarded-For",
-         * ("Client-Ip" for instance), configure it via the $trustedHeaderSet
-         * argument of the Request::setTrustedProxies() method instead.
          *
          * @see getClientIps()
          * @see https://wikipedia.org/wiki/X-Forwarded-For
@@ -20583,6 +20578,7 @@ namespace Illuminate\Support\Facades {
          * @param array $headers
          * @param string|null $disposition
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function response($path, $name = null, $headers = [], $disposition = 'inline')
@@ -20600,6 +20596,7 @@ namespace Illuminate\Support\Facades {
          * @param string|null $name
          * @param array $headers
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function serve($request, $path, $name = null, $headers = [])
@@ -20616,6 +20613,7 @@ namespace Illuminate\Support\Facades {
          * @param string|null $name
          * @param array $headers
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function download($path, $name = null, $headers = [])
@@ -20814,6 +20812,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $path
          * @return string|false
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function mimeType($path)
@@ -24377,6 +24376,161 @@ namespace Barryvdh\DomPDF\Facade {
             }
     }
 
+namespace Laravel\Mcp\Facades {
+    /**
+     * @see Registrar
+     */
+    class Mcp {
+        /**
+         * @param class-string<Server> $serverClass
+         * @static
+         */
+        public static function web($route, $serverClass)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->web($route, $serverClass);
+        }
+
+        /**
+         * @param class-string<Server> $serverClass
+         * @static
+         */
+        public static function local($handle, $serverClass)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->local($handle, $serverClass);
+        }
+
+        /**
+         * @param \Closure():  Client  $factory
+         * @static
+         */
+        public static function registerClient($name, $factory)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->registerClient($name, $factory);
+        }
+
+        /**
+         * @static
+         */
+        public static function client($name)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->client($name);
+        }
+
+        /**
+         * @param \Closure(string, TokenSet):  mixed|array{0: class-string, 1: string}  $handler
+         * @param array<int, string>|string $middleware
+         * @static
+         */
+        public static function oAuthRoutesFor($client, $handler, $middleware = 'web', $connectUri = null, $callbackUri = null)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->oAuthRoutesFor($client, $handler, $middleware, $connectUri, $callbackUri);
+        }
+
+        /**
+         * @static
+         */
+        public static function getLocalServer($handle)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->getLocalServer($handle);
+        }
+
+        /**
+         * @static
+         */
+        public static function getWebServer($route)
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->getWebServer($route);
+        }
+
+        /**
+         * @return array<string, callable|Route>
+         * @static
+         */
+        public static function servers()
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->servers();
+        }
+
+        /**
+         * @static
+         */
+        public static function oauthRoutes($oauthPrefix = 'oauth')
+        {
+            /** @var \Laravel\Mcp\Server\Registrar $instance */
+            return $instance->oauthRoutes($oauthPrefix);
+        }
+
+        /**
+         * @return array<string, string>
+         * @static
+         */
+        public static function ensureMcpScope()
+        {
+            return \Laravel\Mcp\Server\Registrar::ensureMcpScope();
+        }
+
+        /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @param-closure-this static  $macro
+         * @return void
+         * @static
+         */
+        public static function macro($name, $macro)
+        {
+            \Laravel\Mcp\Server\Registrar::macro($name, $macro);
+        }
+
+        /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void
+         * @throws \ReflectionException
+         * @static
+         */
+        public static function mixin($mixin, $replace = true)
+        {
+            \Laravel\Mcp\Server\Registrar::mixin($mixin, $replace);
+        }
+
+        /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool
+         * @static
+         */
+        public static function hasMacro($name)
+        {
+            return \Laravel\Mcp\Server\Registrar::hasMacro($name);
+        }
+
+        /**
+         * Flush the existing macros.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushMacros()
+        {
+            \Laravel\Mcp\Server\Registrar::flushMacros();
+        }
+
+            }
+    }
+
 namespace Laravel\Nightwatch\Facades {
     /**
      * @see \Laravel\Nightwatch\Core
@@ -24817,10 +24971,10 @@ namespace Laravel\Nightwatch\Facades {
          * @internal
          * @static
          */
-        public static function prepareForNextScheduledTask($event)
+        public static function prepareForScheduledTask($event)
         {
             /** @var \Laravel\Nightwatch\Core $instance */
-            return $instance->prepareForNextScheduledTask($event);
+            return $instance->prepareForScheduledTask($event);
         }
 
         /**
@@ -24837,10 +24991,10 @@ namespace Laravel\Nightwatch\Facades {
          * @internal
          * @static
          */
-        public static function prepareForNextRequest()
+        public static function prepareForRequest($request)
         {
             /** @var \Laravel\Nightwatch\Core $instance */
-            return $instance->prepareForNextRequest();
+            return $instance->prepareForRequest($request);
         }
 
         /**
@@ -25206,16 +25360,16 @@ namespace Laravel\Octane\Facades {
 namespace Laravel\Pennant {
     /**
      * @method static void discover(string $namespace = 'App\\Features', string|null $path = null)
-     * @method static void define(string $feature, mixed $resolver = null)
+     * @method static void define(\BackedEnum|\UnitEnum|string $feature, mixed $resolver = null)
      * @method static bool isResolverValidForScope(callable|string $resolver, mixed $scope)
      * @method static array defined()
      * @method static array stored()
-     * @method static void activateForEveryone(string|array $feature, mixed $value = true)
-     * @method static void deactivateForEveryone(string|array $feature)
-     * @method static void purge(string|array|null $features = null)
-     * @method static string name(string $feature)
+     * @method static void activateForEveryone(\BackedEnum|\UnitEnum|string|array $feature, mixed $value = true)
+     * @method static void deactivateForEveryone(\BackedEnum|\UnitEnum|string|array $feature)
+     * @method static void purge(\BackedEnum|\UnitEnum|string|array|null $features = null)
+     * @method static string name(\BackedEnum|\UnitEnum|string $feature)
      * @method static array nameMap()
-     * @method static mixed instance(string $name)
+     * @method static mixed instance(\BackedEnum|\UnitEnum|string $name)
      * @method static \Laravel\Pennant\Contracts\Driver getDriver()
      * @method static void macro(string $name, object|callable $macro)
      * @method static void mixin(object $mixin, bool $replace = true)
@@ -25223,24 +25377,24 @@ namespace Laravel\Pennant {
      * @method static void flushMacros()
      * @method static mixed macroCall(string $method, array $parameters)
      * @method static \Laravel\Pennant\PendingScopedFeatureInteraction for(mixed $scope)
-     * @method static array load(string|array $features)
-     * @method static array loadMissing(string|array $features)
+     * @method static array load(\BackedEnum|\UnitEnum|string|array $features)
+     * @method static array loadMissing(\BackedEnum|\UnitEnum|string|array $features)
      * @method static array loadAll()
-     * @method static mixed value(string $feature)
+     * @method static mixed value(\BackedEnum|\UnitEnum|string $feature)
      * @method static array values(array $features)
      * @method static array all()
-     * @method static bool active(string $feature)
+     * @method static bool active(\BackedEnum|\UnitEnum|string $feature)
      * @method static bool allAreActive(array $features)
      * @method static bool someAreActive(array $features)
-     * @method static bool inactive(string $feature)
+     * @method static bool inactive(\BackedEnum|\UnitEnum|string $feature)
      * @method static bool allAreInactive(array $features)
      * @method static bool someAreInactive(array $features)
-     * @method static mixed when(string $feature, \Closure $whenActive, \Closure|null $whenInactive = null)
-     * @method static mixed unless(string $feature, \Closure $whenInactive, \Closure|null $whenActive = null)
-     * @method static void activate(string|array $feature, mixed $value = true)
-     * @method static void deactivate(string|array $feature)
-     * @method static void forget(string|array $features)
-     * @see FeatureManager
+     * @method static mixed when(\BackedEnum|\UnitEnum|string $feature, \Closure $whenActive, \Closure|null $whenInactive = null)
+     * @method static mixed unless(\BackedEnum|\UnitEnum|string $feature, \Closure $whenInactive, \Closure|null $whenActive = null)
+     * @method static void activate(\BackedEnum|\UnitEnum|string|array $feature, mixed $value = true)
+     * @method static void deactivate(\BackedEnum|\UnitEnum|string|array $feature)
+     * @method static void forget(\BackedEnum|\UnitEnum|string|array $features)
+     * @see \Laravel\Pennant\FeatureManager
      */
     class Feature {
         /**
@@ -26263,7 +26417,7 @@ namespace  {
          * @param string $pageName
          * @param int|null $page
          * @param \Closure|int|null $total
-         * @return \Illuminate\Pagination\LengthAwarePaginator
+         * @return \Illuminate\Pagination\LengthAwarePaginator<int, TModel>
          * @throws \InvalidArgumentException
          * @static
          */
@@ -26280,7 +26434,7 @@ namespace  {
          * @param array|string $columns
          * @param string $pageName
          * @param int|null $page
-         * @return \Illuminate\Contracts\Pagination\Paginator
+         * @return \Illuminate\Pagination\Paginator<int, TModel>
          * @static
          */
         public static function simplePaginate($perPage = null, $columns = [], $pageName = 'page', $page = null)
@@ -26296,7 +26450,7 @@ namespace  {
          * @param array|string $columns
          * @param string $cursorName
          * @param \Illuminate\Pagination\Cursor|string|null $cursor
-         * @return \Illuminate\Contracts\Pagination\CursorPaginator
+         * @return \Illuminate\Pagination\CursorPaginator<int, TModel>
          * @static
          */
         public static function cursorPaginate($perPage = null, $columns = [], $cursorName = 'cursor', $cursor = null)
@@ -30671,6 +30825,7 @@ namespace  {
     class PDF extends \Barryvdh\DomPDF\Facade\Pdf {}
     class Pdf extends \Barryvdh\DomPDF\Facade\Pdf {}
     class Horizon extends \Laravel\Horizon\Horizon {}
+    class Mcp extends \Laravel\Mcp\Facades\Mcp {}
     class Nightwatch extends \Laravel\Nightwatch\Facades\Nightwatch {}
     class Octane extends \Laravel\Octane\Facades\Octane {}
     class Feature extends \Laravel\Pennant\Feature {}
