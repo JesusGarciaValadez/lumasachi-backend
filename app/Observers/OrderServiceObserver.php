@@ -17,7 +17,7 @@ final class OrderServiceObserver
 
     public function updated(OrderService $service): void
     {
-        $order = $service->orderItem->order;
+        $order = $service->orderItem()->with('order')->firstOrFail()->order;
         $changed = false;
 
         if ($service->wasChanged('is_budgeted')) {
