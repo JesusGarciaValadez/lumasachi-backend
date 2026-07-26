@@ -84,7 +84,7 @@ final class OrderControllerTest extends TestCase
         $response = $this->getJson('/api/v1/orders');
 
         $response->assertOk()
-            ->assertJsonCount(10);
+            ->assertJsonCount(5);
     }
 
     /**
