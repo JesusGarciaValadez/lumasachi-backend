@@ -338,6 +338,35 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->assertSame(OrderStatus::ReadyForWork, $order->fresh()->status);
     }
 
+    #[Test]
+    public function it_rejects_work_completed_when_any_service_is_unauthorized(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
+        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+        $authorizedService = OrderService::factory()->budgeted()->authorized()->create([
+            'order_item_id' => $item->id,
+            'is_completed' => false,
+        ]);
+        $unauthorizedService = OrderService::factory()->budgeted()->create([
+            'order_item_id' => $item->id,
+            'is_authorized' => false,
+            'is_completed' => false,
+        ]);
+
+        try {
+            $this->service->markWorkCompleted(
+                $order,
+                [$authorizedService->id, $unauthorizedService->id],
+                $this->employee
+            );
+            $this->fail('Unauthorized services must not be marked as completed.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $this->assertFalse($authorizedService->fresh()->is_completed);
+        $this->assertFalse($unauthorizedService->fresh()->is_completed);
+    }
+
     // ---------------------------------------------------------------
     // markReadyForDelivery
     // ---------------------------------------------------------------

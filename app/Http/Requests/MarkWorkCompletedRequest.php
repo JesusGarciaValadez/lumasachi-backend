@@ -35,7 +35,7 @@ final class MarkWorkCompletedRequest extends FormRequest
                         $query->whereIn(
                             'order_item_id',
                             OrderItem::query()->select('id')->where('order_id', $order->getKey())
-                        );
+                        )->where('is_authorized', true);
                     }
                 }),
             ],

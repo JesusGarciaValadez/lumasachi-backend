@@ -148,6 +148,17 @@ vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
 
+### Step 3 status
+
+- [x] Work-completion request validation requires route-order services to be authorized.
+- [x] Lifecycle service queries require every completed service to be authorized.
+- [x] Foreign, unauthorized, and mixed requests are rejected before mutation.
+- [x] Ready for Work and In Progress remain the permitted statuses.
+- [x] Related feature, service, and lifecycle regression tests passed.
+- [x] Pint passed.
+- [x] PHPStan passed with no errors.
+- [x] No additional Step 3 edge case remains unresolved.
+
 ## Step 4 — Constrain components to their item type
 
 ### Business requirement

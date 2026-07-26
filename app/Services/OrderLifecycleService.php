@@ -153,11 +153,12 @@ final class OrderLifecycleService
     public function markWorkCompleted(Order $order, array $completedServiceIds, User $technician): Order
     {
         $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
-        $this->assertServicesBelongToOrder($order, $completedServiceIds);
+        $this->assertAuthorizedServicesBelongToOrder($order, $completedServiceIds);
 
         DB::transaction(function () use ($order, $completedServiceIds): void {
             $services = $order->services()
                 ->whereIn('order_services.id', $completedServiceIds)
+                ->where('order_services.is_authorized', true)
                 ->get();
 
             foreach ($services as $service) {
@@ -251,6 +252,25 @@ final class OrderLifecycleService
 
         if ($matchingServices !== count($uniqueServiceIds)) {
             throw new InvalidArgumentException('All services must belong to the order.');
+        }
+    }
+
+    /**
+     * @param array<int, int> $serviceIds
+     *
+     * @throws InvalidArgumentException
+     */
+    private function assertAuthorizedServicesBelongToOrder(Order $order, array $serviceIds): void
+    {
+        $uniqueServiceIds = array_values(array_unique($serviceIds));
+
+        $matchingServices = $order->services()
+            ->whereIn('order_services.id', $uniqueServiceIds)
+            ->where('order_services.is_authorized', true)
+            ->count();
+
+        if ($matchingServices !== count($uniqueServiceIds)) {
+            throw new InvalidArgumentException('All completed services must be authorized and belong to the order.');
         }
     }
 }
