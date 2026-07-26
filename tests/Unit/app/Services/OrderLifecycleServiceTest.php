@@ -419,9 +419,38 @@ final class OrderLifecycleServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_delivers_order_with_an_overpayment(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
+        $order->motorInfo->update([
+            'down_payment' => 150.00,
+            'total_cost' => 100.00,
+        ]);
+
+        $result = $this->service->deliverOrder($order, $this->employee);
+
+        $result->refresh();
+        $this->assertSame(OrderStatus::Delivered, $result->status);
+    }
+
+    #[Test]
     public function it_rejects_deliver_from_wrong_status(): void
     {
         $order = $this->createOrderInStatus(OrderStatus::Open);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->service->deliverOrder($order, $this->employee);
+    }
+
+    #[Test]
+    public function it_rejects_delivery_with_a_remaining_balance(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
+        $order->motorInfo->update([
+            'down_payment' => 100.00,
+            'total_cost' => 100.01,
+        ]);
 
         $this->expectException(InvalidArgumentException::class);
 

@@ -233,6 +233,18 @@ vendor/bin/sail bin pint --dirty --format agent
 vendor/bin/sail composer test:types
 ```
 
+### Step 5 status
+
+- [x] Delivery validation rejects orders with a positive remaining balance.
+- [x] Lifecycle service delivery enforces the payment rule independently.
+- [x] Monetary comparisons use two-decimal precision.
+- [x] Partial payment leaves the order ready for delivery.
+- [x] Exact payment, overpayment, and zero-total orders remain deliverable.
+- [x] Related delivery, lifecycle, model, service, observer, and notification tests passed.
+- [x] Pint passed.
+- [x] PHPStan passed with no errors.
+- [x] No additional Step 5 edge case remains unresolved.
+
 ## Step 6 — Record the automatic approval transition
 
 ### Business requirement

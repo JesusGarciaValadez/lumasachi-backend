@@ -34,6 +34,10 @@ final class DeliverOrderRequest extends FormRequest
             if ($order && $order->status !== OrderStatus::ReadyForDelivery) {
                 $validator->errors()->add('status', 'Order must be in Ready for Delivery status.');
             }
+
+            if ($order && $order->motorInfo?->hasPendingPayment()) {
+                $validator->errors()->add('payment', 'Order must be fully paid before delivery.');
+            }
         });
     }
 }
