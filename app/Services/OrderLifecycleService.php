@@ -83,6 +83,7 @@ final class OrderLifecycleService
     public function submitBudget(Order $order, array $servicesData, User $reviewer): Order
     {
         $this->assertStatus($order, [OrderStatus::AwaitingReview]);
+        $this->assertOrderItemsBelongToOrder($order, array_column($servicesData, 'order_item_id'));
 
         DB::transaction(function () use ($servicesData) {
             foreach ($servicesData as $svcData) {
@@ -124,6 +125,7 @@ final class OrderLifecycleService
     public function customerApproval(Order $order, array $authorizedServiceIds, ?float $downPayment, User $approver): Order
     {
         $this->assertStatus($order, [OrderStatus::AwaitingCustomerApproval]);
+        $this->assertServicesBelongToOrder($order, $authorizedServiceIds);
 
         DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment) {
             $order->services()->whereIn('order_services.id', $authorizedServiceIds)->update(['is_authorized' => true]);
@@ -151,6 +153,7 @@ final class OrderLifecycleService
     public function markWorkCompleted(Order $order, array $completedServiceIds, User $technician): Order
     {
         $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
+        $this->assertServicesBelongToOrder($order, $completedServiceIds);
 
         DB::transaction(function () use ($order, $completedServiceIds): void {
             $services = $order->services()
@@ -212,6 +215,42 @@ final class OrderLifecycleService
             throw new InvalidArgumentException(
                 'Order must be in status ['.implode(', ', $labels)."] but is in [{$order->status->value}]."
             );
+        }
+    }
+
+    /**
+     * @param array<int, int> $orderItemIds
+     *
+     * @throws InvalidArgumentException
+     */
+    private function assertOrderItemsBelongToOrder(Order $order, array $orderItemIds): void
+    {
+        $uniqueOrderItemIds = array_values(array_unique($orderItemIds));
+
+        $matchingItems = $order->items()
+            ->whereIn('order_items.id', $uniqueOrderItemIds)
+            ->count();
+
+        if ($matchingItems !== count($uniqueOrderItemIds)) {
+            throw new InvalidArgumentException('All order items must belong to the order.');
+        }
+    }
+
+    /**
+     * @param array<int, int> $serviceIds
+     *
+     * @throws InvalidArgumentException
+     */
+    private function assertServicesBelongToOrder(Order $order, array $serviceIds): void
+    {
+        $uniqueServiceIds = array_values(array_unique($serviceIds));
+
+        $matchingServices = $order->services()
+            ->whereIn('order_services.id', $uniqueServiceIds)
+            ->count();
+
+        if ($matchingServices !== count($uniqueServiceIds)) {
+            throw new InvalidArgumentException('All services must belong to the order.');
         }
     }
 }

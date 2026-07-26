@@ -185,6 +185,32 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->service->submitBudget($order, [], $this->employee);
     }
 
+    #[Test]
+    public function it_rejects_budget_for_an_item_from_another_order(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
+        $otherOrder = $this->createOrderInStatus(OrderStatus::AwaitingReview);
+        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+        $catalog = $this->createCatalogService('wash_block', 600.00);
+
+        try {
+            $this->service->submitBudget($order, [
+                [
+                    'order_item_id' => $otherItem->id,
+                    'service_key' => $catalog->service_key,
+                    'measurement' => null,
+                ],
+            ], $this->employee);
+            $this->fail('A budget item from another order must be rejected.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $this->assertDatabaseMissing('order_services', [
+            'order_item_id' => $otherItem->id,
+            'service_key' => $catalog->service_key,
+        ]);
+    }
+
     // ---------------------------------------------------------------
     // customerApproval
     // ---------------------------------------------------------------
@@ -218,6 +244,28 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $this->service->customerApproval($order, [], null, $this->customer);
+    }
+
+    #[Test]
+    public function it_rejects_approval_for_a_service_from_another_order(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
+        $otherOrder = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
+        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+        $otherService = OrderService::factory()->budgeted()->create([
+            'order_item_id' => $otherItem->id,
+            'is_authorized' => false,
+        ]);
+
+        try {
+            $this->service->customerApproval($order, [$otherService->id], null, $this->customer);
+            $this->fail('A service from another order must be rejected during approval.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $otherService->refresh();
+        $this->assertFalse($otherService->is_authorized);
+        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
     }
 
     // ---------------------------------------------------------------
@@ -266,6 +314,28 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $this->service->markWorkCompleted($order, [], $this->employee);
+    }
+
+    #[Test]
+    public function it_rejects_work_completed_for_a_service_from_another_order(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
+        $otherOrder = $this->createOrderInStatus(OrderStatus::ReadyForWork);
+        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+        $otherService = OrderService::factory()->budgeted()->authorized()->create([
+            'order_item_id' => $otherItem->id,
+            'is_completed' => false,
+        ]);
+
+        try {
+            $this->service->markWorkCompleted($order, [$otherService->id], $this->employee);
+            $this->fail('A service from another order must be rejected during completion.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $otherService->refresh();
+        $this->assertFalse($otherService->is_completed);
+        $this->assertSame(OrderStatus::ReadyForWork, $order->fresh()->status);
     }
 
     // ---------------------------------------------------------------

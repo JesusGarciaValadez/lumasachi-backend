@@ -6,8 +6,11 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class MarkWorkCompletedRequest extends FormRequest
@@ -24,7 +27,18 @@ final class MarkWorkCompletedRequest extends FormRequest
     {
         return [
             'completed_service_ids' => 'required|array|min:1',
-            'completed_service_ids.*' => 'exists:order_services,id',
+            'completed_service_ids.*' => [
+                Rule::exists('order_services', 'id')->where(function (Builder $query): void {
+                    $order = $this->route('order');
+
+                    if ($order instanceof Order) {
+                        $query->whereIn(
+                            'order_item_id',
+                            OrderItem::query()->select('id')->where('order_id', $order->getKey())
+                        );
+                    }
+                }),
+            ],
         ];
     }
 
