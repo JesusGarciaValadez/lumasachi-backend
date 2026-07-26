@@ -13,7 +13,8 @@
         "nightwatch": {
             "type": "remote",
             "enabled": true,
-            "url": "https://nightwatch.laravel.com/mcp"
+            "url": "https://nightwatch.laravel.com/mcp",
+            "oauth": {}
         }
     }
 }
