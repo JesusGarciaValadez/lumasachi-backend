@@ -6,8 +6,10 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class StoreOrderWithItemsRequest extends FormRequest
 {
@@ -17,7 +19,7 @@ final class StoreOrderWithItemsRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -44,6 +46,46 @@ final class StoreOrderWithItemsRequest extends FormRequest
             'items.*.item_type' => ['required', Rule::in(OrderItemType::getValues())],
             'items.*.components' => 'sometimes|array',
             'items.*.components.*' => 'string|max:100',
+        ];
+    }
+
+    /**
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $items = $this->input('items', []);
+
+                if (!is_array($items)) {
+                    return;
+                }
+
+                foreach ($items as $itemIndex => $item) {
+                    if (!is_array($item) || !is_string($item['item_type'] ?? null)) {
+                        continue;
+                    }
+
+                    $itemType = OrderItemType::tryFrom($item['item_type']);
+                    $components = $item['components'] ?? [];
+
+                    if ($itemType === null || !is_array($components)) {
+                        continue;
+                    }
+
+                    foreach ($components as $componentIndex => $component) {
+                        if (!is_string($component) || in_array($component, $itemType->getComponents(), true)) {
+                            continue;
+                        }
+
+                        $validator->errors()->add(
+                            "items.{$itemIndex}.components.{$componentIndex}",
+                            'The selected component is not valid for the selected item type.'
+                        );
+                    }
+                }
+            },
         ];
     }
 
