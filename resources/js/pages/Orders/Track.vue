@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
+import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
-import type { FinancialTotals, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
+import type { FinancialTotals, OrderStatus, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -21,6 +22,20 @@ const error = ref<OrderApiError | null>(null);
 const controller = ref<AbortController | null>(null);
 
 const fieldErrors = computed(() => error.value?.validationErrors ?? {});
+
+const statusSteps = computed(() =>
+    (
+        [
+            'Awaiting Review',
+            'Reviewed',
+            'Awaiting Customer Approval',
+            'Ready for Work',
+            'In Progress',
+            'Ready for Delivery',
+            'Delivered',
+        ] as OrderStatus[]
+    ).map((value) => ({ value, label: statusLabel(value) })),
+);
 
 const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),
@@ -94,6 +109,7 @@ async function lookup(): Promise<void> {
         order.value = result;
     } catch (caughtError: unknown) {
         if (caughtError instanceof Error && caughtError.name === 'AbortError') return;
+        if (controller.value !== requestController) return;
         error.value = caughtError instanceof OrderApiError ? caughtError : new OrderApiError(0, t('orders.track_network_error'));
     } finally {
         if (controller.value === requestController) {
@@ -175,6 +191,8 @@ async function lookup(): Promise<void> {
                         </dl>
                     </div>
                 </Card>
+
+                <OrderStatusProgress :status="order.status" :statuses="statusSteps" :title="t('orders.progress')" />
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <Card

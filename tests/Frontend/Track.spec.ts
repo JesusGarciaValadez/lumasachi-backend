@@ -1,3 +1,4 @@
+import { OrderApiError } from '@/composables/useOrderApi';
 import Track from '@/pages/Orders/Track.vue';
 import { flushPromises, mount } from '@vue/test-utils';
 import { vi } from 'vitest';
@@ -29,6 +30,7 @@ vi.mock('vue-i18n', () => ({
                 'orders.track_network_error': 'Network error',
                 'orders.track_not_found': 'Order not found.',
                 'orders.track_rate_limit': 'Too many attempts.',
+                'orders.progress': 'Order progress',
                 'orders.not_budgeted': 'Not budgeted',
                 'orders.service': 'Service',
             })[key] ?? key,
@@ -47,7 +49,7 @@ vi.mock('@/composables/useOrderApi', () => ({
         ) {
             super(message);
             this.name = 'OrderApiError';
-            this.kind = status === 404 ? 'not_found' : 'unexpected';
+            this.kind = status === 404 ? 'not_found' : status === 422 ? 'validation' : status === 429 ? 'rate_limit' : 'unexpected';
         }
     },
     useOrderApi: () => ({ track }),
@@ -116,6 +118,41 @@ describe('Orders/Track', () => {
         expect((date.element as HTMLInputElement).value).toBe('2026-07-26');
     });
 
+    it('renders field-level validation errors, not-found, and rate-limit states', async () => {
+        const wrapper = mount(Track);
+
+        track.mockRejectedValueOnce(
+            new OrderApiError(422, 'Validation failed', {
+                uuid: ['The UUID is invalid.'],
+                created_date: ['The date is invalid.'],
+            }),
+        );
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+        expect(wrapper.text()).toContain('The UUID is invalid.');
+        expect(wrapper.text()).toContain('The date is invalid.');
+
+        track.mockRejectedValueOnce(new OrderApiError(404, 'Order not found.'));
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+        expect(wrapper.get('[role="alert"]').text()).toBe('Order not found.');
+
+        track.mockRejectedValueOnce(new OrderApiError(429, 'Too many requests.'));
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+        expect(wrapper.get('[role="alert"]').text()).toBe('Too many attempts.');
+    });
+
+    it('keeps unexpected errors distinct from network errors', async () => {
+        track.mockRejectedValueOnce(new OrderApiError(500, 'Unexpected server error.'));
+        const wrapper = mount(Track);
+
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        expect(wrapper.get('[role="alert"]').text()).toBe('Unexpected server error.');
+    });
+
     it('ignores a superseded response', async () => {
         let resolveFirst: (value: typeof publicOrder) => void = () => undefined;
         const firstRequest = new Promise<typeof publicOrder>((resolve) => {
@@ -137,5 +174,27 @@ describe('Orders/Track', () => {
         await flushPromises();
         expect(wrapper.text()).toContain('Newer engine service');
         expect(wrapper.text()).not.toContain('Engine service\n');
+    });
+
+    it('ignores a superseded error', async () => {
+        let rejectFirst: (reason?: unknown) => void = () => undefined;
+        const firstRequest = new Promise<typeof publicOrder>((_resolve, reject) => {
+            rejectFirst = reject;
+        });
+        track.mockReturnValueOnce(firstRequest).mockResolvedValueOnce(publicOrder);
+        const wrapper = mount(Track);
+
+        await wrapper.get('#track-uuid').setValue('first-order');
+        await wrapper.get('#track-date').setValue('2026-07-26');
+        await wrapper.get('form').trigger('submit');
+        await wrapper.get('#track-uuid').setValue('second-order');
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        rejectFirst(new Error('The first request failed.'));
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('Engine service');
+        expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     });
 });

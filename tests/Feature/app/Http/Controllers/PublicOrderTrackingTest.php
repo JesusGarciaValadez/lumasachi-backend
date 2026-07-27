@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\app\Http\Controllers;
 
+use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderMotorInfo;
+use App\Models\ServiceCatalog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -75,6 +77,75 @@ final class PublicOrderTrackingTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_populated_public_collections_with_stable_shapes(): void
+    {
+        $item = $this->order->items()->createQuietly([
+            'item_type' => 'engine_block',
+            'is_received' => true,
+        ]);
+        $item->components()->createQuietly([
+            'component_name' => 'Cylinder head',
+            'is_received' => true,
+        ]);
+
+        $catalogItem = ServiceCatalog::factory()->createQuietly([
+            'service_key' => 'wash_block',
+            'service_name_key' => 'service_catalog.wash_block',
+        ]);
+        $item->services()->createQuietly([
+            'service_key' => $catalogItem->service_key,
+            'measurement' => '1',
+            'is_budgeted' => true,
+            'is_authorized' => true,
+            'is_completed' => true,
+            'base_price' => '100.00',
+            'net_price' => '116.00',
+        ]);
+
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => $this->order->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'order' => [
+                    'motor_info' => ['brand', 'liters', 'year', 'model', 'cylinder_count'],
+                    'items' => [
+                        '*' => [
+                            'item_type',
+                            'is_received',
+                            'components' => ['*' => ['component_name', 'is_received']],
+                        ],
+                    ],
+                    'services' => [
+                        '*' => [
+                            'service_name',
+                            'measurement',
+                            'is_budgeted',
+                            'is_authorized',
+                            'is_completed',
+                            'base_price',
+                            'net_price',
+                        ],
+                    ],
+                    'financials' => ['budgeted', 'authorized', 'completed', 'advance_payment', 'remaining_balance'],
+                ],
+            ])
+            ->assertJsonPath('order.items.0.components.0.component_name', 'Cylinder head')
+            ->assertJsonPath('order.services.0.service_name', __('service_catalog.wash_block'))
+            ->assertJsonPath('order.financials.completed', '116.00')
+            ->assertJsonMissingPath('order.items.0.id')
+            ->assertJsonMissingPath('order.items.0.uuid')
+            ->assertJsonMissingPath('order.items.0.components.0.id')
+            ->assertJsonMissingPath('order.services.0.id')
+            ->assertJsonMissingPath('order.services.0.uuid')
+            ->assertJsonMissingPath('order.services.0.order_item_id')
+            ->assertJsonMissingPath('order.services.0.service_key')
+            ->assertJsonMissingPath('order.services.0.notes');
+    }
+
+    #[Test]
     public function it_returns_the_order_history_and_attachments(): void
     {
         $history = $this->order->orderHistories()->create([
@@ -123,22 +194,57 @@ final class PublicOrderTrackingTest extends TestCase
 
         $response->assertJsonMissingPath('order.customer')
             ->assertJsonMissingPath('order.id')
+            ->assertJsonMissingPath('order.motor_info.down_payment')
+            ->assertJsonMissingPath('order.motor_info.total_cost')
+            ->assertJsonMissingPath('order.motor_info.is_fully_paid')
+            ->assertJsonMissingPath('order.history.0.old_value')
+            ->assertJsonMissingPath('order.history.0.new_value')
+            ->assertJsonMissingPath('order.history.0.created_by')
+            ->assertJsonMissingPath('order.attachments.0.uuid')
             ->assertJsonMissingPath('order.attachments.0.file_path')
             ->assertJsonMissingPath('order.attachments.0.url')
             ->assertJsonMissingPath('order.attachments.0.uploaded_by');
     }
 
     #[Test]
-    public function it_returns_empty_history_and_attachment_collections_when_none_exist(): void
+    public function it_returns_empty_services_components_history_and_attachment_collections_when_none_exist(): void
     {
+        $this->order->items()->createQuietly([
+            'item_type' => 'engine_block',
+            'is_received' => false,
+        ]);
+
         $response = $this->postJson('/api/v1/orders/track', [
             'uuid' => $this->order->uuid,
             'created_date' => $this->order->created_at->toDateString(),
         ]);
 
         $response->assertOk()
+            ->assertJsonPath('order.services', [])
+            ->assertJsonPath('order.items.0.components', [])
             ->assertJsonPath('order.history', [])
             ->assertJsonPath('order.attachments', []);
+    }
+
+    #[Test]
+    public function it_returns_stable_values_and_localized_status_and_priority_labels(): void
+    {
+        app()->setLocale('es');
+        $this->order->forceFill([
+            'status' => OrderStatus::InProgress->value,
+            'priority' => OrderPriority::URGENT->value,
+        ])->saveQuietly();
+
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => $this->order->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('order.status', OrderStatus::InProgress->value)
+            ->assertJsonPath('order.status_label', 'En progreso')
+            ->assertJsonPath('order.priority', OrderPriority::URGENT->value)
+            ->assertJsonPath('order.priority_label', 'Urgente');
     }
 
     #[Test]
@@ -149,7 +255,7 @@ final class PublicOrderTrackingTest extends TestCase
             'created_date' => $this->order->created_at->toDateString(),
         ]);
 
-        $response->assertNotFound();
+        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
     }
 
     #[Test]
@@ -160,7 +266,22 @@ final class PublicOrderTrackingTest extends TestCase
             'created_date' => '1999-01-01',
         ]);
 
-        $response->assertNotFound();
+        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
+    }
+
+    #[Test]
+    public function it_returns_the_same_generic_not_found_response_for_a_mismatched_uuid_and_date_pair(): void
+    {
+        $otherOrder = Order::factory()->createQuietly([
+            'created_at' => '1999-01-01 00:00:00',
+        ]);
+
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => $this->order->uuid,
+            'created_date' => $otherOrder->created_at->toDateString(),
+        ]);
+
+        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
     }
 
     #[Test]

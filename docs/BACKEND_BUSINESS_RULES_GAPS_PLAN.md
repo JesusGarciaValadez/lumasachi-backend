@@ -486,6 +486,20 @@ Frontend unit tests, if the test dependency is approved:
 4. A superseded response is ignored.
 5. The result exposes no lifecycle mutation controls.
 
+#### 7.2 completion marks
+
+- [x] The public tracking route and page use the UUID plus creation-date lookup contract without authenticated props or
+  layout.
+- [x] The public result renders only the public-safe order, progress, items, components, services, totals, attachments,
+  and history.
+- [x] Loading, validation, generic not-found, rate-limit, network, unexpected-error, empty-collection, and
+  superseded-request states are covered.
+- [x] Public tracking remains read-only and omits customer, employee, database identifier, storage-path, and
+  authenticated-action data.
+- [x] Related PHPUnit and approved frontend tests pass.
+- [x] TypeScript, build, formatting, ESLint, Pint, PHPStan, and diff verification pass.
+- [x] No additional Step 7.2 business-rule edge case remains unresolved.
+
 ### 7.3 — Staff order-intake view
 
 #### 7.3.1 — Route and access
