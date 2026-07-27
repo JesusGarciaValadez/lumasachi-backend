@@ -9,6 +9,7 @@ use App\Mail\OrderCreatedMail;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
@@ -52,11 +53,11 @@ final class OrderCreatedMailTest extends TestCase
                 $this->assertEquals($order->id, $mail->order->id);
 
                 // Verify the mail is queued (implements ShouldQueue)
-                $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $mail);
+                $this->assertInstanceOf(ShouldQueue::class, $mail);
 
                 // Verify the envelope (subject and recipient)
                 $envelope = $mail->envelope();
-                $this->assertEquals('New Order Created: #'.$order->uuid, $envelope->subject);
+                $this->assertEquals(__('mail.order_created.subject', ['uuid' => $order->uuid]), $envelope->subject);
 
                 // Verify the mail will be sent to the correct email
                 $this->assertEquals($customer->email, $mail->to[0]['address']);

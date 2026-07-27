@@ -7,11 +7,12 @@ namespace App\Notifications;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Lang;
 
-final class OrderAuditNotification extends Notification implements ShouldQueue
+final class OrderAuditNotification extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
     use Queueable;
 
@@ -32,14 +33,18 @@ final class OrderAuditNotification extends Notification implements ShouldQueue
         $subject = Lang::has('notifications.audit.subjects.'.$this->event)
             ? __('notifications.audit.subjects.'.$this->event)
             : __('notifications.audit.subjects.default');
+        $event = Lang::has('notifications.audit.events.' . $this->event)
+            ? __('notifications.audit.events.' . $this->event)
+            : __('notifications.audit.events.default');
 
         return (new MailMessage)
             ->subject($subject)
             ->greeting(__('notifications.greeting_admin'))
             ->line(__('notifications.audit.line'))
-            ->line(__('notifications.audit.event', ['event' => $this->event]))
+            ->line(__('notifications.audit.event', ['event' => $event]))
             ->line(__('notifications.audit.order', ['uuid' => $this->order->uuid]))
-            ->line(__('notifications.audit.status', ['status' => $this->order->status->value]))
+            ->line(__('notifications.audit.status', ['status' => $this->order->status->getLabel()]))
+            ->line(__('notifications.priority_label', ['priority' => $this->order->priority->getLabel()]))
             ->salutation(__('notifications.salutation'));
     }
 

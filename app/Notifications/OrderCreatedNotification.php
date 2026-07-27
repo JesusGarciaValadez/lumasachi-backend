@@ -9,9 +9,10 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Notification;
 
-final class OrderCreatedNotification extends Notification implements ShouldQueue
+final class OrderCreatedNotification extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
     use Queueable;
 
@@ -53,7 +54,8 @@ final class OrderCreatedNotification extends Notification implements ShouldQueue
     {
         /** @var User $notifiable */
         return (new OrderCreatedMail($this->order))
-            ->to($notifiable->email);
+            ->to($notifiable->email)
+            ->locale($notifiable->preferredLocale());
     }
 
     /**

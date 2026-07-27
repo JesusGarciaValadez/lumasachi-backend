@@ -7,13 +7,15 @@ namespace App\Mail;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-final class OrderCreatedMail extends Mailable implements ShouldQueue
+final class OrderCreatedMail extends Mailable implements ShouldQueue, ShouldQueueAfterCommit
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +32,7 @@ final class OrderCreatedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Order Created: #'.$this->order->uuid,
+            subject: __('mail.order_created.subject', ['uuid' => $this->order->uuid]),
             from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
@@ -51,7 +53,7 @@ final class OrderCreatedMail extends Mailable implements ShouldQueue
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {
