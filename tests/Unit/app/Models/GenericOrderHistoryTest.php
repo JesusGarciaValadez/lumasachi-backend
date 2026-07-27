@@ -227,7 +227,10 @@ final class GenericOrderHistoryTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $expectedDescription = 'Estimated completion set to: '.$date->format('Y-m-d H:i');
+        $expectedDescription = __('orders.history_messages.set', [
+            'field' => __('orders.history_messages.fields.estimated_completion'),
+            'value' => $date->locale(app()->getLocale())->translatedFormat('M j, Y H:i'),
+        ]);
         $this->assertEquals($expectedDescription, $history->description);
     }
 

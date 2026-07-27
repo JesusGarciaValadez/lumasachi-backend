@@ -21,7 +21,7 @@ final class EmailVerificationNotificationController extends Controller
 
         if ($user->hasVerifiedEmail()) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Email already verified!'], 200);
+                return response()->json(['code' => 'auth.email_already_verified', 'message' => __('auth.email_already_verified')], 200);
             }
 
             return redirect()->intended(route('dashboard', absolute: false));
@@ -30,7 +30,7 @@ final class EmailVerificationNotificationController extends Controller
         $user->sendEmailVerificationNotification();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Verification link sent!'], 200);
+            return response()->json(['code' => 'auth.verification_link_sent', 'message' => __('auth.verification_link_sent')], 200);
         }
 
         return back()->with('status', 'verification-link-sent');

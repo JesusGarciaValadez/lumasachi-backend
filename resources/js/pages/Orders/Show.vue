@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatDateTime, formatMoney } from '@/lib/i18n';
 import type { BreadcrumbItem } from '@/types';
 import type {
     CatalogPayload,
@@ -224,22 +224,6 @@ function itemTypeLabel(itemType: string): string {
     const option = catalog.value?.item_types.find((item) => item.key === itemType);
 
     return option?.label ?? t('orders.item_type');
-}
-
-function formatDate(value?: string | null): string {
-    if (!value) {
-        return '—';
-    }
-
-    try {
-        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-    } catch {
-        return value;
-    }
-}
-
-function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function attachmentActionMessage(error: unknown): string {
@@ -567,15 +551,15 @@ onMounted(async () => {
                         </div>
                         <div>
                             <dt class="text-muted-foreground">{{ t('orders.created_at') }}</dt>
-                            <dd>{{ formatDate(order.created_at) }}</dd>
+                            <dd>{{ formatDateTime(order.created_at) }}</dd>
                         </div>
                         <div>
                             <dt class="text-muted-foreground">{{ t('orders.estimated_completion') }}</dt>
-                            <dd>{{ formatDate(order.estimated_completion) }}</dd>
+                            <dd>{{ formatDateTime(order.estimated_completion) }}</dd>
                         </div>
                         <div>
                             <dt class="text-muted-foreground">{{ t('orders.actual_completion') }}</dt>
-                            <dd>{{ formatDate(order.actual_completion) }}</dd>
+                            <dd>{{ formatDateTime(order.actual_completion) }}</dd>
                         </div>
                         <div class="sm:col-span-2 lg:col-span-3">
                             <dt class="text-muted-foreground">{{ t('orders.notes') }}</dt>

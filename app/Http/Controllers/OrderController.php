@@ -74,7 +74,8 @@ final class OrderController extends Controller
         );
 
         return response()->json([
-            'message' => 'Order created successfully.',
+            'code' => 'orders.created',
+            'message' => __('orders.messages.created'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'motorInfo', 'items.components'])),
         ], 201);
     }
@@ -91,7 +92,8 @@ final class OrderController extends Controller
         );
 
         return response()->json([
-            'message' => 'Budget submitted successfully.',
+            'code' => 'orders.budget_submitted',
+            'message' => __('orders.messages.budget_submitted'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services.catalogItem'])),
         ]);
     }
@@ -111,7 +113,8 @@ final class OrderController extends Controller
         );
 
         return response()->json([
-            'message' => 'Services approved successfully.',
+            'code' => 'orders.services_approved',
+            'message' => __('orders.messages.services_approved'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
@@ -128,7 +131,8 @@ final class OrderController extends Controller
         );
 
         return response()->json([
-            'message' => 'Work marked as completed.',
+            'code' => 'orders.work_completed',
+            'message' => __('orders.messages.work_completed'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
@@ -141,7 +145,8 @@ final class OrderController extends Controller
         $order = $this->lifecycleService->markReadyForDelivery($order, $this->authenticatedUser($request));
 
         return response()->json([
-            'message' => 'Order marked as ready for delivery.',
+            'code' => 'orders.ready_for_delivery',
+            'message' => __('orders.messages.ready_for_delivery'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
@@ -154,7 +159,8 @@ final class OrderController extends Controller
         $order = $this->lifecycleService->deliverOrder($order, $this->authenticatedUser($request));
 
         return response()->json([
-            'message' => 'Order delivered successfully.',
+            'code' => 'orders.delivered',
+            'message' => __('orders.messages.delivered'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
@@ -189,7 +195,8 @@ final class OrderController extends Controller
         ]));
 
         return response()->json([
-            'message' => 'Order updated successfully.',
+            'code' => 'orders.updated',
+            'message' => __('orders.messages.updated'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }
@@ -202,7 +209,8 @@ final class OrderController extends Controller
         $order->delete();
 
         return response()->json([
-            'message' => 'Order deleted successfully.',
+            'code' => 'orders.deleted',
+            'message' => __('orders.messages.deleted'),
         ]);
     }
 
@@ -220,7 +228,8 @@ final class OrderController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Order status updated successfully.',
+            'code' => 'orders.status_updated',
+            'message' => __('orders.messages.status_updated'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }
@@ -239,7 +248,8 @@ final class OrderController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Order assigned successfully.',
+            'code' => 'orders.assigned',
+            'message' => __('orders.messages.assigned'),
             'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
         ]);
     }

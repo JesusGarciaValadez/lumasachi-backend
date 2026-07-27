@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { Card } from '@/components/ui/card';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatMoney } from '@/lib/i18n';
 import type { FinancialTotals } from '@/types/orders';
 import { computed } from 'vue';
 
@@ -42,10 +42,6 @@ const paymentState = computed<PaymentState>(() => {
 });
 
 const paymentStateLabel = computed(() => props.labels[paymentState.value]);
-
-function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 function paymentStateClass(state: PaymentState): string {
     return {

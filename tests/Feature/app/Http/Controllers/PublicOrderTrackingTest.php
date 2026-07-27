@@ -260,7 +260,7 @@ final class PublicOrderTrackingTest extends TestCase
             'created_date' => $this->order->created_at->toDateString(),
         ]);
 
-        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
+        $response->assertNotFound()->assertExactJson(['code' => 'orders.track_not_found', 'message' => 'Order not found.']);
     }
 
     #[Test]
@@ -271,7 +271,7 @@ final class PublicOrderTrackingTest extends TestCase
             'created_date' => '1999-01-01',
         ]);
 
-        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
+        $response->assertNotFound()->assertExactJson(['code' => 'orders.track_not_found', 'message' => 'Order not found.']);
     }
 
     #[Test]
@@ -286,7 +286,7 @@ final class PublicOrderTrackingTest extends TestCase
             'created_date' => $otherOrder->created_at->toDateString(),
         ]);
 
-        $response->assertNotFound()->assertExactJson(['message' => 'Order not found.']);
+        $response->assertNotFound()->assertExactJson(['code' => 'orders.track_not_found', 'message' => 'Order not found.']);
     }
 
     #[Test]

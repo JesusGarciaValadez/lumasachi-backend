@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class TrackOrderRequest extends FormRequest
@@ -14,7 +15,7 @@ final class TrackOrderRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -30,10 +31,10 @@ final class TrackOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'uuid.required' => 'The order UUID is required.',
-            'uuid.uuid' => 'The order UUID must be a valid UUID.',
-            'created_date.required' => 'The creation date is required.',
-            'created_date.date' => 'The creation date must be a valid date.',
+            'uuid.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.uuid')]),
+            'uuid.uuid' => __('validation.custom.uuid', ['attribute' => __('validation.attributes.uuid')]),
+            'created_date.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.created_date')]),
+            'created_date.date' => __('validation.custom.date', ['attribute' => __('validation.attributes.created_date')]),
         ];
     }
 }

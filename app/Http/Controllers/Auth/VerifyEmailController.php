@@ -31,7 +31,7 @@ final class VerifyEmailController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Email verified!'], 200);
+            return response()->json(['code' => 'auth.email_verified', 'message' => __('auth.email_verified')], 200);
         }
 
         return redirect()->intended(route('dashboard', absolute: false).'?verified=1');

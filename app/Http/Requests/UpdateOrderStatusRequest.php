@@ -43,9 +43,9 @@ final class UpdateOrderStatusRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.required' => 'The new status is required.',
-            'status.in' => 'The selected status is invalid.',
-            'notes.max' => 'The notes cannot exceed 500 characters.',
+            'status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.status')]),
+            'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
+            'notes.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.notes'), 'max' => 500]),
         ];
     }
 

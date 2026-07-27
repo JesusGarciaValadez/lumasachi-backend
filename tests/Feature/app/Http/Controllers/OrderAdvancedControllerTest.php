@@ -76,7 +76,7 @@ final class OrderAdvancedControllerTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id' => $this->order->id,
-                'status' => OrderStatus::InProgress->value,
+            'status' => OrderStatus::InProgress->value,
         ]);
 
         // Check history was created
@@ -84,7 +84,7 @@ final class OrderAdvancedControllerTest extends TestCase
             'order_id' => $this->order->id,
             'field_changed' => 'status',
             'old_value' => OrderStatus::Open->value,
-                'new_value' => OrderStatus::InProgress->value,
+            'new_value' => OrderStatus::InProgress->value,
             'created_by' => $this->employee->id,
         ]);
 
@@ -138,14 +138,14 @@ final class OrderAdvancedControllerTest extends TestCase
 
         $this->assertCount(4, $histories);
         // The OrderHistory model casts values to enums, so we need to get the value property
-            $this->assertEquals(OrderStatus::Open->value, $histories[0]->old_value?->value ?? $histories[0]->old_value);
-            $this->assertEquals(OrderStatus::InProgress->value, $histories[0]->new_value?->value ?? $histories[0]->new_value);
-            $this->assertEquals(OrderStatus::InProgress->value, $histories[1]->old_value?->value ?? $histories[1]->old_value);
-            $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[1]->new_value?->value ?? $histories[1]->new_value);
-            $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[2]->old_value?->value ?? $histories[2]->old_value);
-            $this->assertEquals(OrderStatus::Delivered->value, $histories[2]->new_value?->value ?? $histories[2]->new_value);
-            $this->assertEquals(OrderStatus::Delivered->value, $histories[3]->old_value?->value ?? $histories[3]->old_value);
-            $this->assertEquals(OrderStatus::Paid->value, $histories[3]->new_value?->value ?? $histories[3]->new_value);
+        $this->assertEquals(OrderStatus::Open->value, $histories[0]->old_value?->value ?? $histories[0]->old_value);
+        $this->assertEquals(OrderStatus::InProgress->value, $histories[0]->new_value?->value ?? $histories[0]->new_value);
+        $this->assertEquals(OrderStatus::InProgress->value, $histories[1]->old_value?->value ?? $histories[1]->old_value);
+        $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[1]->new_value?->value ?? $histories[1]->new_value);
+        $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[2]->old_value?->value ?? $histories[2]->old_value);
+        $this->assertEquals(OrderStatus::Delivered->value, $histories[2]->new_value?->value ?? $histories[2]->new_value);
+        $this->assertEquals(OrderStatus::Delivered->value, $histories[3]->old_value?->value ?? $histories[3]->old_value);
+        $this->assertEquals(OrderStatus::Paid->value, $histories[3]->new_value?->value ?? $histories[3]->new_value);
     }
 
     /**
@@ -616,7 +616,7 @@ final class OrderAdvancedControllerTest extends TestCase
             ->assertJson([
                 'errors' => [
                     'assigned_to' => [
-                        'The selected employee does not exist.',
+                        __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
                     ],
                 ],
             ]);
@@ -680,7 +680,7 @@ final class OrderAdvancedControllerTest extends TestCase
             ->assertJson([
                 'errors' => [
                     'assigned_to' => [
-                        'Please select an employee to assign the order to.',
+                        __('validation.custom.required', ['attribute' => __('validation.attributes.assigned_to')]),
                     ],
                 ],
             ]);

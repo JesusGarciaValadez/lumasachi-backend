@@ -1,4 +1,5 @@
 import { createI18nInstance, messages, normalizeLocale } from '@/i18n';
+import { formatDateTime, formatMoney } from '@/lib/i18n';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -94,5 +95,19 @@ describe('i18n locale lifecycle helpers', () => {
         expect(english.t('orders.services_completed', 0)).toContain('no services');
         expect(english.t('orders.services_completed', 1)).toContain('one service');
         expect(english.t('orders.services_completed', 3)).toContain('3 services');
+    });
+
+    it('formats dates and MXN amounts using the active locale', () => {
+        document.documentElement.lang = 'es';
+        const spanishMoney = formatMoney('1234.5');
+        const spanishDate = formatDateTime('2026-07-27T12:00:00Z');
+
+        document.documentElement.lang = 'en';
+        const englishMoney = formatMoney('1234.5');
+        const englishDate = formatDateTime('2026-07-27T12:00:00Z');
+
+        expect(spanishMoney).toBe(Number('1234.5').toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        expect(englishMoney).toBe(Number('1234.5').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        expect(spanishDate).not.toBe(englishDate);
     });
 });

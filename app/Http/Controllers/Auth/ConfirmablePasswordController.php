@@ -41,7 +41,7 @@ final class ConfirmablePasswordController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Password confirmed!'], 200);
+            return response()->json(['code' => 'auth.password_confirmed', 'message' => __('auth.password_confirmed')], 200);
         }
 
         $request->session()->put('auth.password_confirmed_at', time());

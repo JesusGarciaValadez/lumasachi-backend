@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\app\Http\Controllers;
 
+use App\Enums\Locale;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Attachment;
@@ -53,7 +54,8 @@ final class OrderHistoryControllerTest extends TestCase
         ];
         ksort($filters);
         $signature = md5(json_encode($filters));
-        $this->assertTrue(Cache::has("order_histories:index:v{$v}:f:{$signature}"));
+        $locale = Locale::normalize(config('app.locale'))?->value ?? Locale::SPANISH->value;
+        $this->assertTrue(Cache::has("order_histories:index:v{$v}:locale:{$locale}:f:{$signature}"));
 
         $second = $this->getJson('/api/v1/history');
         $second->assertStatus(200)

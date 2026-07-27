@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Icon from '@/components/Icon.vue';
 import { Button } from '@/components/ui/button';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatDateTime } from '@/lib/i18n';
 import type { OrderHistory } from '@/types/orders';
 import { computed } from 'vue';
 
@@ -66,16 +66,6 @@ function iconName(kind: EventKind): string {
         update: 'history',
     }[kind];
 }
-
-function formatDate(value?: string): string {
-    if (!value) return '—';
-
-    try {
-        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-    } catch {
-        return value;
-    }
-}
 </script>
 
 <template>
@@ -97,7 +87,7 @@ function formatDate(value?: string): string {
                 <div class="rounded-md border p-3 text-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="text-xs font-medium text-muted-foreground">{{ eventLabel(kind) }}</span>
-                        <time :datetime="entry.created_at" class="text-xs text-muted-foreground">{{ formatDate(entry.created_at) }}</time>
+                        <time :datetime="entry.created_at" class="text-xs text-muted-foreground">{{ formatDateTime(entry.created_at) }}</time>
                     </div>
                     <p class="mt-1">{{ entry.description }}</p>
                     <p v-if="entry.creator?.full_name" class="mt-2 text-xs text-muted-foreground">{{ entry.creator.full_name }}</p>

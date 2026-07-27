@@ -36,8 +36,9 @@ final class CatalogRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'item_type.in' => 'The selected item type is invalid.',
-            'locale.string' => 'The locale must be a valid string.',
+            'item_type.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.item_type')]),
+            'locale.string' => __('validation.custom.string', ['attribute' => __('validation.attributes.locale')]),
+            'locale.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.locale')]),
         ];
     }
 

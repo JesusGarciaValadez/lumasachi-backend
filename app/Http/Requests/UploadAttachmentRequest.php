@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Attachment;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class UploadAttachmentRequest extends FormRequest
@@ -20,7 +21,7 @@ final class UploadAttachmentRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -62,26 +63,26 @@ final class UploadAttachmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.required_without' => 'Please provide a file or files to upload.',
-            'file.file' => 'The upload must be a valid file.',
-            'file.max' => 'The file size cannot exceed 10MB.',
-            'file.mimes' => 'The file type is not allowed. Allowed types: '.implode(', ', Attachment::getAllowedExtensions()),
-            'file.mimetypes' => 'The file format is not supported.',
+            'file.required_without' => __('validation.custom.required_without', ['attribute' => __('validation.attributes.file'), 'values' => __('validation.attributes.files')]),
+            'file.file' => __('validation.custom.file', ['attribute' => __('validation.attributes.file')]),
+            'file.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.file'), 'max' => 10]),
+            'file.mimes' => __('validation.custom.mimes', ['attribute' => __('validation.attributes.file'), 'values' => implode(', ', Attachment::getAllowedExtensions())]),
+            'file.mimetypes' => __('validation.custom.mimetypes', ['attribute' => __('validation.attributes.file')]),
 
-            'files.required_without' => 'Please provide a file or files to upload.',
-            'files.array' => 'Files must be an array.',
-            'files.min' => 'Please upload at least one file.',
-            'files.*.file' => 'Each uploaded item must be a valid file.',
-            'files.*.max' => 'Each file size cannot exceed 10MB.',
-            'files.*.mimes' => 'One or more files have a disallowed type.',
-            'files.*.mimetypes' => 'One or more files have an unsupported format.',
+            'files.required_without' => __('validation.custom.required_without', ['attribute' => __('validation.attributes.files'), 'values' => __('validation.attributes.file')]),
+            'files.array' => __('validation.custom.array', ['attribute' => __('validation.attributes.files')]),
+            'files.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.files'), 'min' => 1]),
+            'files.*.file' => __('validation.custom.file', ['attribute' => __('validation.attributes.files')]),
+            'files.*.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.files'), 'max' => 10]),
+            'files.*.mimes' => __('validation.custom.mimes', ['attribute' => __('validation.attributes.files'), 'values' => implode(', ', Attachment::getAllowedExtensions())]),
+            'files.*.mimetypes' => __('validation.custom.mimetypes', ['attribute' => __('validation.attributes.files')]),
 
-            'name.max' => 'The file name cannot exceed 255 characters.',
-            'names.array' => 'Names must be provided as an array.',
-            'names.*.max' => 'Each file name cannot exceed 255 characters.',
-            'description.max' => 'The description cannot exceed 500 characters.',
-            'descriptions.array' => 'Descriptions must be provided as an array.',
-            'descriptions.*.max' => 'Each description cannot exceed 500 characters.',
+            'name.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.name'), 'max' => 255]),
+            'names.array' => __('validation.custom.array', ['attribute' => __('validation.attributes.names')]),
+            'names.*.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.names'), 'max' => 255]),
+            'description.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.description'), 'max' => 500]),
+            'descriptions.array' => __('validation.custom.array', ['attribute' => __('validation.attributes.descriptions'), 'max' => 500]),
+            'descriptions.*.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.descriptions'), 'max' => 500]),
         ];
     }
 }

@@ -99,13 +99,13 @@ final class SubmitBudgetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'services.required' => 'At least one service is required.',
-            'services.min' => 'At least one service is required.',
-            'services.*.order_item_id.required' => 'Each service must be linked to an order item.',
-            'services.*.order_item_id.integer' => 'The selected order item is invalid.',
-            'services.*.order_item_id.exists' => 'The selected order item does not exist.',
-            'services.*.service_key.required' => 'Each service must have a service key.',
-            'services.*.service_key.exists' => 'The selected service does not exist in the active catalog.',
+            'services.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services')]),
+            'services.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.services'), 'min' => 1]),
+            'services.*.order_item_id.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
+            'services.*.order_item_id.integer' => __('validation.custom.integer', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
+            'services.*.order_item_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
+            'services.*.service_key.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services.*.service_key')]),
+            'services.*.service_key.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.services.*.service_key')]),
         ];
     }
 }

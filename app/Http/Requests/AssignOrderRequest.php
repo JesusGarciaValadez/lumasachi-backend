@@ -47,9 +47,9 @@ final class AssignOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'assigned_to.required' => 'Please select an employee to assign the order to.',
-            'assigned_to.exists' => 'The selected employee does not exist.',
-            'notes.max' => 'The notes cannot exceed 500 characters.',
+            'assigned_to.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.assigned_to')]),
+            'assigned_to.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
+            'notes.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.notes'), 'max' => 500]),
         ];
     }
 }

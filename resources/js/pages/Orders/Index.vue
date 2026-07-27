@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatDateTime } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import type { OrderSummary } from '@/types/orders';
 import { Head, Link } from '@inertiajs/vue3';
@@ -23,15 +23,6 @@ const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
 const error = ref<OrderApiError | null>(null);
 const orderApi = useOrderApi();
-
-function formatDate(value?: string | null) {
-    if (!value) return '—';
-    try {
-        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-    } catch {
-        return value;
-    }
-}
 
 onMounted(async () => {
     try {
@@ -78,8 +69,9 @@ onMounted(async () => {
                                 <div class="min-w-0">
                                     <div class="truncate font-medium">{{ o.title }}</div>
                                     <div class="truncate text-xs text-muted-foreground">
-                                        {{ t('orders.status') }}: {{ o.status }} • {{ t('orders.priority') }}: {{ o.priority }} •
-                                        {{ t('orders.created_at') }}: {{ formatDate(o.created_at) }}
+                                        {{ t('orders.status') }}: {{ o.status_label ?? t('orders.status') }} • {{ t('orders.priority') }}:
+                                        {{ o.priority_label ?? t('orders.priority') }} • {{ t('orders.created_at') }}:
+                                        {{ formatDateTime(o.created_at) }}
                                     </div>
                                 </div>
                                 <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">{{ t('common.view') }}</Link>

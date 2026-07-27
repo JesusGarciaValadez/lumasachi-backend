@@ -1,3 +1,4 @@
+import { normalizeLocale } from '@/i18n';
 import {
     type CatalogPayload,
     type CreateOrderPayload,
@@ -36,6 +37,7 @@ export class OrderApiError extends Error {
         readonly status: number,
         message: string,
         readonly validationErrors: Record<string, string[]> = {},
+        readonly code?: string,
     ) {
         super(message);
         this.name = 'OrderApiError';
@@ -62,6 +64,7 @@ export interface OrderApi {
 
 interface LaravelErrorPayload {
     message?: unknown;
+    code?: unknown;
     errors?: unknown;
 }
 
@@ -103,12 +106,36 @@ function validationErrors(value: unknown): Record<string, string[]> {
     );
 }
 
+function fallbackMessage(status: number): string {
+    const locale = normalizeLocale(currentLocale());
+    const messages = {
+        es: {
+            conflict: 'La orden cambió en otra sesión. Recarga e inténtalo de nuevo.',
+            validation: 'Revisa los datos enviados.',
+            forbidden: 'No tienes autorización para realizar esta acción.',
+            not_found: 'No se encontró el recurso solicitado.',
+            rate_limit: 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
+            unexpected: 'No fue posible completar la solicitud.',
+        },
+        en: {
+            conflict: 'The order changed in another session. Reload and try again.',
+            validation: 'Review the submitted data.',
+            forbidden: 'You are not authorized to perform this action.',
+            not_found: 'The requested resource was not found.',
+            rate_limit: 'Too many requests. Try again later.',
+            unexpected: 'The request could not be completed.',
+        },
+    } as const;
+
+    return messages[locale][orderApiErrorKind(status)];
+}
+
 function errorMessage(payload: unknown, status: number): string {
     if (isRecord(payload) && typeof payload.message === 'string') {
         return payload.message;
     }
 
-    return `Order request failed with status ${status}.`;
+    return fallbackMessage(status);
 }
 
 function apiUrl(name: string, orderUuid?: string): string {
@@ -143,7 +170,7 @@ async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, s
             throw error;
         }
 
-        throw new OrderApiError(0, error instanceof Error ? error.message : 'The order request failed unexpectedly.');
+        throw new OrderApiError(0, fallbackMessage(0));
     }
 
     const payload: unknown = await response.json().catch(() => null);
@@ -151,7 +178,12 @@ async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, s
     if (!response.ok) {
         const errorPayload = isRecord(payload) ? (payload as LaravelErrorPayload) : {};
 
-        throw new OrderApiError(response.status, errorMessage(payload, response.status), validationErrors(errorPayload.errors));
+        throw new OrderApiError(
+            response.status,
+            errorMessage(payload, response.status),
+            validationErrors(errorPayload.errors),
+            typeof errorPayload.code === 'string' ? errorPayload.code : undefined,
+        );
     }
 
     return payload as T;

@@ -63,12 +63,12 @@ final class CustomerApprovalRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'authorized_service_ids.required' => 'At least one service must be approved.',
-            'authorized_service_ids.min' => 'At least one service must be approved.',
-            'authorized_service_ids.*.integer' => 'Each selected service must be valid.',
-            'authorized_service_ids.*.exists' => 'One or more selected services do not exist.',
-            'down_payment.numeric' => 'The down payment must be a number.',
-            'down_payment.min' => 'The down payment cannot be negative.',
+            'authorized_service_ids.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.authorized_service_ids')]),
+            'authorized_service_ids.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.authorized_service_ids'), 'min' => 1]),
+            'authorized_service_ids.*.integer' => __('validation.custom.integer', ['attribute' => __('validation.attributes.authorized_service_ids')]),
+            'authorized_service_ids.*.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.authorized_service_ids')]),
+            'down_payment.numeric' => __('validation.custom.numeric', ['attribute' => __('validation.attributes.down_payment')]),
+            'down_payment.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.down_payment'), 'min' => 0]),
         ];
     }
 }

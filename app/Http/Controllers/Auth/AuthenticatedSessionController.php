@@ -50,7 +50,7 @@ final class AuthenticatedSessionController extends Controller
         if ($request->expectsJson()) {
             $user->tokens()->delete();
 
-            return response()->json(['message' => 'Logout successful'], 200);
+            return response()->json(['code' => 'auth.logout', 'message' => __('auth.logout')], 200);
         }
 
         Auth::guard('web')->logout();

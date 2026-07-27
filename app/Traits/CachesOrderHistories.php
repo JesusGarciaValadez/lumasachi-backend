@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use App\Enums\Locale;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -59,21 +60,26 @@ trait CachesOrderHistories
      *
      * @param  array<string,mixed>  $filters
      */
-    public static function indexKeyFor(array $filters = []): string
+    public static function indexKeyFor(array $filters = [], string $locale = 'es'): string
     {
         $version = self::currentVersion();
         // Normalize and hash filters to keep keys short and unique
         ksort($filters);
         $signature = md5(json_encode($filters, JSON_THROW_ON_ERROR));
 
-        return "order_histories:index:v{$version}:f:{$signature}";
+        $normalized = Locale::normalize($locale);
+        $normalizedLocale = $normalized === null ? Locale::SPANISH->value : $normalized->value;
+
+        return "order_histories:index:v{$version}:locale:{$normalizedLocale}:f:{$signature}";
     }
 
-    public static function showKeyFor(string $uuid): string
+    public static function showKeyFor(string $uuid, string $locale = 'es'): string
     {
         $version = self::currentVersion();
+        $normalized = Locale::normalize($locale);
+        $normalizedLocale = $normalized === null ? Locale::SPANISH->value : $normalized->value;
 
-        return "order_histories:show:v{$version}:uuid:{$uuid}";
+        return "order_histories:show:v{$version}:locale:{$normalizedLocale}:uuid:{$uuid}";
     }
 
     protected static function versionKey(): string

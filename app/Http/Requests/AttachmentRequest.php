@@ -54,13 +54,13 @@ final class AttachmentRequest extends FormRequest
         $maxSizeInMB = config('attachments.max_file_size') / (1024 * 1024);
 
         return [
-            'file.required' => 'Por favor seleccione un archivo.',
-            'file.max' => "El archivo no debe exceder los {$maxSizeInMB}MB.",
-            'file.mimes' => 'El tipo de archivo no está permitido.',
-            'attachable_type.required' => 'El tipo de entidad es requerido.',
-            'attachable_type.in' => 'El tipo de entidad no es válido.',
-            'attachable_id.required' => 'El ID de la entidad es requerido.',
-            'attachable_id.min' => 'El ID de la entidad debe ser mayor a 0.',
+            'file.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.file')]),
+            'file.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.file'), 'max' => $maxSizeInMB . ' MB']),
+            'file.mimes' => __('validation.custom.mimes', ['attribute' => __('validation.attributes.file'), 'values' => implode(', ', $this->getAllowedExtensions())]),
+            'attachable_type.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.attachable_type')]),
+            'attachable_type.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.attachable_type')]),
+            'attachable_id.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.attachable_id')]),
+            'attachable_id.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.attachable_id'), 'min' => 1]),
         ];
     }
 

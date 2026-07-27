@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatDateTime, formatMoney } from '@/lib/i18n';
 import type { FinancialTotals, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
 import { ORDER_STATUS_SEQUENCE } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
@@ -51,20 +51,6 @@ function statusLabel(value: string): string {
     const map = tm('orders.status_labels') as Record<string, string>;
 
     return map?.[value] ?? value;
-}
-
-function formatDate(value?: string | null): string {
-    if (!value) return '—';
-
-    try {
-        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-    } catch {
-        return value;
-    }
-}
-
-function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function serviceState(service: PublicOrderServicePayload): string {
@@ -186,15 +172,15 @@ async function lookup(): Promise<void> {
                             </div>
                             <div>
                                 <dt class="text-muted-foreground">{{ t('orders.created_at') }}</dt>
-                                <dd>{{ formatDate(order.created_at) }}</dd>
+                                <dd>{{ formatDateTime(order.created_at) }}</dd>
                             </div>
                             <div>
                                 <dt class="text-muted-foreground">{{ t('orders.estimated_completion') }}</dt>
-                                <dd>{{ formatDate(order.estimated_completion) }}</dd>
+                                <dd>{{ formatDateTime(order.estimated_completion) }}</dd>
                             </div>
                             <div>
                                 <dt class="text-muted-foreground">{{ t('orders.actual_completion') }}</dt>
-                                <dd>{{ formatDate(order.actual_completion) }}</dd>
+                                <dd>{{ formatDateTime(order.actual_completion) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -297,7 +283,7 @@ async function lookup(): Promise<void> {
                             <h2 class="font-semibold">{{ t('orders.history') }}</h2>
                             <div v-if="order.history.length" class="flex flex-col gap-3">
                                 <div v-for="(entry, index) in order.history" :key="index" class="rounded-md border p-3 text-sm">
-                                    <div class="text-xs text-muted-foreground">{{ formatDate(entry.created_at) }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ formatDateTime(entry.created_at) }}</div>
                                     <div class="mt-1">{{ entry.description ?? entry.comment }}</div>
                                 </div>
                             </div>
