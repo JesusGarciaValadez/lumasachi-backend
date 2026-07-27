@@ -16,7 +16,7 @@ defineProps<{
     can_create_order: boolean;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: t('common.orders'), href: '/orders' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: t('common.orders'), href: route('web.orders.index') }];
 
 const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
@@ -56,7 +56,12 @@ onMounted(async () => {
                             ><Link :href="route('web.orders.create')">{{ t('orders.create') }}</Link></Button
                         >
                     </div>
-                    <div v-if="loading" class="relative min-h-[40vh] rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <div
+                        v-if="loading"
+                        aria-busy="true"
+                        aria-live="polite"
+                        class="relative min-h-[40vh] rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+                    >
                         <PlaceholderPattern />
                     </div>
                     <div v-else>

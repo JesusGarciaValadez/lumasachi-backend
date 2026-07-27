@@ -13,11 +13,12 @@ defineProps<{
     <Card>
         <div class="flex flex-col gap-4 px-6">
             <h2 class="text-base font-semibold">{{ title }}</h2>
-            <ol class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <ol :aria-label="title" class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 <li
                     v-for="step in statuses"
                     :key="step.value"
                     :class="step.value === status ? 'font-semibold text-primary' : 'text-muted-foreground'"
+                    :aria-current="step.value === status ? 'step' : undefined"
                     class="flex items-center gap-2"
                 >
                     <span

@@ -112,7 +112,7 @@ function toggle(service: OrderServicePayload): void {
                                             :aria-label="service.service_name ?? service.service_key"
                                             :checked="isSelected(service.id)"
                                             :disabled="!canSelect(service)"
-                                            class="size-4 rounded border-input text-primary focus:ring-primary"
+                                            class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(service)"
                                         />

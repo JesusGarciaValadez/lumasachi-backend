@@ -195,27 +195,36 @@ onMounted(async () => {
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div class="flex flex-col gap-1 sm:col-span-2">
                                     <Label for="title">{{ t('orders.title') }}</Label
-                                    ><Input id="title" v-model="form.title" :aria-invalid="Boolean(fieldError('title'))" required />
-                                    <p v-if="fieldError('title')" class="text-sm text-destructive">{{ fieldError('title') }}</p>
+                                    ><Input
+                                        id="title"
+                                        v-model="form.title"
+                                        :aria-describedby="fieldError('title') ? 'title-error' : undefined"
+                                        :aria-invalid="Boolean(fieldError('title'))"
+                                        required
+                                    />
+                                    <p v-if="fieldError('title')" id="title-error" class="text-sm text-destructive">{{ fieldError('title') }}</p>
                                 </div>
                                 <div class="flex flex-col gap-1 sm:col-span-2">
                                     <Label for="description">{{ t('orders.description') }}</Label
                                     ><textarea
                                         id="description"
                                         v-model="form.description"
+                                        :aria-describedby="fieldError('description') ? 'description-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('description'))"
                                         class="border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         required
                                         rows="4"
                                     />
-                                    <p v-if="fieldError('description')" class="text-sm text-destructive">{{ fieldError('description') }}</p>
+                                    <p v-if="fieldError('description')" id="description-error" class="text-sm text-destructive">
+                                        {{ fieldError('description') }}
+                                    </p>
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="priority">{{ t('orders.priority') }}</Label
                                     ><select
                                         id="priority"
                                         v-model="form.priority"
-                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                     >
                                         <option value="Low">{{ t('orders.priority_labels.Low') }}</option>
                                         <option value="Normal">{{ t('orders.priority_labels.Normal') }}</option>
@@ -232,8 +241,9 @@ onMounted(async () => {
                                     ><select
                                         id="customer_id"
                                         v-model.number="form.customer_id"
+                                        :aria-describedby="fieldError('customer_id') ? 'customer-id-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('customer_id'))"
-                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         required
                                     >
                                         <option :value="0" disabled>{{ t('orders.select_customer') }}</option>
@@ -241,15 +251,18 @@ onMounted(async () => {
                                             {{ displayName(customer) }}
                                         </option>
                                     </select>
-                                    <p v-if="fieldError('customer_id')" class="text-sm text-destructive">{{ fieldError('customer_id') }}</p>
+                                    <p v-if="fieldError('customer_id')" id="customer-id-error" class="text-sm text-destructive">
+                                        {{ fieldError('customer_id') }}
+                                    </p>
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="assigned_to">{{ t('orders.assigned_to') }}</Label
                                     ><select
                                         id="assigned_to"
                                         v-model.number="form.assigned_to"
+                                        :aria-describedby="fieldError('assigned_to') ? 'assigned-to-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('assigned_to'))"
-                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         required
                                     >
                                         <option :value="0" disabled>{{ t('orders.select_employee') }}</option>
@@ -257,7 +270,9 @@ onMounted(async () => {
                                             {{ displayName(employee) }}
                                         </option>
                                     </select>
-                                    <p v-if="fieldError('assigned_to')" class="text-sm text-destructive">{{ fieldError('assigned_to') }}</p>
+                                    <p v-if="fieldError('assigned_to')" id="assigned-to-error" class="text-sm text-destructive">
+                                        {{ fieldError('assigned_to') }}
+                                    </p>
                                 </div>
                                 <div class="flex flex-col gap-1 sm:col-span-2">
                                     <Label for="notes">{{ t('orders.notes') }}</Label
@@ -301,13 +316,14 @@ onMounted(async () => {
                                     ><Input
                                         id="down_payment"
                                         v-model="form.motor_info!.down_payment"
+                                        :aria-describedby="fieldError('motor_info.down_payment') ? 'down-payment-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('motor_info.down_payment'))"
                                         inputmode="decimal"
                                         min="0"
                                         step="0.01"
                                         type="number"
                                     />
-                                    <p v-if="fieldError('motor_info.down_payment')" class="text-sm text-destructive">
+                                    <p v-if="fieldError('motor_info.down_payment')" id="down-payment-error" class="text-sm text-destructive">
                                         {{ fieldError('motor_info.down_payment') }}
                                     </p>
                                 </div>
@@ -334,12 +350,17 @@ onMounted(async () => {
                                     ><select
                                         :id="`item-type-${index}`"
                                         v-model="item.item_type"
-                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                                        :aria-describedby="fieldError(`items.${index}.item_type`) ? `item-type-${index}-error` : undefined"
+                                        class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         @change="changeItemType(item)"
                                     >
                                         <option v-for="option in optionsFor(index)" :key="option.key" :value="option.key">{{ option.label }}</option>
                                     </select>
-                                    <p v-if="fieldError(`items.${index}.item_type`)" class="text-sm text-destructive">
+                                    <p
+                                        v-if="fieldError(`items.${index}.item_type`)"
+                                        :id="`item-type-${index}-error`"
+                                        class="text-sm text-destructive"
+                                    >
                                         {{ fieldError(`items.${index}.item_type`) }}
                                     </p>
                                 </div>
@@ -354,13 +375,14 @@ onMounted(async () => {
                                     class="flex items-center gap-2 rounded-md border p-3 text-sm"
                                     ><input
                                         :checked="item.components?.includes(component.key)"
-                                        class="size-4 rounded border-input text-primary focus:ring-primary"
+                                        :aria-describedby="componentErrors(index).length ? `item-components-${index}-error` : undefined"
+                                        class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         type="checkbox"
                                         @change="handleComponentChange(item, component.key, $event)"
                                     />{{ component.label }}</label
                                 >
                             </div>
-                            <div v-if="componentErrors(index).length" class="flex flex-col gap-1" role="alert">
+                            <div v-if="componentErrors(index).length" :id="`item-components-${index}-error`" class="flex flex-col gap-1" role="alert">
                                 <p
                                     v-for="(message, messageIndex) in componentErrors(index)"
                                     :key="`${index}-${messageIndex}-${message}`"
