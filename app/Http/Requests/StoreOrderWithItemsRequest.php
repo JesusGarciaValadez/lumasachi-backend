@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
+use App\Traits\TranslatesValidationAttributes;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Validator;
 
 final class StoreOrderWithItemsRequest extends FormRequest
 {
+    use TranslatesValidationAttributes;
+
     public function authorize(): bool
     {
         return true; // Authorization is handled by middleware/policy
@@ -106,19 +109,19 @@ final class StoreOrderWithItemsRequest extends FormRequest
             'assigned_to.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
             'estimated_completion.date' => __('validation.custom.date', ['attribute' => __('validation.attributes.estimated_completion')]),
             'estimated_completion.after' => __('validation.custom.after', ['attribute' => __('validation.attributes.estimated_completion'), 'date' => 'now']),
-            'motor_info.brand.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.motor_info.brand'), 'max' => 100]),
-            'motor_info.liters.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.motor_info.liters'), 'max' => 20]),
-            'motor_info.year.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.motor_info.year'), 'max' => 10]),
-            'motor_info.model.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.motor_info.model'), 'max' => 100]),
-            'motor_info.cylinder_count.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.motor_info.cylinder_count'), 'max' => 20]),
-            'motor_info.down_payment.numeric' => __('validation.custom.numeric', ['attribute' => __('validation.attributes.motor_info.down_payment')]),
-            'motor_info.down_payment.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.motor_info.down_payment'), 'min' => 0]),
+            'motor_info.brand.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('motor_info.brand'), 'max' => 100]),
+            'motor_info.liters.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('motor_info.liters'), 'max' => 20]),
+            'motor_info.year.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('motor_info.year'), 'max' => 10]),
+            'motor_info.model.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('motor_info.model'), 'max' => 100]),
+            'motor_info.cylinder_count.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('motor_info.cylinder_count'), 'max' => 20]),
+            'motor_info.down_payment.numeric' => __('validation.custom.numeric', ['attribute' => $this->validationAttribute('motor_info.down_payment')]),
+            'motor_info.down_payment.min' => __('validation.custom.min', ['attribute' => $this->validationAttribute('motor_info.down_payment'), 'min' => 0]),
             'items.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.items')]),
             'items.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.items'), 'min' => 1]),
-            'items.*.item_type.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.items.*.item_type')]),
-            'items.*.item_type.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.items.*.item_type')]),
-            'items.*.components.*.string' => __('validation.custom.string', ['attribute' => __('validation.attributes.items.*.components.*')]),
-            'items.*.components.*.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.items.*.components.*'), 'max' => 100]),
+            'items.*.item_type.required' => __('validation.custom.required', ['attribute' => $this->validationAttribute('items.*.item_type')]),
+            'items.*.item_type.in' => __('validation.custom.in', ['attribute' => $this->validationAttribute('items.*.item_type')]),
+            'items.*.components.*.string' => __('validation.custom.string', ['attribute' => $this->validationAttribute('items.*.components.*')]),
+            'items.*.components.*.max' => __('validation.custom.max', ['attribute' => $this->validationAttribute('items.*.components.*'), 'max' => 100]),
         ];
     }
 }

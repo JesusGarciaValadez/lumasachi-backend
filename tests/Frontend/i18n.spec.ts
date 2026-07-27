@@ -1,8 +1,24 @@
 import { createI18nInstance, messages, normalizeLocale } from '@/i18n';
 import { formatDateTime, formatMoney } from '@/lib/i18n';
+import { NodeTypes, parse as parseTemplate } from '@vue/compiler-dom';
+import { parse as parseSfc } from '@vue/compiler-sfc';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
+const bareStringAllowList = new Set(['Laracasts', '—']);
+const staticAttributeAllowList = new Set(['email@example.com']);
+const auditedAttributes = new Set(['alt', 'aria-label', 'placeholder', 'title']);
+
+type TemplateNode = {
+    type: number;
+    content?: string;
+    name?: string;
+    props?: TemplateNode[];
+    children?: TemplateNode[];
+    value?: { content: string } | null;
+    loc?: { start: { line: number } };
+};
 
 function leafKeys(value: unknown, prefix = ''): string[] {
     if (typeof value !== 'object' || value === null) {
@@ -18,6 +34,60 @@ function sourceFiles(directory: string): string[] {
 
         return statSync(path).isDirectory() ? sourceFiles(path) : path.endsWith('.vue') || path.endsWith('.ts') ? [path] : [];
     });
+}
+
+function templateBareStrings(file: string): string[] {
+    const source = readFileSync(file, 'utf8');
+    const parsed = parseSfc(source, { filename: file });
+
+    expect(parsed.errors, `${file} contains an invalid Vue SFC`).toEqual([]);
+
+    if (!parsed.descriptor.template) {
+        return [];
+    }
+
+    const violations: string[] = [];
+    let root: TemplateNode;
+
+    try {
+        root = parseTemplate(parsed.descriptor.template.content) as unknown as TemplateNode;
+    } catch (error) {
+        violations.push(`${file}: template parse error (${error instanceof Error ? error.message : String(error)})`);
+
+        return violations;
+    }
+
+    const visit = (node: TemplateNode): void => {
+        if (node.type === NodeTypes.TEXT) {
+            const content = node.content?.trim() ?? '';
+
+            if (content !== '' && !bareStringAllowList.has(content) && !/^[\p{P}\p{S}\s]+$/u.test(content)) {
+                violations.push(`${file}:${node.loc?.start.line ?? 0}: text "${content}"`);
+            }
+        }
+
+        if (node.type === NodeTypes.ELEMENT) {
+            for (const prop of node.props ?? []) {
+                if (prop.type !== NodeTypes.ATTRIBUTE || !auditedAttributes.has(prop.name ?? '') || !prop.value) {
+                    continue;
+                }
+
+                const content = prop.value.content.trim();
+
+                if (content !== '' && !staticAttributeAllowList.has(content)) {
+                    violations.push(`${file}:${prop.loc?.start.line ?? 0}: ${prop.name}="${content}"`);
+                }
+            }
+        }
+
+        for (const child of node.children ?? []) {
+            visit(child);
+        }
+    };
+
+    visit(root);
+
+    return violations;
 }
 
 describe('i18n locale lifecycle helpers', () => {
@@ -78,10 +148,37 @@ describe('i18n locale lifecycle helpers', () => {
             }
         }
 
-        const i18n = createI18nInstance('es').global;
+        for (const locale of ['es', 'en'] as const) {
+            const i18n = createI18nInstance(locale).global;
 
-        for (const key of keys) {
-            expect(i18n.tm(key), `${key} is missing from the Spanish catalog`).not.toBe(key);
+            for (const key of keys) {
+                const value = i18n.tm(key);
+
+                expect(i18n.te(key) || typeof value === 'object', `${key} is missing from the ${locale} catalog`).toBe(true);
+                expect(value, `${key} falls back to its key in ${locale}`).not.toBe(key);
+            }
+        }
+    });
+
+    it('has no unreviewed bare Vue template strings or static presentational attributes', () => {
+        const sourceRoot = join(process.cwd(), 'resources/js');
+        const violations = sourceFiles(sourceRoot)
+            .filter((file) => file.endsWith('.vue'))
+            .flatMap((file) => templateBareStrings(file));
+
+        expect(violations).toEqual([]);
+    });
+
+    it('resolves critical translations without missing-key fallbacks in both locales', () => {
+        const criticalKeys = ['common.dashboard', 'common.orders', 'common.language', 'auth.login_title', 'orders.progress', 'settings.title'];
+
+        for (const locale of ['es', 'en'] as const) {
+            const i18n = createI18nInstance(locale).global;
+
+            for (const key of criticalKeys) {
+                expect(i18n.te(key), `${key} is missing from the ${locale} catalog`).toBe(true);
+                expect(i18n.t(key), `${key} falls back to its key in ${locale}`).not.toBe(key);
+            }
         }
     });
 

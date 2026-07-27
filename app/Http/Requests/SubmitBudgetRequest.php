@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ServiceCatalog;
+use App\Traits\TranslatesValidationAttributes;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Validator;
 
 final class SubmitBudgetRequest extends FormRequest
 {
+    use TranslatesValidationAttributes;
+
     public function authorize(): bool
     {
         return true;
@@ -101,11 +104,11 @@ final class SubmitBudgetRequest extends FormRequest
         return [
             'services.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services')]),
             'services.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.services'), 'min' => 1]),
-            'services.*.order_item_id.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
-            'services.*.order_item_id.integer' => __('validation.custom.integer', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
-            'services.*.order_item_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.services.*.order_item_id')]),
-            'services.*.service_key.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.services.*.service_key')]),
-            'services.*.service_key.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.services.*.service_key')]),
+            'services.*.order_item_id.required' => __('validation.custom.required', ['attribute' => $this->validationAttribute('services.*.order_item_id')]),
+            'services.*.order_item_id.integer' => __('validation.custom.integer', ['attribute' => $this->validationAttribute('services.*.order_item_id')]),
+            'services.*.order_item_id.exists' => __('validation.custom.exists', ['attribute' => $this->validationAttribute('services.*.order_item_id')]),
+            'services.*.service_key.required' => __('validation.custom.required', ['attribute' => $this->validationAttribute('services.*.service_key')]),
+            'services.*.service_key.exists' => __('validation.custom.exists', ['attribute' => $this->validationAttribute('services.*.service_key')]),
         ];
     }
 }
