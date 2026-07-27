@@ -46,7 +46,7 @@ final class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => mb_trim((string)$message), 'author' => mb_trim((string)$author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->routeIs('web.orders.track') ? null : $request->user(),
             ],
             'ziggy' => [
                 ...(new Ziggy)->toArray(),

@@ -28,6 +28,7 @@ final class MarkWorkCompletedRequest extends FormRequest
         return [
             'completed_service_ids' => 'required|array|min:1',
             'completed_service_ids.*' => [
+                'distinct',
                 Rule::exists('order_services', 'id')->where(function (Builder $query): void {
                     $order = $this->route('order');
 

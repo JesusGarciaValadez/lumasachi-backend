@@ -5,7 +5,7 @@
 Use this document as a handoff plan for completing the backend gaps identified by comparing `docs/Business_Rules.md`
 with the registered routes, controllers, requests, resources, observers, services, and PHPUnit tests.
 
-This plan covers backend steps 1–6 only. The public Inertia/Vue tracking form is intentionally deferred to step 8 until
+This plan covers backend steps 1–6 only. The public Inertia/Vue tracking form is intentionally deferred to step 7 until
 these backend behaviors are complete.
 
 ## Scope and constraints
@@ -304,8 +304,555 @@ vendor/bin/sail composer test:types
 If any command fails, fix the relevant implementation or test, rerun the narrowest failing command, then repeat the
 final verification.
 
-## Deferred step 8 — Public Inertia/Vue tracking form
+## Step 7 — Inertia/Vue business-rule workflow views
 
-Do not begin this step until steps 1–6 are complete and the final backend verification passes. The later work will add
-the public form for UUID plus creation date, connect it to the public tracking endpoint, and display the now-complete
-order, history, and attachments response.
+Do not begin this step until steps 1–6 are complete and the final backend verification passes.
+
+Step 7 adds the public tracking form, authenticated workflow views, and reusable presentation components needed to
+operate the full order lifecycle defined in `docs/Business_Rules.md`. The public form will accept the order UUID plus
+creation date, connect to the public tracking endpoint, and display the public-safe order, history, and attachments
+response.
+
+### Step 7 scope and sequencing
+
+Keep these constraints throughout Step 7:
+
+- Continue using Inertia v2, Vue 3, TypeScript, Tailwind CSS v4, Ziggy named routes, the existing `AppLayout` for
+  authenticated pages, and a public-safe layout for tracking.
+- Preserve the current design line based on `Card`, `Button`, `Input`, `Label`, `Checkbox`, `Dialog`, `Skeleton`,
+  breadcrumbs, Lucide icons, semantic color tokens, responsive grids, and dark mode.
+- Prefer extending `resources/js/pages/Orders/Show.vue` with role- and status-specific panels instead of creating a
+  separate full page for every lifecycle transition.
+- Keep lifecycle authority in the existing Form Requests, policies, and `OrderLifecycleService`; the UI may hide or
+  disable invalid actions, but it must never become the only enforcement layer.
+- Use the existing JSON API endpoints from the Vue pages rather than duplicating lifecycle behavior in web routes.
+- Do not add frontend dependencies without approval.
+- Do not copy Tailwind Plus code unless the project has an applicable Tailwind Plus license. Treat the referenced blocks
+  as layout and interaction patterns, then adapt them to the existing Vue components and design tokens.
+
+### 7.1 — Shared UI contract, design line, and test foundation
+
+#### 7.1.1 — Define the page and component architecture
+
+1. Keep `resources/js/pages/Orders/Show.vue` as the authenticated order-detail shell.
+2. Add `resources/js/pages/Orders/Create.vue` for order intake because creation is a distinct multi-section form.
+3. Plan focused components under `resources/js/components/orders/` for:
+    - order page heading and status progress;
+    - motor and received-items summary;
+    - service matrix and financial summary;
+    - review/budget action panel;
+    - customer-approval action panel;
+    - work-completion action panel;
+    - delivery action panel;
+    - attachment list;
+    - order-history feed;
+    - validation, loading, empty, and stale-state feedback.
+4. Reuse public read-only components in authenticated views when they have the same data and behavior.
+5. Keep every Vue page and component to a single root element.
+
+#### 7.1.2 — Preserve the current application design line
+
+1. Use `AppLayout` and the current breadcrumb pattern for authenticated pages.
+2. Reuse the existing UI primitives before adapting a Tailwind Plus pattern.
+3. Use semantic classes such as `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`,
+   `bg-primary`, and `text-primary-foreground`.
+4. Preserve the current rounded cards, compact typography, responsive one/two-column grids, and dark-mode behavior.
+5. Use `gap-*` utilities for sibling spacing and Tailwind CSS v4 syntax only.
+6. Use Lucide icons already installed by the application; do not add another icon library.
+7. Keep mobile layouts functional without horizontal page scrolling. Service tables may use an internal scroll container
+   or a stacked mobile representation.
+
+#### 7.1.3 — Tailwind Plus component references
+
+Use the following Tailwind Plus blocks as design references and adapt them to existing application primitives:
+
+| Tailwind Plus pattern                                                                                                                                     | Planned application use                                                                          |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [Page headings — With meta and actions](https://tailwindcss.com/plus/ui-blocks/application-ui/headings/page-headings)                                     | Order UUID, customer-safe metadata, status badge, and the one lifecycle action currently allowed |
+| [Detail screens](https://tailwindcss.com/plus/ui-blocks/application-ui/page-examples/detail-screens)                                                      | Overall composition for the authenticated order detail                                           |
+| [Form layouts — Two-column with cards](https://tailwindcss.com/plus/ui-blocks/application-ui/forms/form-layouts)                                          | Order intake sections for customer, assignment, motor data, items, and advance payment           |
+| [Select menus — Simple native / with status indicator](https://tailwindcss.com/plus/ui-blocks/application-ui/forms/select-menus)                          | Customer, employee, priority, item type, and status-aware choices                                |
+| [Checkboxes — List with description / checkbox on right](https://tailwindcss.com/plus/ui-blocks/application-ui/forms/checkboxes)                          | Received components and selectable budget, approval, and completion services                     |
+| [Tables — With checkboxes, grouped rows, summary rows, and stacked columns on mobile](https://tailwindcss.com/plus/ui-blocks/application-ui/lists/tables) | The Medida / PPTO / Aut. / T.R. service matrix grouped by item type                              |
+| [Description lists — Left-aligned in card / two-column](https://tailwindcss.com/plus/ui-blocks/application-ui/data-display/description-lists)             | Motor specifications, assignment, dates, and received components                                 |
+| [Stats — Simple in cards / shared borders](https://tailwindcss.com/plus/ui-blocks/application-ui/data-display/stats)                                      | Budgeted, authorized, completed, advance-payment, and remaining-balance totals                   |
+| [Order summaries — Simple with full order details](https://tailwindcss.com/plus/ui-blocks/ecommerce/components/order-summaries)                           | Customer-facing and delivery financial breakdown                                                 |
+| [Feeds — Simple with icons / multiple item types](https://tailwindcss.com/plus/ui-blocks/application-ui/lists/feeds)                                      | Chronological order history and lifecycle activity                                               |
+| [Progress bars](https://tailwindcss.com/plus/ui-blocks/application-ui/navigation/progress-bars)                                                           | Read-only lifecycle progress from Awaiting Review through Delivered                              |
+| [Badges](https://tailwindcss.com/plus/ui-blocks/application-ui/elements/badges)                                                                           | Order status and budgeted, authorized, completed, and payment states                             |
+| [Alerts](https://tailwindcss.com/plus/ui-blocks/application-ui/feedback/alerts)                                                                           | Validation summaries, payment blockers, stale status, and request failures                       |
+| [Empty states](https://tailwindcss.com/plus/ui-blocks/application-ui/feedback/empty-states)                                                               | No services, components, attachments, or history                                                 |
+| [Modal dialogs — Simple with gray footer / simple alert](https://tailwindcss.com/plus/ui-blocks/application-ui/overlays/modal-dialogs)                    | Confirmation before approval, work completion, ready-for-delivery, and delivery mutations        |
+
+Tailwind Plus currently offers Vue and HTML component formats and targets the latest Tailwind CSS release. During
+implementation, translate any selected pattern to this repository's installed Tailwind CSS version and existing
+Reka-based components instead of adding Headless UI or Catalyst as a parallel component system.
+
+#### 7.1.4 — Define typed API and capability contracts
+
+1. Add shared TypeScript interfaces for order, motor info, item, component, service, financial totals, history, and
+   attachment payloads.
+2. Normalize the resource shape once; do not repeat `{ data: ... }` unwrapping or `any` types in each view.
+3. Add a focused order API client/composable for show, create, budget, approval, completion, ready-for-delivery, and
+   delivery requests.
+4. Preserve server validation keys, including nested keys such as `items.0.components.0`, so errors render beside the
+   correct control.
+5. Define a server-derived role/status capability map for presentation:
+    - create order;
+    - submit review and budget;
+    - approve selected services;
+    - mark authorized services completed;
+    - mark ready for delivery;
+    - deliver a fully paid order.
+6. Refresh the order after every successful mutation and render controls from the persisted status returned by the
+   server.
+7. Treat `409`, `422`, `403`, `404`, `429`, and unexpected failures as distinct UI states.
+
+#### 7.1.5 — Test foundation
+
+1. Add PHPUnit feature coverage for every new web route with `assertInertia`, including component name, required props,
+   authentication, authorization, and absence of sensitive props where applicable.
+2. Continue testing lifecycle mutations through their existing API feature tests; do not duplicate business logic
+   assertions in route-render tests.
+3. The repository does not currently include a Vue unit-test runner. Before adding Vue component tests, obtain approval
+   for the required dependency change. If approved, use Vitest and Vue Test Utils for the unit-test cases listed below.
+4. Without that approval, keep PHPUnit feature coverage plus TypeScript, build, lint, and format verification mandatory;
+   do not claim unimplemented Vue unit tests are green.
+
+#### 7.1 completion marks
+
+- [x] Authenticated order-detail routing and the order-create page foundation are in place.
+- [x] Shared order contracts and the order API composable cover the Step 7.1 data, capability, mutation, and error
+  requirements.
+- [x] PHPUnit route coverage includes Inertia props, authentication, authorization, and sensitive-prop checks.
+- [x] TypeScript, production build, frontend lint, and global format verification pass.
+- [x] Vue unit tests remain intentionally unimplemented because no Vue unit-test dependency has been approved.
+- [x] No additional Step 7.1 edge case remains unresolved.
+
+### 7.2 — Public order-tracking view
+
+#### 7.2.1 — Route and lookup contract
+
+1. Add a named public web route for the tracking page before any dynamic `/orders/{order:uuid}` route.
+2. Render a public Inertia page under `resources/js/pages/Orders/` without the authenticated `AppLayout`.
+3. Accept exactly the order UUID and creation date required by the existing public tracking endpoint.
+4. Submit to the existing public endpoint without adding a second lookup implementation to a web controller.
+5. Keep the entered values after validation, not-found, rate-limit, or network failures so the customer can correct or
+   retry the lookup.
+
+#### 7.2.2 — Public-safe result
+
+1. Adapt the Tailwind Plus detail-screen, description-list, progress, order-summary, attachment-list, and feed patterns
+   to display the public tracking response.
+2. Show the current localized status, motor information, received items and components, services with their budgeted,
+   authorized, and completed states, financial totals, public-safe attachments, and history.
+3. Keep the result read-only and omit all approval, work-completion, ready-for-delivery, delivery, and administrative
+   controls.
+4. Do not expose customer contact data, employee-private data, database IDs, storage paths, authenticated-only URLs, or
+   any other field absent from the public tracking resource.
+5. Reuse shared read-only presentation components only when their props cannot expose authenticated-only fields.
+
+#### 7.2.3 — Lookup states and edge cases
+
+1. Provide a loading state for the active lookup and disable duplicate submissions.
+2. Render field-level `422` validation errors and one generic not-found response for an unknown UUID, incorrect creation
+   date, or mismatched UUID/date pair.
+3. Render distinct `429` and network/unexpected-error states without revealing whether a UUID exists.
+4. Provide empty states for services, components, attachments, and history when the public resource returns empty
+   collections.
+5. Allow another lookup after a successful result and clear the previous order before displaying a failed subsequent
+   lookup.
+6. Cancel or ignore superseded requests so a slower earlier response cannot replace the latest lookup result.
+
+#### 7.2.4 — Tests
+
+Feature tests:
+
+1. Guests can open the tracking page and receive the expected Inertia component without authenticated or sensitive
+   props.
+2. A valid UUID and matching creation date return the public-safe order contract.
+3. An unknown UUID, incorrect date, and mismatched pair return the same generic not-found response.
+4. Missing or malformed UUID/date values return field-level validation errors.
+5. Statuses and priorities return stable values plus localized labels.
+6. Populated and empty service, component, attachment, and history collections use stable response shapes.
+7. Sensitive customer, employee, internal identifier, storage-path, and authenticated-action data are absent.
+8. Existing public tracking rate-limit coverage remains green.
+
+Frontend unit tests, if the test dependency is approved:
+
+1. The form maps UUID and creation date to the endpoint contract.
+2. Validation, not-found, rate-limit, and network states render independently.
+3. A failed second lookup removes the previous result without losing the submitted lookup values.
+4. A superseded response is ignored.
+5. The result exposes no lifecycle mutation controls.
+
+### 7.3 — Staff order-intake view
+
+#### 7.3.1 — Route and access
+
+1. Add a named authenticated web route for `Orders/Create`.
+2. Permit only roles authorized by `OrderPolicy::create`.
+3. Add the create action to the existing order index/page heading for authorized users only.
+
+#### 7.3.2 — Form layout and data
+
+1. Use the Tailwind Plus two-column-with-cards pattern inside `AppLayout`.
+2. Add sections for:
+    - customer, title, description, priority, assigned employee, and estimated completion;
+    - brand, liters, year, model, and cylinder count;
+    - advance payment using a decimal-safe money input;
+    - one or more received item types;
+    - components constrained to each selected item type.
+3. Load customers, employees, item types, and component options from existing authorized endpoints/catalog data.
+4. Use the select-menu pattern for customer, employee, priority, and item type.
+5. Use described checkbox lists for components.
+6. Allow omitted or empty component lists where the business rules permit them.
+7. Prevent duplicate item-type rows in the client while preserving server validation as the authority.
+
+#### 7.3.3 — Submission behavior
+
+1. Submit the exact `StoreOrderWithItemsRequest` payload to the existing create endpoint.
+2. Disable duplicate submissions and preserve entered data on validation failure.
+3. Map nested validation errors to the corresponding item/component row.
+4. On success, navigate to the created order and display its persisted `Awaiting Review` state.
+5. Do not expose or simulate notification delivery in the UI; show only the successful server result.
+
+#### 7.3.4 — Tests
+
+Feature tests:
+
+1. Authorized staff can open the creation page.
+2. Customers and guests cannot open it.
+3. A valid nested payload creates the order, motor info, items, and components and returns `Awaiting Review`.
+4. Invalid and cross-item components show nested validation errors and create nothing.
+5. Missing required items and invalid money values remain covered.
+
+Frontend unit tests, if the test dependency is approved:
+
+1. Adding/removing item rows preserves independent component selections.
+2. Changing an item type clears components invalid for the new type.
+3. Nested server errors attach to the correct row and component.
+4. A processing form cannot submit twice.
+
+### 7.4 — Staff review and quotation panel
+
+#### 7.4.1 — Visibility and data
+
+1. Render the review panel only for users allowed to update an order in `Awaiting Review`.
+2. Group received items and catalog services by item type.
+3. Keep unreceived item types out of the actionable service matrix.
+4. Show service name, measurement, PPTO selection, base price, net price, and notes.
+5. Require measurement only when the catalog service requires it.
+
+#### 7.4.2 — Service matrix and totals
+
+1. Adapt the Tailwind Plus grouped table with checkboxes and summary rows.
+2. Use a stacked mobile presentation for service name, measurement, and price while retaining accessible table headers
+   on larger screens.
+3. Calculate preview totals from selected catalog services for feedback only.
+4. Replace preview totals with server-returned values after submission.
+5. Display the budgeted base and net totals in stats cards and an order-summary card.
+
+#### 7.4.3 — Submission and transition
+
+1. Confirm budget submission in a modal.
+2. Submit only services belonging to the route order and selected received item.
+3. Render all validation failures without partially mutating the local service state.
+4. After success, refresh the order and show the persisted `Awaiting Customer Approval` state.
+5. Show the two recorded history transitions in the activity feed; do not synthesize a client-only Reviewed event.
+
+#### 7.4.4 — Tests
+
+Feature tests:
+
+1. Only authorized staff can access and submit the review action.
+2. The panel contract contains received items and applicable catalog services.
+3. Foreign items, invalid service keys, and missing required measurements are rejected.
+4. Successful submission stores the budget and ends in `Awaiting Customer Approval`.
+5. Existing notification and two-history-row tests remain green.
+
+Frontend unit tests, if approved:
+
+1. Grouping and selection operate independently per received item.
+2. Measurement fields appear only for services that require them.
+3. Preview totals include only selected budget services.
+4. Validation and stale-status errors leave selections intact.
+
+### 7.5 — Customer approval panel
+
+#### 7.5.1 — Visibility and read-only quotation
+
+1. Render the approval panel only to the order's customer while status is `Awaiting Customer Approval`.
+2. Show all budgeted services grouped by item type, including measurement, base price, and net price.
+3. Make budgeted state read-only.
+4. Display budget totals before any customer selection.
+
+#### 7.5.2 — Approval and advance payment
+
+1. Use described checkbox rows to select any subset of budgeted services.
+2. Keep unselected services visibly unapproved rather than removing them.
+3. Accept an optional non-negative advance payment with two-decimal presentation.
+4. Update authorized preview totals as selections change.
+5. Confirm the selected services, totals, and advance payment in a modal before submission.
+
+#### 7.5.3 — Submission and transition
+
+1. Submit service IDs and advance payment to the existing customer-approval endpoint.
+2. Disable controls while processing and after a successful transition.
+3. On success, refresh the order and show `Ready for Work`.
+4. If status changed in another session, show a stale-state alert and reload rather than retrying automatically.
+5. Keep the public tracking page read-only; public possession of UUID and date must never grant approval capability.
+
+#### 7.5.4 — Tests
+
+Feature tests:
+
+1. Only the owning customer can submit approval.
+2. Any valid subset of same-order budgeted services is accepted according to current business rules.
+3. Foreign and non-budgeted services are rejected without partial authorization.
+4. Advance payment validation and authorized totals remain correct.
+5. Success transitions the order to `Ready for Work`.
+
+Frontend unit tests, if approved:
+
+1. Authorized preview totals track selected services only.
+2. The confirmation summary matches selected IDs and payment.
+3. Server validation and stale-state responses preserve a recoverable form.
+4. Read-only users never receive actionable controls.
+
+### 7.6 — Work-execution panel
+
+#### 7.6.1 — Visibility and service constraints
+
+1. Render for authorized staff only when status is `Ready for Work` or `In Progress`.
+2. Show all budgeted services for context, but make only authorized services selectable for completion.
+3. Clearly badge budgeted, authorized, and completed states.
+4. Keep unauthorized services visible and disabled so omitted work is understandable.
+
+#### 7.6.2 — Completion workflow
+
+1. Use the same grouped service matrix as review and approval.
+2. Allow selecting one or more authorized, incomplete services.
+3. Confirm completion before submitting.
+4. Submit IDs to the existing work-completion endpoint.
+5. Refresh server-calculated completed totals and remaining balance after success.
+6. Never treat authorization as completion, and never allow a mixed authorized/unauthorized selection.
+
+#### 7.6.3 — Ready-for-delivery workflow
+
+1. Render the ready-for-delivery action only in a status accepted by the existing Form Request.
+2. Show a summary of completed and uncompleted authorized services before confirmation.
+3. Use server validation as the final decision when the business permits an order to become ready for delivery.
+4. On success, show `Ready for Delivery` and the customer-notification outcome represented by the persisted state only.
+
+#### 7.6.4 — Tests
+
+Feature tests:
+
+1. Authorized staff can complete same-order authorized services.
+2. Unauthorized, foreign, duplicate, and mixed service IDs are rejected atomically.
+3. Completed totals are recalculated from completed services only.
+4. Ready-for-delivery accepts only the statuses defined by the backend request.
+5. Existing ready-for-delivery notification tests remain green.
+
+Frontend unit tests, if approved:
+
+1. Unauthorized and already-completed rows are disabled.
+2. Completed preview totals include completed services only.
+3. A mixed invalid selection cannot be submitted.
+4. Successful mutations refresh badges, totals, and available actions.
+
+### 7.7 — Delivery and payment panel
+
+#### 7.7.1 — Financial summary
+
+1. Render for authorized staff when the order is `Ready for Delivery`.
+2. Adapt the Tailwind Plus full order-summary and stats-card patterns.
+3. Show completed-service total, advance payment, remaining balance, and payment state using two decimal places.
+4. Distinguish partial payment, exact payment, overpayment, and zero-total orders.
+5. Show a blocking alert while remaining balance is positive.
+
+#### 7.7.2 — Delivery action
+
+1. Disable the delivery action in the UI when a positive balance is returned by the server.
+2. Keep server-side `DeliverOrderRequest` and `OrderLifecycleService` checks as the authoritative guard.
+3. Confirm final delivery in a modal with the order UUID and financial summary.
+4. Submit to the existing delivery endpoint.
+5. On success, refresh and show the terminal `Delivered` state with no further lifecycle mutation controls.
+
+#### 7.7.3 — Tests
+
+Feature tests:
+
+1. Partial payment rejects delivery and preserves `Ready for Delivery`.
+2. Exact payment, overpayment, and zero-total orders can be delivered.
+3. Unauthorized users cannot deliver the order.
+4. Failed delivery sends no delivery notification.
+5. Successful delivery retains customer and audit notifications.
+
+Frontend unit tests, if approved:
+
+1. Remaining-balance formatting is correct for partial, exact, overpaid, and zero-total data.
+2. Positive balance disables the action and exposes the blocking explanation.
+3. Confirmation receives the same financial values shown on the page.
+4. A successful response removes lifecycle actions and renders `Delivered`.
+
+### 7.8 — Shared order details, attachments, and history
+
+#### 7.8.1 — Order detail composition
+
+1. Replace the current partial detail view with the shared order heading, lifecycle progress, description lists, service
+   matrix, financial summary, attachments, and history feed.
+2. Keep customer, assignment, dates, priority, and notes in compact description-list cards.
+3. Show motor data and received components without exposing edit controls to unauthorized roles.
+4. Use localized status and priority labels while retaining stable enum values for logic.
+
+#### 7.8.2 — Attachments
+
+1. Show filename, type, size, uploader-safe display data, and available preview/download actions.
+2. Preserve existing attachment authorization for authenticated views.
+3. Use loading skeletons and a dedicated empty state.
+4. Treat preview/download authorization failure separately from a missing attachment.
+5. Do not assume authenticated attachment URLs are suitable for public tracking; that contract must remain public-safe.
+
+#### 7.8.3 — History feed
+
+1. Adapt the Tailwind Plus feed with icons or multiple item types.
+2. Render status, priority, assignment, item, service, payment, and attachment events chronologically.
+3. Use the server-provided description and timestamps; do not infer missing history client-side.
+4. Preserve both Reviewed transition entries as separate events.
+5. Add loading, empty, and pagination states if the endpoint is paginated.
+
+#### 7.8.4 — Tests
+
+Feature tests:
+
+1. Authorized users receive the complete order-detail contract.
+2. Customer and employee visibility still follows `OrderPolicy`.
+3. History and attachment endpoints remain order-scoped.
+4. Empty history and attachments return stable empty collections.
+5. Sensitive fields are absent from any public Inertia or public API contract.
+
+Frontend unit tests, if approved:
+
+1. Status progress maps every supported status without skipping the automatic Reviewed transition.
+2. History preserves server order and renders distinct event types.
+3. Empty and loading states render independently for details, attachments, and history.
+4. Action panels are selected from role, policy capability, and persisted status.
+
+### 7.9 — Navigation, stale-state handling, accessibility, and responsive behavior
+
+#### 7.9.1 — Navigation and role visibility
+
+1. Add order-create navigation only for authorized roles.
+2. Keep lifecycle actions inside the order detail instead of adding sidebar entries per transition.
+3. Use named Ziggy routes and Inertia `Link` for internal page navigation.
+4. Ensure customers see only their own orders and the actions allowed by the backend policy.
+
+#### 7.9.2 — Concurrency and request state
+
+1. Disable duplicate submissions.
+2. Refresh after every mutation and reject stale local state.
+3. Show a reload action for status conflicts or resources changed in another session.
+4. Cancel or ignore superseded read requests so an older response cannot replace a newer order state.
+5. Preserve user input after recoverable validation or network failures.
+
+#### 7.9.3 — Accessibility and responsive verification
+
+1. Associate every input with a label and every validation message with its field.
+2. Keep service matrices keyboard-operable with visible focus states.
+3. Announce success, error, loading, and validation-summary changes using appropriate live regions.
+4. Give confirmation dialogs an accessible title, description, initial focus, cancel action, and focus return.
+5. Verify contrast and dark mode using existing semantic tokens.
+6. Verify mobile, tablet, and desktop layouts, including long UUIDs, service names, currency values, and translated
+   labels.
+
+#### 7.9.4 — Tests
+
+Feature tests:
+
+1. Every web route enforces authentication, policy, and order ownership.
+2. Every lifecycle API rejects stale or invalid status according to its Form Request.
+3. Route names used by the pages exist and resolve with UUID route binding.
+
+Frontend unit tests, if approved:
+
+1. Duplicate clicks produce one request.
+2. Older read responses cannot overwrite newer state.
+3. Keyboard interaction works for item/service selection and dialogs.
+4. Alerts and validation summaries expose accessible text and focus behavior.
+
+### 7.10 — Step 7 final verification and completion criteria
+
+#### 7.10.1 — Focused verification after each subsection
+
+1. Run the narrowest PHPUnit feature tests for the route and lifecycle endpoint being connected.
+2. Run approved Vue unit tests for the changed component or composable.
+3. Run TypeScript checking, frontend build, lint, and format checks through Sail.
+4. Run Pint after any PHP change and PHPStan after any backend contract change.
+
+#### 7.10.2 — Docker/Sail access and complete verification command list
+
+Run all PHP, Composer, Artisan, and Node commands through Sail. Docker Desktop must be running and the current terminal
+must be allowed to access the Docker socket. In a restricted Codex terminal, Docker Desktop may be running while the
+sandbox still reports `Docker or Podman is not running` or `permission denied` for the Docker socket. Grant the terminal
+elevated Docker access and retry; do not interpret that message as an application test failure.
+
+Verify application access first:
+
+```bash
+vendor/bin/sail artisan list
+```
+
+Run the complete Step 7 verification block:
+
+```bash
+vendor/bin/sail artisan test --parallel --processes=8
+vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderRouteTest.php tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php tests/Feature/app/Policies/OrderPolicyTest.php tests/Unit/app/Services/OrderLifecycleServiceTest.php
+vendor/bin/sail composer run test:types
+vendor/bin/sail bin pint --dirty --format agent
+vendor/bin/sail yarn run test:unit
+vendor/bin/sail yarn vue-tsc --noEmit
+vendor/bin/sail yarn run build
+vendor/bin/sail yarn run format:check
+vendor/bin/sail yarn prettier --check resources/ tests/Frontend vitest.config.ts package.json
+vendor/bin/sail yarn eslint resources/js/types/orders.ts resources/js/composables/useOrderApi.ts resources/js/pages/Orders/Create.vue resources/js/pages/Orders/Index.vue resources/js/pages/Orders/Show.vue resources/js/pages/Orders/Track.vue resources/js/components/orders/OrderFinancialSummary.vue resources/js/components/orders/OrderServiceMatrix.vue resources/js/components/orders/OrderStatusProgress.vue resources/js/components/AppSidebar.vue tests/Frontend/orders.types.spec.ts tests/Frontend/OrderServiceMatrix.spec.ts tests/Frontend/Track.spec.ts vitest.config.ts
+git diff --check
+```
+
+If Pint changes PHP files, rerun the affected PHPUnit tests and `vendor/bin/sail composer run test:types` before marking
+the step complete. If any command fails, resolve the failure and rerun the complete block.
+
+#### 7.10.3 — Final verification
+
+```bash
+vendor/bin/sail artisan test --parallel --processes=8
+vendor/bin/sail bin pint --dirty --format agent
+vendor/bin/sail composer run test:types
+vendor/bin/sail yarn run test:unit
+vendor/bin/sail yarn vue-tsc --noEmit
+vendor/bin/sail yarn run build
+vendor/bin/sail yarn run format:check
+```
+
+Run the complete command block in 7.10.2 when the step includes frontend files, frontend tests, or additional
+step-specific checks.
+
+#### 7.10.4 — Step 7 completion checklist
+
+- [x] Public tracking accepts UUID plus creation date and renders only the public-safe order, history, and attachment
+  contract.
+- [x] Order intake captures motor information, received items, valid components, and advance payment.
+- [x] Review builds the PPTO service set and shows budgeted totals.
+- [x] Customer approval supports any permitted subset and shows authorized totals.
+- [x] Work completion permits authorized services only and shows completed totals.
+- [x] Ready-for-delivery and delivery actions respect status and payment rules.
+- [x] Order details display motor data, components, services, totals, attachments, and complete history.
+- [x] All actions are role-, ownership-, and status-aware while retaining backend enforcement.
+- [x] Loading, empty, validation, forbidden, not-found, rate-limit, stale-state, and unexpected-error states are
+  covered.
+- [x] Responsive, keyboard, focus, screen-reader, translated-label, and dark-mode behavior are verified.
+- [x] Related PHPUnit feature tests pass.
+- [x] Approved Vue unit tests pass with the Vitest test setup.
+- [x] TypeScript, frontend build, lint/format, Pint, and PHPStan checks pass as applicable.
+- [x] No additional Step 7 business-rule edge case remains unresolved.

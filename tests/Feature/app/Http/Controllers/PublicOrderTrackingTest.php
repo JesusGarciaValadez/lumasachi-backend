@@ -12,6 +12,7 @@ use App\Models\OrderMotorInfo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as InertiaAssert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -100,33 +101,31 @@ final class PublicOrderTrackingTest extends TestCase
                 'order' => [
                     'history' => [
                         '*' => [
-                            'uuid',
                             'field_changed',
-                            'old_value',
-                            'new_value',
                             'created_at',
-                            'creator',
                         ],
                     ],
                     'attachments' => [
                         '*' => [
-                            'uuid',
                             'file_name',
                             'mime_type',
                             'file_size',
-                            'uploaded_by',
                         ],
                     ],
                 ],
             ])
             ->assertJsonFragment([
-                'uuid' => $history->uuid,
                 'field_changed' => 'status',
             ])
             ->assertJsonFragment([
-                'uuid' => $attachment->uuid,
                 'file_name' => 'work-order.pdf',
             ]);
+
+        $response->assertJsonMissingPath('order.customer')
+            ->assertJsonMissingPath('order.id')
+            ->assertJsonMissingPath('order.attachments.0.file_path')
+            ->assertJsonMissingPath('order.attachments.0.url')
+            ->assertJsonMissingPath('order.attachments.0.uploaded_by');
     }
 
     #[Test]
@@ -174,6 +173,33 @@ final class PublicOrderTrackingTest extends TestCase
     }
 
     #[Test]
+    public function it_validates_malformed_tracking_values(): void
+    {
+        $response = $this->postJson('/api/v1/orders/track', [
+            'uuid' => 'not-a-uuid',
+            'created_date' => 'not-a-date',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['uuid', 'created_date']);
+    }
+
+    #[Test]
+    public function it_rate_limits_repeated_tracking_requests(): void
+    {
+        $payload = [
+            'uuid' => $this->order->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ];
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->postJson('/api/v1/orders/track', $payload)->assertOk();
+        }
+
+        $this->postJson('/api/v1/orders/track', $payload)->assertTooManyRequests();
+    }
+
+    #[Test]
     public function it_does_not_require_authentication(): void
     {
         // No actingAs — anonymous request
@@ -183,5 +209,17 @@ final class PublicOrderTrackingTest extends TestCase
         ]);
 
         $response->assertOk();
+    }
+
+    #[Test]
+    public function guests_can_open_the_public_tracking_page_without_order_props(): void
+    {
+        $this->get(route('web.orders.track'))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->component('Orders/Track')
+                ->missing('order')
+                ->missing('capabilities')
+            );
     }
 }

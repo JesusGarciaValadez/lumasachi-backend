@@ -140,7 +140,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order marked as ready for delivery.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
 
@@ -153,7 +153,7 @@ final class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order delivered successfully.',
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
         ]);
     }
 

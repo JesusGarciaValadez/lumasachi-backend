@@ -61,6 +61,15 @@ final class OrderPolicy
     }
 
     /**
+     * Determine whether the user can approve services for the order.
+     */
+    public function approve(User $user, Order $order): bool
+    {
+        return $user->role === UserRole::CUSTOMER
+            && $order->customer_id === $user->id;
+    }
+
+    /**
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, Order $order): bool

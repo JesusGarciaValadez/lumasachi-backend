@@ -8,21 +8,22 @@ import { createI18nInstance } from './i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-createServer((page) =>
-    createInertiaApp({
-        page,
-        render: renderToString,
-        title: (title) => title ? `${title} - ${appName}` : appName,
-        resolve: resolvePage,
-        setup: ({ App, props, plugin }) =>
-            createSSRApp({ render: () => h(App, props) })
-                .use(plugin)
-                .use(ZiggyVue, {
-                    ...page.props.ziggy,
-                    location: new URL(page.props.ziggy.location),
-                })
-                .use(createI18nInstance()),
-    }),
+createServer(
+    (page) =>
+        createInertiaApp({
+            page,
+            render: renderToString,
+            title: (title) => (title ? `${title} - ${appName}` : appName),
+            resolve: resolvePage,
+            setup: ({ App, props, plugin }) =>
+                createSSRApp({ render: () => h(App, props) })
+                    .use(plugin)
+                    .use(ZiggyVue, {
+                        ...page.props.ziggy,
+                        location: new URL(page.props.ziggy.location),
+                    })
+                    .use(createI18nInstance()),
+        }),
     { cluster: true },
 );
 

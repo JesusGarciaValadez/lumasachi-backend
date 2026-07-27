@@ -1,6 +1,9 @@
 <?php
 
-use App\Http\Resources\OrderResource;
+declare(strict_types=1);
+
+use App\Http\Controllers\OrderPageController;
+use App\Http\Controllers\PublicOrderPageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,17 +23,18 @@ Route::middleware(['auth', 'verified', 'can:viewAny,App\\Models\\Order'])->get('
     return Inertia::render('Orders/EngineOptions');
 })->name('web.catalog.engine-options');
 
+// Public order tracking page; keep it before dynamic order UUID routes.
+Route::get('orders/track', [PublicOrderPageController::class, 'show'])->name('web.orders.track');
+
 // Orders index (web) - requires ability to view any orders
-Route::middleware(['auth', 'verified', 'can:viewAny,App\\Models\\Order'])->get('orders', function () {
-    return Inertia::render('Orders/Index');
-})->name('web.orders.index');
+Route::middleware(['auth', 'verified', 'can:viewAny,App\\Models\\Order'])->get('orders', [OrderPageController::class, 'index'])
+    ->name('web.orders.index');
+
+// Order intake (web) - requires ability to create orders
+Route::middleware(['auth', 'verified', 'can:create,App\\Models\\Order'])->get('orders/create', [OrderPageController::class, 'create'])
+    ->name('web.orders.create');
 
 // Orders show (web) - render Inertia page with server-side props
 Route::middleware(['auth', 'verified', 'can:view,order'])->group(function () {
-    Route::get('orders/{order:uuid}', function (App\Models\Order $order) {
-        return Inertia::render('Orders/Show', [
-            // Resolve the resource to avoid { data: {...} } wrapping in props
-            'order' => (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])))->resolve(),
-        ]);
-    })->name('web.orders.show');
+    Route::get('orders/{order:uuid}', [OrderPageController::class, 'show'])->name('web.orders.show');
 });

@@ -28,6 +28,7 @@ final class CustomerApprovalRequest extends FormRequest
         return [
             'authorized_service_ids' => 'required|array|min:1',
             'authorized_service_ids.*' => [
+                'distinct',
                 Rule::exists('order_services', 'id')->where(function (Builder $query): void {
                     $order = $this->route('order');
 
@@ -35,7 +36,7 @@ final class CustomerApprovalRequest extends FormRequest
                         $query->whereIn(
                             'order_item_id',
                             OrderItem::query()->select('id')->where('order_id', $order->getKey())
-                        );
+                        )->where('is_budgeted', true);
                     }
                 }),
             ],

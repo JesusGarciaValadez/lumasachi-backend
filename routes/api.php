@@ -109,7 +109,7 @@ Route::group(['prefix' => 'v1'], function () {
 
         // Lifecycle endpoints
         Route::post('/{order:uuid}/budget', [OrderController::class, 'submitBudget'])->middleware('can:update,order')->name('api.orders.budget');
-        Route::post('/{order:uuid}/customer-approval', [OrderController::class, 'customerApproval'])->middleware('can:update,order')->name('api.orders.customer-approval');
+        Route::post('/{order:uuid}/customer-approval', [OrderController::class, 'customerApproval'])->middleware('can:approve,order')->name('api.orders.customer-approval');
         Route::post('/{order:uuid}/work-completed', [OrderController::class, 'markWorkCompleted'])->middleware('can:update,order')->name('api.orders.work-completed');
         Route::post('/{order:uuid}/ready-for-delivery', [OrderController::class, 'markReadyForDelivery'])->middleware('can:update,order')->name('api.orders.ready-for-delivery');
         Route::post('/{order:uuid}/deliver', [OrderController::class, 'deliverOrder'])->middleware('can:update,order')->name('api.orders.deliver');

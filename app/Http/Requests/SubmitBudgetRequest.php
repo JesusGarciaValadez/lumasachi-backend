@@ -6,6 +6,8 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\ServiceCatalog;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,7 +34,8 @@ final class SubmitBudgetRequest extends FormRequest
                     $order = $this->route('order');
 
                     if ($order instanceof Order) {
-                        $query->where('order_id', $order->getKey());
+                        $query->where('order_id', $order->getKey())
+                            ->where('is_received', true);
                     }
                 }),
             ],
@@ -50,6 +53,30 @@ final class SubmitBudgetRequest extends FormRequest
 
             if ($order && $order->status !== OrderStatus::AwaitingReview) {
                 $validator->errors()->add('status', 'Order must be in Awaiting Review status.');
+            }
+
+            foreach ($this->input('services', []) as $index => $service) {
+                if (!is_array($service)) {
+                    continue;
+                }
+
+                $catalog = ServiceCatalog::query()->where('service_key', $service['service_key'] ?? null)->first();
+                $itemId = $service['order_item_id'] ?? null;
+                $item = is_int($itemId) ? OrderItem::query()->find($itemId) : null;
+
+                if ($catalog && $item && $catalog->item_type !== $item->item_type) {
+                    $validator->errors()->add(
+                        "services.{$index}.service_key",
+                        'The selected service is not available for the selected item type.'
+                    );
+                }
+
+                if ($catalog?->requires_measurement && blank($service['measurement'] ?? null)) {
+                    $validator->errors()->add(
+                        "services.{$index}.measurement",
+                        'A measurement is required for the selected service.'
+                    );
+                }
             }
         });
     }

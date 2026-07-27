@@ -38,6 +38,41 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
 
     private User $customer;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $company = Company::factory()->create();
+
+        $this->administrator = User::factory()->create([
+            'role' => UserRole::ADMINISTRATOR->value,
+            'company_id' => $company->id,
+            'is_active' => true,
+        ]);
+        $this->superAdministrator = User::factory()->create([
+            'role' => UserRole::SUPER_ADMINISTRATOR->value,
+            'company_id' => $company->id,
+            'is_active' => true,
+        ]);
+        $this->inactiveAdministrator = User::factory()->create([
+            'role' => UserRole::ADMINISTRATOR->value,
+            'company_id' => $company->id,
+            'is_active' => false,
+        ]);
+        $this->employee = User::factory()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $company->id,
+            'is_active' => true,
+        ]);
+        $this->customer = User::factory()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'is_active' => true,
+        ]);
+
+        Notification::fake();
+        $this->actingAs($this->employee);
+    }
+
     #[Test]
     public function order_creation_notifies_the_customer_and_every_active_audit_role(): void
     {
@@ -58,34 +93,6 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
         Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function validOrderPayload(): array
-    {
-        return [
-            'customer_id' => $this->customer->id,
-            'title' => 'Block review',
-            'description' => 'Block received for review',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => [
-                'brand' => null,
-                'liters' => null,
-                'year' => null,
-                'model' => null,
-                'cylinder_count' => null,
-                'down_payment' => 0,
-            ],
-            'items' => [
-                [
-                    'item_type' => OrderItemType::EngineBlock->value,
-                    'components' => ['camshaft', 'bearing_caps', 'cap_bolts'],
-                ],
-            ],
-        ];
-    }
-
     #[Test]
     public function order_creation_rejects_a_negative_down_payment(): void
     {
@@ -102,6 +109,7 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     #[Test]
     public function customer_approval_rejects_a_negative_down_payment(): void
     {
+        $this->actingAs($this->customer);
         $order = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
         $item = OrderItem::factory()->received()->create([
             'order_id' => $order->id,
@@ -123,40 +131,6 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
 
         $this->assertFalse($service->fresh()->is_authorized);
         $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
-    }
-
-    private function createOrder(OrderStatus $status): Order
-    {
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-            'status' => $status->value,
-        ]);
-
-        OrderMotorInfo::create([
-            'order_id' => $order->id,
-            'down_payment' => 0,
-            'total_cost' => 0,
-            'is_fully_paid' => true,
-        ]);
-
-        return $order;
-    }
-
-    private function createCatalogService(string $serviceKey, float $basePrice): ServiceCatalog
-    {
-        return ServiceCatalog::create([
-            'service_key' => $serviceKey,
-            'service_name_key' => "service_catalog.{$serviceKey}",
-            'item_type' => OrderItemType::EngineBlock->value,
-            'base_price' => $basePrice,
-            'tax_percentage' => 16.00,
-            'requires_measurement' => $serviceKey === 'deck_assembled_4cyl',
-            'is_active' => true,
-            'display_order' => 1,
-        ]);
     }
 
     #[Test]
@@ -189,8 +163,50 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     }
 
     #[Test]
+    public function budget_rejects_an_unreceived_item(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+        $item = OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+            'is_received' => false,
+        ]);
+        $catalog = $this->createCatalogService('wash_block', 600.00);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => [[
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services.0.order_item_id']);
+    }
+
+    #[Test]
+    public function budget_requires_measurement_for_catalog_services_that_need_it(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+        $catalog = $this->createCatalogService('deck_assembled_4cyl', 1600.00);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => [[
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services.0.measurement']);
+
+        $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
+    }
+
+    #[Test]
     public function customer_approval_rejects_a_service_that_belongs_to_another_order(): void
     {
+        $this->actingAs($this->customer);
         $order = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
         $otherOrder = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
         $otherService = $this->createOrderService($otherOrder, 'wash_block', isAuthorized: false);
@@ -204,25 +220,20 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
         $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
     }
 
-    private function createOrderService(
-        Order  $order,
-        string $serviceKey,
-        bool   $isAuthorized,
-    ): OrderService
+    #[Test]
+    public function customer_approval_rejects_a_service_that_is_not_budgeted(): void
     {
-        $item = OrderItem::factory()->received()->create([
-            'order_id' => $order->id,
-            'item_type' => OrderItemType::EngineBlock->value,
-        ]);
+        $this->actingAs($this->customer);
+        $order = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
+        $service = $this->createOrderService($order, 'wash_block', isAuthorized: false);
+        $service->update(['is_budgeted' => false]);
 
-        return $item->services()->create([
-            'service_key' => $serviceKey,
-            'is_budgeted' => true,
-            'is_authorized' => $isAuthorized,
-            'is_completed' => false,
-            'base_price' => 600.00,
-            'net_price' => 696.00,
-        ]);
+        $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+            'authorized_service_ids' => [$service->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['authorized_service_ids.0']);
+
+        $this->assertFalse($service->fresh()->is_authorized);
     }
 
     #[Test]
@@ -320,6 +331,7 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
             'replace_cam_bearings',
         ])->map(fn(string $serviceKey): int => $services->get($serviceKey)->id)->all();
 
+        $this->actingAs($this->customer);
         $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
             'authorized_service_ids' => $authorizedServiceIds,
         ])->assertOk();
@@ -330,6 +342,7 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
         $this->assertFalse($services->get('deck_assembled_4cyl')->fresh()->is_authorized);
         $this->assertFalse($services->get('polish_camshaft_bars')->fresh()->is_authorized);
 
+        $this->actingAs($this->employee);
         $completedServiceIds = collect([
             'wash_block',
             'replace_cam_bearings',
@@ -411,38 +424,86 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
         Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
     }
 
-    protected function setUp(): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function validOrderPayload(): array
     {
-        parent::setUp();
+        return [
+            'customer_id' => $this->customer->id,
+            'title' => 'Block review',
+            'description' => 'Block received for review',
+            'priority' => OrderPriority::NORMAL->value,
+            'assigned_to' => $this->employee->id,
+            'motor_info' => [
+                'brand' => null,
+                'liters' => null,
+                'year' => null,
+                'model' => null,
+                'cylinder_count' => null,
+                'down_payment' => 0,
+            ],
+            'items' => [
+                [
+                    'item_type' => OrderItemType::EngineBlock->value,
+                    'components' => ['camshaft', 'bearing_caps', 'cap_bolts'],
+                ],
+            ],
+        ];
+    }
 
-        $company = Company::factory()->create();
-
-        $this->administrator = User::factory()->create([
-            'role' => UserRole::ADMINISTRATOR->value,
-            'company_id' => $company->id,
-            'is_active' => true,
-        ]);
-        $this->superAdministrator = User::factory()->create([
-            'role' => UserRole::SUPER_ADMINISTRATOR->value,
-            'company_id' => $company->id,
-            'is_active' => true,
-        ]);
-        $this->inactiveAdministrator = User::factory()->create([
-            'role' => UserRole::ADMINISTRATOR->value,
-            'company_id' => $company->id,
-            'is_active' => false,
-        ]);
-        $this->employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-            'company_id' => $company->id,
-            'is_active' => true,
-        ]);
-        $this->customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-            'is_active' => true,
+    private function createOrder(OrderStatus $status): Order
+    {
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $this->customer->id,
+            'assigned_to' => $this->employee->id,
+            'created_by' => $this->employee->id,
+            'updated_by' => $this->employee->id,
+            'status' => $status->value,
         ]);
 
-        Notification::fake();
-        $this->actingAs($this->employee);
+        OrderMotorInfo::create([
+            'order_id' => $order->id,
+            'down_payment' => 0,
+            'total_cost' => 0,
+            'is_fully_paid' => true,
+        ]);
+
+        return $order;
+    }
+
+    private function createCatalogService(string $serviceKey, float $basePrice): ServiceCatalog
+    {
+        return ServiceCatalog::create([
+            'service_key' => $serviceKey,
+            'service_name_key' => "service_catalog.{$serviceKey}",
+            'item_type' => OrderItemType::EngineBlock->value,
+            'base_price' => $basePrice,
+            'tax_percentage' => 16.00,
+            'requires_measurement' => $serviceKey === 'deck_assembled_4cyl',
+            'is_active' => true,
+            'display_order' => 1,
+        ]);
+    }
+
+    private function createOrderService(
+        Order  $order,
+        string $serviceKey,
+        bool   $isAuthorized,
+    ): OrderService
+    {
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+
+        return $item->services()->create([
+            'service_key' => $serviceKey,
+            'is_budgeted' => true,
+            'is_authorized' => $isAuthorized,
+            'is_completed' => false,
+            'base_price' => 600.00,
+            'net_price' => 696.00,
+        ]);
     }
 }

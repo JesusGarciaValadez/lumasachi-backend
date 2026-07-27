@@ -17,6 +17,7 @@ return [
     'created_at' => 'Created at',
     'attachments' => 'Attachments',
     'history' => 'History',
+    'public_history_updated' => 'Order history was updated.',
 
     'status_labels' => [
         'Received' => 'Received',
