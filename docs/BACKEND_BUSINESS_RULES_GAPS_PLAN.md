@@ -1012,3 +1012,14 @@ step-specific checks.
 - [x] Approved Vue unit tests pass with the Vitest test setup.
 - [x] TypeScript, frontend build, lint/format, Pint, and PHPStan checks pass as applicable.
 - [x] No additional Step 7 business-rule edge case remains unresolved.
+
+#### Step 7.10 verification marks
+
+- [x] Sail access was confirmed with `vendor/bin/sail artisan list` after the documented Docker access retry.
+- [x] The complete PHPUnit suite passed with 586 tests and 3,313 assertions; the focused Step 7 backend block passed
+  with 102 tests and 598 assertions.
+- [x] The complete approved Vitest suite passed with 40 tests across 11 files.
+- [x] Vue type-checking, production build, ESLint, both Prettier checks, Pint, PHPStan, and `git diff --check` passed.
+- [x] The pre-existing `resources/views/vendor/mail/html/themes/default.css` formatting warning was resolved under the
+  documented permission.
+- [x] No additional Step 7.10 verification or business-rule edge case remains unresolved.
