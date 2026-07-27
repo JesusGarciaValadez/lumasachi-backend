@@ -112,7 +112,8 @@ final class AttachmentController extends Controller
 
             if (count($attachments) === 1) {
                 return response()->json([
-                    'message' => 'File uploaded successfully.',
+                    'code' => 'attachments.uploaded',
+                    'message' => __('attachments.uploaded'),
                     'attachment' => new AttachmentResource($attachments[0]->load('uploadedBy')),
                 ], 201);
             }
@@ -121,14 +122,16 @@ final class AttachmentController extends Controller
             $eloquentCollection = new Collection($attachments);
 
             return response()->json([
-                'message' => 'Files uploaded successfully.',
+                'code' => 'attachments.uploaded_many',
+                'message' => __('attachments.uploaded_many'),
                 'attachments' => AttachmentResource::collection($eloquentCollection->load('uploadedBy')),
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
 
             return response()->json([
-                'message' => 'Failed to upload file(s).',
+                'code' => 'attachments.upload_failed',
+                'message' => __('attachments.upload_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -142,14 +145,16 @@ final class AttachmentController extends Controller
         // Check if user has permission to download this attachment
         if (! $this->canAccessAttachment($attachment)) {
             return response()->json([
-                'message' => 'Unauthorized to download this attachment.',
+                'code' => 'attachments.download_unauthorized',
+                'message' => __('attachments.download_unauthorized'),
             ], 403);
         }
 
         // Check if file exists
         if (! Storage::disk('public')->exists($attachment->file_path)) {
             return response()->json([
-                'message' => 'File not found.',
+                'code' => 'attachments.not_found',
+                'message' => __('attachments.not_found'),
             ], 404);
         }
 
@@ -175,7 +180,8 @@ final class AttachmentController extends Controller
         // Check if user has permission to preview this attachment
         if (! $this->canAccessAttachment($attachment)) {
             return response()->json([
-                'message' => 'Unauthorized to preview this attachment.',
+                'code' => 'attachments.preview_unauthorized',
+                'message' => __('attachments.preview_unauthorized'),
             ], 403);
         }
 
@@ -191,14 +197,16 @@ final class AttachmentController extends Controller
 
         if (! in_array($attachment->mime_type, $previewableMimeTypes)) {
             return response()->json([
-                'message' => 'This file type cannot be previewed.',
+                'code' => 'attachments.not_previewable',
+                'message' => __('attachments.not_previewable'),
             ], 400);
         }
 
         // Check if file exists
         if (! Storage::disk('public')->exists($attachment->file_path)) {
             return response()->json([
-                'message' => 'File not found.',
+                'code' => 'attachments.not_found',
+                'message' => __('attachments.not_found'),
             ], 404);
         }
 
@@ -222,7 +230,8 @@ final class AttachmentController extends Controller
         // Check if attachment belongs to an order
         if ($attachment->attachable_type !== 'order') {
             return response()->json([
-                'message' => 'This attachment does not belong to an order.',
+                'code' => 'attachments.not_belonging',
+                'message' => __('attachments.not_belonging'),
             ], 403);
         }
 
@@ -232,7 +241,8 @@ final class AttachmentController extends Controller
         $user = $this->authenticatedUser();
         if ($order instanceof Order && !$user->can('update', $order)) {
             return response()->json([
-                'message' => 'Unauthorized to delete this attachment.',
+                'code' => 'attachments.delete_unauthorized',
+                'message' => __('attachments.delete_unauthorized'),
             ], 403);
         }
 
@@ -264,13 +274,15 @@ final class AttachmentController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Attachment deleted successfully.',
+                'code' => 'attachments.deleted',
+                'message' => __('attachments.deleted'),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
 
             return response()->json([
-                'message' => 'Failed to delete attachment.',
+                'code' => 'attachments.delete_failed',
+                'message' => __('attachments.delete_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

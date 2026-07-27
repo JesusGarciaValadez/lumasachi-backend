@@ -10,6 +10,7 @@ use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use Carbon\Carbon;
 use Database\Factories\OrderHistoryFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -161,6 +162,42 @@ final class OrderHistoryTest extends TestCase
         $this->assertInstanceOf(OrderPriority::class, $priorityHistory->new_value);
         $this->assertEquals(OrderPriority::NORMAL, $priorityHistory->old_value);
         $this->assertEquals(OrderPriority::HIGH, $priorityHistory->new_value);
+    }
+
+    #[Test]
+    public function it_localizes_history_descriptions_without_changing_canonical_values(): void
+    {
+        $history = OrderHistory::make([
+            'field_changed' => 'status',
+            'old_value' => OrderStatus::Open->value,
+            'new_value' => OrderStatus::InProgress->value,
+        ]);
+
+        app()->setLocale('es');
+        $this->assertSame('Estatus cambió de Abierta a En progreso', $history->description);
+
+        app()->setLocale('en');
+        $this->assertSame('Status changed from Open to In Progress', $history->description);
+        $this->assertSame(OrderStatus::Open->value, $history->getAttributes()['old_value']);
+        $this->assertSame(OrderStatus::InProgress->value, $history->getAttributes()['new_value']);
+
+        $date = OrderHistory::make([
+            'field_changed' => 'estimated_completion',
+            'old_value' => Carbon::parse('2026-07-27 12:00:00'),
+            'new_value' => null,
+        ]);
+        $boolean = OrderHistory::make([
+            'field_changed' => 'service_completed',
+            'old_value' => false,
+            'new_value' => true,
+        ]);
+
+        $this->assertStringContainsString('Estimated completion removed', $date->description);
+        $this->assertSame('Service completed changed from No to Yes', $boolean->description);
+
+        app()->setLocale('es');
+        $this->assertStringContainsString('Fecha estimada eliminado', $date->description);
+        $this->assertSame('Servicio realizado cambió de No a Sí', $boolean->description);
     }
 
     /**

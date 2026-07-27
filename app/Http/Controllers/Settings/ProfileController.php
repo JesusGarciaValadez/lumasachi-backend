@@ -47,7 +47,7 @@ final class ProfileController extends Controller
         $user->save();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Profile updated!'], 200);
+            return response()->json(['code' => 'auth.profile_updated', 'message' => __('auth.profile_updated')], 200);
         }
 
         return to_route('profile.edit');
@@ -72,7 +72,7 @@ final class ProfileController extends Controller
         if ($request->expectsJson()) {
             $user->tokens()->delete();
 
-            return response()->json(['message' => 'Profile deleted!'], 200);
+            return response()->json(['code' => 'auth.profile_deleted', 'message' => __('auth.profile_deleted')], 200);
         }
 
         $request->session()->invalidate();

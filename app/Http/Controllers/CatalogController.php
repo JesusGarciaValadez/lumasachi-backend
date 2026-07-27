@@ -35,7 +35,7 @@ final class CatalogController extends Controller
         if ($itemTypeParam) {
             $type = OrderItemType::tryFrom($itemTypeParam);
             if (! $type) {
-                return response()->json(['message' => 'Invalid item_type'], 422);
+                return response()->json(['code' => 'catalog.invalid_item_type', 'message' => __('catalog.invalid_item_type')], 422);
             }
 
             $key = self::engineOptionsKey($locale, $type);

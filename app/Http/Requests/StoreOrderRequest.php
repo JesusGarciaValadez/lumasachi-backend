@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class StoreOrderRequest extends FormRequest
@@ -21,7 +22,7 @@ final class StoreOrderRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -49,16 +50,16 @@ final class StoreOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'customer_id.required' => 'The customer is required.',
-            'customer_id.exists' => 'The selected customer does not exist.',
-            'title.required' => 'The order title is required.',
-            'description.required' => 'The order description is required.',
-            'status.required' => 'The order status is required.',
-            'status.in' => 'The selected status is invalid.',
-            'priority.required' => 'The order priority is required.',
-            'priority.in' => 'The selected priority is invalid.',
-            'estimated_completion.after' => 'The estimated completion date must be in the future.',
-            'assigned_to.exists' => 'The selected employee does not exist.',
+            'customer_id.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.customer_id')]),
+            'customer_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.customer_id')]),
+            'title.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.title')]),
+            'description.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.description')]),
+            'status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.status')]),
+            'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
+            'priority.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.priority')]),
+            'priority.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.priority')]),
+            'estimated_completion.after' => __('validation.custom.after', ['attribute' => __('validation.attributes.estimated_completion'), 'date' => 'now']),
+            'assigned_to.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
         ];
     }
 }

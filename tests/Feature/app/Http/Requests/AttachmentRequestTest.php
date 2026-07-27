@@ -73,7 +73,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator->passes());
         $this->assertArrayHasKey('file', $validator->errors()->toArray());
-        $this->assertEquals('Por favor seleccione un archivo.', $validator->errors()->first('file'));
+        $this->assertEquals(__('validation.custom.required', ['attribute' => __('validation.attributes.file')]), $validator->errors()->first('file'));
     }
 
     /**
@@ -95,7 +95,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator->passes());
         $this->assertArrayHasKey('file', $validator->errors()->toArray());
-        $this->assertEquals('El archivo no debe exceder los 1MB.', $validator->errors()->first('file'));
+        $this->assertEquals(__('validation.custom.max', ['attribute' => __('validation.attributes.file'), 'max' => '1 MB']), $validator->errors()->first('file'));
     }
 
     /**
@@ -132,7 +132,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator->passes());
         $this->assertArrayHasKey('attachable_type', $validator->errors()->toArray());
-        $this->assertEquals('El tipo de entidad es requerido.', $validator->errors()->first('attachable_type'));
+        $this->assertEquals(__('validation.custom.required', ['attribute' => __('validation.attributes.attachable_type')]), $validator->errors()->first('attachable_type'));
 
         // Test invalid attachable_type
         $data2 = [
@@ -145,7 +145,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator2->passes());
         $this->assertArrayHasKey('attachable_type', $validator2->errors()->toArray());
-        $this->assertEquals('El tipo de entidad no es válido.', $validator2->errors()->first('attachable_type'));
+        $this->assertEquals(__('validation.custom.in', ['attribute' => __('validation.attributes.attachable_type')]), $validator2->errors()->first('attachable_type'));
     }
 
     /**
@@ -164,7 +164,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator->passes());
         $this->assertArrayHasKey('attachable_id', $validator->errors()->toArray());
-        $this->assertEquals('El ID de la entidad es requerido.', $validator->errors()->first('attachable_id'));
+        $this->assertEquals(__('validation.custom.required', ['attribute' => __('validation.attributes.attachable_id')]), $validator->errors()->first('attachable_id'));
 
         // Test invalid attachable_id (zero or negative)
         $data2 = [
@@ -177,7 +177,7 @@ final class AttachmentRequestTest extends TestCase
 
         $this->assertFalse($validator2->passes());
         $this->assertArrayHasKey('attachable_id', $validator2->errors()->toArray());
-        $this->assertEquals('El ID de la entidad debe ser mayor a 0.', $validator2->errors()->first('attachable_id'));
+        $this->assertEquals(__('validation.custom.min', ['attribute' => __('validation.attributes.attachable_id'), 'min' => 1]), $validator2->errors()->first('attachable_id'));
     }
 
     /**

@@ -181,7 +181,9 @@ export interface OrderBasePayload {
     title: string;
     description: string;
     status: OrderStatus;
+    status_label?: string | null;
     priority: OrderPriority;
+    priority_label?: string | null;
     estimated_completion?: string | null;
     actual_completion?: string | null;
     notes?: string | null;
@@ -215,7 +217,7 @@ export interface Order extends OrderBasePayload {
     financials?: FinancialTotals | null;
 }
 
-export type OrderSummary = Pick<OrderBasePayload, 'id' | 'uuid' | 'title' | 'status' | 'priority' | 'created_at'>;
+export type OrderSummary = Pick<OrderBasePayload, 'id' | 'uuid' | 'title' | 'status' | 'status_label' | 'priority' | 'priority_label' | 'created_at'>;
 
 export interface OrderCapabilities {
     create_order: boolean;

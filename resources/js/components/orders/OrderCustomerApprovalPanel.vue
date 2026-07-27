@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatMoney } from '@/lib/i18n';
 import type { CustomerApprovalPayload, OrderServicePayload } from '@/types/orders';
 import { computed, ref } from 'vue';
 
@@ -72,10 +72,6 @@ const authorizedNetTotal = computed(() => totalFor(selectedServices.value, 'net_
 
 function totalFor(services: OrderServicePayload[], field: 'base_price' | 'net_price'): string {
     return services.reduce((total, service) => total + Number(service[field] ?? 0), 0).toFixed(2);
-}
-
-function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function errorFor(key: string): string | undefined {

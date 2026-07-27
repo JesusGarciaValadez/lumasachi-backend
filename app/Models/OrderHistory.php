@@ -155,19 +155,22 @@ final class OrderHistory extends Model
      */
     public function getDescriptionAttribute(): string
     {
-        $field = str_replace('_', ' ', $this->field_changed);
+        $field = __('orders.history_messages.fields.' . $this->field_changed);
+        if ($field === 'orders.history_messages.fields.' . $this->field_changed) {
+            $field = __('orders.order');
+        }
         $oldValue = $this->getFormattedValue($this->field_changed, $this->old_value);
         $newValue = $this->getFormattedValue($this->field_changed, $this->new_value);
 
         if (is_null($this->old_value)) {
-            return ucfirst($field)." set to: {$newValue}";
+            return __('orders.history_messages.set', ['field' => $field, 'value' => $newValue]);
         }
 
         if (is_null($this->new_value)) {
-            return ucfirst($field)." removed (was: {$oldValue})";
+            return __('orders.history_messages.removed', ['field' => $field, 'value' => $oldValue]);
         }
 
-        return ucfirst($field)." changed from {$oldValue} to {$newValue}";
+        return __('orders.history_messages.changed', ['field' => $field, 'old' => $oldValue, 'new' => $newValue]);
     }
 
     /** @return BelongsTo<Order, $this> */
@@ -284,7 +287,7 @@ final class OrderHistory extends Model
     protected function getFormattedValue(string $field, mixed $value): string
     {
         if (is_null($value)) {
-            return 'empty';
+            return __('orders.history_messages.empty');
         }
 
         $castedValue = $this->castFieldValue($field, $value);
@@ -294,7 +297,11 @@ final class OrderHistory extends Model
         }
 
         if ($castedValue instanceof Carbon) {
-            return $castedValue->format('Y-m-d H:i');
+            return $castedValue->locale(app()->getLocale())->translatedFormat('M j, Y H:i');
+        }
+
+        if (is_bool($castedValue)) {
+            return $castedValue ? __('orders.history_messages.boolean_true') : __('orders.history_messages.boolean_false');
         }
 
         return (string) $castedValue;

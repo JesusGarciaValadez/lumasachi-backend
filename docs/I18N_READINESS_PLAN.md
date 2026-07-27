@@ -453,10 +453,12 @@ that decision explicitly rather than accidentally omitting them.
 
 #### Status
 
-- [ ] Formatting follows the active locale.
-- [ ] Validation/auth/API messages are translated.
-- [ ] History is presentation-localized without data migration.
-- [ ] Focused backend/frontend tests pass.
+- [x] Formatting follows the active locale.
+- [x] Validation/auth/API messages are translated.
+- [x] History is presentation-localized without data migration.
+- [x] Focused backend/frontend tests pass.
+
+Operational health-check messages remain stable operator-facing API text because they have no end-user consumer.
 
 ### Phase 5 — Localize mail and notifications per recipient
 

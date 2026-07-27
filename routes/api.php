@@ -70,12 +70,13 @@ Route::group(['prefix' => 'v1'], function () {
         if (! $user || ! Hash::check($request->password, $user->password)) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'The provided credentials are incorrect.',
+                    'code' => 'auth.invalid_credentials',
+                    'message' => __('auth.failed'),
                 ], 401);
             }
 
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => [__('auth.failed')],
             ]);
         }
 

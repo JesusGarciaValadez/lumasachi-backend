@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,7 +28,7 @@ final class PasswordResetLinkController extends Controller
     /**
      * Handle an incoming password reset link request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
@@ -40,9 +41,9 @@ final class PasswordResetLinkController extends Controller
         );
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => __('A reset link will be sent if the account exists.')], 200);
+            return response()->json(['code' => 'auth.reset_link_sent', 'message' => __('auth.reset_link_sent')], 200);
         }
 
-        return back()->with('status', __('A reset link will be sent if the account exists.'));
+        return back()->with('status', __('auth.reset_link_sent'));
     }
 }

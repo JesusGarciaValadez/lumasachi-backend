@@ -31,7 +31,8 @@ final class PublicOrderController extends Controller
 
         if (! $order) {
             return response()->json([
-                'message' => 'Order not found.',
+                'code' => 'orders.track_not_found',
+                'message' => __('orders.track_not_found'),
             ], 404);
         }
 

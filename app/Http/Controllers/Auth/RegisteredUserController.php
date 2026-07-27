@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,7 +31,7 @@ final class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
@@ -54,7 +55,7 @@ final class RegisteredUserController extends Controller
         event(new Registered($user));
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'User created successfully'], 201);
+            return response()->json(['code' => 'auth.user_created', 'message' => __('auth.user_created')], 201);
         }
 
         Auth::login($user);

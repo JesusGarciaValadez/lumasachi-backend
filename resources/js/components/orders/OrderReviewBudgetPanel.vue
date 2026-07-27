@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getIntlLocale } from '@/lib/i18n';
+import { formatMoney } from '@/lib/i18n';
 import type { CatalogPayload, CatalogServiceOption, OrderItem, SubmitBudgetPayload } from '@/types/orders';
 import { computed, ref, watch } from 'vue';
 
@@ -95,10 +95,6 @@ watch(() => [props.catalog, props.items], buildRows, { deep: true, immediate: tr
 
 function itemTypeLabel(itemType: string): string {
     return props.catalog?.item_types.find((item) => item.key === itemType)?.label ?? props.labels.service;
-}
-
-function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function selectedIndex(row: ReviewRow): number {

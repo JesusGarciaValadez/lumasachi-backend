@@ -63,10 +63,10 @@ final class MarkWorkCompletedRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'completed_service_ids.required' => 'At least one service must be marked as completed.',
-            'completed_service_ids.min' => 'At least one service must be marked as completed.',
-            'completed_service_ids.*.integer' => 'Each selected service must be valid.',
-            'completed_service_ids.*.exists' => 'One or more selected services do not exist.',
+            'completed_service_ids.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.completed_service_ids')]),
+            'completed_service_ids.min' => __('validation.custom.min', ['attribute' => __('validation.attributes.completed_service_ids'), 'min' => 1]),
+            'completed_service_ids.*.integer' => __('validation.custom.integer', ['attribute' => __('validation.attributes.completed_service_ids')]),
+            'completed_service_ids.*.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.completed_service_ids')]),
         ];
     }
 }

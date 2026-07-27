@@ -62,7 +62,7 @@ final class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         if ($status === Password::PASSWORD_RESET && $request->expectsJson()) {
-            return response()->json(['message' => __($status)], 200);
+            return response()->json(['code' => 'auth.password_reset', 'message' => __($status)], 200);
         }
 
         if ($status === Password::PASSWORD_RESET) {

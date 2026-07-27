@@ -10,10 +10,12 @@ use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Services\LocaleResolver;
 use App\Traits\CachesOrderHistories;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -39,10 +41,13 @@ final class OrderHistoryController extends Controller
             'per_page' => min(100, max(1, (int) $request->input('per_page', 15))),
         ];
 
-        $key = self::indexKeyFor($filters);
+        $locale = app(LocaleResolver::class)->resolve($request);
+        $key = self::indexKeyFor($filters, $locale);
         $hit = Cache::has($key);
 
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($filters) {
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($filters, $locale) {
+            App::setLocale($locale);
+
             $query = OrderHistory::with(['createdBy', 'order.attachments']);
 
             if ($filters['order_id']) {
@@ -96,16 +101,18 @@ final class OrderHistoryController extends Controller
     /**
      * Display the specified order history.
      */
-    public function show(OrderHistory $orderHistory): JsonResponse
+    public function show(Request $request, OrderHistory $orderHistory): JsonResponse
     {
         Gate::authorize('view', $orderHistory);
 
-        $key = self::showKeyFor($orderHistory->uuid);
+        $locale = app(LocaleResolver::class)->resolve($request);
+        $key = self::showKeyFor($orderHistory->uuid, $locale);
         $hit = Cache::has($key);
 
         $payload = Cache::get($key);
         $hit = $payload !== null;
         if (! $hit) {
+            App::setLocale($locale);
             $orderHistory->load(['createdBy', 'order.attachments']);
             $payload = ['data' => (new OrderHistoryResource($orderHistory))->resolve()];
             DB::afterCommit(function () use ($key, $payload) {
@@ -139,7 +146,8 @@ final class OrderHistoryController extends Controller
         // Verify that the order history belongs to the specified order
         if ($orderHistory->order_id !== $order->id) {
             return response()->json([
-                'message' => 'Order history does not belong to the specified order.',
+                'code' => 'orders.history_not_belonging',
+                'message' => __('orders.history_not_belonging'),
             ], Response::HTTP_NOT_FOUND);
         }
 
@@ -162,7 +170,8 @@ final class OrderHistoryController extends Controller
         // Verify that the order history belongs to the specified order
         if ($orderHistory->order_id !== $order->id) {
             return response()->json([
-                'message' => 'Order history does not belong to the specified order.',
+                'code' => 'orders.history_not_belonging',
+                'message' => __('orders.history_not_belonging'),
             ], Response::HTTP_NOT_FOUND);
         }
 

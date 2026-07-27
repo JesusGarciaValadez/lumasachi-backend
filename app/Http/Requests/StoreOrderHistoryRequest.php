@@ -44,11 +44,11 @@ final class StoreOrderHistoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'order_id.required' => 'The order ID is required.',
-            'order_id.exists' => 'The specified order does not exist.',
-            'field_changed.required' => 'The field changed is required.',
-            'field_changed.in' => 'The field changed must be one of: status, priority, title, assigned_to, estimated_completion, notes.',
-            'comment.max' => 'The comment cannot exceed 1000 characters.',
+            'order_id.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.order_id')]),
+            'order_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.order_id')]),
+            'field_changed.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.field_changed')]),
+            'field_changed.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.field_changed')]),
+            'comment.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.comment'), 'max' => 1000]),
         ];
     }
 
