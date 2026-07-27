@@ -486,9 +486,9 @@ Operational health-check messages remain stable operator-facing API text because
 
 #### Status
 
-- [ ] User locale preference drives mail/notification locale.
-- [ ] Order-created and lifecycle/audit content is fully translated.
-- [ ] Recipient-specific dual-locale tests pass.
+- [x] User locale preference drives mail/notification locale.
+- [x] Order-created and lifecycle/audit content is fully translated.
+- [x] Recipient-specific dual-locale tests pass.
 
 ### Phase 6 — Add durable i18n regression guards
 

@@ -7,10 +7,11 @@ namespace App\Notifications;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-final class OrderReviewedNotification extends Notification implements ShouldQueue
+final class OrderReviewedNotification extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
     use Queueable;
 
@@ -33,7 +34,7 @@ final class OrderReviewedNotification extends Notification implements ShouldQueu
             ->greeting(__('notifications.greeting'))
             ->line(__('notifications.order_reviewed.line'))
             ->line(__('notifications.order_label', ['uuid' => $this->order->uuid]))
-            ->line(__('notifications.status_label', ['status' => $this->order->status->value]))
+            ->line(__('notifications.status_label', ['status' => $this->order->status->getLabel()]))
             ->line(__('notifications.order_reviewed.action'))
             ->action(__('notifications.view_order'), route('web.orders.show', $this->order))
             ->salutation(__('notifications.salutation'));

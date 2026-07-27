@@ -1,22 +1,23 @@
 <x-mail::message>
-    # New Order Created
+    # {{ __('mail.order_created.heading') }}
 
 <x-mail::subcopy>
-    A new order has been created.
+    {{ __('mail.order_created.subcopy') }}
 </x-mail::subcopy>
 
-    Order Details:
+    {{ __('mail.order_created.details') }}
 <x-mail::panel>
-- Order ID: __{{ $order->uuid }}__
-- Title: __{{ $order->title }}__
-- Customer: __{{ $order->customer->full_name }}__
-- Assigned to: __{{ $order->assignedTo->full_name ?? 'Unassigned' }}__
-- Status: __{{ $order->status->value }}__
-- Priority: __{{ $order->priority->value }}__
+    - {{ __('mail.order_created.order_id', ['uuid' => $order->uuid]) }}
+    - {{ __('mail.order_created.title', ['title' => $order->title]) }}
+    - {{ __('mail.order_created.customer', ['name' => $order->customer->full_name]) }}
+    - {{ __('mail.order_created.assigned_to', ['name' => $order->assignedTo?->full_name ?? __('mail.order_created.unassigned')]) }}
+    - {{ __('mail.order_created.status', ['status' => $order->status->getLabel()]) }}
+    - {{ __('mail.order_created.priority', ['priority' => $order->priority->getLabel()]) }}
 </x-mail::panel>
 
-<x-mail::button url="{{ route('web.orders.show', [$order->uuid]) }}" color="red">View Order</x-mail::button>
+    <x-mail::button url="{{ route('web.orders.show', [$order->uuid]) }}"
+                    color="red">{{ __('mail.order_created.action') }}</x-mail::button>
 
-    Thank you,
+    {{ __('mail.order_created.thanks') }}
     {{ config('app.name') }}
 </x-mail::message>

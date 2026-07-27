@@ -52,6 +52,19 @@ return [
             'service_completed' => 'Auditoría: Servicio completado',
             'default' => 'Auditoría: Evento de orden',
         ],
+        'events' => [
+            'created' => 'Orden creada',
+            'reviewed' => 'Orden revisada',
+            'ready_for_work' => 'Orden lista para trabajo',
+            'customer_approved' => 'Cliente aprobó servicios',
+            'work_completed' => 'Trabajo completado en orden',
+            'ready_for_delivery' => 'Orden lista para entrega',
+            'delivered' => 'Orden entregada',
+            'received' => 'Orden recibida',
+            'paid' => 'Orden pagada',
+            'service_completed' => 'Servicio completado',
+            'default' => 'Evento de orden',
+        ],
         'line' => 'Ocurrió un evento auditable para una orden:',
         'event' => 'Evento: :event',
         'order' => 'Orden: :uuid',
@@ -60,4 +73,5 @@ return [
 
     'order_label' => 'Orden: :uuid',
     'status_label' => 'Estatus: :status',
+    'priority_label' => 'Prioridad: :priority',
 ];
