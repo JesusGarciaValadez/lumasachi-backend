@@ -58,7 +58,9 @@ final class ServiceCatalog extends Model
         $key = $this->service_name_key;
         $translated = __($key);
 
-        return is_string($translated) && $translated !== $key ? $translated : ($this->attributes['service_key'] ?? $this->service_key);
+        return is_string($translated) && $translated !== $key
+            ? $translated
+            : __('service_catalog.fallback');
     }
 
     public function getNetPriceAttribute(): float

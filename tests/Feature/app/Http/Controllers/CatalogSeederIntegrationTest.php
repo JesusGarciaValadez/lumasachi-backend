@@ -6,6 +6,8 @@ namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\OrderItemType;
 use App\Enums\UserRole;
+use App\Features\MotorItems;
+use App\Models\ServiceCatalog;
 use App\Models\User;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +27,7 @@ final class CatalogSeederIntegrationTest extends TestCase
     public function test_seeded_services_are_returned_with_i18n_en(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
-        Feature::define(\App\Features\MotorItems::class, true);
+        Feature::define(MotorItems::class, true);
 
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($employee);
@@ -45,7 +47,7 @@ final class CatalogSeederIntegrationTest extends TestCase
     public function test_seeded_services_are_returned_with_i18n_es_and_sorted(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
-        Feature::define(\App\Features\MotorItems::class, true);
+        Feature::define(MotorItems::class, true);
 
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
         $this->actingAs($employee);
@@ -58,5 +60,18 @@ final class CatalogSeederIntegrationTest extends TestCase
         $this->assertSame('Lavado de block', $services[0]['service_name']); // display_order = 1
         $this->assertSame('Rectificado por cilindro (P.U.)', $services[1]['service_name']); // display_order = 2
         $this->assertTrue($services[1]['requires_measurement']);
+    }
+
+    public function test_every_active_seeded_service_has_both_locale_translations(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        foreach (['en', 'es'] as $locale) {
+            app()->setLocale($locale);
+
+            foreach (ServiceCatalog::active()->get() as $service) {
+                $this->assertNotSame($service->service_name_key, $service->service_name);
+            }
+        }
     }
 }

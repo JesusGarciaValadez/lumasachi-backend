@@ -10,6 +10,7 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\ServiceCatalog;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -433,5 +434,63 @@ final class OrderControllerTest extends TestCase
 
         $second = $this->getJson('/api/v1/orders/'.$order->uuid);
         $second->assertOk()->assertHeader('X-Cache', 'HIT');
+    }
+
+    #[Test]
+    public function it_returns_stable_motor_values_and_localized_resource_labels(): void
+    {
+        $this->actingAs($this->employee);
+
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $this->customer->id,
+            'assigned_to' => $this->employee->id,
+            'created_by' => $this->admin->id,
+            'status' => OrderStatus::Open->value,
+            'priority' => OrderPriority::HIGH->value,
+        ]);
+        $item = $order->items()->createQuietly([
+            'item_type' => OrderItemType::EngineBlock->value,
+            'is_received' => true,
+        ]);
+        $item->components()->createQuietly([
+            'component_name' => 'camshaft',
+            'is_received' => true,
+        ]);
+        $catalogItem = ServiceCatalog::factory()->createQuietly([
+            'service_key' => 'wash_block',
+            'service_name_key' => 'service_catalog.wash_block',
+            'item_type' => OrderItemType::EngineBlock,
+        ]);
+        $item->services()->createQuietly([
+            'service_key' => $catalogItem->service_key,
+            'base_price' => '100.00',
+            'net_price' => '116.00',
+        ]);
+
+        $response = $this->withHeaders(['Accept-Language' => 'es'])
+            ->getJson('/api/v1/orders/' . $order->uuid);
+
+        $response->assertOk()
+            ->assertJsonPath('status', $order->status->value)
+            ->assertJsonPath('status_label', 'Abierta')
+            ->assertJsonPath('priority', OrderPriority::HIGH->value)
+            ->assertJsonPath('priority_label', 'Alta')
+            ->assertJsonPath('items.0.item_type', OrderItemType::EngineBlock->value)
+            ->assertJsonPath('items.0.item_type_label', 'Block')
+            ->assertJsonPath('items.0.components.0.component_key', 'camshaft')
+            ->assertJsonPath('items.0.components.0.component_label', 'Árbol de levas')
+            ->assertJsonPath('services.0.service_key', 'wash_block')
+            ->assertJsonPath('services.0.service_name', 'Lavado de block');
+
+        $english = $this->withHeaders(['Accept-Language' => 'en'])
+            ->getJson('/api/v1/orders/' . $order->uuid);
+
+        $english->assertOk()
+            ->assertHeader('X-Cache', 'MISS')
+            ->assertJsonPath('status_label', 'Open')
+            ->assertJsonPath('priority_label', 'High')
+            ->assertJsonPath('items.0.item_type_label', 'Engine Block')
+            ->assertJsonPath('items.0.components.0.component_label', 'Camshaft')
+            ->assertJsonPath('services.0.service_name', 'Engine block wash');
     }
 }

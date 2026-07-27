@@ -21,11 +21,11 @@ enum OrderPriority: string
 
     public function getLabel(): string
     {
-        return match ($this) {
-            self::LOW => 'Low',
-            self::NORMAL => 'Normal',
-            self::HIGH => 'High',
-            self::URGENT => 'Urgent'
-        };
+        $key = 'orders.priority_labels.' . $this->value;
+        $translated = __($key);
+
+        return is_string($translated) && $translated !== $key
+            ? $translated
+            : __('motor.fallback');
     }
 }

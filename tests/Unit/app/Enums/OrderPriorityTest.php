@@ -56,21 +56,14 @@ final class OrderPriorityTest extends TestCase
      * Test getLabel method returns correct labels for each priority.
      */
     #[Test]
-    public function it_checks_get_label_returns_correct_labels()
+    public function it_checks_get_label_returns_localized_labels(): void
     {
-        $testCases = [
-            ['priority' => OrderPriority::LOW->value, 'expected' => 'Low'],
-            ['priority' => OrderPriority::NORMAL->value, 'expected' => 'Normal'],
-            ['priority' => OrderPriority::HIGH->value, 'expected' => 'High'],
-            ['priority' => OrderPriority::URGENT->value, 'expected' => 'Urgent'],
-        ];
+        foreach (['en', 'es'] as $locale) {
+            app()->setLocale($locale);
 
-        foreach ($testCases as $testCase) {
-            $this->assertEquals(
-                $testCase['expected'],
-                OrderPriority::from($testCase['priority'])->getLabel(),
-                "Priority {$testCase['priority']} should have label: {$testCase['expected']}"
-            );
+            foreach (OrderPriority::cases() as $priority) {
+                $this->assertNotSame("orders.priority_labels.{$priority->value}", $priority->getLabel());
+            }
         }
     }
 

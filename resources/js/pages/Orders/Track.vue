@@ -235,13 +235,13 @@ async function lookup(): Promise<void> {
                             <h2 class="font-semibold">{{ t('orders.received_items') }}</h2>
                             <div v-if="order.items.length" class="flex flex-col gap-3">
                                 <div v-for="(item, index) in order.items" :key="index" class="rounded-md border p-3 text-sm">
-                                    <div class="font-medium">{{ item.item_type }}</div>
+                                    <div class="font-medium">{{ item.item_type_label ?? t('orders.item_type') }}</div>
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         <span
                                             v-for="(component, componentIndex) in item.components"
                                             :key="componentIndex"
                                             class="rounded-full bg-muted px-2 py-1 text-xs"
-                                            >{{ component.component_name }}</span
+                                            >{{ component.component_label ?? t('orders.components') }}</span
                                         ><span v-if="!item.components.length" class="text-muted-foreground">{{ t('orders.no_components') }}</span>
                                     </div>
                                 </div>

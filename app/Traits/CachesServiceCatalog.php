@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use App\Enums\Locale;
 use App\Enums\OrderItemType;
 use Illuminate\Support\Facades\Cache;
 
@@ -36,6 +37,8 @@ trait CachesServiceCatalog
     public static function engineOptionsKey(string $locale, ?OrderItemType $itemType): string
     {
         $version = self::currentVersion();
+        $normalized = Locale::normalize($locale);
+        $locale = $normalized === null ? Locale::SPANISH->value : $normalized->value;
         $type = $itemType === null ? 'all' : $itemType->value;
 
         return "service_catalog:engine_options:v{$version}:locale:{$locale}:type:{$type}";

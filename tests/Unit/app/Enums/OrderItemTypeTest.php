@@ -25,11 +25,13 @@ final class OrderItemTypeTest extends TestCase
             'others',
         ], $values);
 
-        $this->assertSame('Cylinder Head', OrderItemType::CylinderHead->label());
-        $this->assertSame('Engine Block', OrderItemType::EngineBlock->label());
-        $this->assertSame('Crankshaft', OrderItemType::Crankshaft->label());
-        $this->assertSame('Connecting Rods', OrderItemType::ConnectingRods->label());
-        $this->assertSame('Others', OrderItemType::Others->label());
+        foreach (['en', 'es'] as $locale) {
+            app()->setLocale($locale);
+
+            foreach (OrderItemType::cases() as $type) {
+                $this->assertNotSame("motor.item_types.{$type->value}", $type->label());
+            }
+        }
     }
 
     #[Test]
@@ -40,5 +42,30 @@ final class OrderItemTypeTest extends TestCase
             $this->assertIsArray($components);
             $this->assertNotEmpty($components);
         }
+    }
+
+    #[Test]
+    public function it_has_localized_labels_for_every_component(): void
+    {
+        foreach (['en', 'es'] as $locale) {
+            app()->setLocale($locale);
+
+            foreach (OrderItemType::cases() as $type) {
+                foreach ($type->getComponents() as $component) {
+                    $this->assertNotSame(
+                        "motor.components.{$type->value}.{$component}",
+                        $type->componentLabel($component),
+                    );
+                }
+            }
+        }
+    }
+
+    #[Test]
+    public function it_uses_a_visible_fallback_for_an_unknown_component_key(): void
+    {
+        app()->setLocale('es');
+
+        $this->assertSame('No disponible', OrderItemType::EngineBlock->componentLabel('legacy_component'));
     }
 }

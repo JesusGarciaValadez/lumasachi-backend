@@ -60,7 +60,7 @@ final class PublicOrderTrackingTest extends TestCase
     #[Test]
     public function it_returns_order_when_uuid_and_date_match(): void
     {
-        $response = $this->postJson('/api/v1/orders/track', [
+        $response = $this->withHeaders(['Accept-Language' => 'es'])->postJson('/api/v1/orders/track', [
             'uuid' => $this->order->uuid,
             'created_date' => $this->order->created_at->toDateString(),
         ]);
@@ -84,7 +84,7 @@ final class PublicOrderTrackingTest extends TestCase
             'is_received' => true,
         ]);
         $item->components()->createQuietly([
-            'component_name' => 'Cylinder head',
+            'component_name' => 'camshaft',
             'is_received' => true,
         ]);
 
@@ -102,7 +102,7 @@ final class PublicOrderTrackingTest extends TestCase
             'net_price' => '116.00',
         ]);
 
-        $response = $this->postJson('/api/v1/orders/track', [
+        $response = $this->withHeaders(['Accept-Language' => 'es'])->postJson('/api/v1/orders/track', [
             'uuid' => $this->order->uuid,
             'created_date' => $this->order->created_at->toDateString(),
         ]);
@@ -114,12 +114,14 @@ final class PublicOrderTrackingTest extends TestCase
                     'items' => [
                         '*' => [
                             'item_type',
+                            'item_type_label',
                             'is_received',
-                            'components' => ['*' => ['component_name', 'is_received']],
+                            'components' => ['*' => ['component_name', 'component_key', 'component_label', 'is_received']],
                         ],
                     ],
                     'services' => [
                         '*' => [
+                            'service_key',
                             'service_name',
                             'measurement',
                             'is_budgeted',
@@ -132,7 +134,10 @@ final class PublicOrderTrackingTest extends TestCase
                     'financials' => ['budgeted', 'authorized', 'completed', 'advance_payment', 'remaining_balance'],
                 ],
             ])
-            ->assertJsonPath('order.items.0.components.0.component_name', 'Cylinder head')
+            ->assertJsonPath('order.items.0.components.0.component_name', 'camshaft')
+            ->assertJsonPath('order.items.0.components.0.component_key', 'camshaft')
+            ->assertJsonPath('order.items.0.components.0.component_label', 'Árbol de levas')
+            ->assertJsonPath('order.items.0.item_type_label', 'Block')
             ->assertJsonPath('order.services.0.service_name', __('service_catalog.wash_block'))
             ->assertJsonPath('order.financials.completed', '116.00')
             ->assertJsonMissingPath('order.items.0.id')
@@ -141,7 +146,6 @@ final class PublicOrderTrackingTest extends TestCase
             ->assertJsonMissingPath('order.services.0.id')
             ->assertJsonMissingPath('order.services.0.uuid')
             ->assertJsonMissingPath('order.services.0.order_item_id')
-            ->assertJsonMissingPath('order.services.0.service_key')
             ->assertJsonMissingPath('order.services.0.notes');
     }
 

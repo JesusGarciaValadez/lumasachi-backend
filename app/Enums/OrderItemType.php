@@ -22,13 +22,22 @@ enum OrderItemType: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::CylinderHead => 'Cylinder Head',
-            self::EngineBlock => 'Engine Block',
-            self::Crankshaft => 'Crankshaft',
-            self::ConnectingRods => 'Connecting Rods',
-            self::Others => 'Others',
-        };
+        $key = "motor.item_types.{$this->value}";
+        $translated = __($key);
+
+        return is_string($translated) && $translated !== $key
+            ? $translated
+            : __('motor.fallback');
+    }
+
+    public function componentLabel(string $component): string
+    {
+        $key = "motor.components.{$this->value}.{$component}";
+        $translated = __($key);
+
+        return is_string($translated) && $translated !== $key
+            ? $translated
+            : __('motor.fallback');
     }
 
     /**
