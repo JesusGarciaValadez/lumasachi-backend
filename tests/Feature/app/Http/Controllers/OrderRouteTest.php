@@ -136,6 +136,31 @@ final class OrderRouteTest extends TestCase
     }
 
     #[Test]
+    public function authorized_staff_receives_work_capabilities_for_an_order_ready_for_work(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
+            'created_by' => $employee->id,
+            'assigned_to' => $employee->id,
+            'status' => OrderStatus::ReadyForWork->value,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('web.orders.show', [$order->uuid]))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->component('Orders/Show')
+                ->has('capabilities', fn(InertiaAssert $capabilities) => $capabilities
+                    ->where('complete_services', true)
+                    ->where('mark_ready_for_delivery', true)
+                    ->etc()
+                )
+            );
+    }
+
+    #[Test]
     public function authorized_staff_can_open_order_creation_and_customers_cannot(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);

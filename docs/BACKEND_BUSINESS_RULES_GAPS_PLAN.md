@@ -730,6 +730,25 @@ Frontend unit tests, if approved:
 3. A mixed invalid selection cannot be submitted.
 4. Successful mutations refresh badges, totals, and available actions.
 
+#### 7.6 completion marks
+
+- [x] The work-execution panel is rendered only from the server-provided staff capabilities while the order is in
+  `Ready for Work` or `In Progress`.
+- [x] Budgeted services are shown by item with budgeted, authorized, and completed badges; unauthorized services stay
+  visible and disabled.
+- [x] Only authorized incomplete services are selectable, and the completed preview total is calculated from completed
+  services only.
+- [x] Completion submissions accept only same-order authorized incomplete integer IDs, reject foreign, unauthorized,
+  duplicate, non-integer, already-completed, mixed, and wrong-status attempts atomically, and recalculate completed and
+  remaining totals.
+- [x] Successful completion applies the server response before refresh, clears the selection, and refreshes badges,
+  totals, and available actions.
+- [x] The ready-for-delivery action uses the existing accepted statuses, summarizes completed and uncompleted authorized
+  services before confirmation, and applies the successful server response before refresh.
+- [x] Existing ready-for-delivery notification tests remain green.
+- [x] PHPUnit, Vue unit tests, TypeScript, production build, ESLint, Prettier, Pint, PHPStan, and diff checks pass.
+- [x] No additional Step 7.6 business-rule edge case remains unresolved.
+
 ### 7.7 — Delivery and payment panel
 
 #### 7.7.1 — Financial summary
