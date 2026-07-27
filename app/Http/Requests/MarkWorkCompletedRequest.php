@@ -29,6 +29,7 @@ final class MarkWorkCompletedRequest extends FormRequest
             'completed_service_ids' => 'required|array|min:1',
             'completed_service_ids.*' => [
                 'distinct',
+                'integer',
                 Rule::exists('order_services', 'id')->where(function (Builder $query): void {
                     $order = $this->route('order');
 
@@ -36,7 +37,8 @@ final class MarkWorkCompletedRequest extends FormRequest
                         $query->whereIn(
                             'order_item_id',
                             OrderItem::query()->select('id')->where('order_id', $order->getKey())
-                        )->where('is_authorized', true);
+                        )->where('is_authorized', true)
+                            ->where('is_completed', false);
                     }
                 }),
             ],
@@ -63,6 +65,7 @@ final class MarkWorkCompletedRequest extends FormRequest
         return [
             'completed_service_ids.required' => 'At least one service must be marked as completed.',
             'completed_service_ids.min' => 'At least one service must be marked as completed.',
+            'completed_service_ids.*.integer' => 'Each selected service must be valid.',
             'completed_service_ids.*.exists' => 'One or more selected services do not exist.',
         ];
     }

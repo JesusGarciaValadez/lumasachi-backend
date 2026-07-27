@@ -279,6 +279,7 @@ final class OrderLifecycleService
         $matchingServices = $order->services()
             ->whereIn('order_services.id', $uniqueServiceIds)
             ->where('order_services.is_authorized', true)
+            ->where('order_services.is_completed', false)
             ->count();
 
         if ($matchingServices !== count($uniqueServiceIds)) {

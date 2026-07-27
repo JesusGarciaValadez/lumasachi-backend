@@ -314,10 +314,30 @@ final class OrderLifecycleControllerTest extends TestCase
             'completed_service_ids' => [$svc->id],
         ]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonPath('order.financials.completed', '580.00')
+            ->assertJsonPath('order.financials.remaining_balance', '580.00');
 
         $svc->refresh();
         $this->assertTrue($svc->is_completed);
+    }
+
+    #[Test]
+    public function it_rejects_work_completion_for_wrong_status(): void
+    {
+        $this->actingAs($this->employee);
+
+        $order = $this->createOrderInStatus(OrderStatus::Open);
+        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+        $svc = OrderService::factory()->budgeted()->authorized()->create(['order_item_id' => $item->id]);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+            'completed_service_ids' => [$svc->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+
+        $this->assertFalse($svc->fresh()->is_completed);
+        $this->assertSame(OrderStatus::Open, $order->fresh()->status);
     }
 
     // ---------------------------------------------------------------
@@ -337,6 +357,20 @@ final class OrderLifecycleControllerTest extends TestCase
 
         $order->refresh();
         $this->assertEquals(OrderStatus::ReadyForDelivery, $order->status);
+    }
+
+    #[Test]
+    public function it_rejects_ready_for_delivery_for_wrong_status(): void
+    {
+        $this->actingAs($this->employee);
+
+        $order = $this->createOrderInStatus(OrderStatus::Open);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+
+        $this->assertSame(OrderStatus::Open, $order->fresh()->status);
     }
 
     // ---------------------------------------------------------------

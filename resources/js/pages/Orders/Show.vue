@@ -85,8 +85,8 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 const isStaff = computed(() => capabilities.create_order);
 const canReview = computed(() => capabilities.submit_budget && order.value.status === 'Awaiting Review');
 const canApprove = computed(() => capabilities.approve_services && order.value.status === 'Awaiting Customer Approval');
-const canComplete = computed(() => isStaff.value && ['Ready for Work', 'In Progress'].includes(order.value.status));
-const canMarkReady = computed(() => isStaff.value && ['Ready for Work', 'In Progress'].includes(order.value.status));
+const canComplete = computed(() => capabilities.complete_services && ['Ready for Work', 'In Progress'].includes(order.value.status));
+const canMarkReady = computed(() => capabilities.mark_ready_for_delivery && ['Ready for Work', 'In Progress'].includes(order.value.status));
 const remainingBalance = computed(() => Number(order.value.financials?.remaining_balance ?? 0));
 const canDeliver = computed(() => isStaff.value && order.value.status === 'Ready for Delivery' && remainingBalance.value <= 0);
 
@@ -114,6 +114,9 @@ const serviceLabels = computed(() => ({
     budgeted: t('orders.budgeted'),
     authorized: t('orders.authorized'),
     completed: t('orders.completed'),
+    yes: t('orders.yes'),
+    no: t('orders.no'),
+    completed_total: t('orders.completed_total'),
     empty: t('orders.no_services'),
 }));
 
@@ -176,7 +179,8 @@ const financials = computed<FinancialTotals>(
         },
 );
 
-const completedServices = computed(() => order.value.services.filter((service) => service.is_completed));
+const authorizedServices = computed(() => order.value.services.filter((service) => service.is_authorized));
+const completedAuthorizedServices = computed(() => authorizedServices.value.filter((service) => service.is_completed));
 const uncompletedAuthorizedServices = computed(() => order.value.services.filter((service) => service.is_authorized && !service.is_completed));
 
 function statusLabel(status: string): string {
@@ -361,9 +365,10 @@ async function completeServices(): Promise<void> {
     lastError.value = null;
 
     try {
-        await orderApi.completeServices(orderUuid.value, { completed_service_ids: completionSelection.value });
-        await refreshOrder();
+        const completedOrder = await orderApi.completeServices(orderUuid.value, { completed_service_ids: completionSelection.value });
+        currentOrder.value = completedOrder;
         completionSelection.value = [];
+        await refreshOrder();
     } catch (error: unknown) {
         handleError(error);
     } finally {
@@ -376,7 +381,8 @@ async function markReadyForDelivery(): Promise<void> {
     lastError.value = null;
 
     try {
-        await orderApi.markReadyForDelivery(orderUuid.value);
+        const readyOrder = await orderApi.markReadyForDelivery(orderUuid.value);
+        currentOrder.value = readyOrder;
         await refreshOrder();
     } catch (error: unknown) {
         handleError(error);
@@ -567,6 +573,7 @@ onMounted(async () => {
 
             <OrderServiceMatrix
                 v-if="canComplete"
+                :busy="busyAction !== null"
                 :item-labels="itemLabels"
                 :labels="serviceLabels"
                 :selected-ids="completionSelection"
@@ -589,7 +596,7 @@ onMounted(async () => {
                     <div>
                         <h2 class="text-base font-semibold">{{ t('orders.ready_for_delivery') }}</h2>
                         <p class="text-sm text-muted-foreground">
-                            {{ completedServices.length }} / {{ order.services.length }} {{ t('orders.services_completed') }}
+                            {{ completedAuthorizedServices.length }} / {{ authorizedServices.length }} {{ t('orders.services_completed') }}
                         </p>
                         <p v-if="uncompletedAuthorizedServices.length" class="mt-1 text-xs text-muted-foreground">
                             {{ t('orders.uncompleted_services') }}:
@@ -700,7 +707,13 @@ onMounted(async () => {
                     {{ pendingApproval.downPayment || '—' }}
                 </span>
                 <span v-else-if="dialogAction === 'completion'">{{ completionSelection.length }} {{ t('orders.services_selected') }}</span>
-                <span v-else-if="dialogAction === 'ready'">{{ t('orders.confirm_ready') }}</span>
+                <span v-else-if="dialogAction === 'ready'">
+                    {{ completedAuthorizedServices.length }} / {{ authorizedServices.length }} {{ t('orders.services_completed') }}
+                    <span v-if="uncompletedAuthorizedServices.length">
+                        · {{ t('orders.uncompleted_services') }}:
+                        {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? service.service_key).join(', ') }}
+                    </span>
+                </span>
                 <span v-else>{{ t('orders.confirm_delivery') }}</span>
             </div>
             <DialogFooter>

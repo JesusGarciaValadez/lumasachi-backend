@@ -9,6 +9,9 @@ const labels = {
     budgeted: 'Budgeted',
     authorized: 'Authorized',
     completed: 'Completed',
+    yes: 'Yes',
+    no: 'No',
+    completed_total: 'Completed total',
     empty: 'No services',
 };
 
@@ -48,6 +51,7 @@ describe('OrderServiceMatrix', () => {
                 services,
                 itemLabels: { 10: 'Engine block' },
                 selectedIds: [],
+                busy: false,
                 mode: 'approval',
                 title: 'Services',
                 labels,
@@ -71,6 +75,7 @@ describe('OrderServiceMatrix', () => {
                 services,
                 itemLabels: { 10: 'Engine block' },
                 selectedIds: [],
+                busy: false,
                 mode: 'readonly',
                 title: 'Services',
                 labels,
@@ -78,5 +83,54 @@ describe('OrderServiceMatrix', () => {
         });
 
         expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(0);
+    });
+
+    it('shows budgeted services and disables unauthorized or completed completion rows', async () => {
+        const completionServices = [
+            { ...services[0], is_authorized: true, is_completed: false },
+            { ...services[0], id: 2, service_name: 'Unauthorized wash block', is_authorized: false, is_completed: false },
+            { ...services[0], id: 3, service_name: 'Completed wash block', is_authorized: true, is_completed: true },
+        ];
+        const wrapper = mount(OrderServiceMatrix, {
+            props: {
+                services: completionServices,
+                itemLabels: { 10: 'Engine block' },
+                selectedIds: [],
+                busy: false,
+                mode: 'completion',
+                title: 'Work completion',
+                labels,
+            },
+        });
+
+        const checkboxes = wrapper.findAll('input[type="checkbox"]');
+
+        expect(wrapper.findAll('tbody tr')).toHaveLength(3);
+        expect(checkboxes).toHaveLength(3);
+        expect((checkboxes[0].element as HTMLInputElement).disabled).toBe(false);
+        expect((checkboxes[1].element as HTMLInputElement).disabled).toBe(true);
+        expect((checkboxes[2].element as HTMLInputElement).disabled).toBe(true);
+        expect(wrapper.find('[data-completed-total]').text()).toBe('116.00');
+        expect(wrapper.findAll('.bg-emerald-100').length).toBeGreaterThan(0);
+
+        await checkboxes[0].trigger('change');
+        expect(wrapper.emitted('update:selectedIds')).toEqual([[[1]]]);
+    });
+
+    it('disables completion controls while processing', () => {
+        const wrapper = mount(OrderServiceMatrix, {
+            props: {
+                services,
+                itemLabels: { 10: 'Engine block' },
+                selectedIds: [],
+                busy: true,
+                mode: 'completion',
+                title: 'Work completion',
+                labels,
+            },
+        });
+
+        expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(1);
+        expect(wrapper.find('input[type="checkbox"]').attributes('disabled')).toBeDefined();
     });
 });

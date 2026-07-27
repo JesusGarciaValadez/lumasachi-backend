@@ -384,6 +384,81 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     }
 
     #[Test]
+    public function work_completion_rejects_a_service_that_is_already_completed(): void
+    {
+        $order = $this->createOrder(OrderStatus::ReadyForWork);
+        $completedService = $this->createOrderService($order, 'wash_block', isAuthorized: true);
+        $completedService->update(['is_completed' => true]);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+            'completed_service_ids' => [$completedService->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['completed_service_ids.0']);
+
+        $this->assertTrue($completedService->fresh()->is_completed);
+        $this->assertSame(OrderStatus::ReadyForWork, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function work_completion_rejects_a_mixed_authorized_and_unauthorized_selection_atomically(): void
+    {
+        $order = $this->createOrder(OrderStatus::ReadyForWork);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+        $authorizedService = $item->services()->create([
+            'service_key' => 'wash_block',
+            'is_budgeted' => true,
+            'is_authorized' => true,
+            'base_price' => 600.00,
+            'net_price' => 696.00,
+        ]);
+        $unauthorizedService = $item->services()->create([
+            'service_key' => 'inspect_block',
+            'is_budgeted' => true,
+            'is_authorized' => false,
+            'base_price' => 600.00,
+            'net_price' => 696.00,
+        ]);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+            'completed_service_ids' => [$authorizedService->id, $unauthorizedService->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['completed_service_ids.1']);
+
+        $this->assertFalse($authorizedService->fresh()->is_completed);
+        $this->assertFalse($unauthorizedService->fresh()->is_completed);
+    }
+
+    #[Test]
+    public function work_completion_rejects_duplicate_service_ids(): void
+    {
+        $order = $this->createOrder(OrderStatus::ReadyForWork);
+        $service = $this->createOrderService($order, 'wash_block', isAuthorized: true);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+            'completed_service_ids' => [$service->id, $service->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['completed_service_ids.1']);
+
+        $this->assertFalse($service->fresh()->is_completed);
+    }
+
+    #[Test]
+    public function work_completion_rejects_a_non_integer_service_id(): void
+    {
+        $order = $this->createOrder(OrderStatus::ReadyForWork);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+            'completed_service_ids' => ['invalid'],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['completed_service_ids.0']);
+
+        $this->assertSame(OrderStatus::ReadyForWork, $order->fresh()->status);
+    }
+
+    #[Test]
     public function order_creation_rejects_a_component_from_a_different_item_type(): void
     {
         $payload = $this->validOrderPayload();
