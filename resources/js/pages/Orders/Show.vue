@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderCustomerApprovalPanel from '@/components/orders/OrderCustomerApprovalPanel.vue';
+import OrderDeliveryPanel from '@/components/orders/OrderDeliveryPanel.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
 import OrderReviewBudgetPanel from '@/components/orders/OrderReviewBudgetPanel.vue';
 import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
@@ -88,7 +89,8 @@ const canApprove = computed(() => capabilities.approve_services && order.value.s
 const canComplete = computed(() => capabilities.complete_services && ['Ready for Work', 'In Progress'].includes(order.value.status));
 const canMarkReady = computed(() => capabilities.mark_ready_for_delivery && ['Ready for Work', 'In Progress'].includes(order.value.status));
 const remainingBalance = computed(() => Number(order.value.financials?.remaining_balance ?? 0));
-const canDeliver = computed(() => isStaff.value && order.value.status === 'Ready for Delivery' && remainingBalance.value <= 0);
+const canViewDelivery = computed(() => isStaff.value && order.value.status === 'Ready for Delivery');
+const canDeliver = computed(() => capabilities.deliver_order && remainingBalance.value <= 0);
 
 const statusSteps = computed(() =>
     (
@@ -128,6 +130,19 @@ const financialLabels = computed(() => ({
     completed: t('orders.completed_total'),
     advance_payment: t('orders.advance_payment'),
     remaining_balance: t('orders.remaining_balance'),
+    payment_state: t('orders.payment_state'),
+    zero_total: t('orders.zero_total'),
+    partial_payment: t('orders.partial_payment'),
+    paid_in_full: t('orders.paid_in_full'),
+    overpaid: t('orders.overpaid'),
+}));
+
+const deliveryLabels = computed(() => ({
+    title: t('orders.delivery'),
+    remaining_balance: t('orders.remaining_balance'),
+    payment_required: t('orders.payment_required'),
+    deliver: t('orders.deliver'),
+    loading: t('common.loading'),
 }));
 
 const reviewLabels = computed(() => ({
@@ -396,7 +411,8 @@ async function deliverOrder(): Promise<void> {
     lastError.value = null;
 
     try {
-        await orderApi.deliver(orderUuid.value);
+        const deliveredOrder = await orderApi.deliver(orderUuid.value);
+        currentOrder.value = deliveredOrder;
         await refreshOrder();
     } catch (error: unknown) {
         handleError(error);
@@ -609,22 +625,14 @@ onMounted(async () => {
                 </div>
             </Card>
 
-            <Card v-if="order.status === 'Ready for Delivery' && isStaff">
-                <div class="flex flex-col gap-4 px-6">
-                    <div>
-                        <h2 class="text-base font-semibold">{{ t('orders.delivery') }}</h2>
-                        <p class="text-sm text-muted-foreground">
-                            {{ t('orders.remaining_balance') }}: {{ formatMoney(order.financials?.remaining_balance) }}
-                        </p>
-                    </div>
-                    <div v-if="remainingBalance > 0" class="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm" role="alert">
-                        {{ t('orders.payment_required') }}
-                    </div>
-                    <Button :disabled="!canDeliver || busyAction !== null" class="self-start" @click="openConfirmation('deliver')">{{
-                        busyAction === 'deliver' ? t('common.loading') : t('orders.deliver')
-                    }}</Button>
-                </div>
-            </Card>
+            <OrderDeliveryPanel
+                v-if="canViewDelivery"
+                :busy="busyAction !== null"
+                :can-deliver="canDeliver"
+                :financials="financials"
+                :labels="deliveryLabels"
+                @deliver="openConfirmation('deliver')"
+            />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card>
@@ -714,13 +722,22 @@ onMounted(async () => {
                         {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? service.service_key).join(', ') }}
                     </span>
                 </span>
+                <span v-else-if="dialogAction === 'deliver'" class="flex flex-col gap-1" data-delivery-confirmation>
+                    <span>{{ t('orders.confirm_delivery') }}</span>
+                    <span>{{ t('orders.uuid') }}: #{{ order.uuid }}</span>
+                    <span>
+                        {{ t('orders.completed_total') }}: {{ formatMoney(financials.completed) }} · {{ t('orders.advance_payment') }}:
+                        {{ formatMoney(financials.advance_payment) }} · {{ t('orders.remaining_balance') }}:
+                        {{ formatMoney(financials.remaining_balance) }}
+                    </span>
+                </span>
                 <span v-else>{{ t('orders.confirm_delivery') }}</span>
             </div>
             <DialogFooter>
                 <DialogClose as-child
                     ><Button variant="outline">{{ t('common.cancel') }}</Button></DialogClose
                 >
-                <Button :disabled="busyAction !== null" @click="confirmAction">{{ t('common.confirm') }}</Button>
+                <Button :disabled="busyAction !== null" data-confirm-action @click="confirmAction">{{ t('common.confirm') }}</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

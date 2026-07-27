@@ -513,6 +513,18 @@ final class OrderLifecycleControllerTest extends TestCase
         $response->assertForbidden();
     }
 
+    #[Test]
+    public function it_forbids_customer_from_delivering_an_order(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
+
+        $this->actingAs($this->customer)
+            ->postJson("/api/v1/orders/{$order->uuid}/deliver")
+            ->assertForbidden();
+
+        $this->assertSame(OrderStatus::ReadyForDelivery, $order->fresh()->status);
+    }
+
     // ---------------------------------------------------------------
     // Show order includes motor_info, items, services
     // ---------------------------------------------------------------

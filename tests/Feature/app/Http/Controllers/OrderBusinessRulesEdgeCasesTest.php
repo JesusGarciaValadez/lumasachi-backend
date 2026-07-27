@@ -564,12 +564,31 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
             ->assertJsonValidationErrors(['payment']);
 
         $this->assertSame(OrderStatus::ReadyForDelivery, $order->fresh()->status);
+        Notification::assertNotSentTo($this->customer, OrderDeliveredNotification::class);
+        Notification::assertNotSentTo($this->administrator, OrderAuditNotification::class);
 
         $order->motorInfo->update(['down_payment' => 1252.80]);
 
         $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
             ->assertOk()
             ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+    }
+
+    #[Test]
+    public function delivery_accepts_exact_payment_overpayment_and_zero_total_orders(): void
+    {
+        foreach ([
+                     ['total_cost' => 100.00, 'down_payment' => 100.00],
+                     ['total_cost' => 100.00, 'down_payment' => 125.00],
+                     ['total_cost' => 0.00, 'down_payment' => 0.00],
+                 ] as $payment) {
+            $order = $this->createOrder(OrderStatus::ReadyForDelivery);
+            $order->motorInfo->update($payment);
+
+            $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
+                ->assertOk()
+                ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+        }
     }
 
     #[Test]

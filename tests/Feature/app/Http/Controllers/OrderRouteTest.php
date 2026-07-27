@@ -161,6 +161,45 @@ final class OrderRouteTest extends TestCase
     }
 
     #[Test]
+    public function delivery_capability_requires_a_paid_order(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $customer->id,
+            'created_by' => $employee->id,
+            'assigned_to' => $employee->id,
+            'status' => OrderStatus::ReadyForDelivery->value,
+        ]);
+        $motorInfo = OrderMotorInfo::factory()->createQuietly([
+            'order_id' => $order->id,
+            'total_cost' => 100.00,
+            'down_payment' => 50.00,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('web.orders.show', [$order->uuid]))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->has('capabilities', fn(InertiaAssert $capabilities) => $capabilities
+                    ->where('deliver_order', false)
+                    ->etc()
+                )
+            );
+
+        $motorInfo->update(['down_payment' => 100.00]);
+
+        $this->get(route('web.orders.show', [$order->uuid]))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->has('capabilities', fn(InertiaAssert $capabilities) => $capabilities
+                    ->where('deliver_order', true)
+                    ->etc()
+                )
+            );
+    }
+
+    #[Test]
     public function authorized_staff_can_open_order_creation_and_customers_cannot(): void
     {
         $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
