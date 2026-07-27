@@ -1,12 +1,11 @@
 import {
+    type CatalogPayload,
+    type CreateOrderPayload,
+    type CustomerApprovalPayload,
     normalizeAttachment,
     normalizeHistory,
     normalizeOrder,
     normalizePublicOrder,
-    unwrapCollection,
-    type CatalogPayload,
-    type CreateOrderPayload,
-    type CustomerApprovalPayload,
     type Order,
     type OrderAttachmentsResponse,
     type OrderAttachmentsResponsePayload,
@@ -21,6 +20,7 @@ import {
     type ResourcePayload,
     type SubmitBudgetPayload,
     type TrackOrderPayload,
+    unwrapCollection,
     type UserCollectionPayload,
     type UserPayload,
     type WorkCompletedPayload,
@@ -118,6 +118,7 @@ function apiUrl(name: string, orderUuid?: string): string {
 async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, signal?: AbortSignal): Promise<T> {
     const headers: HeadersInit = {
         Accept: 'application/json',
+        'Accept-Language': currentLocale(),
         'X-Requested-With': 'XMLHttpRequest',
     };
 
@@ -154,6 +155,14 @@ async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, s
     }
 
     return payload as T;
+}
+
+function currentLocale(): string {
+    if (typeof document !== 'undefined' && document.documentElement.lang) {
+        return document.documentElement.lang;
+    }
+
+    return typeof navigator !== 'undefined' ? navigator.language : 'es';
 }
 
 function mutationOrder(payload: OrderMutationResponse): Order {

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
 import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
@@ -112,6 +113,7 @@ async function lookup(): Promise<void> {
     <Head :title="t('orders.track')" />
     <div class="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
         <div class="mx-auto flex max-w-6xl flex-col gap-6">
+            <LocaleSwitcher class="self-end" />
             <header class="flex flex-col gap-2">
                 <h1 class="text-2xl font-semibold">{{ t('orders.track') }}</h1>
                 <p class="text-sm text-muted-foreground">{{ t('orders.track_help') }}</p>

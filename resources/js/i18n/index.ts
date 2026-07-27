@@ -1,5 +1,15 @@
 import { createI18n } from 'vue-i18n';
 
+export const SUPPORTED_LOCALES = ['es', 'en'] as const;
+
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
+export function normalizeLocale(locale?: string | null): SupportedLocale {
+    const primaryTag = locale?.trim().toLowerCase().replace('_', '-').split('-')[0];
+
+    return SUPPORTED_LOCALES.includes(primaryTag as SupportedLocale) ? (primaryTag as SupportedLocale) : 'es';
+}
+
 const messages = {
     es: {
         common: {
@@ -11,6 +21,9 @@ const messages = {
             empty: 'No hay información para mostrar',
             cancel: 'Cancelar',
             confirm: 'Confirmar',
+            language: 'Idioma',
+            spanish: 'Español',
+            english: 'Inglés',
         },
         orders: {
             order: 'Orden',
@@ -160,6 +173,9 @@ const messages = {
             empty: 'No data to display',
             cancel: 'Cancel',
             confirm: 'Confirm',
+            language: 'Language',
+            spanish: 'Spanish',
+            english: 'English',
         },
         orders: {
             order: 'Order',
@@ -304,7 +320,7 @@ const messages = {
 export function createI18nInstance(locale?: string) {
     return createI18n({
         legacy: false,
-        locale: locale || 'es',
+        locale: normalizeLocale(locale),
         fallbackLocale: 'en',
         messages,
     });

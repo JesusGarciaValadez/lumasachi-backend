@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Locale;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * @mixin IdeHelperUser
  */
-final class User extends Authenticatable
+final class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -70,6 +72,7 @@ final class User extends Authenticatable
         'notes',
         'type',
         'preferences',
+        'locale',
     ];
 
     /**
@@ -150,6 +153,14 @@ final class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         return $this->first_name.' '.$this->last_name;
+    }
+
+    public function preferredLocale(): string
+    {
+        $rawLocale = $this->getRawOriginal('locale');
+        $locale = is_string($rawLocale) ? Locale::normalize($rawLocale) : null;
+
+        return $locale !== null ? $locale->value : (string)config('app.locale', Locale::SPANISH->value);
     }
 
     // Relationships

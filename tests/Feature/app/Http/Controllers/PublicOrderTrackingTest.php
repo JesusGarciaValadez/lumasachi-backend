@@ -235,10 +235,11 @@ final class PublicOrderTrackingTest extends TestCase
             'priority' => OrderPriority::URGENT->value,
         ])->saveQuietly();
 
-        $response = $this->postJson('/api/v1/orders/track', [
-            'uuid' => $this->order->uuid,
-            'created_date' => $this->order->created_at->toDateString(),
-        ]);
+        $response = $this->withHeaders(['Accept-Language' => 'es'])
+            ->postJson('/api/v1/orders/track', [
+                'uuid' => $this->order->uuid,
+                'created_date' => $this->order->created_at->toDateString(),
+            ]);
 
         $response->assertOk()
             ->assertJsonPath('order.status', OrderStatus::InProgress->value)

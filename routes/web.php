@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OrderPageController;
 use App\Http\Controllers\PublicOrderPageController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,8 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
+
+Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
