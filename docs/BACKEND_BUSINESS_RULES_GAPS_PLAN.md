@@ -784,6 +784,23 @@ Frontend unit tests, if approved:
 3. Confirmation receives the same financial values shown on the page.
 4. A successful response removes lifecycle actions and renders `Delivered`.
 
+#### 7.7 completion marks
+
+- [x] Authorized staff see the delivery/payment panel for `Ready for Delivery`; delivery capability remains server-
+  provided and requires no pending payment.
+- [x] Completed-service total, advance payment, remaining balance, and payment state are shown with two decimal places,
+  distinguishing partial, exact, overpaid, and zero-total orders.
+- [x] A positive remaining balance shows a blocking explanation and disables delivery in the UI; the server request and
+  lifecycle service remain authoritative.
+- [x] Delivery confirmation includes the order UUID and the same completed, advance-payment, and remaining-balance
+  values shown on the page.
+- [x] Successful delivery applies the server response before refresh, removes lifecycle actions, and shows `Delivered`.
+- [x] Partial payment preserves `Ready for Delivery` and sends no delivery notification; exact payment, overpayment, and
+  zero-total orders can be delivered; unauthorized users cannot deliver.
+- [x] Successful delivery retains customer and active audit notifications.
+- [x] PHPUnit, Vue unit tests, TypeScript, production build, ESLint, Prettier, Pint, PHPStan, and diff checks pass.
+- [x] No additional Step 7.7 business-rule edge case remains unresolved.
+
 ### 7.8 — Shared order details, attachments, and history
 
 #### 7.8.1 — Order detail composition
