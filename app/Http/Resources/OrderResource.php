@@ -37,6 +37,10 @@ final class OrderResource extends JsonResource
             'services' => OrderServiceResource::collection($this->whenLoaded('services')),
             'history' => OrderHistoryResource::collection($this->whenLoaded('orderHistories')),
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
+            'financials' => $this->when(
+                $this->resource->relationLoaded('services') && $this->resource->relationLoaded('motorInfo'),
+                fn(): array => $this->financialTotals(),
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

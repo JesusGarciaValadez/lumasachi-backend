@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TrackOrderRequest;
-use App\Http\Resources\OrderResource;
+use App\Http\Resources\PublicOrderResource;
 use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 
@@ -23,10 +23,9 @@ final class PublicOrderController extends Controller
             ->with([
                 'motorInfo',
                 'items.components',
-                'services',
-                'orderHistories.createdBy',
-                'orderHistories.order.attachments',
-                'attachments.uploadedBy',
+                'services.catalogItem',
+                'orderHistories',
+                'attachments',
             ])
             ->first();
 
@@ -37,7 +36,7 @@ final class PublicOrderController extends Controller
         }
 
         return response()->json([
-            'order' => new OrderResource($order->load(['customer', 'assignedTo'])),
+            'order' => new PublicOrderResource($order),
         ]);
     }
 }

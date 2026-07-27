@@ -177,6 +177,40 @@ final class Order extends Model
     }
 
     /**
+     * Calculate lifecycle totals from persisted services and payment state.
+     *
+     * @return array{budgeted: string, authorized: string, completed: string, advance_payment: string, remaining_balance: string}
+     */
+    public function financialTotals(): array
+    {
+        $motorInfo = $this->motorInfo()->first();
+
+        $sum = function (string $field): string {
+            return number_format(
+                (float)$this->services()->where("order_services.{$field}", true)->sum('order_services.net_price'),
+                2,
+                '.',
+                ''
+            );
+        };
+
+        $completed = $sum('is_completed');
+        $advancePayment = $motorInfo === null
+            ? '0.00'
+            : number_format((float)$motorInfo->down_payment, 2, '.', '');
+
+        return [
+            'budgeted' => $sum('is_budgeted'),
+            'authorized' => $sum('is_authorized'),
+            'completed' => $completed,
+            'advance_payment' => $advancePayment,
+            'remaining_balance' => bccomp($completed, $advancePayment, 2) === 1
+                ? bcsub($completed, $advancePayment, 2)
+                : '0.00',
+        ];
+    }
+
+    /**
      * Create a new factory instance for the model.
      *
      * @return Factory<static>

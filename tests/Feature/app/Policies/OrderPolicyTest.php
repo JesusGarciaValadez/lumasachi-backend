@@ -169,6 +169,20 @@ final class OrderPolicyTest extends TestCase
         $this->assertFalse($customer->can('update', $orderCreatedByEmployee1));
     }
 
+    #[Test]
+    public function only_the_owning_customer_can_approve_order_services(): void
+    {
+        $customer = User::where('role', UserRole::CUSTOMER)->first();
+        $otherCustomer = User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer->id)->first();
+        $employee = User::where('role', UserRole::EMPLOYEE)->first();
+
+        $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
+
+        $this->assertTrue($customer->can('approve', $order));
+        $this->assertFalse($otherCustomer->can('approve', $order));
+        $this->assertFalse($employee->can('approve', $order));
+    }
+
     /**
      * Test delete order permissions.
      */

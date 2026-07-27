@@ -268,6 +268,22 @@ final class OrderLifecycleServiceTest extends TestCase
         $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
     }
 
+    #[Test]
+    public function it_rejects_approval_for_a_non_budgeted_service(): void
+    {
+        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
+        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+        $service = OrderService::factory()->create([
+            'order_item_id' => $item->id,
+            'is_budgeted' => false,
+            'is_authorized' => false,
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->service->customerApproval($order, [$service->id], null, $this->customer);
+    }
+
     // ---------------------------------------------------------------
     // markWorkCompleted
     // ---------------------------------------------------------------

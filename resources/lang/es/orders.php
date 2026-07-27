@@ -17,6 +17,7 @@ return [
     'created_at' => 'Creada',
     'attachments' => 'Adjuntos',
     'history' => 'Historial',
+    'public_history_updated' => 'Se actualizó el historial de la orden.',
 
     'status_labels' => [
         'Received' => 'Recibida',

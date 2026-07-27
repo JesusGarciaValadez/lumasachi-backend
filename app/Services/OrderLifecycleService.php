@@ -125,7 +125,7 @@ final class OrderLifecycleService
     public function customerApproval(Order $order, array $authorizedServiceIds, ?float $downPayment, User $approver): Order
     {
         $this->assertStatus($order, [OrderStatus::AwaitingCustomerApproval]);
-        $this->assertServicesBelongToOrder($order, $authorizedServiceIds);
+        $this->assertBudgetedServicesBelongToOrder($order, $authorizedServiceIds);
 
         DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment) {
             $order->services()->whereIn('order_services.id', $authorizedServiceIds)->update(['is_authorized' => true]);
@@ -253,16 +253,17 @@ final class OrderLifecycleService
      *
      * @throws InvalidArgumentException
      */
-    private function assertServicesBelongToOrder(Order $order, array $serviceIds): void
+    private function assertBudgetedServicesBelongToOrder(Order $order, array $serviceIds): void
     {
         $uniqueServiceIds = array_values(array_unique($serviceIds));
 
         $matchingServices = $order->services()
             ->whereIn('order_services.id', $uniqueServiceIds)
+            ->where('order_services.is_budgeted', true)
             ->count();
 
         if ($matchingServices !== count($uniqueServiceIds)) {
-            throw new InvalidArgumentException('All services must belong to the order.');
+            throw new InvalidArgumentException('All approved services must be budgeted and belong to the order.');
         }
     }
 

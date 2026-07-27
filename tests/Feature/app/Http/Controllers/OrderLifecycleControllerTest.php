@@ -168,7 +168,10 @@ final class OrderLifecycleControllerTest extends TestCase
         $this->actingAs($this->employee);
 
         $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::CylinderHead->value,
+        ]);
         $catalog = $this->createCatalogService('wash_block', 600.00);
 
         $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
@@ -209,7 +212,7 @@ final class OrderLifecycleControllerTest extends TestCase
     #[Test]
     public function it_approves_services_via_api(): void
     {
-        $this->actingAs($this->employee);
+        $this->actingAs($this->customer);
 
         $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
         $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
@@ -234,7 +237,7 @@ final class OrderLifecycleControllerTest extends TestCase
     #[Test]
     public function it_rejects_approval_for_wrong_status(): void
     {
-        $this->actingAs($this->employee);
+        $this->actingAs($this->customer);
 
         $order = $this->createOrderInStatus(OrderStatus::Open);
 
@@ -380,6 +383,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
 
         // Step 3: Customer approval
+        $this->actingAs($this->customer);
         $serviceId = $order->services->first()->id;
         $approvalResponse = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
             'authorized_service_ids' => [$serviceId],
@@ -391,6 +395,7 @@ final class OrderLifecycleControllerTest extends TestCase
         $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
 
         // Step 4: Mark work completed
+        $this->actingAs($this->employee);
         $workResponse = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
             'completed_service_ids' => [$serviceId],
         ]);

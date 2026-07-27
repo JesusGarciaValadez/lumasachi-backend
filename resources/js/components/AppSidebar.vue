@@ -4,15 +4,18 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Folder, LayoutGrid, Plus } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const i18n = useI18n();
 const { t } = i18n;
+const page = usePage();
+const currentUser = computed(() => page.props.auth.user as { role?: string } | null);
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: t('common.dashboard'),
         href: '/dashboard',
@@ -23,7 +26,8 @@ const mainNavItems: NavItem[] = [
         href: '/orders',
         icon: Folder,
     },
-];
+    ...(currentUser.value && currentUser.value.role !== 'Customer' ? [{ title: t('orders.create'), href: '/orders/create', icon: Plus }] : []),
+]);
 
 const footerNavItems: NavItem[] = [];
 </script>

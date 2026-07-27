@@ -31,13 +31,31 @@ const submit = () => {
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="first_name">First name</Label>
-                    <Input id="first_name" type="text" required autofocus :tabindex="1" autocomplete="first_name" v-model="form.first_name" placeholder="First name" />
+                    <Input
+                        id="first_name"
+                        v-model="form.first_name"
+                        :tabindex="1"
+                        autocomplete="first_name"
+                        autofocus
+                        placeholder="First name"
+                        required
+                        type="text"
+                    />
                     <InputError :message="form.errors.first_name" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="last_name">Last name</Label>
-                    <Input id="last_name" type="text" required autofocus :tabindex="1" autocomplete="last_name" v-model="form.last_name" placeholder="Last name" />
+                    <Input
+                        id="last_name"
+                        v-model="form.last_name"
+                        :tabindex="1"
+                        autocomplete="last_name"
+                        autofocus
+                        placeholder="Last name"
+                        required
+                        type="text"
+                    />
                     <InputError :message="form.errors.last_name" />
                 </div>
 
