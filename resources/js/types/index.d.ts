@@ -5,6 +5,11 @@ export interface Auth {
     user: User;
 }
 
+export interface I18nPageProps {
+    locale: string;
+    supported_locales: string[];
+}
+
 export interface BreadcrumbItem {
     title: string;
     href: string;
@@ -21,6 +26,7 @@ export type AppPageProps<T extends Record<string, unknown> = Record<string, unkn
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    i18n: I18nPageProps;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
 };
@@ -34,6 +40,7 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    locale?: string | null;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

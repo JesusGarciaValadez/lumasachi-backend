@@ -129,6 +129,10 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 
 function lang(): string {
+    if (typeof document !== 'undefined' && document.documentElement.lang) {
+        return document.documentElement.lang;
+    }
+
     // Simplify navigator language to 'en' | 'es'
     const nav = (navigator.language || 'en').toLowerCase();
     if (nav.startsWith('es')) return 'es';

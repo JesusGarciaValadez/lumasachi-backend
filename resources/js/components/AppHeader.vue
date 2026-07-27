@@ -2,6 +2,7 @@
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -36,7 +37,7 @@ const activeItemStyles = computed(
     () => (url: string) => (isCurrentRoute.value(url) ? 'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : ''),
 );
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: t('common.dashboard'),
         href: '/dashboard',
@@ -47,7 +48,7 @@ const mainNavItems: NavItem[] = [
         href: '/orders',
         icon: Folder,
     },
-];
+]);
 
 const rightNavItems: NavItem[] = [];
 </script>
@@ -126,6 +127,7 @@ const rightNavItems: NavItem[] = [];
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
+                    <LocaleSwitcher />
                     <div class="relative flex items-center space-x-1">
                         <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
                             <Search class="size-5 opacity-80 group-hover:opacity-100" />

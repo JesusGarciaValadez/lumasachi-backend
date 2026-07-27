@@ -9,6 +9,17 @@ vi.mock('@inertiajs/vue3', () => ({
     Head: {
         template: '<title><slot /></title>',
     },
+    router: {
+        post: vi.fn(),
+    },
+    usePage: () => ({
+        props: {
+            i18n: {
+                locale: 'es',
+                supported_locales: ['es', 'en'],
+            },
+        },
+    }),
 }));
 
 vi.mock('vue-i18n', () => ({
@@ -16,6 +27,9 @@ vi.mock('vue-i18n', () => ({
         t: (key: string) =>
             ({
                 'common.loading': 'Loading',
+                'common.english': 'English',
+                'common.language': 'Language',
+                'common.spanish': 'Spanish',
                 'orders.advance_payment': 'Advance payment',
                 'orders.authorized': 'Authorized',
                 'orders.budgeted': 'Budgeted',
