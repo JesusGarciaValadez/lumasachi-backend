@@ -414,10 +414,10 @@ Reka-based components instead of adding Headless UI or Catalyst as a parallel co
    authentication, authorization, and absence of sensitive props where applicable.
 2. Continue testing lifecycle mutations through their existing API feature tests; do not duplicate business logic
    assertions in route-render tests.
-3. The repository does not currently include a Vue unit-test runner. Before adding Vue component tests, obtain approval
-   for the required dependency change. If approved, use Vitest and Vue Test Utils for the unit-test cases listed below.
-4. Without that approval, keep PHPUnit feature coverage plus TypeScript, build, lint, and format verification mandatory;
-   do not claim unimplemented Vue unit tests are green.
+3. Vue test dependencies are approved for this project. Add the required runner and utilities when implementing the Vue
+   unit-test cases listed below, using Vitest and Vue Test Utils.
+4. Until those Vue unit tests are implemented, keep PHPUnit feature coverage plus TypeScript, build, lint, and format
+   verification mandatory; do not claim unimplemented Vue unit tests are green.
 
 #### 7.1 completion marks
 
@@ -426,7 +426,8 @@ Reka-based components instead of adding Headless UI or Catalyst as a parallel co
   requirements.
 - [x] PHPUnit route coverage includes Inertia props, authentication, authorization, and sensitive-prop checks.
 - [x] TypeScript, production build, frontend lint, and global format verification pass.
-- [x] Vue unit tests remain intentionally unimplemented because no Vue unit-test dependency has been approved.
+- [x] Vue unit tests were not part of the completed Step 7.1 scope; their dependencies are now approved for future
+  implementation.
 - [x] No additional Step 7.1 edge case remains unresolved.
 
 ### 7.2 — Public order-tracking view
@@ -547,6 +548,24 @@ Frontend unit tests, if the test dependency is approved:
 2. Changing an item type clears components invalid for the new type.
 3. Nested server errors attach to the correct row and component.
 4. A processing form cannot submit twice.
+
+#### 7.3 completion marks
+
+- [x] The authenticated, policy-protected `Orders/Create` route and authorized order-index action are in place.
+- [x] The intake form covers order details, motor information, decimal-safe advance payment, received item types, and
+  item-type-specific components using the existing catalog and user endpoints.
+- [x] Duplicate item types are prevented in the client, invalid components are cleared when an item type changes, and
+  server validation remains authoritative.
+- [x] The exact create payload is submitted, duplicate submissions are guarded, entered values remain after validation
+  failure, and nested component errors are shown on their item row.
+- [x] Valid creation persists motor information, items, and components and returns the persisted `Awaiting Review`
+  status.
+- [x] Guest/customer access, missing items, invalid money, and cross-item component validation are covered by focused
+  PHPUnit tests.
+- [x] TypeScript, production build, changed-file Prettier, ESLint, Pint, PHPStan, and scoped PHPUnit verification pass.
+- [x] Vue unit tests were not part of the completed Step 7.3 scope; their dependencies are now approved for future
+  implementation.
+- [x] No additional Step 7.3 business-rule edge case remains unresolved.
 
 ### 7.4 — Staff review and quotation panel
 
@@ -805,12 +824,22 @@ Frontend unit tests, if approved:
 3. Run TypeScript checking, frontend build, lint, and format checks through Sail.
 4. Run Pint after any PHP change and PHPStan after any backend contract change.
 
+If Prettier or ESLint reports the pre-existing warning in `resources/views/vendor/mail/html/themes/default.css`, it is
+permitted to modify that file to resolve the warning before evaluating the format/lint verification mark.
+
 #### 7.10.2 — Docker/Sail access and complete verification command list
 
 Run all PHP, Composer, Artisan, and Node commands through Sail. Docker Desktop must be running and the current terminal
 must be allowed to access the Docker socket. In a restricted Codex terminal, Docker Desktop may be running while the
-sandbox still reports `Docker or Podman is not running` or `permission denied` for the Docker socket. Grant the terminal
-elevated Docker access and retry; do not interpret that message as an application test failure.
+sandbox still reports `Docker or Podman is not running` or `permission denied` for the Docker socket. Use this execution
+procedure:
+
+1. Run the exact command from the backend project directory with its required `vendor/bin/sail` prefix.
+2. If the command returns the Docker/Podman availability or socket-permission message before the application command
+   starts, treat it as a terminal-access failure, not an application test failure.
+3. Ensure Docker Desktop or Podman is running, grant the terminal elevated Docker/socket access, and retry the exact
+   same Sail command. Do not replace Sail with host PHP, Composer, Node, or Yarn commands.
+4. Use the result from the successful Docker-enabled retry when evaluating the verification mark.
 
 Verify application access first:
 

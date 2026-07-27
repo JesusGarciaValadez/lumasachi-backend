@@ -95,7 +95,8 @@ final class OrderLifecycleControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/orders', $payload);
 
-        $response->assertCreated();
+        $response->assertCreated()
+            ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
 
         // Verify DB state
         $this->assertDatabaseHas('orders', [
@@ -129,6 +130,45 @@ final class OrderLifecycleControllerTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'priority', 'assigned_to', 'items']);
+    }
+
+    #[Test]
+    public function it_rejects_order_creation_without_received_items(): void
+    {
+        $this->actingAs($this->employee);
+
+        $response = $this->postJson('/api/v1/orders', [
+            'customer_id' => $this->customer->id,
+            'title' => 'Test',
+            'description' => 'Test',
+            'priority' => OrderPriority::NORMAL->value,
+            'assigned_to' => $this->employee->id,
+            'items' => [],
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['items']);
+        $this->assertDatabaseEmpty('orders');
+    }
+
+    #[Test]
+    public function it_rejects_an_invalid_advance_payment(): void
+    {
+        $this->actingAs($this->employee);
+
+        $response = $this->postJson('/api/v1/orders', [
+            'customer_id' => $this->customer->id,
+            'title' => 'Test',
+            'description' => 'Test',
+            'priority' => OrderPriority::NORMAL->value,
+            'assigned_to' => $this->employee->id,
+            'motor_info' => ['down_payment' => 'not-money'],
+            'items' => [
+                ['item_type' => OrderItemType::EngineBlock->value],
+            ],
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['motor_info.down_payment']);
+        $this->assertDatabaseEmpty('orders');
     }
 
     #[Test]
