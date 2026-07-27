@@ -511,10 +511,14 @@ Add automated guards without introducing a new dependency unless separately appr
 
 #### Status
 
-- [ ] Frontend and backend parity guards pass.
-- [ ] Domain translation coverage guard passes.
-- [ ] Bare-string audit has a reviewed narrow allow-list.
-- [ ] Missing/fallback translation warnings are absent from critical flows.
+- [x] Frontend and backend parity guards pass.
+- [x] Domain translation coverage guard passes.
+- [x] Bare-string audit has a reviewed narrow allow-list.
+- [x] Missing/fallback translation warnings are absent from critical flows.
+
+The Vue template audit allow-list is intentionally exact and limited to the `Laracasts` proper noun, the
+`email@example.com`
+technical example, and punctuation-only placeholders such as `—`.
 
 ### Phase 7 — Final application audit and release verification
 
