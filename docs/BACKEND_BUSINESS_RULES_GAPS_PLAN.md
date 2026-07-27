@@ -671,6 +671,23 @@ Frontend unit tests, if approved:
 3. Server validation and stale-state responses preserve a recoverable form.
 4. Read-only users never receive actionable controls.
 
+#### 7.5 completion marks
+
+- [x] The approval panel is rendered only from the server-provided customer approval capability while the order is in
+  `Awaiting Customer Approval`.
+- [x] All persisted budgeted services are shown by item with measurement, base price, net price, read-only budgeted
+  state, and persisted authorization state; non-budgeted services are excluded.
+- [x] Customers can select any displayed subset, see budgeted and selected authorized base/net previews, and enter an
+  optional non-negative advance payment with two-decimal submission formatting.
+- [x] Confirmation includes the selected count, authorized totals, and advance payment; controls are disabled while
+  processing and the successful server response is applied before the follow-up refresh.
+- [x] Foreign, non-budgeted, non-integer, duplicate, negative-payment, wrong-status, and non-owner approval attempts
+  remain rejected without partial authorization.
+- [x] Successful approval returns `Ready for Work`, preserves unselected services as unauthorized, and keeps authorized
+  totals and advance payment correct.
+- [x] PHPUnit, Vue unit tests, TypeScript, production build, ESLint, Prettier, Pint, PHPStan, and diff checks pass.
+- [x] No additional Step 7.5 business-rule edge case remains unresolved.
+
 ### 7.6 — Work-execution panel
 
 #### 7.6.1 — Visibility and service constraints

@@ -29,6 +29,7 @@ final class CustomerApprovalRequest extends FormRequest
             'authorized_service_ids' => 'required|array|min:1',
             'authorized_service_ids.*' => [
                 'distinct',
+                'integer',
                 Rule::exists('order_services', 'id')->where(function (Builder $query): void {
                     $order = $this->route('order');
 
@@ -64,6 +65,7 @@ final class CustomerApprovalRequest extends FormRequest
         return [
             'authorized_service_ids.required' => 'At least one service must be approved.',
             'authorized_service_ids.min' => 'At least one service must be approved.',
+            'authorized_service_ids.*.integer' => 'Each selected service must be valid.',
             'authorized_service_ids.*.exists' => 'One or more selected services do not exist.',
             'down_payment.numeric' => 'The down payment must be a number.',
             'down_payment.min' => 'The down payment cannot be negative.',
