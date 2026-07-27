@@ -90,7 +90,7 @@ function toggle(service: OrderServicePayload): void {
             <h2 class="text-base font-semibold">{{ title }}</h2>
             <div v-if="groups.length" class="flex flex-col gap-6">
                 <section v-for="[itemId, itemServices] in groups" :key="itemId" class="flex flex-col gap-3">
-                    <h3 class="font-medium">{{ itemLabels[itemId] ?? `Item ${itemId}` }}</h3>
+                    <h3 class="font-medium">{{ itemLabels[itemId] ?? labels.service }}</h3>
                     <div class="overflow-x-auto rounded-md border">
                         <table class="w-full min-w-[40rem] text-left text-sm">
                             <thead class="border-b bg-muted/40 text-xs text-muted-foreground">
@@ -112,7 +112,7 @@ function toggle(service: OrderServicePayload): void {
                                     <td class="px-3 py-2 align-top">
                                         <input
                                             v-if="mode !== 'readonly'"
-                                            :aria-label="service.service_name ?? service.service_key"
+                                            :aria-label="service.service_name ?? labels.service"
                                             :checked="isSelected(service.id)"
                                             :disabled="!canSelect(service)"
                                             class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -120,7 +120,7 @@ function toggle(service: OrderServicePayload): void {
                                             @change="toggle(service)"
                                         />
                                     </td>
-                                    <td class="px-3 py-2 align-top font-medium">{{ service.service_name ?? service.service_key }}</td>
+                                    <td class="px-3 py-2 align-top font-medium">{{ service.service_name ?? labels.service }}</td>
                                     <td class="px-3 py-2 align-top">{{ service.measurement ?? '—' }}</td>
                                     <td class="px-3 py-2 align-top">{{ service.base_price ?? '0.00' }}</td>
                                     <td class="px-3 py-2 align-top">{{ service.net_price ?? '0.00' }}</td>

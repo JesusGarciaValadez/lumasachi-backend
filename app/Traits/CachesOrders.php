@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use App\Enums\Locale;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
@@ -57,7 +58,7 @@ trait CachesOrders
      *
      * @param  array<string, mixed>  $filters
      */
-    public static function indexKeyFor(User $user, array $filters = []): string
+    public static function indexKeyFor(User $user, array $filters = [], string $locale = 'es'): string
     {
         $version = self::currentVersion();
 
@@ -78,17 +79,22 @@ trait CachesOrders
         }
         $filtersPart = !empty($filters) ? ':filters:' . md5(json_encode($filters, JSON_THROW_ON_ERROR)) : '';
 
-        return "orders:index:v{$version}:role:{$roleSlug}:user:{$user->id}{$filtersPart}";
+        $normalized = Locale::normalize($locale);
+        $normalizedLocale = $normalized === null ? Locale::SPANISH->value : $normalized->value;
+
+        return "orders:index:v{$version}:locale:{$normalizedLocale}:role:{$roleSlug}:user:{$user->id}{$filtersPart}";
     }
 
     /**
      * Build cache key for a single order by UUID.
      */
-    public static function showKeyFor(string $uuid): string
+    public static function showKeyFor(string $uuid, string $locale = 'es'): string
     {
         $version = self::currentVersion();
+        $normalized = Locale::normalize($locale);
+        $normalizedLocale = $normalized === null ? Locale::SPANISH->value : $normalized->value;
 
-        return "orders:show:v{$version}:uuid:{$uuid}";
+        return "orders:show:v{$version}:locale:{$normalizedLocale}:uuid:{$uuid}";
     }
 
     /**

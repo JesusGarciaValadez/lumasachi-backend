@@ -99,7 +99,9 @@ const canDeliver = computed(() => capabilities.deliver_order && remainingBalance
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
 
-const itemLabels = computed<Record<number, string>>(() => Object.fromEntries(order.value.items.map((item) => [item.id, item.item_type])));
+const itemLabels = computed<Record<number, string>>(() =>
+    Object.fromEntries(order.value.items.map((item) => [item.id, item.item_type_label ?? t('orders.item_type')])),
+);
 
 const serviceLabels = computed(() => ({
     select: t('orders.select'),
@@ -221,7 +223,7 @@ function priorityLabel(priority: string): string {
 function itemTypeLabel(itemType: string): string {
     const option = catalog.value?.item_types.find((item) => item.key === itemType);
 
-    return option?.label ?? itemType;
+    return option?.label ?? t('orders.item_type');
 }
 
 function formatDate(value?: string | null): string {
@@ -637,7 +639,7 @@ onMounted(async () => {
                                 <div class="font-medium">{{ itemTypeLabel(item.item_type) }}</div>
                                 <div class="mt-2 flex flex-wrap gap-2">
                                     <span v-for="component in item.components" :key="component.id" class="rounded-full bg-muted px-2 py-1 text-xs">
-                                        {{ component.component_name }}
+                                        {{ component.component_label ?? t('orders.components') }}
                                     </span>
                                     <span v-if="!item.components.length" class="text-muted-foreground">{{ t('orders.no_components') }}</span>
                                 </div>
@@ -715,7 +717,7 @@ onMounted(async () => {
                         </p>
                         <p v-if="uncompletedAuthorizedServices.length" class="mt-1 text-xs text-muted-foreground">
                             {{ t('orders.uncompleted_services') }}:
-                            {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? service.service_key).join(', ') }}
+                            {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? t('orders.service')).join(', ') }}
                         </p>
                     </div>
                     <Button :disabled="busyAction !== null" @click="openConfirmation('ready')">{{
@@ -825,7 +827,7 @@ onMounted(async () => {
                     {{ authorizedServices.length }})
                     <span v-if="uncompletedAuthorizedServices.length">
                         · {{ t('orders.uncompleted_services') }}:
-                        {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? service.service_key).join(', ') }}
+                        {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? t('orders.service')).join(', ') }}
                     </span>
                 </span>
                 <span v-else-if="dialogAction === 'deliver'" class="flex flex-col gap-1" data-delivery-confirmation>

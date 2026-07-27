@@ -9,6 +9,7 @@ use App\Features\MotorItems;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -67,9 +68,9 @@ final class CatalogControllerTest extends TestCase
         // Seed one service to ensure data appears
         DB::table('service_catalog')->insert([
             [
-                'uuid' => \Illuminate\Support\Str::uuid()->toString(),
+                'uuid' => Str::uuid()->toString(),
                 'service_key' => 'wash_block',
-                'service_name_key' => 'services.wash_block',
+                'service_name_key' => 'service_catalog.wash_block',
                 'item_type' => 'engine_block',
                 'base_price' => 600.00,
                 'tax_percentage' => 16.00,
@@ -100,9 +101,9 @@ final class CatalogControllerTest extends TestCase
         // Seed minimal catalog for engine_block
         DB::table('service_catalog')->insert([
             [
-                'uuid' => \Illuminate\Support\Str::uuid()->toString(),
+                'uuid' => Str::uuid()->toString(),
                 'service_key' => 'wash_block',
-                'service_name_key' => 'services.wash_block',
+                'service_name_key' => 'service_catalog.wash_block',
                 'item_type' => 'engine_block',
                 'base_price' => 600.00,
                 'tax_percentage' => 16.00,
@@ -137,8 +138,21 @@ final class CatalogControllerTest extends TestCase
 
         $data = $response->json();
         $this->assertSame('engine_block', $data['item_type']);
+        $this->assertSame('Block', $data['item_type_label']);
+        $this->assertSame('Árbol de levas', collect($data['components'])->firstWhere('key', 'camshaft')['label']);
         // Service sample must be present
-        $this->assertTrue(collect($data['services'])->contains(fn ($s) => $s['service_key'] === 'wash_block'));
+        $this->assertSame('Lavado de block', collect($data['services'])->firstWhere('service_key', 'wash_block')['service_name']);
+    }
+
+    public function test_rejects_an_explicit_unsupported_locale(): void
+    {
+        Feature::define(MotorItems::class, true);
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+        Sanctum::actingAs($employee);
+
+        $this->getJson('/api/v1/catalog/engine-options?locale=fr')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['locale']);
     }
 
     public function test_customer_cannot_access_catalog_endpoint(): void

@@ -17,6 +17,7 @@ use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\LocaleResolver;
 use App\Services\OrderLifecycleService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,8 @@ final class OrderController extends Controller
     {
         $user = $this->authenticatedUser($request);
 
-        $key = self::indexKeyFor($user);
+        $locale = app(LocaleResolver::class)->resolve($request);
+        $key = self::indexKeyFor($user, locale: $locale);
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($user) {
@@ -160,12 +162,15 @@ final class OrderController extends Controller
     /**
      * Display the specified order.
      */
-    public function show(Order $order): JsonResponse
+    public function show(Request $request, Order $order): JsonResponse
     {
-        $key = self::showKeyFor($order->uuid);
+        $locale = app(LocaleResolver::class)->resolve($request);
+        $key = self::showKeyFor($order->uuid, $locale);
         $hit = Cache::has($key);
 
-        $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order) {
+        $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order, $locale) {
+            app()->setLocale($locale);
+
             return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'items.components', 'services.catalogItem'])))->resolve();
         });
 

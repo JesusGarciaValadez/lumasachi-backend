@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'fallback' => 'Service unavailable',
     // ─── Cylinder Head ──────────────────────────────────────
     'wash_head_4cyl' => 'Cylinder head wash – 4 cyl.',
     'wash_head_v6' => 'Cylinder head wash – V6',

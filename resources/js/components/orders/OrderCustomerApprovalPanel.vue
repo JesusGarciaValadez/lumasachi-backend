@@ -137,12 +137,12 @@ function submit(): void {
             <p v-if="!groups.length" class="text-sm text-muted-foreground">{{ labels.empty }}</p>
             <div v-else class="flex flex-col gap-6">
                 <section v-for="[itemId, itemServices] in groups" :key="itemId" class="flex flex-col gap-3">
-                    <h3 class="font-medium">{{ itemLabels[itemId] ?? `Item ${itemId}` }}</h3>
+                    <h3 class="font-medium">{{ itemLabels[itemId] ?? labels.service }}</h3>
                     <div class="overflow-hidden rounded-md border">
                         <table class="w-full text-left text-sm">
                             <caption class="sr-only">
                                 {{
-                                    itemLabels[itemId] ?? `Item ${itemId}`
+                                    itemLabels[itemId] ?? labels.service
                                 }}
                             </caption>
                             <thead class="hidden border-b bg-muted/40 text-xs text-muted-foreground md:table-header-group">
@@ -161,7 +161,7 @@ function submit(): void {
                                     <td class="block px-3 py-2 align-top md:table-cell">
                                         <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.select }}</span>
                                         <input
-                                            :aria-label="`${labels.select}: ${service.service_name ?? service.service_key}`"
+                                            :aria-label="`${labels.select}: ${service.service_name ?? labels.service}`"
                                             :checked="isSelected(service.id)"
                                             :disabled="busy"
                                             class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -171,7 +171,7 @@ function submit(): void {
                                     </td>
                                     <td class="block px-3 py-2 align-top font-medium md:table-cell">
                                         <span class="mr-2 text-xs font-normal text-muted-foreground md:hidden">{{ labels.service }}</span>
-                                        {{ service.service_name ?? service.service_key }}
+                                        {{ service.service_name ?? labels.service }}
                                     </td>
                                     <td class="block px-3 py-2 align-top md:table-cell">
                                         <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.measurement }}</span>

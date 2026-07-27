@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderItemType;
 use App\Enums\UserRole;
+use App\Services\LocaleResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +26,7 @@ final class CatalogRequest extends FormRequest
     {
         return [
             'item_type' => ['nullable', Rule::in(OrderItemType::getValues())],
-            'locale' => ['nullable', 'string'],
+            'locale' => ['nullable', 'string', Rule::in(app(LocaleResolver::class)->supportedLocales())],
         ];
     }
 
@@ -42,17 +43,23 @@ final class CatalogRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->hasHeader('Accept-Language') && ! $this->has('locale')) {
-            $raw = (string)$this->header('Accept-Language');
+        $hasExplicitLocale = $this->has('locale');
+        $raw = $hasExplicitLocale ? $this->input('locale') : $this->header('Accept-Language');
 
-            // Take the first language tag and drop quality values, normalizing case/underscores
-            $first = explode(',', $raw)[0] ?? '';
-            $first = explode(';', $first)[0] ?? '';
-            $normalized = str_replace('_', '-', mb_strtolower(mb_trim($first)));
+        if (!is_string($raw) || mb_trim($raw) === '') {
+            return;
+        }
 
-            if ($normalized !== '') {
-                $this->merge(['locale' => $normalized]);
-            }
+        if (!$hasExplicitLocale) {
+            $raw = explode(';', explode(',', $raw)[0] ?? '')[0] ?? '';
+        }
+
+        $normalized = app(LocaleResolver::class)->normalize($raw);
+
+        if ($normalized !== null) {
+            $this->merge(['locale' => $normalized]);
+        } elseif ($hasExplicitLocale) {
+            $this->merge(['locale' => $raw]);
         }
     }
 }

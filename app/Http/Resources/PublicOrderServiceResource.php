@@ -17,6 +17,7 @@ final class PublicOrderServiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            'service_key' => $this->service_key,
             'service_name' => $this->catalogItem?->service_name,
             'measurement' => $this->measurement,
             'is_budgeted' => $this->is_budgeted,

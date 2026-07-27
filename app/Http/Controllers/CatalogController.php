@@ -8,6 +8,7 @@ use App\Enums\OrderItemType;
 use App\Features\MotorItems;
 use App\Http\Requests\CatalogRequest;
 use App\Models\ServiceCatalog;
+use App\Services\LocaleResolver;
 use App\Traits\CachesServiceCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\App;
@@ -27,7 +28,7 @@ final class CatalogController extends Controller
 
         // Prefer validated inputs from FormRequest, fallback to headers/config
         $validated = $request->validated();
-        $locale = $validated['locale'] ?? $request->header('Accept-Language') ?? config('app.locale', 'en');
+        $locale = $validated['locale'] ?? app(LocaleResolver::class)->resolve($request);
         App::setLocale($locale);
 
         $itemTypeParam = $validated['item_type'] ?? null;
@@ -118,17 +119,11 @@ final class CatalogController extends Controller
 
     private function itemTypeLabel(OrderItemType $type): string
     {
-        $key = "motor.item_types.{$type->value}";
-        $translated = __($key);
-
-        return is_string($translated) && $translated !== $key ? $translated : $type->label();
+        return $type->label();
     }
 
     private function componentLabel(OrderItemType $type, string $componentKey): string
     {
-        $key = "motor.components.{$type->value}.{$componentKey}";
-        $translated = __($key);
-
-        return is_string($translated) && $translated !== $key ? $translated : ucfirst(str_replace('_', ' ', $componentKey));
+        return $type->componentLabel($componentKey);
     }
 }

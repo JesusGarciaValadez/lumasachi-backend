@@ -94,7 +94,7 @@ function buildRows(): void {
 watch(() => [props.catalog, props.items], buildRows, { deep: true, immediate: true });
 
 function itemTypeLabel(itemType: string): string {
-    return props.catalog?.item_types.find((item) => item.key === itemType)?.label ?? itemType;
+    return props.catalog?.item_types.find((item) => item.key === itemType)?.label ?? props.labels.service;
 }
 
 function formatMoney(value: string | number | null | undefined): string {

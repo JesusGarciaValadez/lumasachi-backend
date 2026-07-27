@@ -48,7 +48,10 @@ final class ServiceCatalogTest extends TestCase
         // Net price calculation (IVA 16%)
         $this->assertSame(696.00, $records->first()->net_price);
 
-        // Translation fallback (no lang file loaded), should return service_key
-        $this->assertSame('wash_block_active', $active->service_name);
+        app()->setLocale('es');
+        $this->assertSame('Servicio no disponible', $active->service_name);
+
+        app()->setLocale('en');
+        $this->assertSame('Service unavailable', $active->service_name);
     }
 }

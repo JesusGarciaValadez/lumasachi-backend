@@ -410,10 +410,10 @@ English:
 
 #### Status
 
-- [ ] Motor item/component catalogs complete.
-- [ ] Service/status/priority labels are locale-aware.
-- [ ] Resources preserve stable values and add localized presentation.
-- [ ] Catalog and resource tests pass in both locales.
+- [x] Motor item/component catalogs complete.
+- [x] Service/status/priority labels are locale-aware.
+- [x] Resources preserve stable values and add localized presentation.
+- [x] Catalog and resource tests pass in both locales.
 
 ### Phase 4 — Localize formatting, validation, API errors, auth, and history
 

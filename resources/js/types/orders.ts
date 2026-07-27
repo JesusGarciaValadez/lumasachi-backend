@@ -88,6 +88,8 @@ export interface OrderItemComponentPayload {
     id: number;
     uuid: string;
     component_name: string;
+    component_key?: string;
+    component_label?: string | null;
     is_received: boolean;
 }
 
@@ -95,6 +97,7 @@ export interface OrderItemPayload {
     id: number;
     uuid: string;
     item_type: OrderItemType;
+    item_type_label?: string | null;
     is_received: boolean;
     components: ResourcePayload<OrderItemComponentPayload[]>;
 }
@@ -302,16 +305,20 @@ export type UserCollectionPayload = ResourcePayload<UserPayload[]>;
 
 export interface PublicOrderItemComponentPayload {
     component_name: string;
+    component_key?: string;
+    component_label?: string | null;
     is_received: boolean;
 }
 
 export interface PublicOrderItemPayload {
     item_type: OrderItemType;
+    item_type_label?: string | null;
     is_received: boolean;
     components: ResourcePayload<PublicOrderItemComponentPayload[]>;
 }
 
 export interface PublicOrderServicePayload {
+    service_key: string;
     service_name?: string | null;
     measurement?: string | null;
     is_budgeted: boolean;
