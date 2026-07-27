@@ -30,6 +30,7 @@ final class SubmitBudgetRequest extends FormRequest
             'services' => 'required|array|min:1',
             'services.*.order_item_id' => [
                 'required',
+                'integer',
                 Rule::exists('order_items', 'id')->where(function (Builder $query): void {
                     $order = $this->route('order');
 
@@ -39,7 +40,12 @@ final class SubmitBudgetRequest extends FormRequest
                     }
                 }),
             ],
-            'services.*.service_key' => 'required|exists:service_catalog,service_key',
+            'services.*.service_key' => [
+                'required',
+                Rule::exists('service_catalog', 'service_key')->where(function (Builder $query): void {
+                    $query->where('is_active', true);
+                }),
+            ],
             'services.*.measurement' => 'nullable|string|max:50',
             'services.*.notes' => 'nullable|string|max:500',
         ];
@@ -55,7 +61,13 @@ final class SubmitBudgetRequest extends FormRequest
                 $validator->errors()->add('status', 'Order must be in Awaiting Review status.');
             }
 
-            foreach ($this->input('services', []) as $index => $service) {
+            $services = $this->input('services', []);
+
+            if (!is_array($services)) {
+                return;
+            }
+
+            foreach ($services as $index => $service) {
                 if (!is_array($service)) {
                     continue;
                 }
@@ -90,9 +102,10 @@ final class SubmitBudgetRequest extends FormRequest
             'services.required' => 'At least one service is required.',
             'services.min' => 'At least one service is required.',
             'services.*.order_item_id.required' => 'Each service must be linked to an order item.',
+            'services.*.order_item_id.integer' => 'The selected order item is invalid.',
             'services.*.order_item_id.exists' => 'The selected order item does not exist.',
             'services.*.service_key.required' => 'Each service must have a service key.',
-            'services.*.service_key.exists' => 'The selected service does not exist in the catalog.',
+            'services.*.service_key.exists' => 'The selected service does not exist in the active catalog.',
         ];
     }
 }

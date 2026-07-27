@@ -204,6 +204,84 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     }
 
     #[Test]
+    public function budget_rejects_a_service_key_that_is_not_in_the_catalog(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => [[
+                'order_item_id' => $item->id,
+                'service_key' => 'not_in_catalog',
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services.0.service_key']);
+
+        $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
+        $this->assertSame(OrderStatus::AwaitingReview, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function budget_rejects_a_service_for_a_different_item_type(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+        $catalog = ServiceCatalog::factory()->forItemType(OrderItemType::CylinderHead)->create();
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => [[
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services.0.service_key']);
+
+        $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
+        $this->assertSame(OrderStatus::AwaitingReview, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function budget_rejects_an_inactive_catalog_service(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+        $item = OrderItem::factory()->received()->create([
+            'order_id' => $order->id,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+        $catalog = ServiceCatalog::factory()->forItemType(OrderItemType::EngineBlock)->inactive()->create();
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => [[
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services.0.service_key']);
+
+        $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
+        $this->assertSame(OrderStatus::AwaitingReview, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function budget_rejects_a_non_array_services_payload(): void
+    {
+        $order = $this->createOrder(OrderStatus::AwaitingReview);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+            'services' => 'invalid',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['services']);
+
+        $this->assertSame(OrderStatus::AwaitingReview, $order->fresh()->status);
+    }
+
+    #[Test]
     public function customer_approval_rejects_a_service_that_belongs_to_another_order(): void
     {
         $this->actingAs($this->customer);
@@ -487,9 +565,9 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     }
 
     private function createOrderService(
-        Order  $order,
+        Order $order,
         string $serviceKey,
-        bool   $isAuthorized,
+        bool  $isAuthorized,
     ): OrderService
     {
         $item = OrderItem::factory()->received()->create([

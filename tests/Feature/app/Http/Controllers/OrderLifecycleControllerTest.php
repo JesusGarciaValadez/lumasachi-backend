@@ -224,7 +224,9 @@ final class OrderLifecycleControllerTest extends TestCase
             ],
         ]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonPath('order.financials.budgeted_base', '600.00')
+            ->assertJsonPath('order.financials.budgeted_net', '696.00');
 
         // Order should transition through REVIEWED to AWAITING_CUSTOMER_APPROVAL
         $order->refresh();

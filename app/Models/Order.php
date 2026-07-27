@@ -179,15 +179,15 @@ final class Order extends Model
     /**
      * Calculate lifecycle totals from persisted services and payment state.
      *
-     * @return array{budgeted: string, authorized: string, completed: string, advance_payment: string, remaining_balance: string}
+     * @return array{budgeted: string, budgeted_base: string, budgeted_net: string, authorized: string, completed: string, advance_payment: string, remaining_balance: string}
      */
     public function financialTotals(): array
     {
         $motorInfo = $this->motorInfo()->first();
 
-        $sum = function (string $field): string {
+        $sum = function (string $field, string $priceField = 'net_price'): string {
             return number_format(
-                (float)$this->services()->where("order_services.{$field}", true)->sum('order_services.net_price'),
+                (float)$this->services()->where("order_services.{$field}", true)->sum("order_services.{$priceField}"),
                 2,
                 '.',
                 ''
@@ -201,6 +201,8 @@ final class Order extends Model
 
         return [
             'budgeted' => $sum('is_budgeted'),
+            'budgeted_base' => $sum('is_budgeted', 'base_price'),
+            'budgeted_net' => $sum('is_budgeted', 'net_price'),
             'authorized' => $sum('is_authorized'),
             'completed' => $completed,
             'advance_payment' => $advancePayment,

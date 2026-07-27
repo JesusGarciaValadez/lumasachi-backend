@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
+import OrderReviewBudgetPanel from '@/components/orders/OrderReviewBudgetPanel.vue';
 import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
 import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import type {
     CatalogPayload,
-    CatalogServiceOption,
     FinancialTotals,
     Order,
     OrderAttachment,
@@ -22,22 +22,21 @@ import type {
     OrderPayload,
     OrderStatus,
     ResourcePayload,
+    SubmitBudgetPayload,
 } from '@/types/orders';
 import { normalizeOrder } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-interface ReviewRow {
-    itemId: number;
-    itemType: string;
-    service: CatalogServiceOption;
-    selected: boolean;
-    measurement: string;
-    notes: string;
-}
-
 type DialogAction = 'budget' | 'approval' | 'completion' | 'ready' | 'deliver' | null;
+
+interface BudgetSubmission {
+    payload: SubmitBudgetPayload;
+    selectedCount: number;
+    baseTotal: string;
+    netTotal: string;
+}
 
 const { order: initialOrder, capabilities } = defineProps<{
     order: ResourcePayload<OrderPayload>;
@@ -58,10 +57,10 @@ const historyError = ref<OrderApiError | null>(null);
 const attachmentActionError = ref<OrderApiError | null>(null);
 const catalog = ref<CatalogPayload | null>(null);
 const catalogLoading = ref(false);
-const reviewRows = ref<ReviewRow[]>([]);
 const approvalSelection = ref<number[]>([]);
 const completionSelection = ref<number[]>([]);
 const downPayment = ref('');
+const pendingBudget = ref<BudgetSubmission | null>(null);
 const busyAction = ref<DialogAction>(null);
 const dialogAction = ref<DialogAction>(null);
 const dialogOpen = ref(false);
@@ -75,7 +74,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ]);
 
 const isStaff = computed(() => capabilities.create_order);
-const canReview = computed(() => isStaff.value && order.value.status === 'Awaiting Review');
+const canReview = computed(() => capabilities.submit_budget && order.value.status === 'Awaiting Review');
 const canApprove = computed(() => capabilities.approve_services && order.value.status === 'Awaiting Customer Approval');
 const canComplete = computed(() => isStaff.value && ['Ready for Work', 'In Progress'].includes(order.value.status));
 const canMarkReady = computed(() => isStaff.value && ['Ready for Work', 'In Progress'].includes(order.value.status));
@@ -111,10 +110,29 @@ const serviceLabels = computed(() => ({
 
 const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),
+    baseTotal: t('orders.base_total'),
+    netTotal: t('orders.net_total'),
     authorized: t('orders.authorized_total'),
     completed: t('orders.completed_total'),
     advance_payment: t('orders.advance_payment'),
     remaining_balance: t('orders.remaining_balance'),
+}));
+
+const reviewLabels = computed(() => ({
+    title: t('orders.review_budget'),
+    help: t('orders.review_budget_help'),
+    submit: t('orders.submit_budget'),
+    service: t('orders.service'),
+    measurement: t('orders.measurement'),
+    budgeted: t('orders.budgeted'),
+    basePrice: t('orders.base_price'),
+    netPrice: t('orders.net_price'),
+    notes: t('orders.notes'),
+    preview: t('orders.preview_total'),
+    baseTotal: t('orders.base_total'),
+    netTotal: t('orders.net_total'),
+    selected: t('orders.services_selected'),
+    empty: t('orders.no_services'),
 }));
 
 const financials = computed<FinancialTotals>(
@@ -128,14 +146,6 @@ const financials = computed<FinancialTotals>(
         },
 );
 
-const reviewTotal = computed(() =>
-    reviewRows.value
-        .filter((row) => row.selected)
-        .reduce((total, row) => total + Number(row.service.net_price ?? 0), 0)
-        .toFixed(2),
-);
-
-const selectedReviewRows = computed(() => reviewRows.value.filter((row) => row.selected));
 const completedServices = computed(() => order.value.services.filter((service) => service.is_completed));
 const uncompletedAuthorizedServices = computed(() => order.value.services.filter((service) => service.is_authorized && !service.is_completed));
 
@@ -173,29 +183,6 @@ function formatMoney(value: string | number | null | undefined): string {
     return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function errorFor(key: string): string | undefined {
-    return lastError.value?.validationErrors[key]?.[0];
-}
-
-function buildReviewRows(): void {
-    if (!catalog.value) {
-        return;
-    }
-
-    reviewRows.value = order.value.items
-        .filter((item) => item.is_received)
-        .flatMap((item) =>
-            (catalog.value?.services_by_type[item.item_type] ?? []).map((service) => ({
-                itemId: item.id,
-                itemType: item.item_type,
-                service,
-                selected: false,
-                measurement: '',
-                notes: '',
-            })),
-        );
-}
-
 async function loadCatalog(): Promise<void> {
     if (!isStaff.value || !canReview.value) {
         return;
@@ -205,7 +192,6 @@ async function loadCatalog(): Promise<void> {
 
     try {
         catalog.value = await orderApi.catalog();
-        buildReviewRows();
     } catch (error: unknown) {
         lastError.value = error instanceof OrderApiError ? error : null;
     } finally {
@@ -297,8 +283,8 @@ function handleError(error: unknown): void {
     staleState.value = error instanceof OrderApiError && (error.kind === 'conflict' || Object.hasOwn(error.validationErrors, 'status'));
 }
 
-async function submitBudget(): Promise<void> {
-    if (!selectedReviewRows.value.length) {
+async function submitBudget(payload: SubmitBudgetPayload): Promise<void> {
+    if (!payload.services.length) {
         return;
     }
 
@@ -306,21 +292,18 @@ async function submitBudget(): Promise<void> {
     lastError.value = null;
 
     try {
-        await orderApi.submitBudget(orderUuid.value, {
-            services: selectedReviewRows.value.map((row) => ({
-                order_item_id: row.itemId,
-                service_key: row.service.service_key,
-                measurement: row.measurement || null,
-                notes: row.notes || null,
-            })),
-        });
+        await orderApi.submitBudget(orderUuid.value, payload);
         await refreshOrder();
-        reviewRows.value = [];
     } catch (error: unknown) {
         handleError(error);
     } finally {
         busyAction.value = null;
     }
+}
+
+function prepareBudget(submission: BudgetSubmission): void {
+    pendingBudget.value = submission;
+    openConfirmation('budget');
 }
 
 async function approveServices(): Promise<void> {
@@ -394,7 +377,11 @@ async function confirmAction(): Promise<void> {
     const action = dialogAction.value;
     dialogOpen.value = false;
 
-    if (action === 'budget') await submitBudget();
+    if (action === 'budget' && pendingBudget.value) {
+        const submission = pendingBudget.value;
+        pendingBudget.value = null;
+        await submitBudget(submission.payload);
+    }
     if (action === 'approval') await approveServices();
     if (action === 'completion') await completeServices();
     if (action === 'ready') await markReadyForDelivery();
@@ -522,59 +509,16 @@ onMounted(async () => {
                 :title="t('orders.financial_summary')"
             />
 
-            <Card v-if="canReview">
-                <div class="flex flex-col gap-4 px-6">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h2 class="text-base font-semibold">{{ t('orders.review_budget') }}</h2>
-                            <p class="text-sm text-muted-foreground">{{ t('orders.review_budget_help') }}</p>
-                        </div>
-                        <Button :disabled="!selectedReviewRows.length || busyAction !== null" @click="openConfirmation('budget')">
-                            {{ busyAction === 'budget' ? t('common.loading') : t('orders.submit_budget') }}
-                        </Button>
-                    </div>
-                    <div v-if="catalogLoading" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
-                    <div v-else-if="reviewRows.length" class="flex flex-col gap-4">
-                        <div
-                            v-for="item in order.items.filter((value) => value.is_received)"
-                            :key="item.id"
-                            class="flex flex-col gap-3 rounded-md border p-3"
-                        >
-                            <h3 class="font-medium">{{ itemTypeLabel(item.item_type) }}</h3>
-                            <div
-                                v-for="row in reviewRows.filter((value) => value.itemId === item.id)"
-                                :key="row.service.service_key"
-                                class="grid gap-3 rounded-md bg-muted/30 p-3 md:grid-cols-[auto_1fr_10rem_10rem] md:items-start"
-                            >
-                                <input
-                                    v-model="row.selected"
-                                    :aria-label="row.service.service_name"
-                                    class="mt-1 size-4 rounded border-input text-primary focus:ring-primary"
-                                    type="checkbox"
-                                />
-                                <div>
-                                    <div class="font-medium">{{ row.service.service_name }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ formatMoney(row.service.net_price) }}</div>
-                                </div>
-                                <div v-if="row.service.requires_measurement" class="flex flex-col gap-1">
-                                    <Label :for="`measurement-${row.itemId}-${row.service.service_key}`">{{ t('orders.measurement') }}</Label
-                                    ><Input
-                                        :id="`measurement-${row.itemId}-${row.service.service_key}`"
-                                        v-model="row.measurement"
-                                        :aria-invalid="Boolean(errorFor(`services.${reviewRows.indexOf(row)}.measurement`))"
-                                    />
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <Label :for="`notes-${row.itemId}-${row.service.service_key}`">{{ t('orders.notes') }}</Label
-                                    ><Input :id="`notes-${row.itemId}-${row.service.service_key}`" v-model="row.notes" />
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-right text-sm font-semibold">{{ t('orders.preview_total') }}: {{ formatMoney(reviewTotal) }}</div>
-                    </div>
-                    <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_services') }}</p>
-                </div>
-            </Card>
+            <OrderReviewBudgetPanel
+                v-if="canReview"
+                :busy="busyAction !== null"
+                :catalog="catalog"
+                :errors="lastError?.validationErrors ?? {}"
+                :items="order.items"
+                :labels="reviewLabels"
+                :loading="catalogLoading"
+                @submit="prepareBudget"
+            />
 
             <OrderServiceMatrix
                 v-if="canApprove"
@@ -720,7 +664,10 @@ onMounted(async () => {
                 <DialogDescription>{{ t('orders.confirm_action_description') }}</DialogDescription>
             </DialogHeader>
             <div class="rounded-md bg-muted p-3 text-sm">
-                <span v-if="dialogAction === 'budget'">{{ t('orders.confirm_budget') }}</span>
+                <span v-if="dialogAction === 'budget' && pendingBudget">
+                    {{ pendingBudget.selectedCount }} {{ t('orders.services_selected') }} · {{ t('orders.base_total') }}:
+                    {{ formatMoney(pendingBudget.baseTotal) }} · {{ t('orders.net_total') }}: {{ formatMoney(pendingBudget.netTotal) }}
+                </span>
                 <span v-else-if="dialogAction === 'approval'">{{ approvalSelection.length }} {{ t('orders.services_selected') }}</span>
                 <span v-else-if="dialogAction === 'completion'">{{ completionSelection.length }} {{ t('orders.services_selected') }}</span>
                 <span v-else-if="dialogAction === 'ready'">{{ t('orders.confirm_ready') }}</span>
