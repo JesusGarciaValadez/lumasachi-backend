@@ -127,4 +127,10 @@ final class OrderRouteTest extends TestCase
             ->get(route('web.orders.create'))
             ->assertForbidden();
     }
+
+    #[Test]
+    public function guests_are_redirected_to_login_when_accessing_order_creation(): void
+    {
+        $this->get(route('web.orders.create'))->assertRedirect('/login');
+    }
 }

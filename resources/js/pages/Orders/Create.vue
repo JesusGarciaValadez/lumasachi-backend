@@ -75,6 +75,14 @@ function fieldError(key: string): string | undefined {
     return error.value?.validationErrors[key]?.[0];
 }
 
+function componentErrors(index: number): string[] {
+    const prefix = `items.${index}.components`;
+
+    return Object.entries(error.value?.validationErrors ?? {})
+        .filter(([key]) => key === prefix || key.startsWith(`${prefix}.`))
+        .flatMap(([, messages]) => messages);
+}
+
 function addItem(): void {
     const next = itemTypeOptions.value.find((option) => !form.value.items.some((item) => item.item_type === option.key));
 
@@ -117,6 +125,10 @@ function handleComponentChange(item: CreateOrderItemPayload, componentKey: strin
 }
 
 async function submit(): Promise<void> {
+    if (processing.value) {
+        return;
+    }
+
     processing.value = true;
     error.value = null;
 
@@ -348,9 +360,15 @@ onMounted(async () => {
                                     />{{ component.label }}</label
                                 >
                             </div>
-                            <p v-if="fieldError(`items.${index}.components.0`)" class="text-sm text-destructive">
-                                {{ fieldError(`items.${index}.components.0`) }}
-                            </p>
+                            <div v-if="componentErrors(index).length" class="flex flex-col gap-1" role="alert">
+                                <p
+                                    v-for="(message, messageIndex) in componentErrors(index)"
+                                    :key="`${index}-${messageIndex}-${message}`"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ message }}
+                                </p>
+                            </div>
                         </div>
                         <p v-if="fieldError('items')" class="text-sm text-destructive">{{ fieldError('items') }}</p>
                     </div>

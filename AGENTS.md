@@ -52,11 +52,14 @@ work in that domain—don't wait until you're stuck.
 ## Application Structure & Architecture
 
 - Stick to existing directory structure; don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
+- Do not change the application's dependencies without approval. Vue test dependencies are approved for this project;
+  use the existing frontend test conventions when adding them.
 
 ## Frontend Bundling
 
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `vendor/bin/sail yarn run build`, `vendor/bin/sail yarn run dev`, or `vendor/bin/sail composer run dev`. Ask them.
+- If Prettier or ESLint reports a pre-existing warning in `resources/views/vendor/mail/html/themes/default.css`, that
+  file may be modified to resolve the warning and should be included in the verification diff.
 
 ## Documentation Files
 
