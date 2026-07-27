@@ -146,6 +146,8 @@ export interface OrderAttachment extends Omit<OrderAttachmentPayload, 'uploaded_
 
 export interface FinancialTotals {
     budgeted: MoneyValue;
+    budgeted_base?: MoneyValue;
+    budgeted_net?: MoneyValue;
     authorized: MoneyValue;
     completed: MoneyValue;
     advance_payment: MoneyValue;

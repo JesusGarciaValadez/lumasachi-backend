@@ -611,6 +611,24 @@ Frontend unit tests, if approved:
 3. Preview totals include only selected budget services.
 4. Validation and stale-status errors leave selections intact.
 
+#### 7.4 completion marks
+
+- [x] The review panel is rendered from the server-provided `submit_budget` capability and only while the order is in
+  `Awaiting Review`.
+- [x] Received items are grouped independently with only their active, item-type-specific catalog services; unreceived
+  items are excluded.
+- [x] The responsive review matrix shows PPTO selection, service name, conditional measurement, base price, net price,
+  and notes with accessible desktop headers.
+- [x] Preview base and net totals include only selected services, while the persisted order exposes server-calculated
+  budgeted base and net totals in its financial summary.
+- [x] Budget submission is confirmed in a modal, sends only selected received services, preserves local selections after
+  validation or stale-status errors, and refreshes to the persisted `Awaiting Customer Approval` state on success.
+- [x] Foreign, unreceived, invalid, mismatched, inactive, malformed, and missing-measurement budget payloads are
+  rejected without persisting partial services.
+- [x] Existing budget notifications and history transitions remain green, and the focused PHPUnit, Vue unit, TypeScript,
+  build, ESLint, Prettier, Pint, and PHPStan checks pass.
+- [x] No additional Step 7.4 business-rule edge case remains unresolved.
+
 ### 7.5 — Customer approval panel
 
 #### 7.5.1 — Visibility and read-only quotation
