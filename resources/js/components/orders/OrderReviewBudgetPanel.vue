@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getIntlLocale } from '@/lib/i18n';
 import type { CatalogPayload, CatalogServiceOption, OrderItem, SubmitBudgetPayload } from '@/types/orders';
 import { computed, ref, watch } from 'vue';
 
@@ -42,7 +43,7 @@ const props = defineProps<{
         preview: string;
         baseTotal: string;
         netTotal: string;
-        selected: string;
+        selected: (count: number) => string;
         empty: string;
     };
 }>();
@@ -97,7 +98,7 @@ function itemTypeLabel(itemType: string): string {
 }
 
 function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function selectedIndex(row: ReviewRow): number {
@@ -266,7 +267,7 @@ function submit(): void {
                         <span class="font-semibold" data-review-net-total>{{ formatMoney(netTotal) }}</span>
                     </div>
                 </div>
-                <p class="text-right text-sm text-muted-foreground">{{ labels.selected }}: {{ selectedRows.length }}</p>
+                <p class="text-right text-sm text-muted-foreground">{{ labels.selected(selectedRows.length) }}</p>
             </div>
         </div>
     </Card>

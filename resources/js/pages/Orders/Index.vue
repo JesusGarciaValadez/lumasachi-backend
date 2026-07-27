@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { getIntlLocale } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import type { OrderSummary } from '@/types/orders';
 import { Head, Link } from '@inertiajs/vue3';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -16,7 +17,7 @@ defineProps<{
     can_create_order: boolean;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: t('common.orders'), href: route('web.orders.index') }];
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [{ title: t('common.orders'), href: route('web.orders.index') }]);
 
 const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
@@ -26,7 +27,7 @@ const orderApi = useOrderApi();
 function formatDate(value?: string | null) {
     if (!value) return '—';
     try {
-        return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
     } catch {
         return value;
     }
@@ -81,7 +82,7 @@ onMounted(async () => {
                                         {{ t('orders.created_at') }}: {{ formatDate(o.created_at) }}
                                     </div>
                                 </div>
-                                <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">Ver</Link>
+                                <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">{{ t('common.view') }}</Link>
                             </div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">{{ t('common.empty') }}</div>

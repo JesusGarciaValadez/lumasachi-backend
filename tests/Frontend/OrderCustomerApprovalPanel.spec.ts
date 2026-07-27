@@ -17,7 +17,7 @@ const labels = {
     budgetedNetTotal: 'Budgeted net total',
     authorizedBaseTotal: 'Authorized base total',
     authorizedNetTotal: 'Authorized net total',
-    selected: 'Selected',
+    selected: (count: number) => `${count} selected`,
     advancePayment: 'Advance payment',
     submit: 'Approve selected',
     empty: 'No budgeted services',

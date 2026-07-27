@@ -66,7 +66,7 @@ const rightNavItems: NavItem[] = [];
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" class="w-[300px] p-6">
-                            <SheetTitle class="sr-only">Navigation Menu</SheetTitle>
+                            <SheetTitle class="sr-only">{{ t('common.navigation_menu') }}</SheetTitle>
                             <SheetHeader class="flex justify-start text-left">
                                 <AppLogoIcon class="size-6 fill-current text-black dark:text-white" />
                             </SheetHeader>
@@ -129,7 +129,13 @@ const rightNavItems: NavItem[] = [];
                 <div class="ml-auto flex items-center space-x-2">
                     <LocaleSwitcher />
                     <div class="relative flex items-center space-x-1">
-                        <Button variant="ghost" size="icon" class="group h-9 w-9 cursor-pointer">
+                        <Button
+                            :aria-label="t('common.search')"
+                            :title="t('common.search')"
+                            class="group h-9 w-9 cursor-pointer"
+                            size="icon"
+                            variant="ghost"
+                        >
                             <Search class="size-5 opacity-80 group-hover:opacity-100" />
                         </Button>
 

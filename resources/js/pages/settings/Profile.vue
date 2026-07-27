@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem, type User } from '@/types';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -18,12 +20,8 @@ interface Props {
 
 defineProps<Props>();
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
+const { t } = useI18n();
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => [{ title: t('settings.profile_title'), href: '/settings/profile' }]);
 
 const page = usePage();
 const user = page.props.auth.user as User;
@@ -43,41 +41,41 @@ const submit = () => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Profile settings" />
+        <Head :title="t('settings.profile_title')" />
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Profile information" description="Update your name and email address" />
+                <HeadingSmall :description="t('settings.profile_description')" :title="t('settings.profile_information')" />
 
                 <form @submit.prevent="submit" class="space-y-6">
                     <div class="grid gap-2">
-                        <Label for="first_name">First name</Label>
+                        <Label for="first_name">{{ t('settings.first_name') }}</Label>
                         <Input
                             id="first_name"
                             v-model="form.first_name"
                             autocomplete="given-name"
                             class="mt-1 block w-full"
-                            placeholder="First name"
+                            :placeholder="t('settings.first_name')"
                             required
                         />
                         <InputError :message="form.errors.first_name" class="mt-2" />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="last_name">Last name</Label>
+                        <Label for="last_name">{{ t('settings.last_name') }}</Label>
                         <Input
                             id="last_name"
                             v-model="form.last_name"
                             autocomplete="family-name"
                             class="mt-1 block w-full"
-                            placeholder="Last name"
+                            :placeholder="t('settings.last_name')"
                             required
                         />
                         <InputError :message="form.errors.last_name" class="mt-2" />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
+                        <Label for="email">{{ t('settings.email') }}</Label>
                         <Input
                             id="email"
                             type="email"
@@ -85,31 +83,31 @@ const submit = () => {
                             v-model="form.email"
                             required
                             autocomplete="username"
-                            placeholder="Email address"
+                            :placeholder="t('settings.email')"
                         />
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
                         <p class="-mt-4 text-sm text-muted-foreground">
-                            Your email address is unverified.
+                            {{ t('settings.unverified_email') }}
                             <Link
                                 :href="route('verification.send')"
                                 method="post"
                                 as="button"
                                 class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                             >
-                                Click here to resend the verification email.
+                                {{ t('settings.resend_verification') }}
                             </Link>
                         </p>
 
                         <div v-if="status === 'verification-link-sent'" class="mt-2 text-sm font-medium text-green-600">
-                            A new verification link has been sent to your email address.
+                            {{ t('settings.verification_sent') }}
                         </div>
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button :disabled="form.processing">Save</Button>
+                        <Button :disabled="form.processing">{{ t('settings.save') }}</Button>
 
                         <Transition
                             enter-active-class="transition ease-in-out"
@@ -117,7 +115,7 @@ const submit = () => {
                             leave-active-class="transition ease-in-out"
                             leave-to-class="opacity-0"
                         >
-                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
+                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">{{ t('settings.saved') }}</p>
                         </Transition>
                     </div>
                 </form>

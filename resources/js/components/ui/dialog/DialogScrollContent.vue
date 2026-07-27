@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { cn } from '@/lib/utils'
-import { X } from 'lucide-vue-next'
+import { cn } from '@/lib/utils';
+import { X } from 'lucide-vue-next';
 import {
-  DialogClose,
-  DialogContent,
-  type DialogContentEmits,
-  type DialogContentProps,
-  DialogOverlay,
-  DialogPortal,
-  useForwardPropsEmits,
-} from 'reka-ui'
-import { computed, type HTMLAttributes } from 'vue'
+    DialogClose,
+    DialogContent,
+    type DialogContentEmits,
+    type DialogContentProps,
+    DialogOverlay,
+    DialogPortal,
+    useForwardPropsEmits
+} from 'reka-ui';
+import { computed, type HTMLAttributes } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class'] }>()
 const emits = defineEmits<DialogContentEmits>()
+const { t } = useI18n()
 
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props
@@ -51,7 +53,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           class="absolute top-4 right-4 p-0.5 transition-colors rounded-md hover:bg-secondary"
         >
           <X class="w-4 h-4" />
-          <span class="sr-only">Close</span>
+          <span class="sr-only">{{ t('common.close') }}</span>
         </DialogClose>
       </DialogContent>
     </DialogOverlay>

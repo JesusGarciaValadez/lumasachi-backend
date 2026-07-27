@@ -4,9 +4,9 @@
     >
         <div class="flex items-start gap-3">
             <div>
-                <p class="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">Catálogo</p>
-                <h1 class="text-2xl font-semibold">Engine Options</h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Componentes y servicios filtrables por tipo de pieza.</p>
+                <p class="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">{{ t('catalog.eyebrow') }}</p>
+                <h1 class="text-2xl font-semibold">{{ t('catalog.title') }}</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ t('catalog.description') }}</p>
             </div>
             <div class="ml-auto flex items-center gap-2">
                 <button
@@ -14,13 +14,13 @@
                     class="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                     @click="refresh"
                 >
-                    {{ isLoading ? 'Cargando…' : 'Refrescar' }}
+                    {{ isLoading ? t('common.loading') : t('catalog.refresh') }}
                 </button>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-            <label class="text-sm text-gray-700 dark:text-gray-200">Tipo de ítem</label>
+            <label class="text-sm text-gray-700 dark:text-gray-200">{{ t('catalog.item_type') }}</label>
             <select
                 v-model="selectedType"
                 class="rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/70 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-400"
@@ -28,7 +28,7 @@
             >
                 <option v-for="t in itemTypes" :key="t.key" :value="t.key">{{ t.label }}</option>
             </select>
-            <span class="text-xs text-gray-500 dark:text-gray-400">Idioma: {{ langDisplay }}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('catalog.language') }}: {{ langDisplay }}</span>
         </div>
 
         <div
@@ -41,8 +41,8 @@
         <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-medium">Componentes</h2>
-                    <span v-if="isLoading" class="text-xs text-gray-500 dark:text-gray-400">Cargando…</span>
+                    <h2 class="text-lg font-medium">{{ t('catalog.components') }}</h2>
+                    <span v-if="isLoading" class="text-xs text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</span>
                 </div>
                 <div v-if="isLoading" class="space-y-2">
                     <div class="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-800"></div>
@@ -51,22 +51,22 @@
                 </div>
                 <ul v-else class="list-inside list-disc space-y-1 text-sm">
                     <li v-for="c in components" :key="c.key">{{ c.label }}</li>
-                    <li v-if="components.length === 0" class="text-gray-500 dark:text-gray-400">Sin componentes para este tipo.</li>
+                    <li v-if="components.length === 0" class="text-gray-500 dark:text-gray-400">{{ t('catalog.no_components') }}</li>
                 </ul>
             </div>
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-medium">Servicios</h2>
-                    <span v-if="isLoading" class="text-xs text-gray-500 dark:text-gray-400">Cargando…</span>
+                    <h2 class="text-lg font-medium">{{ t('catalog.services') }}</h2>
+                    <span v-if="isLoading" class="text-xs text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</span>
                 </div>
                 <div class="overflow-hidden rounded border border-gray-200 dark:border-gray-800">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-900">
                             <tr class="text-left">
-                                <th class="px-3 py-2">Servicio</th>
-                                <th class="px-3 py-2 text-right">Base</th>
-                                <th class="px-3 py-2 text-right">Neto</th>
-                                <th class="px-3 py-2">Mide?</th>
+                                <th class="px-3 py-2">{{ t('catalog.service') }}</th>
+                                <th class="px-3 py-2 text-right">{{ t('catalog.base') }}</th>
+                                <th class="px-3 py-2 text-right">{{ t('catalog.net') }}</th>
+                                <th class="px-3 py-2">{{ t('catalog.measurement') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -83,13 +83,13 @@
                                 </tr>
                             </template>
                             <tr v-else-if="services.length === 0" class="border-t border-gray-100 dark:border-gray-800">
-                                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400" colspan="4">Sin servicios para este tipo.</td>
+                                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400" colspan="4">{{ t('catalog.no_services') }}</td>
                             </tr>
                             <tr v-for="s in services" v-else :key="s.service_key" class="border-t border-gray-100 dark:border-gray-800">
                                 <td class="px-3 py-2">{{ s.service_name }}</td>
                                 <td class="px-3 py-2 text-right">{{ s.base_price }}</td>
                                 <td class="px-3 py-2 text-right">{{ s.net_price }}</td>
-                                <td class="px-3 py-2">{{ s.requires_measurement ? 'Sí' : 'No' }}</td>
+                                <td class="px-3 py-2">{{ s.requires_measurement ? t('catalog.yes') : t('catalog.no') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { route } from 'ziggy-js';
 
 interface ItemType {
@@ -127,6 +128,7 @@ const components = ref<ComponentItem[]>([]);
 const services = ref<ServiceItem[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+const { t, locale } = useI18n();
 
 function lang(): string {
     if (typeof document !== 'undefined' && document.documentElement.lang) {
@@ -139,7 +141,7 @@ function lang(): string {
     return 'en';
 }
 
-const langDisplay = computed(() => (lang() === 'es' ? 'ES' : 'EN'));
+const langDisplay = computed(() => locale.value.toUpperCase());
 
 function withLocale(url: string): string {
     const locale = lang();
@@ -157,8 +159,7 @@ async function fetchJson(url: string) {
         credentials: 'same-origin',
     });
     if (!res.ok) {
-        const message = `Request failed: ${res.status}`;
-        throw new Error(message);
+        throw new Error(t('catalog.request_failed', { status: res.status }));
     }
     return await res.json();
 }
@@ -182,7 +183,7 @@ async function loadFull() {
         components.value = data.components_by_type?.[selectedType.value] || [];
         services.value = data.services_by_type?.[selectedType.value] || [];
     } catch (e: any) {
-        error.value = e?.message || 'No se pudo cargar el catálogo';
+        error.value = e instanceof Error ? e.message : t('catalog.load_failed');
     } finally {
         isLoading.value = false;
     }
@@ -203,7 +204,7 @@ async function loadForType() {
         components.value = data.components || [];
         services.value = data.services || [];
     } catch (e: any) {
-        error.value = e?.message || 'No se pudo cargar el catálogo';
+        error.value = e instanceof Error ? e.message : t('catalog.load_failed');
     } finally {
         isLoading.value = false;
     }

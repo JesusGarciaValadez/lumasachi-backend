@@ -2,6 +2,7 @@ import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
 import { mount } from '@vue/test-utils';
 
 const labels = {
+    select: 'Select',
     service: 'Service',
     measurement: 'Measurement',
     base_price: 'Base price',

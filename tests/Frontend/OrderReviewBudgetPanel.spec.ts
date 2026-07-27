@@ -15,7 +15,7 @@ const labels = {
     preview: 'Preview total',
     baseTotal: 'Base total',
     netTotal: 'Net total',
-    selected: 'Selected',
+    selected: (count: number) => `${count} selected`,
     empty: 'No services',
 };
 

@@ -359,10 +359,10 @@ Requirements:
 
 #### Status
 
-- [ ] All app-owned static copy uses Vue translation keys.
-- [ ] Accessibility copy is translated.
-- [ ] Spanish and English catalogs have parity.
-- [ ] Representative dual-locale component tests pass.
+- [x] All app-owned static copy uses Vue translation keys.
+- [x] Accessibility copy is translated.
+- [x] Spanish and English catalogs have parity.
+- [x] Representative dual-locale component tests pass.
 
 ### Phase 3 — Localize motor items, components, services, statuses, and priorities
 
