@@ -315,6 +315,45 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     }
 
     #[Test]
+    public function customer_approval_rejects_a_non_integer_service_id(): void
+    {
+        $this->actingAs($this->customer);
+        $order = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
+
+        $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+            'authorized_service_ids' => ['invalid'],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['authorized_service_ids.0']);
+
+        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function a_different_customer_cannot_submit_approval(): void
+    {
+        $otherCustomer = User::factory()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'is_active' => true,
+        ]);
+        $order = $this->createOrder(OrderStatus::AwaitingCustomerApproval);
+        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+        $service = $item->services()->create([
+            'service_key' => 'wash_block',
+            'is_budgeted' => true,
+            'base_price' => 600.00,
+            'net_price' => 696.00,
+        ]);
+
+        $this->actingAs($otherCustomer)
+            ->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+                'authorized_service_ids' => [$service->id],
+            ])->assertForbidden();
+
+        $this->assertFalse($service->fresh()->is_authorized);
+        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
+    }
+
+    #[Test]
     public function work_completion_rejects_a_service_that_belongs_to_another_order(): void
     {
         $order = $this->createOrder(OrderStatus::ReadyForWork);
@@ -567,7 +606,7 @@ final class OrderBusinessRulesEdgeCasesTest extends TestCase
     private function createOrderService(
         Order $order,
         string $serviceKey,
-        bool  $isAuthorized,
+        bool $isAuthorized,
     ): OrderService
     {
         $item = OrderItem::factory()->received()->create([

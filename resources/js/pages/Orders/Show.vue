@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import OrderCustomerApprovalPanel from '@/components/orders/OrderCustomerApprovalPanel.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
 import OrderReviewBudgetPanel from '@/components/orders/OrderReviewBudgetPanel.vue';
 import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
@@ -7,13 +8,12 @@ import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import type {
     CatalogPayload,
+    CustomerApprovalPayload,
     FinancialTotals,
     Order,
     OrderAttachment,
@@ -38,6 +38,16 @@ interface BudgetSubmission {
     netTotal: string;
 }
 
+interface ApprovalSubmission {
+    payload: CustomerApprovalPayload;
+    selectedCount: number;
+    budgetedBaseTotal: string;
+    budgetedNetTotal: string;
+    authorizedBaseTotal: string;
+    authorizedNetTotal: string;
+    downPayment: string;
+}
+
 const { order: initialOrder, capabilities } = defineProps<{
     order: ResourcePayload<OrderPayload>;
     capabilities: OrderCapabilities;
@@ -57,10 +67,9 @@ const historyError = ref<OrderApiError | null>(null);
 const attachmentActionError = ref<OrderApiError | null>(null);
 const catalog = ref<CatalogPayload | null>(null);
 const catalogLoading = ref(false);
-const approvalSelection = ref<number[]>([]);
 const completionSelection = ref<number[]>([]);
-const downPayment = ref('');
 const pendingBudget = ref<BudgetSubmission | null>(null);
+const pendingApproval = ref<ApprovalSubmission | null>(null);
 const busyAction = ref<DialogAction>(null);
 const dialogAction = ref<DialogAction>(null);
 const dialogOpen = ref(false);
@@ -133,6 +142,27 @@ const reviewLabels = computed(() => ({
     netTotal: t('orders.net_total'),
     selected: t('orders.services_selected'),
     empty: t('orders.no_services'),
+}));
+
+const approvalLabels = computed(() => ({
+    title: t('orders.customer_approval'),
+    help: t('orders.customer_approval_help'),
+    service: t('orders.service'),
+    measurement: t('orders.measurement'),
+    basePrice: t('orders.base_price'),
+    netPrice: t('orders.net_price'),
+    budgeted: t('orders.budgeted'),
+    authorized: t('orders.authorized'),
+    select: t('orders.select'),
+    preview: t('orders.preview_total'),
+    budgetedBaseTotal: t('orders.base_total'),
+    budgetedNetTotal: t('orders.net_total'),
+    authorizedBaseTotal: t('orders.authorized_base_total'),
+    authorizedNetTotal: t('orders.authorized_net_total'),
+    selected: t('orders.services_selected'),
+    advancePayment: t('orders.advance_payment'),
+    submit: t('orders.approve_selected'),
+    empty: t('orders.no_budgeted_services'),
 }));
 
 const financials = computed<FinancialTotals>(
@@ -306,23 +336,24 @@ function prepareBudget(submission: BudgetSubmission): void {
     openConfirmation('budget');
 }
 
-async function approveServices(): Promise<void> {
+async function approveServices(payload: CustomerApprovalPayload): Promise<void> {
     busyAction.value = 'approval';
     lastError.value = null;
 
     try {
-        await orderApi.approveServices(orderUuid.value, {
-            authorized_service_ids: approvalSelection.value,
-            down_payment: downPayment.value === '' ? undefined : downPayment.value,
-        });
+        const approvedOrder = await orderApi.approveServices(orderUuid.value, payload);
+        currentOrder.value = approvedOrder;
         await refreshOrder();
-        approvalSelection.value = [];
-        downPayment.value = '';
     } catch (error: unknown) {
         handleError(error);
     } finally {
         busyAction.value = null;
     }
+}
+
+function prepareApproval(submission: ApprovalSubmission): void {
+    pendingApproval.value = submission;
+    openConfirmation('approval');
 }
 
 async function completeServices(): Promise<void> {
@@ -382,7 +413,11 @@ async function confirmAction(): Promise<void> {
         pendingBudget.value = null;
         await submitBudget(submission.payload);
     }
-    if (action === 'approval') await approveServices();
+    if (action === 'approval' && pendingApproval.value) {
+        const submission = pendingApproval.value;
+        pendingApproval.value = null;
+        await approveServices(submission.payload);
+    }
     if (action === 'completion') await completeServices();
     if (action === 'ready') await markReadyForDelivery();
     if (action === 'deliver') await deliverOrder();
@@ -520,25 +555,15 @@ onMounted(async () => {
                 @submit="prepareBudget"
             />
 
-            <OrderServiceMatrix
+            <OrderCustomerApprovalPanel
                 v-if="canApprove"
+                :busy="busyAction !== null"
+                :errors="lastError?.validationErrors ?? {}"
                 :item-labels="itemLabels"
-                :labels="serviceLabels"
-                :selected-ids="approvalSelection"
+                :labels="approvalLabels"
                 :services="order.services"
-                :title="t('orders.customer_approval')"
-                mode="approval"
-                @update:selected-ids="approvalSelection = $event"
+                @submit="prepareApproval"
             />
-            <Card v-if="canApprove">
-                <div class="flex flex-col gap-3 px-6">
-                    <Label for="down-payment">{{ t('orders.advance_payment') }}</Label>
-                    <Input id="down-payment" v-model="downPayment" inputmode="decimal" min="0" step="0.01" type="number" />
-                    <Button :disabled="!approvalSelection.length || busyAction !== null" class="self-start" @click="openConfirmation('approval')">
-                        {{ busyAction === 'approval' ? t('common.loading') : t('orders.approve_selected') }}
-                    </Button>
-                </div>
-            </Card>
 
             <OrderServiceMatrix
                 v-if="canComplete"
@@ -668,7 +693,12 @@ onMounted(async () => {
                     {{ pendingBudget.selectedCount }} {{ t('orders.services_selected') }} · {{ t('orders.base_total') }}:
                     {{ formatMoney(pendingBudget.baseTotal) }} · {{ t('orders.net_total') }}: {{ formatMoney(pendingBudget.netTotal) }}
                 </span>
-                <span v-else-if="dialogAction === 'approval'">{{ approvalSelection.length }} {{ t('orders.services_selected') }}</span>
+                <span v-else-if="dialogAction === 'approval' && pendingApproval">
+                    {{ pendingApproval.selectedCount }} {{ t('orders.services_selected') }} · {{ t('orders.authorized_base_total') }}:
+                    {{ formatMoney(pendingApproval.authorizedBaseTotal) }} · {{ t('orders.authorized_net_total') }}:
+                    {{ formatMoney(pendingApproval.authorizedNetTotal) }} · {{ t('orders.advance_payment') }}:
+                    {{ pendingApproval.downPayment || '—' }}
+                </span>
                 <span v-else-if="dialogAction === 'completion'">{{ completionSelection.length }} {{ t('orders.services_selected') }}</span>
                 <span v-else-if="dialogAction === 'ready'">{{ t('orders.confirm_ready') }}</span>
                 <span v-else>{{ t('orders.confirm_delivery') }}</span>

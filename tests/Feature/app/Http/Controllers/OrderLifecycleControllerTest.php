@@ -269,7 +269,10 @@ final class OrderLifecycleControllerTest extends TestCase
             'down_payment' => 300.00,
         ]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonPath('order.status', OrderStatus::ReadyForWork->value)
+            ->assertJsonPath('order.financials.authorized', '580.00')
+            ->assertJsonPath('order.financials.advance_payment', '300.00');
 
         $order->refresh();
         $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
