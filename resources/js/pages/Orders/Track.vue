@@ -121,13 +121,29 @@ async function lookup(): Promise<void> {
                 <form class="grid gap-4 p-6 md:grid-cols-[1fr_14rem_auto] md:items-end" @submit.prevent="lookup">
                     <div class="flex flex-col gap-1">
                         <Label for="track-uuid">{{ t('orders.uuid') }}</Label
-                        ><Input id="track-uuid" v-model="uuid" :aria-invalid="Boolean(fieldErrors.uuid)" autocomplete="off" required />
-                        <p v-if="fieldErrors.uuid" class="text-sm text-destructive">{{ fieldErrors.uuid[0] }}</p>
+                        ><Input
+                            id="track-uuid"
+                            v-model="uuid"
+                            :aria-describedby="fieldErrors.uuid ? 'track-uuid-error' : undefined"
+                            :aria-invalid="Boolean(fieldErrors.uuid)"
+                            autocomplete="off"
+                            required
+                        />
+                        <p v-if="fieldErrors.uuid" id="track-uuid-error" class="text-sm text-destructive">{{ fieldErrors.uuid[0] }}</p>
                     </div>
                     <div class="flex flex-col gap-1">
                         <Label for="track-date">{{ t('orders.creation_date') }}</Label
-                        ><Input id="track-date" v-model="createdDate" :aria-invalid="Boolean(fieldErrors.created_date)" required type="date" />
-                        <p v-if="fieldErrors.created_date" class="text-sm text-destructive">{{ fieldErrors.created_date[0] }}</p>
+                        ><Input
+                            id="track-date"
+                            v-model="createdDate"
+                            :aria-describedby="fieldErrors.created_date ? 'track-date-error' : undefined"
+                            :aria-invalid="Boolean(fieldErrors.created_date)"
+                            required
+                            type="date"
+                        />
+                        <p v-if="fieldErrors.created_date" id="track-date-error" class="text-sm text-destructive">
+                            {{ fieldErrors.created_date[0] }}
+                        </p>
                     </div>
                     <Button :disabled="loading" type="submit">{{ loading ? t('common.loading') : t('orders.lookup') }}</Button>
                 </form>

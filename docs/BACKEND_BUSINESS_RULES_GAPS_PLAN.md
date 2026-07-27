@@ -910,6 +910,24 @@ Frontend unit tests, if approved:
 3. Keyboard interaction works for item/service selection and dialogs.
 4. Alerts and validation summaries expose accessible text and focus behavior.
 
+#### Step 7.9 completion marks
+
+- [x] Order-create navigation uses the server-shared authorization capability; customers do not receive the create link,
+  lifecycle actions remain inside order detail, and internal navigation uses named Ziggy routes with Inertia `Link`.
+- [x] Existing backend route and policy coverage continues to enforce authenticated access, order ownership, and
+  lifecycle authority; the focused route and lifecycle tests remain green.
+- [x] Duplicate submissions and attachment actions are disabled while active, successful mutations refresh persisted
+  order state, stale order, attachment, history, and public tracking responses cannot overwrite newer state, and
+  recoverable errors preserve the relevant retry or form state.
+- [x] Inputs and validation messages are associated, service selection controls have visible focus states, loading and
+  error states expose live-region or alert semantics, and the existing confirmation dialog structure provides title,
+  description, cancel, and focus-management primitives.
+- [x] Existing semantic color tokens, dark-mode classes, responsive layouts, and overflow handling remain in place for
+  long identifiers, service names, currency values, and translated labels.
+- [x] Focused PHPUnit coverage passes with 55 tests and 612 assertions; the full Vitest suite passes with 40 tests
+  across 11 files. TypeScript, production build, ESLint, Prettier, Pint, PHPStan, and diff checks pass.
+- [x] No additional Step 7.9 business-rule edge case remains unresolved.
+
 ### 7.10 — Step 7 final verification and completion criteria
 
 #### 7.10.1 — Focused verification after each subsection

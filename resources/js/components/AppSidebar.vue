@@ -13,20 +13,25 @@ import AppLogo from './AppLogo.vue';
 const i18n = useI18n();
 const { t } = i18n;
 const page = usePage();
-const currentUser = computed(() => page.props.auth.user as { role?: string } | null);
+const dashboardHref = route('dashboard');
+const ordersHref = route('web.orders.index');
+const createOrderHref = route('web.orders.create');
+const canCreateOrder = computed(() => page.props.can_create_order === true);
 
 const mainNavItems = computed<NavItem[]>(() => [
     {
         title: t('common.dashboard'),
-        href: '/dashboard',
+        href: dashboardHref,
         icon: LayoutGrid,
+        isActive: page.url === dashboardHref,
     },
     {
         title: t('orders.orders'),
-        href: '/orders',
+        href: ordersHref,
         icon: Folder,
+        isActive: page.url === ordersHref || (page.url.startsWith(`${ordersHref}/`) && page.url !== createOrderHref),
     },
-    ...(currentUser.value && currentUser.value.role !== 'Customer' ? [{ title: t('orders.create'), href: '/orders/create', icon: Plus }] : []),
+    ...(canCreateOrder.value ? [{ title: t('orders.create'), href: createOrderHref, icon: Plus, isActive: page.url === createOrderHref }] : []),
 ]);
 
 const footerNavItems: NavItem[] = [];

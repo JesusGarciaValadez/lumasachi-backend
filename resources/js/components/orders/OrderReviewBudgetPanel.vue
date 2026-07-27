@@ -148,7 +148,7 @@ function submit(): void {
                 <Button :disabled="!selectedRows.length || busy" type="button" @click="submit">{{ labels.submit }}</Button>
             </div>
 
-            <div v-if="loading" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
+            <div v-if="loading" aria-busy="true" aria-live="polite" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
             <p v-else-if="!groups.length" class="text-sm text-muted-foreground">{{ labels.empty }}</p>
             <div v-else class="flex flex-col gap-6">
                 <section v-for="[itemId, itemRows] in groups" :key="itemId" class="flex flex-col gap-3">
@@ -175,10 +175,15 @@ function submit(): void {
                                     <td class="block px-3 py-2 align-top md:table-cell">
                                         <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.budgeted }}</span>
                                         <input
+                                            :aria-describedby="
+                                                errorFor(row, 'service_key')
+                                                    ? `review-service-${row.itemId}-${row.service.service_key}-error`
+                                                    : undefined
+                                            "
                                             :aria-label="`${labels.budgeted}: ${row.service.service_name}`"
                                             :checked="row.selected"
                                             :disabled="busy"
-                                            class="size-4 rounded border-input text-primary focus:ring-primary"
+                                            class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(row)"
                                         />
@@ -186,7 +191,12 @@ function submit(): void {
                                     <td class="block px-3 py-2 align-top font-medium md:table-cell">
                                         <span class="mr-2 text-xs font-normal text-muted-foreground md:hidden">{{ labels.service }}</span>
                                         {{ row.service.service_name }}
-                                        <p v-if="errorFor(row, 'service_key')" class="mt-1 text-xs text-destructive" role="alert">
+                                        <p
+                                            v-if="errorFor(row, 'service_key')"
+                                            :id="`review-service-${row.itemId}-${row.service.service_key}-error`"
+                                            class="mt-1 text-xs text-destructive"
+                                            role="alert"
+                                        >
                                             {{ errorFor(row, 'service_key') }}
                                         </p>
                                     </td>
@@ -196,12 +206,22 @@ function submit(): void {
                                             v-if="row.service.requires_measurement"
                                             :id="`review-measurement-${row.itemId}-${row.service.service_key}`"
                                             v-model="row.measurement"
+                                            :aria-describedby="
+                                                errorFor(row, 'measurement')
+                                                    ? `review-measurement-${row.itemId}-${row.service.service_key}-error`
+                                                    : undefined
+                                            "
                                             :aria-invalid="Boolean(errorFor(row, 'measurement'))"
                                             :data-review-measurement="row.service.service_key"
                                             :required="row.service.requires_measurement"
                                         />
                                         <span v-else>—</span>
-                                        <p v-if="errorFor(row, 'measurement')" class="mt-1 text-xs text-destructive" role="alert">
+                                        <p
+                                            v-if="errorFor(row, 'measurement')"
+                                            :id="`review-measurement-${row.itemId}-${row.service.service_key}-error`"
+                                            class="mt-1 text-xs text-destructive"
+                                            role="alert"
+                                        >
                                             {{ errorFor(row, 'measurement') }}
                                         </p>
                                     </td>

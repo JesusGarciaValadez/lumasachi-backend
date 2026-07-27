@@ -227,4 +227,28 @@ final class OrderRouteTest extends TestCase
     {
         $this->get(route('web.orders.create'))->assertRedirect('/login');
     }
+
+    #[Test]
+    public function order_creation_navigation_uses_the_server_authorization_capability(): void
+    {
+        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+
+        $this->actingAs($employee)
+            ->get(route('web.orders.index'))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->component('Orders/Index')
+                ->where('can_create_order', true)
+            );
+
+        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+
+        $this->actingAs($customer)
+            ->get(route('web.orders.index'))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->component('Orders/Index')
+                ->where('can_create_order', false)
+            );
+    }
 }

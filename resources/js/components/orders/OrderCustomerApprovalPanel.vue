@@ -163,7 +163,7 @@ function submit(): void {
                                             :aria-label="`${labels.select}: ${service.service_name ?? service.service_key}`"
                                             :checked="isSelected(service.id)"
                                             :disabled="busy"
-                                            class="size-4 rounded border-input text-primary focus:ring-primary"
+                                            class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(service.id)"
                                         />
@@ -225,13 +225,16 @@ function submit(): void {
                     <Input
                         id="approval-down-payment"
                         v-model="downPayment"
+                        :aria-describedby="errorFor('down_payment') ? 'approval-down-payment-error' : undefined"
                         :aria-invalid="Boolean(errorFor('down_payment'))"
                         inputmode="decimal"
                         min="0"
                         step="0.01"
                         type="number"
                     />
-                    <p v-if="errorFor('down_payment')" class="text-sm text-destructive" role="alert">{{ errorFor('down_payment') }}</p>
+                    <p v-if="errorFor('down_payment')" id="approval-down-payment-error" class="text-sm text-destructive" role="alert">
+                        {{ errorFor('down_payment') }}
+                    </p>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">

@@ -78,7 +78,7 @@ function formatDate(value?: string): string {
 </script>
 
 <template>
-    <div v-if="loading" class="relative min-h-32 rounded-md border" data-history-state="loading">
+    <div v-if="loading" aria-busy="true" aria-live="polite" class="relative min-h-32 rounded-md border" data-history-state="loading">
         <div class="absolute inset-0 animate-pulse bg-muted/30" />
     </div>
     <div v-else-if="errorMessage" class="text-sm text-destructive" data-history-state="error" role="alert">{{ errorMessage }}</div>

@@ -66,6 +66,7 @@ const history = ref<OrderHistoryPage>({ data: [], meta: null });
 const historyLoading = ref(true);
 const historyError = ref<OrderApiError | null>(null);
 const attachmentActionError = ref<string | null>(null);
+const attachmentActionKey = ref<string | null>(null);
 const catalog = ref<CatalogPayload | null>(null);
 const catalogLoading = ref(false);
 const completionSelection = ref<number[]>([]);
@@ -76,7 +77,10 @@ const dialogAction = ref<DialogAction>(null);
 const dialogOpen = ref(false);
 const lastError = ref<OrderApiError | null>(null);
 const staleState = ref(false);
+const refreshingOrder = ref(false);
 let orderRequestSequence = 0;
+let attachmentsRequestSequence = 0;
+let historyRequestSequence = 0;
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: t('common.orders'), href: route('web.orders.index') },
@@ -271,16 +275,29 @@ async function loadCatalog(): Promise<void> {
 }
 
 async function loadAttachments(): Promise<void> {
+    const requestSequence = ++attachmentsRequestSequence;
     attachmentsLoading.value = true;
 
     try {
-        attachments.value = (await orderApi.attachments(orderUuid.value)).attachments;
+        const response = await orderApi.attachments(orderUuid.value);
+
+        if (requestSequence !== attachmentsRequestSequence) {
+            return;
+        }
+
+        attachments.value = response.attachments;
         attachmentsError.value = null;
     } catch (error: unknown) {
+        if (requestSequence !== attachmentsRequestSequence) {
+            return;
+        }
+
         attachmentsError.value = error instanceof OrderApiError ? error : null;
         attachments.value = [];
     } finally {
-        attachmentsLoading.value = false;
+        if (requestSequence === attachmentsRequestSequence) {
+            attachmentsLoading.value = false;
+        }
     }
 }
 
@@ -289,20 +306,38 @@ async function loadHistory(): Promise<void> {
 }
 
 async function loadHistoryPage(url?: string): Promise<void> {
+    const requestSequence = ++historyRequestSequence;
     historyLoading.value = true;
 
     try {
-        history.value = await orderApi.history(orderUuid.value, url);
+        const response = await orderApi.history(orderUuid.value, url);
+
+        if (requestSequence !== historyRequestSequence) {
+            return;
+        }
+
+        history.value = response;
         historyError.value = null;
     } catch (error: unknown) {
+        if (requestSequence !== historyRequestSequence) {
+            return;
+        }
+
         historyError.value = error instanceof OrderApiError ? error : null;
         history.value = { data: [], meta: null };
     } finally {
-        historyLoading.value = false;
+        if (requestSequence === historyRequestSequence) {
+            historyLoading.value = false;
+        }
     }
 }
 
 async function openAttachment(attachment: OrderAttachment, mode: 'preview' | 'download'): Promise<void> {
+    if (attachmentActionKey.value) {
+        return;
+    }
+
+    attachmentActionKey.value = `${attachment.uuid}:${mode}`;
     attachmentActionError.value = null;
 
     try {
@@ -333,20 +368,40 @@ async function openAttachment(attachment: OrderAttachment, mode: 'preview' | 'do
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error: unknown) {
         attachmentActionError.value = attachmentActionMessage(error);
+    } finally {
+        attachmentActionKey.value = null;
     }
 }
 
 async function refreshOrder(): Promise<void> {
-    const requestSequence = ++orderRequestSequence;
-    const refreshed = await orderApi.show(orderUuid.value);
-
-    if (requestSequence !== orderRequestSequence) {
+    if (refreshingOrder.value) {
         return;
     }
 
-    currentOrder.value = refreshed;
-    staleState.value = false;
-    await Promise.all([loadAttachments(), loadHistory()]);
+    const requestSequence = ++orderRequestSequence;
+    refreshingOrder.value = true;
+
+    try {
+        const refreshed = await orderApi.show(orderUuid.value);
+
+        if (requestSequence !== orderRequestSequence) {
+            return;
+        }
+
+        currentOrder.value = refreshed;
+        lastError.value = null;
+        staleState.value = false;
+        await Promise.all([loadAttachments(), loadHistory()]);
+    } catch (error: unknown) {
+        if (requestSequence === orderRequestSequence) {
+            handleError(error);
+            staleState.value = true;
+        }
+    } finally {
+        if (requestSequence === orderRequestSequence) {
+            refreshingOrder.value = false;
+        }
+    }
 }
 
 function handleError(error: unknown): void {
@@ -535,7 +590,9 @@ onMounted(async () => {
                         role="alert"
                     >
                         <span>{{ t('orders.stale_state') }}</span>
-                        <Button size="sm" variant="outline" @click="refreshOrder">{{ t('orders.reload') }}</Button>
+                        <Button :disabled="refreshingOrder" size="sm" variant="outline" @click="refreshOrder">
+                            {{ refreshingOrder ? t('common.loading') : t('orders.reload') }}
+                        </Button>
                     </div>
                 </div>
             </Card>
@@ -677,7 +734,13 @@ onMounted(async () => {
                 <Card>
                     <div class="flex flex-col gap-3 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.attachments') }}</h2>
-                        <div v-if="attachmentsLoading" class="relative min-h-32 rounded-md border" data-attachments-state="loading">
+                        <div
+                            v-if="attachmentsLoading"
+                            aria-busy="true"
+                            aria-live="polite"
+                            class="relative min-h-32 rounded-md border"
+                            data-attachments-state="loading"
+                        >
                             <PlaceholderPattern />
                         </div>
                         <div v-else-if="attachmentsError" class="text-sm text-destructive" role="alert">{{ attachmentsError.message }}</div>
@@ -695,9 +758,21 @@ onMounted(async () => {
                                     </div>
                                 </div>
                                 <div class="flex shrink-0 gap-2">
-                                    <button class="text-sm underline" type="button" @click="openAttachment(attachment, 'preview')">
+                                    <button
+                                        :aria-busy="attachmentActionKey === `${attachment.uuid}:preview`"
+                                        :disabled="attachmentActionKey !== null"
+                                        class="text-sm underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        type="button"
+                                        @click="openAttachment(attachment, 'preview')"
+                                    >
                                         {{ t('orders.preview') }}</button
-                                    ><button class="text-sm underline" type="button" @click="openAttachment(attachment, 'download')">
+                                    ><button
+                                        :aria-busy="attachmentActionKey === `${attachment.uuid}:download`"
+                                        :disabled="attachmentActionKey !== null"
+                                        class="text-sm underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        type="button"
+                                        @click="openAttachment(attachment, 'download')"
+                                    >
                                         {{ t('orders.download') }}
                                     </button>
                                 </div>

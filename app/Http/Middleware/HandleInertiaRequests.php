@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\Order;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,6 +49,7 @@ final class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->routeIs('web.orders.track') ? null : $request->user(),
             ],
+            'can_create_order' => $request->user()?->can('create', Order::class) ?? false,
             'ziggy' => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

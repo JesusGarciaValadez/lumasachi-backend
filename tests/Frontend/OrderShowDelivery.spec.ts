@@ -11,6 +11,21 @@ const api = vi.hoisted(() => ({
     show: vi.fn(),
 }));
 
+const OrderApiError = vi.hoisted(
+    () =>
+        class OrderApiError extends Error {
+            readonly status: number;
+            readonly kind: 'conflict' | 'unexpected';
+            readonly validationErrors: Record<string, string[]> = {};
+
+            constructor(status: number, message: string) {
+                super(message);
+                this.status = status;
+                this.kind = status === 409 ? 'conflict' : 'unexpected';
+            }
+        },
+);
+
 vi.mock('@inertiajs/vue3', () => ({
     Head: {
         template: '<title><slot /></title>',
@@ -49,16 +64,7 @@ vi.mock('vue-i18n', () => ({
 }));
 
 vi.mock('@/composables/useOrderApi', () => ({
-    OrderApiError: class OrderApiError extends Error {
-        readonly status: number;
-        readonly kind = 'unexpected';
-        readonly validationErrors: Record<string, string[]> = {};
-
-        constructor(status: number, message: string) {
-            super(message);
-            this.status = status;
-        }
-    },
+    OrderApiError,
     useOrderApi: () => api,
 }));
 
@@ -211,5 +217,24 @@ describe('Orders/Show delivery workflow', () => {
         await flushPromises();
 
         expect(emptyWrapper.get('[data-attachments-state="empty"]').text()).toContain('No attachments');
+    });
+
+    it('keeps the stale-state reload available when refreshing fails', async () => {
+        api.deliver.mockRejectedValueOnce(new OrderApiError(409, 'Order changed.'));
+        const wrapper = mountPage();
+
+        await flushPromises();
+        await wrapper.get('[data-delivery-action]').trigger('click');
+        await wrapper.get('[data-confirm-action]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.get('[role="alert"]').text()).toContain('Order changed.');
+        api.show.mockRejectedValueOnce(new OrderApiError(500, 'Reload failed.'));
+
+        await wrapper.get('[role="alert"] button').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.get('[role="alert"]').text()).toContain('Reload failed.');
+        expect(wrapper.get('[role="alert"] button').text()).toContain('orders.reload');
     });
 });
