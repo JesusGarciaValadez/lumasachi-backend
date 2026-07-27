@@ -51,10 +51,10 @@ const form = ref<CreateFormState>({
     items: [{ item_type: 'engine_block', components: [] }],
 });
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: t('common.orders'), href: route('web.orders.index') },
     { title: t('orders.create'), href: route('web.orders.create') },
-];
+]);
 
 const itemTypeOptions = computed(() => catalog.value?.item_types ?? []);
 const availableItemTypes = computed(() => {

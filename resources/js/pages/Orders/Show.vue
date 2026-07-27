@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { getIntlLocale } from '@/lib/i18n';
 import type { BreadcrumbItem } from '@/types';
 import type {
     CatalogPayload,
@@ -101,6 +102,7 @@ const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value
 const itemLabels = computed<Record<number, string>>(() => Object.fromEntries(order.value.items.map((item) => [item.id, item.item_type])));
 
 const serviceLabels = computed(() => ({
+    select: t('orders.select'),
     service: t('orders.service'),
     measurement: t('orders.measurement'),
     base_price: t('orders.base_price'),
@@ -164,7 +166,7 @@ const reviewLabels = computed(() => ({
     preview: t('orders.preview_total'),
     baseTotal: t('orders.base_total'),
     netTotal: t('orders.net_total'),
-    selected: t('orders.services_selected'),
+    selected: (count: number) => t('orders.services_selected', count),
     empty: t('orders.no_services'),
 }));
 
@@ -183,7 +185,7 @@ const approvalLabels = computed(() => ({
     budgetedNetTotal: t('orders.net_total'),
     authorizedBaseTotal: t('orders.authorized_base_total'),
     authorizedNetTotal: t('orders.authorized_net_total'),
-    selected: t('orders.services_selected'),
+    selected: (count: number) => t('orders.services_selected', count),
     advancePayment: t('orders.advance_payment'),
     submit: t('orders.approve_selected'),
     empty: t('orders.no_budgeted_services'),
@@ -228,14 +230,14 @@ function formatDate(value?: string | null): string {
     }
 
     try {
-        return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
     } catch {
         return value;
     }
 }
 
 function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function attachmentActionMessage(error: unknown): string {
@@ -708,7 +710,8 @@ onMounted(async () => {
                     <div>
                         <h2 class="text-base font-semibold">{{ t('orders.ready_for_delivery') }}</h2>
                         <p class="text-sm text-muted-foreground">
-                            {{ completedAuthorizedServices.length }} / {{ authorizedServices.length }} {{ t('orders.services_completed') }}
+                            {{ t('orders.services_completed', completedAuthorizedServices.length) }} ({{ completedAuthorizedServices.length }} /
+                            {{ authorizedServices.length }})
                         </p>
                         <p v-if="uncompletedAuthorizedServices.length" class="mt-1 text-xs text-muted-foreground">
                             {{ t('orders.uncompleted_services') }}:
@@ -807,18 +810,19 @@ onMounted(async () => {
             </DialogHeader>
             <div class="rounded-md bg-muted p-3 text-sm">
                 <span v-if="dialogAction === 'budget' && pendingBudget">
-                    {{ pendingBudget.selectedCount }} {{ t('orders.services_selected') }} · {{ t('orders.base_total') }}:
+                    {{ t('orders.services_selected', pendingBudget.selectedCount) }} · {{ t('orders.base_total') }}:
                     {{ formatMoney(pendingBudget.baseTotal) }} · {{ t('orders.net_total') }}: {{ formatMoney(pendingBudget.netTotal) }}
                 </span>
                 <span v-else-if="dialogAction === 'approval' && pendingApproval">
-                    {{ pendingApproval.selectedCount }} {{ t('orders.services_selected') }} · {{ t('orders.authorized_base_total') }}:
+                    {{ t('orders.services_selected', pendingApproval.selectedCount) }} · {{ t('orders.authorized_base_total') }}:
                     {{ formatMoney(pendingApproval.authorizedBaseTotal) }} · {{ t('orders.authorized_net_total') }}:
                     {{ formatMoney(pendingApproval.authorizedNetTotal) }} · {{ t('orders.advance_payment') }}:
                     {{ pendingApproval.downPayment || '—' }}
                 </span>
-                <span v-else-if="dialogAction === 'completion'">{{ completionSelection.length }} {{ t('orders.services_selected') }}</span>
+                <span v-else-if="dialogAction === 'completion'">{{ t('orders.services_selected', completionSelection.length) }}</span>
                 <span v-else-if="dialogAction === 'ready'">
-                    {{ completedAuthorizedServices.length }} / {{ authorizedServices.length }} {{ t('orders.services_completed') }}
+                    {{ t('orders.services_completed', completedAuthorizedServices.length) }} ({{ completedAuthorizedServices.length }} /
+                    {{ authorizedServices.length }})
                     <span v-if="uncompletedAuthorizedServices.length">
                         · {{ t('orders.uncompleted_services') }}:
                         {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? service.service_key).join(', ') }}

@@ -11,6 +11,7 @@ const props = defineProps<{
     mode: 'approval' | 'completion' | 'readonly';
     title: string;
     labels: {
+        select: string;
         service: string;
         measurement: string;
         base_price: string;
@@ -94,7 +95,9 @@ function toggle(service: OrderServicePayload): void {
                         <table class="w-full min-w-[40rem] text-left text-sm">
                             <thead class="border-b bg-muted/40 text-xs text-muted-foreground">
                                 <tr>
-                                    <th class="w-10 px-3 py-2"><span class="sr-only">Select</span></th>
+                                    <th class="w-10 px-3 py-2">
+                                        <span class="sr-only">{{ labels.select }}</span>
+                                    </th>
                                     <th class="px-3 py-2">{{ labels.service }}</th>
                                     <th class="px-3 py-2">{{ labels.measurement }}</th>
                                     <th class="px-3 py-2">{{ labels.base_price }}</th>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { getIntlLocale } from '@/lib/i18n';
 import type { FinancialTotals } from '@/types/orders';
 import { computed } from 'vue';
 
@@ -24,7 +25,7 @@ const emit = defineEmits<{
 const remainingBalance = computed(() => Number(props.financials.remaining_balance ?? 0));
 
 function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 </script>
 

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import Icon from '@/components/Icon.vue';
 import { Button } from '@/components/ui/button';
+import { getIntlLocale } from '@/lib/i18n';
 import type { OrderHistory } from '@/types/orders';
 import { computed } from 'vue';
 
@@ -70,7 +71,7 @@ function formatDate(value?: string): string {
     if (!value) return '—';
 
     try {
-        return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
     } catch {
         return value;
     }

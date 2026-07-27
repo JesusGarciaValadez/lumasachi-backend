@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getIntlLocale } from '@/lib/i18n';
 import type { CustomerApprovalPayload, OrderServicePayload } from '@/types/orders';
 import { computed, ref } from 'vue';
 
@@ -36,7 +37,7 @@ const props = defineProps<{
         budgetedNetTotal: string;
         authorizedBaseTotal: string;
         authorizedNetTotal: string;
-        selected: string;
+        selected: (count: number) => string;
         advancePayment: string;
         submit: string;
         empty: string;
@@ -74,7 +75,7 @@ function totalFor(services: OrderServicePayload[], field: 'base_price' | 'net_pr
 }
 
 function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function errorFor(key: string): string | undefined {
@@ -238,7 +239,7 @@ function submit(): void {
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm text-muted-foreground">{{ labels.selected }}: {{ selectedIds.length }}</p>
+                    <p class="text-sm text-muted-foreground">{{ labels.selected(selectedIds.length) }}</p>
                     <Button :disabled="!selectedIds.length || busy" type="button" @click="submit">{{ labels.submit }}</Button>
                 </div>
             </div>

@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
+import { getIntlLocale } from '@/lib/i18n';
 import type { FinancialTotals, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
 import { ORDER_STATUS_SEQUENCE } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
@@ -56,14 +57,14 @@ function formatDate(value?: string | null): string {
     if (!value) return '—';
 
     try {
-        return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
     } catch {
         return value;
     }
 }
 
 function formatMoney(value: string | number | null | undefined): string {
-    return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(value ?? 0).toLocaleString(getIntlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function serviceState(service: PublicOrderServicePayload): string {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Card } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { getIntlLocale } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
@@ -9,12 +10,12 @@ import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 
 const { t } = useI18n();
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     {
         title: t('common.dashboard'),
         href: '/dashboard',
     },
-];
+]);
 
 const loading = ref(true);
 const orders = ref<any[]>([]);
@@ -22,7 +23,7 @@ const orders = ref<any[]>([]);
 function formatDate(value?: string | null) {
     if (!value) return '—';
     try {
-        return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
     } catch {
         return value;
     }
@@ -52,7 +53,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head :title="t('common.dashboard')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
@@ -86,7 +87,7 @@ onMounted(async () => {
                                         {{ t('orders.created_at') }}: {{ formatDate(o.created_at) }}
                                     </div>
                                 </div>
-                                <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">Ver</Link>
+                                <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">{{ t('common.view') }}</Link>
                             </div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">{{ t('common.empty') }}</div>
