@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
-import type { FinancialTotals, OrderStatus, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
+import type { FinancialTotals, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
+import { ORDER_STATUS_SEQUENCE } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -23,19 +24,7 @@ const controller = ref<AbortController | null>(null);
 
 const fieldErrors = computed(() => error.value?.validationErrors ?? {});
 
-const statusSteps = computed(() =>
-    (
-        [
-            'Awaiting Review',
-            'Reviewed',
-            'Awaiting Customer Approval',
-            'Ready for Work',
-            'In Progress',
-            'Ready for Delivery',
-            'Delivered',
-        ] as OrderStatus[]
-    ).map((value) => ({ value, label: statusLabel(value) })),
-);
+const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
 
 const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),

@@ -15,6 +15,24 @@ export type OrderStatus =
     | 'On Hold'
     | 'Cancelled';
 
+export const ORDER_STATUS_SEQUENCE: OrderStatus[] = [
+    'Received',
+    'Awaiting Review',
+    'Reviewed',
+    'Awaiting Customer Approval',
+    'Ready for Work',
+    'Open',
+    'In Progress',
+    'Ready for Delivery',
+    'Completed',
+    'Delivered',
+    'Paid',
+    'Returned',
+    'Not Paid',
+    'On Hold',
+    'Cancelled',
+];
+
 export type OrderPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
 
 export type OrderItemType = 'cylinder_head' | 'engine_block' | 'crankshaft' | 'connecting_rods' | 'others';

@@ -844,6 +844,30 @@ Frontend unit tests, if approved:
 3. Empty and loading states render independently for details, attachments, and history.
 4. Action panels are selected from role, policy capability, and persisted status.
 
+#### 7.8 completion marks
+
+- [x] Authenticated order detail now composes the heading, localized status/priority, complete description-list fields,
+  lifecycle progress, motor and received-component data, financial summary, and readonly service matrix without adding
+  unauthorized edit controls.
+- [x] Progress uses every supported `OrderStatus` value, including the automatic `Reviewed` transition, while stable
+  enum values remain the logic source and labels remain localized.
+- [x] Authenticated attachments show filename, type, size, and uploader-safe name data with preview/download actions,
+  loading and empty states, and distinct authorization, missing, and unsupported-preview messages; public tracking
+  remains read-only and excludes authenticated attachment fields and URLs.
+- [x] The authenticated history feed renders server descriptions and timestamps in server order, uses event-type icons,
+  preserves duplicate Reviewed-related events, displays related attachment filenames, and supports loading, empty,
+  error, and paginated states.
+- [x] Focused PHPUnit coverage confirms the complete authorized contract, notes/completion dates, policy visibility,
+  stable empty collections, history order isolation, attachment authorization/order scoping, and the public-safe
+  tracking contract.
+- [x] Vue unit coverage confirms all status values, distinct ordered history events, independent history states,
+  independent attachment loading/empty states, attachment authorization-versus-missing errors, and persisted action
+  panel behavior from the existing detail workflow tests.
+- [x] Focused PHPUnit (57 tests, 631 assertions), Vue unit tests (35 tests), TypeScript, production build, ESLint,
+  Prettier, Pint, PHPStan, and diff checks pass. The full Vitest suite passes with one worker; the initial parallel
+  worker attempt was retried after worker-start timeouts.
+- [x] No additional Step 7.8 business-rule edge case remains unresolved.
+
 ### 7.9 — Navigation, stale-state handling, accessibility, and responsive behavior
 
 #### 7.9.1 — Navigation and role visibility

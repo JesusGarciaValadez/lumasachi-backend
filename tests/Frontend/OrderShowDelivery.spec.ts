@@ -28,7 +28,14 @@ vi.mock('vue-i18n', () => ({
                 'orders.confirm_delivery': 'The order will be marked delivered.',
                 'orders.deliver': 'Deliver order',
                 'orders.delivery': 'Delivery',
+                'orders.attachment_not_authorized': 'Not authorized to open attachment.',
+                'orders.attachment_not_found': 'Attachment not found.',
+                'orders.attachment_not_previewable': 'Attachment cannot be previewed.',
+                'orders.attachment_action_failed': 'Attachment action failed.',
                 'orders.financial_summary': 'Financial summary',
+                'orders.no_attachments': 'No attachments',
+                'orders.preview': 'Preview',
+                'orders.download': 'Download',
                 'orders.remaining_balance': 'Remaining balance',
                 'orders.uuid': 'Order UUID',
             })[key] ?? key,
@@ -43,8 +50,14 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/composables/useOrderApi', () => ({
     OrderApiError: class OrderApiError extends Error {
+        readonly status: number;
         readonly kind = 'unexpected';
         readonly validationErrors: Record<string, string[]> = {};
+
+        constructor(status: number, message: string) {
+            super(message);
+            this.status = status;
+        }
     },
     useOrderApi: () => api,
 }));
@@ -155,5 +168,48 @@ describe('Orders/Show delivery workflow', () => {
         expect(api.show).toHaveBeenCalledWith('order-uuid');
         expect(wrapper.find('[data-delivery-panel]').exists()).toBe(false);
         expect(wrapper.text()).toContain('Delivered');
+    });
+
+    it('keeps attachment authorization and missing states distinct', async () => {
+        const attachment = {
+            id: 1,
+            uuid: 'attachment-uuid',
+            file_name: 'invoice.pdf',
+            extension: 'pdf',
+            human_file_size: '1 KB',
+            uploaded_by: null,
+        };
+        api.attachments.mockResolvedValueOnce({ attachments: [attachment] });
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) });
+        vi.stubGlobal('fetch', fetchMock);
+        const wrapper = mountPage();
+
+        await flushPromises();
+        const preview = wrapper.findAll('button').find((button) => button.text() === 'Preview');
+        expect(preview).toBeDefined();
+
+        await preview?.trigger('click');
+        await flushPromises();
+        expect(wrapper.get('[role="alert"]').text()).toContain('Not authorized');
+
+        await preview?.trigger('click');
+        await flushPromises();
+        expect(wrapper.get('[role="alert"]').text()).toContain('Attachment not found');
+    });
+
+    it('renders the attachment loading and empty states independently', async () => {
+        api.attachments.mockReturnValueOnce(new Promise(() => undefined));
+        const loadingWrapper = mountPage();
+
+        expect(loadingWrapper.get('[data-attachments-state="loading"]')).toBeTruthy();
+
+        api.attachments.mockResolvedValueOnce({ attachments: [] });
+        const emptyWrapper = mountPage();
+        await flushPromises();
+
+        expect(emptyWrapper.get('[data-attachments-state="empty"]').text()).toContain('No attachments');
     });
 });

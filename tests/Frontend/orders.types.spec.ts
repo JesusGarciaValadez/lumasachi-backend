@@ -1,6 +1,26 @@
-import { normalizePublicOrder } from '@/types/orders';
+import { normalizePublicOrder, ORDER_STATUS_SEQUENCE } from '@/types/orders';
 
 describe('public order normalization', () => {
+    it('defines progress steps for every supported status', () => {
+        expect(ORDER_STATUS_SEQUENCE).toEqual([
+            'Received',
+            'Awaiting Review',
+            'Reviewed',
+            'Awaiting Customer Approval',
+            'Ready for Work',
+            'Open',
+            'In Progress',
+            'Ready for Delivery',
+            'Completed',
+            'Delivered',
+            'Paid',
+            'Returned',
+            'Not Paid',
+            'On Hold',
+            'Cancelled',
+        ]);
+    });
+
     it('unwraps nested public collections and keeps empty collections stable', () => {
         const order = normalizePublicOrder({
             data: {
