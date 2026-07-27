@@ -39,6 +39,8 @@ final class OrderRouteTest extends TestCase
             'created_by' => $user->id,
             'assigned_to' => $user->id,
             'status' => OrderStatus::Delivered->value,
+            'notes' => 'Customer requested a delivery call.',
+            'actual_completion' => now()->subHour(),
         ]);
 
         OrderMotorInfo::factory()->createQuietly([
@@ -52,12 +54,16 @@ final class OrderRouteTest extends TestCase
             ->component('Orders/Show')
             ->has('order', fn(InertiaAssert $orderPage) => $orderPage
                 ->where('uuid', $order->uuid)
+                ->where('notes', 'Customer requested a delivery call.')
+                ->where('actual_completion', $order->actual_completion->toISOString())
                 ->has('customer')
                 ->has('motor_info')
                 ->has('items')
                 ->has('services')
                 ->has('history')
                 ->has('attachments')
+                ->where('history.data', [])
+                ->where('attachments.data', [])
                 ->missing('password')
                 ->etc()
             )

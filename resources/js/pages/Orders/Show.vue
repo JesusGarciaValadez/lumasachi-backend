@@ -3,6 +3,7 @@ import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderCustomerApprovalPanel from '@/components/orders/OrderCustomerApprovalPanel.vue';
 import OrderDeliveryPanel from '@/components/orders/OrderDeliveryPanel.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
+import OrderHistoryFeed from '@/components/orders/OrderHistoryFeed.vue';
 import OrderReviewBudgetPanel from '@/components/orders/OrderReviewBudgetPanel.vue';
 import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
 import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
@@ -21,11 +22,10 @@ import type {
     OrderCapabilities,
     OrderHistoryPage,
     OrderPayload,
-    OrderStatus,
     ResourcePayload,
     SubmitBudgetPayload,
 } from '@/types/orders';
-import { normalizeOrder } from '@/types/orders';
+import { normalizeOrder, ORDER_STATUS_SEQUENCE } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -65,7 +65,7 @@ const attachmentsError = ref<OrderApiError | null>(null);
 const history = ref<OrderHistoryPage>({ data: [], meta: null });
 const historyLoading = ref(true);
 const historyError = ref<OrderApiError | null>(null);
-const attachmentActionError = ref<OrderApiError | null>(null);
+const attachmentActionError = ref<string | null>(null);
 const catalog = ref<CatalogPayload | null>(null);
 const catalogLoading = ref(false);
 const completionSelection = ref<number[]>([]);
@@ -92,19 +92,7 @@ const remainingBalance = computed(() => Number(order.value.financials?.remaining
 const canViewDelivery = computed(() => isStaff.value && order.value.status === 'Ready for Delivery');
 const canDeliver = computed(() => capabilities.deliver_order && remainingBalance.value <= 0);
 
-const statusSteps = computed(() =>
-    (
-        [
-            'Awaiting Review',
-            'Reviewed',
-            'Awaiting Customer Approval',
-            'Ready for Work',
-            'In Progress',
-            'Ready for Delivery',
-            'Delivered',
-        ] as OrderStatus[]
-    ).map((value) => ({ value, label: statusLabel(value) })),
-);
+const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
 
 const itemLabels = computed<Record<number, string>>(() => Object.fromEntries(order.value.items.map((item) => [item.id, item.item_type])));
 
@@ -143,6 +131,20 @@ const deliveryLabels = computed(() => ({
     payment_required: t('orders.payment_required'),
     deliver: t('orders.deliver'),
     loading: t('common.loading'),
+}));
+
+const historyLabels = computed(() => ({
+    previous: t('orders.previous'),
+    next: t('orders.next'),
+    noHistory: t('orders.no_history'),
+    eventStatus: t('orders.history_event_status'),
+    eventPriority: t('orders.history_event_priority'),
+    eventAssignment: t('orders.history_event_assignment'),
+    eventItem: t('orders.history_event_item'),
+    eventService: t('orders.history_event_service'),
+    eventPayment: t('orders.history_event_payment'),
+    eventAttachment: t('orders.history_event_attachment'),
+    eventUpdate: t('orders.history_event_update'),
 }));
 
 const reviewLabels = computed(() => ({
@@ -232,6 +234,26 @@ function formatMoney(value: string | number | null | undefined): string {
     return Number(value ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function attachmentActionMessage(error: unknown): string {
+    if (!(error instanceof OrderApiError)) {
+        return t('orders.attachment_action_failed');
+    }
+
+    if (error.status === 403) {
+        return t('orders.attachment_not_authorized');
+    }
+
+    if (error.status === 404) {
+        return t('orders.attachment_not_found');
+    }
+
+    if (error.status === 400) {
+        return t('orders.attachment_not_previewable');
+    }
+
+    return t('orders.attachment_action_failed');
+}
+
 async function loadCatalog(): Promise<void> {
     if (!isStaff.value || !canReview.value) {
         return;
@@ -310,7 +332,7 @@ async function openAttachment(attachment: OrderAttachment, mode: 'preview' | 'do
 
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error: unknown) {
-        attachmentActionError.value = error instanceof OrderApiError ? error : new OrderApiError(0, t('orders.attachment_action_failed'));
+        attachmentActionError.value = attachmentActionMessage(error);
     }
 }
 
@@ -475,24 +497,32 @@ onMounted(async () => {
                         </div>
                     </div>
                     <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
-                    <div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                         <div>
-                            <div class="text-muted-foreground">{{ t('orders.customer') }}</div>
-                            <div>{{ order.customer?.full_name ?? '—' }}</div>
+                            <dt class="text-muted-foreground">{{ t('orders.customer') }}</dt>
+                            <dd>{{ order.customer?.full_name ?? '—' }}</dd>
                         </div>
                         <div>
-                            <div class="text-muted-foreground">{{ t('orders.assigned_to') }}</div>
-                            <div>{{ order.assigned_to?.full_name ?? '—' }}</div>
+                            <dt class="text-muted-foreground">{{ t('orders.assigned_to') }}</dt>
+                            <dd>{{ order.assigned_to?.full_name ?? '—' }}</dd>
                         </div>
                         <div>
-                            <div class="text-muted-foreground">{{ t('orders.created_at') }}</div>
-                            <div>{{ formatDate(order.created_at) }}</div>
+                            <dt class="text-muted-foreground">{{ t('orders.created_at') }}</dt>
+                            <dd>{{ formatDate(order.created_at) }}</dd>
                         </div>
                         <div>
-                            <div class="text-muted-foreground">{{ t('orders.estimated_completion') }}</div>
-                            <div>{{ formatDate(order.estimated_completion) }}</div>
+                            <dt class="text-muted-foreground">{{ t('orders.estimated_completion') }}</dt>
+                            <dd>{{ formatDate(order.estimated_completion) }}</dd>
                         </div>
-                    </div>
+                        <div>
+                            <dt class="text-muted-foreground">{{ t('orders.actual_completion') }}</dt>
+                            <dd>{{ formatDate(order.actual_completion) }}</dd>
+                        </div>
+                        <div class="sm:col-span-2 lg:col-span-3">
+                            <dt class="text-muted-foreground">{{ t('orders.notes') }}</dt>
+                            <dd class="whitespace-pre-wrap">{{ order.notes ?? t('orders.no_notes') }}</dd>
+                        </div>
+                    </dl>
                     <div v-if="lastError" class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
                         {{ lastError.message }}
                         <div v-if="Object.keys(lastError.validationErrors).length" class="mt-2 flex flex-col gap-1">
@@ -598,6 +628,15 @@ onMounted(async () => {
                 mode="completion"
                 @update:selected-ids="completionSelection = $event"
             />
+            <OrderServiceMatrix
+                v-else-if="order.services.length"
+                :item-labels="itemLabels"
+                :labels="serviceLabels"
+                :selected-ids="[]"
+                :services="order.services"
+                :title="t('orders.services')"
+                mode="readonly"
+            />
             <Card v-if="canComplete">
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6">
                     <p class="text-sm text-muted-foreground">{{ t('orders.work_completion_help') }}</p>
@@ -638,7 +677,9 @@ onMounted(async () => {
                 <Card>
                     <div class="flex flex-col gap-3 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.attachments') }}</h2>
-                        <div v-if="attachmentsLoading" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
+                        <div v-if="attachmentsLoading" class="relative min-h-32 rounded-md border" data-attachments-state="loading">
+                            <PlaceholderPattern />
+                        </div>
                         <div v-else-if="attachmentsError" class="text-sm text-destructive" role="alert">{{ attachmentsError.message }}</div>
                         <div v-else-if="attachments.length" class="flex flex-col gap-2">
                             <div
@@ -648,7 +689,10 @@ onMounted(async () => {
                             >
                                 <div class="min-w-0">
                                     <div class="truncate font-medium">{{ attachment.file_name }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ attachment.human_file_size }}</div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{ attachment.extension ?? attachment.mime_type ?? '—' }} · {{ attachment.human_file_size ?? '—' }} ·
+                                        {{ attachment.uploaded_by?.full_name ?? '—' }}
+                                    </div>
                                 </div>
                                 <div class="flex shrink-0 gap-2">
                                     <button class="text-sm underline" type="button" @click="openAttachment(attachment, 'preview')">
@@ -659,38 +703,21 @@ onMounted(async () => {
                                 </div>
                             </div>
                         </div>
-                        <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_attachments') }}</p>
-                        <div v-if="attachmentActionError" class="text-sm text-destructive" role="alert">{{ attachmentActionError.message }}</div>
+                        <p v-else class="text-sm text-muted-foreground" data-attachments-state="empty">{{ t('orders.no_attachments') }}</p>
+                        <div v-if="attachmentActionError" class="text-sm text-destructive" role="alert">{{ attachmentActionError }}</div>
                     </div>
                 </Card>
                 <Card>
                     <div class="flex flex-col gap-3 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.history') }}</h2>
-                        <div v-if="historyLoading" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
-                        <div v-else-if="historyError" class="text-sm text-destructive" role="alert">{{ historyError.message }}</div>
-                        <div v-else-if="history.data.length" class="flex flex-col gap-3">
-                            <div v-for="entry in history.data" :key="entry.uuid" class="rounded-md border p-3 text-sm">
-                                <div class="text-xs text-muted-foreground">{{ formatDate(entry.created_at) }}</div>
-                                <div class="mt-1">{{ entry.description }}</div>
-                            </div>
-                            <div v-if="history.links?.prev || history.links?.next" class="flex justify-between gap-3">
-                                <Button
-                                    :disabled="!history.links?.prev || historyLoading"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="loadHistoryPage(history.links?.prev ?? undefined)"
-                                    >{{ t('orders.previous') }}</Button
-                                >
-                                <Button
-                                    :disabled="!history.links?.next || historyLoading"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="loadHistoryPage(history.links?.next ?? undefined)"
-                                    >{{ t('orders.next') }}</Button
-                                >
-                            </div>
-                        </div>
-                        <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_history') }}</p>
+                        <OrderHistoryFeed
+                            :entries="history.data"
+                            :error-message="historyError?.message"
+                            :labels="historyLabels"
+                            :links="history.links"
+                            :loading="historyLoading"
+                            @paginate="loadHistoryPage"
+                        />
                     </div>
                 </Card>
             </div>

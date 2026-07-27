@@ -385,4 +385,30 @@ final class OrderHistoryTrackingTest extends TestCase
         $this->assertStringContainsString('Open', $history['description']);
         $this->assertStringContainsString('Delivered', $history['description']);
     }
+
+    #[Test]
+    public function it_returns_history_only_for_the_requested_order(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+        Sanctum::actingAs($user);
+
+        $requestedOrder = Order::factory()->createQuietly();
+        $otherOrder = Order::factory()->createQuietly();
+        $requestedHistory = OrderHistory::factory()->create([
+            'order_id' => $requestedOrder->id,
+            'field_changed' => OrderHistory::FIELD_STATUS,
+        ]);
+        OrderHistory::factory()->create([
+            'order_id' => $otherOrder->id,
+            'field_changed' => OrderHistory::FIELD_STATUS,
+        ]);
+
+        $response = $this->getJson("/api/v1/orders/{$requestedOrder->uuid}/history");
+
+        $response->assertOk();
+        $history = $response->json('data');
+
+        $this->assertCount(1, $history);
+        $this->assertSame($requestedHistory->uuid, $history[0]['uuid']);
+    }
 }
