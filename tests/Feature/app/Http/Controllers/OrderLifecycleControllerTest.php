@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Http\Controllers;
-
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -15,578 +13,463 @@ use App\Models\OrderMotorInfo;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderLifecycleControllerTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected Company $company;
+beforeEach(function () {
+    Notification::fake();
+    config(['cache.default' => 'array']);
+    Cache::flush();
 
-    protected User $admin;
+    $this->company = Company::factory()->create();
+    $this->admin = User::factory()->create([
+        'role' => UserRole::ADMINISTRATOR->value,
+        'company_id' => $this->company->id,
+        'is_active' => true,
+    ]);
+    $this->employee = User::factory()->create([
+        'role' => UserRole::EMPLOYEE->value,
+        'company_id' => $this->company->id,
+        'is_active' => true,
+    ]);
+    $this->customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+        'is_active' => true,
+    ]);
+});
+it('creates order with motor info and items via api', function () {
+    $this->actingAs($this->employee);
 
-    protected User $employee;
-
-    protected User $customer;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Notification::fake();
-        config(['cache.default' => 'array']);
-        Cache::flush();
-
-        $this->company = Company::factory()->create();
-        $this->admin = User::factory()->create([
-            'role' => UserRole::ADMINISTRATOR->value,
-            'company_id' => $this->company->id,
-            'is_active' => true,
-        ]);
-        $this->employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-            'company_id' => $this->company->id,
-            'is_active' => true,
-        ]);
-        $this->customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-            'is_active' => true,
-        ]);
-    }
-
-    // ---------------------------------------------------------------
-    // Store order with motor info + items
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_creates_order_with_motor_info_and_items_via_api(): void
-    {
-        $this->actingAs($this->employee);
-
-        $payload = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Motor Rebuild #1',
-            'description' => 'Full engine rebuild',
-            'priority' => OrderPriority::HIGH->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => [
-                'brand' => 'Toyota',
-                'liters' => '3.5',
-                'year' => '2019',
-                'model' => 'Camry',
-                'cylinder_count' => '6',
-                'down_payment' => 1500,
-            ],
-            'items' => [
-                [
-                    'item_type' => OrderItemType::CylinderHead->value,
-                    'components' => ['bolts', 'valves'],
-                ],
-                [
-                    'item_type' => OrderItemType::EngineBlock->value,
-                    'components' => ['bearing_caps', 'camshaft'],
-                ],
-            ],
-        ];
-
-        $response = $this->postJson('/api/v1/orders', $payload);
-
-        $response->assertCreated()
-            ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
-
-        // Verify DB state
-        $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
-            'title' => 'Motor Rebuild #1',
-        ]);
-
-        $order = Order::with('items.components')->firstWhere('title', 'Motor Rebuild #1');
-        $this->assertNotNull($order);
-
-        // Motor info
-        $this->assertDatabaseHas('order_motor_info', [
-            'order_id' => $order->id,
+    $payload = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Motor Rebuild #1',
+        'description' => 'Full engine rebuild',
+        'priority' => OrderPriority::HIGH->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => [
             'brand' => 'Toyota',
-        ]);
-
-        // Items
-        $this->assertCount(2, $order->items);
-
-        // Components
-        $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
-        $this->assertCount(2, $cylinderHead->components);
-    }
-
-    #[Test]
-    public function it_validates_required_fields_for_order_creation(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson('/api/v1/orders', []);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'priority', 'assigned_to', 'items']);
-    }
-
-    #[Test]
-    public function it_rejects_order_creation_without_received_items(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson('/api/v1/orders', [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test',
-            'description' => 'Test',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'items' => [],
-        ]);
-
-        $response->assertUnprocessable()->assertJsonValidationErrors(['items']);
-        $this->assertDatabaseEmpty('orders');
-    }
-
-    #[Test]
-    public function it_rejects_an_invalid_advance_payment(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson('/api/v1/orders', [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test',
-            'description' => 'Test',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => ['down_payment' => 'not-money'],
-            'items' => [
-                ['item_type' => OrderItemType::EngineBlock->value],
+            'liters' => '3.5',
+            'year' => '2019',
+            'model' => 'Camry',
+            'cylinder_count' => '6',
+            'down_payment' => 1500,
+        ],
+        'items' => [
+            [
+                'item_type' => OrderItemType::CylinderHead->value,
+                'components' => ['bolts', 'valves'],
             ],
-        ]);
-
-        $response->assertUnprocessable()->assertJsonValidationErrors(['motor_info.down_payment']);
-        $this->assertDatabaseEmpty('orders');
-    }
-
-    #[Test]
-    public function it_validates_item_types(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson('/api/v1/orders', [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test',
-            'description' => 'Test',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'items' => [
-                ['item_type' => 'invalid_type'],
+            [
+                'item_type' => OrderItemType::EngineBlock->value,
+                'components' => ['bearing_caps', 'camshaft'],
             ],
-        ]);
+        ],
+    ];
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['items.0.item_type']);
-    }
+    $response = $this->postJson('/api/v1/orders', $payload);
 
-    #[Test]
-    public function it_requires_authentication_to_create_order(): void
-    {
-        $response = $this->postJson('/api/v1/orders', []);
-        $response->assertUnauthorized();
-    }
+    $response->assertCreated()
+        ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
 
-    // ---------------------------------------------------------------
-    // Submit Budget
-    // ---------------------------------------------------------------
+    // Verify DB state
+    $this->assertDatabaseHas('orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Motor Rebuild #1',
+    ]);
 
-    #[Test]
-    public function it_submits_budget_for_order(): void
-    {
-        $this->actingAs($this->employee);
+    $order = Order::with('items.components')->firstWhere('title', 'Motor Rebuild #1');
+    expect($order)->not->toBeNull();
 
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $item = OrderItem::factory()->received()->create([
-            'order_id' => $order->id,
-            'item_type' => OrderItemType::CylinderHead->value,
-        ]);
-        $catalog = $this->createCatalogService('wash_block', 600.00);
+    // Motor info
+    $this->assertDatabaseHas('order_motor_info', [
+        'order_id' => $order->id,
+        'brand' => 'Toyota',
+    ]);
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
-            'services' => [
-                [
-                    'order_item_id' => $item->id,
-                    'service_key' => $catalog->service_key,
-                    'measurement' => null,
-                ],
+    // Items
+    expect($order->items)->toHaveCount(2);
+
+    // Components
+    $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
+    expect($cylinderHead->components)->toHaveCount(2);
+});
+it('validates required fields for order creation', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', []);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'priority', 'assigned_to', 'items']);
+});
+it('rejects order creation without received items', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test',
+        'description' => 'Test',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [],
+    ]);
+
+    $response->assertUnprocessable()->assertJsonValidationErrors(['items']);
+    $this->assertDatabaseEmpty('orders');
+});
+it('rejects an invalid advance payment', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test',
+        'description' => 'Test',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => ['down_payment' => 'not-money'],
+        'items' => [
+            ['item_type' => OrderItemType::EngineBlock->value],
+        ],
+    ]);
+
+    $response->assertUnprocessable()->assertJsonValidationErrors(['motor_info.down_payment']);
+    $this->assertDatabaseEmpty('orders');
+});
+it('validates item types', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test',
+        'description' => 'Test',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => 'invalid_type'],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.item_type']);
+});
+it('requires authentication to create order', function () {
+    $response = $this->postJson('/api/v1/orders', []);
+    $response->assertUnauthorized();
+});
+it('submits budget for order', function () {
+    $this->actingAs($this->employee);
+
+    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+    $item = OrderItem::factory()->received()->create([
+        'order_id' => $order->id,
+        'item_type' => OrderItemType::CylinderHead->value,
+    ]);
+    $catalog = createLifecycleCatalogService('wash_block', 600.00);
+
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+        'services' => [
+            [
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+                'measurement' => null,
             ],
-        ]);
+        ],
+    ]);
 
-        $response->assertOk()
-            ->assertJsonPath('order.financials.budgeted_base', '600.00')
-            ->assertJsonPath('order.financials.budgeted_net', '696.00');
+    $response->assertOk()
+        ->assertJsonPath('order.financials.budgeted_base', '600.00')
+        ->assertJsonPath('order.financials.budgeted_net', '696.00');
 
-        // Order should transition through REVIEWED to AWAITING_CUSTOMER_APPROVAL
-        $order->refresh();
-        $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
-    }
+    // Order should transition through REVIEWED to AWAITING_CUSTOMER_APPROVAL
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
+});
+it('rejects budget for wrong status', function () {
+    $this->actingAs($this->employee);
 
-    #[Test]
-    public function it_rejects_budget_for_wrong_status(): void
-    {
-        $this->actingAs($this->employee);
+    $order = createLifecycleOrderInStatus(OrderStatus::Open);
 
-        $order = $this->createOrderInStatus(OrderStatus::Open);
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+        'services' => [],
+    ]);
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
-            'services' => [],
-        ]);
+    $response->assertUnprocessable();
+});
+it('approves services via api', function () {
+    $this->actingAs($this->customer);
 
-        $response->assertUnprocessable();
-    }
+    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingCustomerApproval);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
 
-    // ---------------------------------------------------------------
-    // Customer Approval
-    // ---------------------------------------------------------------
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+        'authorized_service_ids' => [$svc->id],
+        'down_payment' => 300.00,
+    ]);
 
-    #[Test]
-    public function it_approves_services_via_api(): void
-    {
-        $this->actingAs($this->customer);
+    $response->assertOk()
+        ->assertJsonPath('order.status', OrderStatus::ReadyForWork->value)
+        ->assertJsonPath('order.financials.authorized', '580.00')
+        ->assertJsonPath('order.financials.advance_payment', '300.00');
 
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::ReadyForWork);
+    expect((float)$order->motorInfo->down_payment)->toEqual(300.00);
+});
+it('rejects approval for wrong status', function () {
+    $this->actingAs($this->customer);
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
-            'authorized_service_ids' => [$svc->id],
-            'down_payment' => 300.00,
-        ]);
+    $order = createLifecycleOrderInStatus(OrderStatus::Open);
 
-        $response->assertOk()
-            ->assertJsonPath('order.status', OrderStatus::ReadyForWork->value)
-            ->assertJsonPath('order.financials.authorized', '580.00')
-            ->assertJsonPath('order.financials.advance_payment', '300.00');
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+        'authorized_service_ids' => [1],
+    ]);
 
-        $order->refresh();
-        $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
-        $this->assertEquals(300.00, (float) $order->motorInfo->down_payment);
-    }
+    $response->assertUnprocessable();
+});
+it('marks services completed via api', function () {
+    $this->actingAs($this->employee);
 
-    #[Test]
-    public function it_rejects_approval_for_wrong_status(): void
-    {
-        $this->actingAs($this->customer);
+    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForWork);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->authorized()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
 
-        $order = $this->createOrderInStatus(OrderStatus::Open);
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+        'completed_service_ids' => [$svc->id],
+    ]);
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
-            'authorized_service_ids' => [1],
-        ]);
+    $response->assertOk()
+        ->assertJsonPath('order.financials.completed', '580.00')
+        ->assertJsonPath('order.financials.remaining_balance', '580.00');
 
-        $response->assertUnprocessable();
-    }
+    $svc->refresh();
+    expect($svc->is_completed)->toBeTrue();
+});
+it('rejects work completion for wrong status', function () {
+    $this->actingAs($this->employee);
 
-    // ---------------------------------------------------------------
-    // Mark Work Completed
-    // ---------------------------------------------------------------
+    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->authorized()->create(['order_item_id' => $item->id]);
 
-    #[Test]
-    public function it_marks_services_completed_via_api(): void
-    {
-        $this->actingAs($this->employee);
+    $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+        'completed_service_ids' => [$svc->id],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['status']);
 
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->authorized()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
+    expect($svc->fresh()->is_completed)->toBeFalse();
+    expect($order->fresh()->status)->toBe(OrderStatus::Open);
+});
+it('marks order ready for delivery via api', function () {
+    $this->actingAs($this->employee);
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
-            'completed_service_ids' => [$svc->id],
-        ]);
+    $order = createLifecycleOrderInStatus(OrderStatus::InProgress);
 
-        $response->assertOk()
-            ->assertJsonPath('order.financials.completed', '580.00')
-            ->assertJsonPath('order.financials.remaining_balance', '580.00');
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
 
-        $svc->refresh();
-        $this->assertTrue($svc->is_completed);
-    }
+    $response->assertOk();
 
-    #[Test]
-    public function it_rejects_work_completion_for_wrong_status(): void
-    {
-        $this->actingAs($this->employee);
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::ReadyForDelivery);
+});
+it('rejects ready for delivery for wrong status', function () {
+    $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::Open);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->authorized()->create(['order_item_id' => $item->id]);
+    $order = createLifecycleOrderInStatus(OrderStatus::Open);
 
-        $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
-            'completed_service_ids' => [$svc->id],
-        ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
+    $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['status']);
 
-        $this->assertFalse($svc->fresh()->is_completed);
-        $this->assertSame(OrderStatus::Open, $order->fresh()->status);
-    }
+    expect($order->fresh()->status)->toBe(OrderStatus::Open);
+});
+it('delivers order via api', function () {
+    $this->actingAs($this->employee);
 
-    // ---------------------------------------------------------------
-    // Ready for Delivery
-    // ---------------------------------------------------------------
+    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForDelivery);
 
-    #[Test]
-    public function it_marks_order_ready_for_delivery_via_api(): void
-    {
-        $this->actingAs($this->employee);
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
-        $order = $this->createOrderInStatus(OrderStatus::InProgress);
+    $response->assertOk();
 
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::Delivered);
+});
+it('rejects deliver for wrong status', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertOk();
+    $order = createLifecycleOrderInStatus(OrderStatus::Open);
 
-        $order->refresh();
-        $this->assertEquals(OrderStatus::ReadyForDelivery, $order->status);
-    }
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
-    #[Test]
-    public function it_rejects_ready_for_delivery_for_wrong_status(): void
-    {
-        $this->actingAs($this->employee);
+    $response->assertUnprocessable();
+});
+it('completes full motor order lifecycle', function () {
+    $this->actingAs($this->employee);
 
-        $order = $this->createOrderInStatus(OrderStatus::Open);
+    $catalog = createLifecycleCatalogService('pressure_test_head', 450.00);
 
-        $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
-
-        $this->assertSame(OrderStatus::Open, $order->fresh()->status);
-    }
-
-    // ---------------------------------------------------------------
-    // Deliver
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_delivers_order_via_api(): void
-    {
-        $this->actingAs($this->employee);
-
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
-
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
-
-        $response->assertOk();
-
-        $order->refresh();
-        $this->assertEquals(OrderStatus::Delivered, $order->status);
-    }
-
-    #[Test]
-    public function it_rejects_deliver_for_wrong_status(): void
-    {
-        $this->actingAs($this->employee);
-
-        $order = $this->createOrderInStatus(OrderStatus::Open);
-
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
-
-        $response->assertUnprocessable();
-    }
-
-    // ---------------------------------------------------------------
-    // Full lifecycle e2e
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_completes_full_motor_order_lifecycle(): void
-    {
-        $this->actingAs($this->employee);
-
-        $catalog = $this->createCatalogService('pressure_test_head', 450.00);
-
-        // Step 1: Create order with items
-        $payload = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Full Lifecycle Test',
-            'description' => 'Complete e2e test',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => [
-                'brand' => 'Ford',
-                'liters' => '5.0',
-                'year' => '2021',
-                'model' => 'Mustang',
-                'cylinder_count' => '8',
+    // Step 1: Create order with items
+    $payload = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Full Lifecycle Test',
+        'description' => 'Complete e2e test',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => [
+            'brand' => 'Ford',
+            'liters' => '5.0',
+            'year' => '2021',
+            'model' => 'Mustang',
+            'cylinder_count' => '8',
+        ],
+        'items' => [
+            [
+                'item_type' => OrderItemType::CylinderHead->value,
+                'components' => ['bolts', 'valves'],
             ],
-            'items' => [
-                [
-                    'item_type' => OrderItemType::CylinderHead->value,
-                    'components' => ['bolts', 'valves'],
-                ],
+        ],
+    ];
+
+    $createResponse = $this->postJson('/api/v1/orders', $payload);
+    $createResponse->assertCreated();
+
+    $order = Order::firstWhere('title', 'Full Lifecycle Test');
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::AwaitingReview);
+
+    $item = $order->items->first();
+
+    // Step 2: Submit budget
+    $budgetResponse = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+        'services' => [
+            [
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+                'measurement' => null,
             ],
-        ];
+        ],
+    ]);
+    $budgetResponse->assertOk();
 
-        $createResponse = $this->postJson('/api/v1/orders', $payload);
-        $createResponse->assertCreated();
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
 
-        $order = Order::firstWhere('title', 'Full Lifecycle Test');
-        $order->refresh();
-        $this->assertEquals(OrderStatus::AwaitingReview, $order->status);
+    // Step 3: Customer approval
+    $this->actingAs($this->customer);
+    $serviceId = $order->services->first()->id;
+    $approvalResponse = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+        'authorized_service_ids' => [$serviceId],
+        'down_payment' => $catalog->net_price,
+    ]);
+    $approvalResponse->assertOk();
 
-        $item = $order->items->first();
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::ReadyForWork);
 
-        // Step 2: Submit budget
-        $budgetResponse = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
-            'services' => [
-                [
-                    'order_item_id' => $item->id,
-                    'service_key' => $catalog->service_key,
-                    'measurement' => null,
-                ],
-            ],
+    // Step 4: Mark work completed
+    $this->actingAs($this->employee);
+    $workResponse = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
+        'completed_service_ids' => [$serviceId],
+    ]);
+    $workResponse->assertOk();
+
+    // Step 5: Ready for delivery
+    $readyResponse = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
+    $readyResponse->assertOk();
+
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::ReadyForDelivery);
+
+    // Step 6: Deliver
+    $deliverResponse = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
+    $deliverResponse->assertOk();
+
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::Delivered);
+});
+it('forbids customer from submitting budget', function () {
+    $this->actingAs($this->customer);
+
+    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+        'services' => [],
+    ]);
+
+    $response->assertForbidden();
+});
+it('forbids customer from delivering an order', function () {
+    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForDelivery);
+
+    $this->actingAs($this->customer)
+        ->postJson("/api/v1/orders/{$order->uuid}/deliver")
+        ->assertForbidden();
+
+    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForDelivery);
+});
+it('returns order with motor info items and services', function () {
+    $this->actingAs($this->employee);
+
+    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    OrderService::factory()->budgeted()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
+
+    $response = $this->getJson("/api/v1/orders/{$order->uuid}");
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'motor_info',
+            'items',
+            'services',
         ]);
-        $budgetResponse->assertOk();
+});
+// ---------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------
+function createLifecycleOrderInStatus(OrderStatus $status): Order
+{
+    $order = Order::factory()->createQuietly([
+        'customer_id' => test()->customer->id,
+        'assigned_to' => test()->employee->id,
+        'created_by' => test()->employee->id,
+        'updated_by' => test()->employee->id,
+        'status' => $status->value,
+    ]);
 
-        $order->refresh();
-        $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
+    OrderMotorInfo::create([
+        'order_id' => $order->id,
+        'down_payment' => 0,
+        'total_cost' => 0,
+        'is_fully_paid' => false,
+    ]);
 
-        // Step 3: Customer approval
-        $this->actingAs($this->customer);
-        $serviceId = $order->services->first()->id;
-        $approvalResponse = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
-            'authorized_service_ids' => [$serviceId],
-            'down_payment' => $catalog->net_price,
-        ]);
-        $approvalResponse->assertOk();
+    return $order;
+}
 
-        $order->refresh();
-        $this->assertEquals(OrderStatus::ReadyForWork, $order->status);
-
-        // Step 4: Mark work completed
-        $this->actingAs($this->employee);
-        $workResponse = $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
-            'completed_service_ids' => [$serviceId],
-        ]);
-        $workResponse->assertOk();
-
-        // Step 5: Ready for delivery
-        $readyResponse = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
-        $readyResponse->assertOk();
-
-        $order->refresh();
-        $this->assertEquals(OrderStatus::ReadyForDelivery, $order->status);
-
-        // Step 6: Deliver
-        $deliverResponse = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
-        $deliverResponse->assertOk();
-
-        $order->refresh();
-        $this->assertEquals(OrderStatus::Delivered, $order->status);
-    }
-
-    // ---------------------------------------------------------------
-    // Authorization checks
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_forbids_customer_from_submitting_budget(): void
-    {
-        $this->actingAs($this->customer);
-
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
-            'services' => [],
-        ]);
-
-        $response->assertForbidden();
-    }
-
-    #[Test]
-    public function it_forbids_customer_from_delivering_an_order(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
-
-        $this->actingAs($this->customer)
-            ->postJson("/api/v1/orders/{$order->uuid}/deliver")
-            ->assertForbidden();
-
-        $this->assertSame(OrderStatus::ReadyForDelivery, $order->fresh()->status);
-    }
-
-    // ---------------------------------------------------------------
-    // Show order includes motor_info, items, services
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_returns_order_with_motor_info_items_and_services(): void
-    {
-        $this->actingAs($this->employee);
-
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        OrderService::factory()->budgeted()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$order->uuid}");
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'motor_info',
-                'items',
-                'services',
-            ]);
-    }
-
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    private function createOrderInStatus(OrderStatus $status): Order
-    {
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-            'status' => $status->value,
-        ]);
-
-        OrderMotorInfo::create([
-            'order_id' => $order->id,
-            'down_payment' => 0,
-            'total_cost' => 0,
-            'is_fully_paid' => false,
-        ]);
-
-        return $order;
-    }
-
-    private function createCatalogService(string $key, float $price): ServiceCatalog
-    {
-        return ServiceCatalog::create([
-            'service_key' => $key,
-            'service_name_key' => "service_catalog.{$key}",
-            'item_type' => OrderItemType::CylinderHead->value,
-            'base_price' => $price,
-            'tax_percentage' => 16.00,
-            'requires_measurement' => false,
-            'is_active' => true,
-            'display_order' => 1,
-        ]);
-    }
+function createLifecycleCatalogService(string $key, float $price): ServiceCatalog
+{
+    return ServiceCatalog::create([
+        'service_key' => $key,
+        'service_name_key' => "service_catalog.{$key}",
+        'item_type' => OrderItemType::CylinderHead->value,
+        'base_price' => $price,
+        'tax_percentage' => 16.00,
+        'requires_measurement' => false,
+        'is_active' => true,
+        'display_order' => 1,
+    ]);
 }

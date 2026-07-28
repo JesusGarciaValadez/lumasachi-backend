@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Http\Controllers;
-
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
@@ -11,404 +9,361 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderHistoryTrackingTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    #[Test]
-    public function it_checks_if_tracks_status_changes_when_updating_order(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        Sanctum::actingAs($user);
+it('checks if tracks status changes when updating order', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    Sanctum::actingAs($user);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'status' => OrderStatus::Open->value,
-            'created_by' => $user->id,
-        ]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'status' => OrderStatus::Open->value,
+        'created_by' => $user->id,
+    ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::InProgress->value,
-        ]);
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
 
-        $response->assertOk();
+    $response->assertOk();
 
-        // Check that history was created
-        $history = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_STATUS)
-            ->first();
+    // Check that history was created
+    $history = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_STATUS)
+        ->first();
 
-        $this->assertNotNull($history);
-        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::InProgress->value, $history->getRawOriginal('new_value'));
-        $this->assertEquals($user->id, $history->created_by);
-    }
+    expect($history)->not->toBeNull();
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
+    expect($history->created_by)->toEqual($user->id);
+});
+it('checks if tracks priority changes when updating order', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    Sanctum::actingAs($user);
 
-    #[Test]
-    public function it_checks_if_tracks_priority_changes_when_updating_order(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        Sanctum::actingAs($user);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'priority' => OrderPriority::NORMAL->value,
+        'created_by' => $user->id,
+    ]);
 
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'priority' => OrderPriority::NORMAL->value,
-            'created_by' => $user->id,
-        ]);
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'priority' => OrderPriority::URGENT->value,
+    ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'priority' => OrderPriority::URGENT->value,
-        ]);
+    $response->assertOk();
 
-        $response->assertOk();
+    // Check that history was created
+    $history = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_PRIORITY)
+        ->first();
 
-        // Check that history was created
-        $history = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_PRIORITY)
-            ->first();
+    expect($history)->not->toBeNull();
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderPriority::NORMAL->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderPriority::URGENT->value);
+    expect($history->created_by)->toEqual($user->id);
+});
+it('checks if tracks multiple field changes in single update', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
 
-        $this->assertNotNull($history);
-        $this->assertEquals(OrderPriority::NORMAL->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderPriority::URGENT->value, $history->getRawOriginal('new_value'));
-        $this->assertEquals($user->id, $history->created_by);
-    }
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::LOW->value,
+        'title' => 'Original Title',
+    ]);
 
-    #[Test]
-    public function it_checks_if_tracks_multiple_field_changes_in_single_update(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'status' => OrderStatus::Delivered->value,
+        'priority' => OrderPriority::HIGH->value,
+        'title' => 'Updated Title',
+    ]);
 
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::LOW->value,
-            'title' => 'Original Title',
-        ]);
+    $response->assertOk();
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::Delivered->value,
-            'priority' => OrderPriority::HIGH->value,
-            'title' => 'Updated Title',
-        ]);
+    // Check that multiple history entries were created
+    $histories = OrderHistory::where('order_id', $order->id)->get();
 
-        $response->assertOk();
+    // Should have 3 history entries (status, priority, title)
+    expect($histories)->toHaveCount(3);
+    expect($histories->pluck('field_changed')->toArray())->toEqualCanonicalizing([
+        OrderHistory::FIELD_STATUS,
+        OrderHistory::FIELD_PRIORITY,
+        OrderHistory::FIELD_TITLE,
+    ]);
 
-        // Check that multiple history entries were created
-        $histories = OrderHistory::where('order_id', $order->id)->get();
+    // Verify each field change
+    $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
+    expect($statusHistory)->not->toBeNull();
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
 
-        // Should have 3 history entries (status, priority, title)
-        $this->assertCount(3, $histories);
-        $this->assertEqualsCanonicalizing(
-            [
-                OrderHistory::FIELD_STATUS,
-                OrderHistory::FIELD_PRIORITY,
-                OrderHistory::FIELD_TITLE,
-            ],
-            $histories->pluck('field_changed')->toArray()
-        );
+    $priorityHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_PRIORITY);
+    expect($priorityHistory)->not->toBeNull();
+    expect($priorityHistory->getRawOriginal('old_value'))->toEqual(OrderPriority::LOW->value);
+    expect($priorityHistory->getRawOriginal('new_value'))->toEqual(OrderPriority::HIGH->value);
 
-        // Verify each field change
-        $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
-        $this->assertNotNull($statusHistory);
-        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::Delivered->value, $statusHistory->getRawOriginal('new_value'));
+    $titleHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_TITLE);
+    expect($titleHistory)->not->toBeNull();
+    expect($titleHistory->old_value)->toEqual('Original Title');
+    expect($titleHistory->new_value)->toEqual('Updated Title');
+});
+it('checks if tracks assignment changes', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $employee = User::factory()->create();
+    Sanctum::actingAs($user);
 
-        $priorityHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_PRIORITY);
-        $this->assertNotNull($priorityHistory);
-        $this->assertEquals(OrderPriority::LOW->value, $priorityHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'assigned_to' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-        $titleHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_TITLE);
-        $this->assertNotNull($titleHistory);
-        $this->assertEquals('Original Title', $titleHistory->old_value);
-        $this->assertEquals('Updated Title', $titleHistory->new_value);
-    }
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'assigned_to' => $employee->id,
+    ]);
 
-    #[Test]
-    public function it_checks_if_tracks_assignment_changes(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $employee = User::factory()->create();
-        Sanctum::actingAs($user);
+    $response->assertOk();
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'assigned_to' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    // Check that history was created
+    $history = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_ASSIGNED_TO)
+        ->first();
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'assigned_to' => $employee->id,
-        ]);
+    expect($history)->not->toBeNull();
+    expect($history->old_value)->toEqual($user->id);
+    expect($history->new_value)->toEqual($employee->id);
+});
+it('checks if tracks estimated completion date changes', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    Sanctum::actingAs($user);
 
-        $response->assertOk();
+    $oldDate = Carbon::now()->addDays(5);
+    $newDate = Carbon::now()->addDays(10);
 
-        // Check that history was created
-        $history = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_ASSIGNED_TO)
-            ->first();
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'estimated_completion' => $oldDate,
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertNotNull($history);
-        $this->assertEquals($user->id, $history->old_value);
-        $this->assertEquals($employee->id, $history->new_value);
-    }
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'estimated_completion' => $newDate->toISOString(),
+    ]);
 
-    #[Test]
-    public function it_checks_if_tracks_estimated_completion_date_changes(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        Sanctum::actingAs($user);
+    $response->assertOk();
 
-        $oldDate = Carbon::now()->addDays(5);
-        $newDate = Carbon::now()->addDays(10);
+    // Check that history was created
+    $history = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_ESTIMATED_COMPLETION)
+        ->first();
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'estimated_completion' => $oldDate,
-            'created_by' => $user->id,
-        ]);
+    expect($history)->not->toBeNull();
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'estimated_completion' => $newDate->toISOString(),
-        ]);
+    // Compare dates (ignoring microseconds)
+    $oldHistoryDate = Carbon::parse($history->getRawOriginal('old_value'));
+    $newHistoryDate = Carbon::parse($history->getRawOriginal('new_value'));
 
-        $response->assertOk();
+    expect($oldHistoryDate->format('Y-m-d H:i:s'))->toEqual($oldDate->format('Y-m-d H:i:s'));
+    expect($newHistoryDate->format('Y-m-d H:i:s'))->toEqual($newDate->format('Y-m-d H:i:s'));
+});
+it('checks if does not create history when no changes made', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    Sanctum::actingAs($user);
 
-        // Check that history was created
-        $history = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_ESTIMATED_COMPLETION)
-            ->first();
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::NORMAL->value,
+        'title' => 'Test Order',
+    ]);
 
-        $this->assertNotNull($history);
+    // Count existing histories
+    $initialHistoryCount = OrderHistory::where('order_id', $order->id)->count();
 
-        // Compare dates (ignoring microseconds)
-        $oldHistoryDate = Carbon::parse($history->getRawOriginal('old_value'));
-        $newHistoryDate = Carbon::parse($history->getRawOriginal('new_value'));
+    // Update with same values
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::NORMAL->value,
+        'title' => 'Test Order',
+    ]);
 
-        $this->assertEquals($oldDate->format('Y-m-d H:i:s'), $oldHistoryDate->format('Y-m-d H:i:s'));
-        $this->assertEquals($newDate->format('Y-m-d H:i:s'), $newHistoryDate->format('Y-m-d H:i:s'));
-    }
+    $response->assertOk();
 
-    #[Test]
-    public function it_checks_if_does_not_create_history_when_no_changes_made(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        Sanctum::actingAs($user);
+    // Verify no new history entries were created
+    $newHistoryCount = OrderHistory::where('order_id', $order->id)->count();
+    expect($newHistoryCount)->toEqual($initialHistoryCount);
+});
+it('checks if tracks setting field to null', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    Sanctum::actingAs($user);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value,
-            'title' => 'Test Order',
-        ]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'notes' => 'Some important notes',
+    ]);
 
-        // Count existing histories
-        $initialHistoryCount = OrderHistory::where('order_id', $order->id)->count();
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'notes' => null,
+    ]);
 
-        // Update with same values
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value,
-            'title' => 'Test Order',
-        ]);
+    $response->assertOk();
 
-        $response->assertOk();
+    // Check notes removal history
+    $notesHistory = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_NOTES)
+        ->first();
 
-        // Verify no new history entries were created
-        $newHistoryCount = OrderHistory::where('order_id', $order->id)->count();
-        $this->assertEquals($initialHistoryCount, $newHistoryCount);
-    }
+    expect($notesHistory)->not->toBeNull();
+    expect($notesHistory->old_value)->toEqual('Some important notes');
+    expect($notesHistory->new_value)->toBeNull();
+});
+it('checks if assigned to field cannot be set to null', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
 
-    #[Test]
-    public function it_checks_if_tracks_setting_field_to_null(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        Sanctum::actingAs($user);
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'assigned_to' => User::factory()->create()->id,
+    ]);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'notes' => 'Some important notes',
-        ]);
+    $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'assigned_to' => null,
+    ]);
 
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'notes' => null,
-        ]);
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['assigned_to']);
+});
+it('checks if order history index returns paginated results', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
 
-        $response->assertOk();
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+    ]);
 
-        // Check notes removal history
-        $notesHistory = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_NOTES)
-            ->first();
+    // Create multiple history entries
+    OrderHistory::factory()->count(25)->create([
+        'order_id' => $order->id,
+    ]);
 
-        $this->assertNotNull($notesHistory);
-        $this->assertEquals('Some important notes', $notesHistory->old_value);
-        $this->assertNull($notesHistory->new_value);
-    }
+    $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
-    #[Test]
-    public function it_checks_if_assigned_to_field_cannot_be_set_to_null(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
-
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly([
-            'assigned_to' => User::factory()->create()->id,
-        ]);
-
-        $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'assigned_to' => null,
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['assigned_to']);
-    }
-
-    #[Test]
-    public function it_checks_if_order_history_index_returns_paginated_results(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
-
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-        ]);
-
-        // Create multiple history entries
-        OrderHistory::factory()->count(25)->create([
-            'order_id' => $order->id,
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
+    $response->assertOk()
+        ->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'order_id',
+                    'field_changed',
+                    'old_value',
+                    'new_value',
+                    'comment',
+                    'description',
+                    'created_by',
+                    'created_at',
+                    'creator' => [
                         'id',
-                        'order_id',
-                        'field_changed',
-                        'old_value',
-                        'new_value',
-                        'comment',
-                        'description',
-                        'created_by',
-                        'created_at',
-                        'creator' => [
-                            'id',
-                            'full_name',
-                            'email',
-                        ],
+                        'full_name',
+                        'email',
                     ],
                 ],
-                'links',
-                'meta',
-            ]);
+            ],
+            'links',
+            'meta',
+        ]);
 
-        // Check pagination
-        $this->assertCount(15, $response->json('data')); // Default pagination
-        $this->assertEquals(25, $response->json('meta.total'));
+    // Check pagination
+    expect($response->json('data'))->toHaveCount(15);
+    // Default pagination
+    expect($response->json('meta.total'))->toEqual(25);
+});
+it('checks if order history index filters by field', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
+
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+    ]);
+
+    // Create different types of history
+    OrderHistory::factory()->count(5)->create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+    ]);
+
+    OrderHistory::factory()->count(3)->create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_PRIORITY,
+    ]);
+
+    // Filter by status field
+    $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=" . OrderHistory::FIELD_STATUS);
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(5);
+
+    // Verify all results are status changes
+    foreach ($response->json('data') as $history) {
+        expect($history['field_changed'])->toEqual(OrderHistory::FIELD_STATUS);
     }
+});
+it('checks if order history shows human readable descriptions', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
 
-    #[Test]
-    public function it_checks_if_order_history_index_filters_by_field(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
+    $order = Order::factory()->createQuietly([
+        'status' => OrderStatus::Open->value,
+    ]);
 
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-        ]);
+    // Create a status change
+    $this->putJson("/api/v1/orders/{$order->uuid}", [
+        'status' => OrderStatus::Delivered->value,
+    ]);
 
-        // Create different types of history
-        OrderHistory::factory()->count(5)->create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-        ]);
+    $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
 
-        OrderHistory::factory()->count(3)->create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_PRIORITY,
-        ]);
+    $response->assertOk();
 
-        // Filter by status field
-        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=".OrderHistory::FIELD_STATUS);
+    $history = $response->json('data.0');
+    expect($history['description'])->not->toBeNull();
+    $this->assertStringContainsString('Status changed from', $history['description']);
+    $this->assertStringContainsString('Open', $history['description']);
+    $this->assertStringContainsString('Delivered', $history['description']);
+});
+it('returns history only for the requested order', function () {
+    $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    Sanctum::actingAs($user);
 
-        $response->assertOk();
-        $this->assertCount(5, $response->json('data'));
+    $requestedOrder = Order::factory()->createQuietly();
+    $otherOrder = Order::factory()->createQuietly();
+    $requestedHistory = OrderHistory::factory()->create([
+        'order_id' => $requestedOrder->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+    ]);
+    OrderHistory::factory()->create([
+        'order_id' => $otherOrder->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+    ]);
 
-        // Verify all results are status changes
-        foreach ($response->json('data') as $history) {
-            $this->assertEquals(OrderHistory::FIELD_STATUS, $history['field_changed']);
-        }
-    }
+    $response = $this->getJson("/api/v1/orders/{$requestedOrder->uuid}/history");
 
-    #[Test]
-    public function it_checks_if_order_history_shows_human_readable_descriptions(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
+    $response->assertOk();
+    $history = $response->json('data');
 
-        $order = Order::factory()->createQuietly([
-            'status' => OrderStatus::Open->value,
-        ]);
-
-        // Create a status change
-        $this->putJson("/api/v1/orders/{$order->uuid}", [
-            'status' => OrderStatus::Delivered->value,
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
-
-        $response->assertOk();
-
-        $history = $response->json('data.0');
-        $this->assertNotNull($history['description']);
-        $this->assertStringContainsString('Status changed from', $history['description']);
-        $this->assertStringContainsString('Open', $history['description']);
-        $this->assertStringContainsString('Delivered', $history['description']);
-    }
-
-    #[Test]
-    public function it_returns_history_only_for_the_requested_order(): void
-    {
-        $user = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        Sanctum::actingAs($user);
-
-        $requestedOrder = Order::factory()->createQuietly();
-        $otherOrder = Order::factory()->createQuietly();
-        $requestedHistory = OrderHistory::factory()->create([
-            'order_id' => $requestedOrder->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-        ]);
-        OrderHistory::factory()->create([
-            'order_id' => $otherOrder->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$requestedOrder->uuid}/history");
-
-        $response->assertOk();
-        $history = $response->json('data');
-
-        $this->assertCount(1, $history);
-        $this->assertSame($requestedHistory->uuid, $history[0]['uuid']);
-    }
-}
+    expect($history)->toHaveCount(1);
+    expect($history[0]['uuid'])->toBe($requestedHistory->uuid);
+});

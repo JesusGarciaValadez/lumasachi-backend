@@ -2,816 +2,638 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Http\Controllers;
-
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderAdvancedControllerTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected $superAdmin;
+beforeEach(function () {
+    Storage::fake('public');
 
-    protected $admin;
+    // Create users with different roles
+    $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
+    $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
+    $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+    $this->employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+    $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
 
-    protected $employee;
+    // Create a test order
+    $this->order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+        'status' => OrderStatus::Open->value,
+    ]);
+});
+it('checks complete valid state transition flow', function () {
+    $this->actingAs($this->employee);
 
-    protected $employee2;
+    // Step 1: OPEN -> IN_PROGRESS
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+        'notes' => 'Starting work on this order',
+    ]);
 
-    protected $customer;
-
-    protected $order;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Storage::fake('public');
-
-        // Create users with different roles
-        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
-        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);
-        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
-        $this->employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
-        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-
-        // Create a test order
-        $this->order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'created_by' => $this->employee->id,
-            'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::Open->value,
-        ]);
-    }
-
-    /**
-     * Test complete valid state transition flow: OPEN -> IN_PROGRESS -> READY_FOR_DELIVERY -> DELIVERED -> PAID
-     */
-    #[Test]
-    public function it_checks_complete_valid_state_transition_flow()
-    {
-        $this->actingAs($this->employee);
-
-        // Step 1: OPEN -> IN_PROGRESS
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-            'notes' => 'Starting work on this order',
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::InProgress->value,
+            ],
         ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::InProgress->value,
+    $this->assertDatabaseHas('orders', [
+        'id' => $this->order->id,
+        'status' => OrderStatus::InProgress->value,
+    ]);
+
+    // Check history was created
+    $this->assertDatabaseHas('order_histories', [
+        'order_id' => $this->order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'created_by' => $this->employee->id,
+    ]);
+
+    // Step 2: IN_PROGRESS -> READY_FOR_DELIVERY
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::ReadyForDelivery->value,
+        'notes' => 'Order is ready for delivery',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::ReadyForDelivery->value,
+            ],
+        ]);
+
+    // Step 3: READY_FOR_DELIVERY -> DELIVERED
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Delivered->value,
+        'notes' => 'Order delivered to customer',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Delivered->value,
+            ],
+        ]);
+
+    // Step 4: DELIVERED -> PAID
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Paid->value,
+        'notes' => 'Payment received',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Paid->value,
+            ],
+        ]);
+
+    // Verify complete history chain
+    $histories = OrderHistory::where('order_id', $this->order->id)
+        ->where('field_changed', 'status')
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    expect($histories)->toHaveCount(4);
+
+    // The OrderHistory model casts values to enums, so we need to get the value property
+    expect($histories[0]->old_value?->value ?? $histories[0]->old_value)->toEqual(OrderStatus::Open->value);
+    expect($histories[0]->new_value?->value ?? $histories[0]->new_value)->toEqual(OrderStatus::InProgress->value);
+    expect($histories[1]->old_value?->value ?? $histories[1]->old_value)->toEqual(OrderStatus::InProgress->value);
+    expect($histories[1]->new_value?->value ?? $histories[1]->new_value)->toEqual(OrderStatus::ReadyForDelivery->value);
+    expect($histories[2]->old_value?->value ?? $histories[2]->old_value)->toEqual(OrderStatus::ReadyForDelivery->value);
+    expect($histories[2]->new_value?->value ?? $histories[2]->new_value)->toEqual(OrderStatus::Delivered->value);
+    expect($histories[3]->old_value?->value ?? $histories[3]->old_value)->toEqual(OrderStatus::Delivered->value);
+    expect($histories[3]->new_value?->value ?? $histories[3]->new_value)->toEqual(OrderStatus::Paid->value);
+});
+it('checks can cancel order from open status', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Cancelled->value,
+        'notes' => 'Customer cancelled the order',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Cancelled->value,
+            ],
+        ]);
+
+    $this->assertDatabaseHas('orders', [
+        'id' => $this->order->id,
+        'status' => OrderStatus::Cancelled->value,
+    ]);
+});
+it('checks return and cancel flow', function () {
+    // Setup order in DELIVERED status
+    $this->order->update(['status' => OrderStatus::Delivered->value]);
+
+    $this->actingAs($this->employee);
+
+    // DELIVERED -> RETURNED
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Returned->value,
+        'notes' => 'Customer returned the order',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Returned->value,
+            ],
+        ]);
+
+    // RETURNED -> CANCELLED
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Cancelled->value,
+        'notes' => 'Order cancelled after return',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Cancelled->value,
+            ],
+        ]);
+});
+it('checks not paid to paid flow', function () {
+    // Setup order in DELIVERED status
+    $this->order->update(['status' => OrderStatus::Delivered->value]);
+
+    $this->actingAs($this->employee);
+
+    // DELIVERED -> NOT_PAID
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::NotPaid->value,
+        'notes' => 'Payment pending',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::NotPaid->value,
+            ],
+        ]);
+
+    // NOT_PAID -> PAID
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Paid->value,
+        'notes' => 'Payment received after follow-up',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::Paid->value,
+            ],
+        ]);
+});
+it('checks cannot transition from paid status', function () {
+    $this->actingAs($this->employee);
+
+    // Set order to paid status
+    $this->order->update(['status' => OrderStatus::Paid->value]);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['status'])
+        ->assertJson([
+            'errors' => [
+                'status' => [
+                    'Invalid status transition.',
                 ],
-            ]);
-
-        $this->assertDatabaseHas('orders', [
-            'id' => $this->order->id,
-            'status' => OrderStatus::InProgress->value,
+            ],
         ]);
+});
+it('checks cannot transition from cancelled status', function () {
+    $this->actingAs($this->employee);
 
-        // Check history was created
-        $this->assertDatabaseHas('order_histories', [
-            'order_id' => $this->order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $this->employee->id,
-        ]);
+    // Set order to cancelled status
+    $this->order->update(['status' => OrderStatus::Cancelled->value]);
 
-        // Step 2: IN_PROGRESS -> READY_FOR_DELIVERY
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::ReadyForDelivery->value,
-            'notes' => 'Order is ready for delivery',
-        ]);
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::ReadyForDelivery->value,
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['status'])
+        ->assertJson([
+            'errors' => [
+                'status' => [
+                    'Invalid status transition.',
                 ],
-            ]);
-
-        // Step 3: READY_FOR_DELIVERY -> DELIVERED
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Delivered->value,
-            'notes' => 'Order delivered to customer',
+            ],
         ]);
+});
+it('checks cannot skip transition steps', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Delivered->value,
+    // Try to go from OPEN directly to DELIVERED (skipping IN_PROGRESS and READY_FOR_DELIVERY)
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Delivered->value,
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['status'])
+        ->assertJson([
+            'errors' => [
+                'status' => [
+                    'Invalid status transition.',
                 ],
-            ]);
-
-        // Step 4: DELIVERED -> PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Paid->value,
-            'notes' => 'Payment received',
+            ],
         ]);
+});
+it('checks cannot go backwards in flow', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Paid->value,
+    // Set order to IN_PROGRESS
+    $this->order->update(['status' => OrderStatus::InProgress->value]);
+
+    // Try to go back to OPEN
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Open->value,
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['status'])
+        ->assertJson([
+            'errors' => [
+                'status' => [
+                    'Invalid status transition.',
                 ],
-            ]);
-
-        // Verify complete history chain
-        $histories = OrderHistory::where('order_id', $this->order->id)
-            ->where('field_changed', 'status')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        $this->assertCount(4, $histories);
-        // The OrderHistory model casts values to enums, so we need to get the value property
-        $this->assertEquals(OrderStatus::Open->value, $histories[0]->old_value?->value ?? $histories[0]->old_value);
-        $this->assertEquals(OrderStatus::InProgress->value, $histories[0]->new_value?->value ?? $histories[0]->new_value);
-        $this->assertEquals(OrderStatus::InProgress->value, $histories[1]->old_value?->value ?? $histories[1]->old_value);
-        $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[1]->new_value?->value ?? $histories[1]->new_value);
-        $this->assertEquals(OrderStatus::ReadyForDelivery->value, $histories[2]->old_value?->value ?? $histories[2]->old_value);
-        $this->assertEquals(OrderStatus::Delivered->value, $histories[2]->new_value?->value ?? $histories[2]->new_value);
-        $this->assertEquals(OrderStatus::Delivered->value, $histories[3]->old_value?->value ?? $histories[3]->old_value);
-        $this->assertEquals(OrderStatus::Paid->value, $histories[3]->new_value?->value ?? $histories[3]->new_value);
-    }
-
-    /**
-     * Test alternative flow: OPEN -> CANCELLED
-     */
-    #[Test]
-    public function it_checks_can_cancel_order_from_open_status()
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Cancelled->value,
-            'notes' => 'Customer cancelled the order',
+            ],
         ]);
+});
+it('checks update status validates status', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Cancelled->value,
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => 'InvalidStatus',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['status'])
+        ->assertJson([
+            'errors' => [
+                'status' => [
+                    'The selected status is invalid.',
                 ],
-            ]);
-
-        $this->assertDatabaseHas('orders', [
-            'id' => $this->order->id,
-            'status' => OrderStatus::Cancelled->value,
+            ],
         ]);
-    }
+});
+it('checks status update requires authentication', function () {
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
 
-    /**
-     * Test alternative flow: DELIVERED -> RETURNED -> CANCELLED
-     */
-    #[Test]
-    public function it_checks_return_and_cancel_flow()
-    {
-        // Setup order in DELIVERED status
-        $this->order->update(['status' => OrderStatus::Delivered->value]);
+    $response->assertUnauthorized();
+});
+it('checks customer cannot update order status', function () {
+    $this->actingAs($this->customer);
 
-        $this->actingAs($this->employee);
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
 
-        // DELIVERED -> RETURNED
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Returned->value,
-            'notes' => 'Customer returned the order',
+    $response->assertForbidden();
+});
+it('checks employee can only update assigned or created orders', function () {
+    // Create another order not assigned to or created by the employee
+    $otherOrder = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->admin->id,
+        'assigned_to' => $this->employee2->id,
+        'status' => OrderStatus::Open->value,
+    ]);
+
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson("/api/v1/orders/{$otherOrder->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
+
+    $response->assertForbidden();
+});
+it('checks admin can update any order status', function () {
+    // Create order assigned to employee
+    $employeeOrder = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+        'status' => OrderStatus::Open->value,
+    ]);
+
+    $this->actingAs($this->admin);
+
+    $response = $this->postJson("/api/v1/orders/{$employeeOrder->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+        'notes' => 'Admin updating status',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order status updated successfully.',
+            'order' => [
+                'status' => OrderStatus::InProgress->value,
+            ],
         ]);
+});
+it('checks marking order as completed sets actual completion date', function () {
+    // Setup order ready for delivery
+    $this->order->update([
+        'status' => OrderStatus::InProgress->value,
+        'actual_completion' => null,
+    ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Returned->value,
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'status' => OrderStatus::Completed->value,
+        'notes' => 'Order completed',
+        'actual_completion' => now()->toIso8601String(), // Add actual_completion date
+    ]);
+
+    $response->assertOk();
+
+    // Note: The actual_completion date should be set when marking as COMPLETED
+    $this->order->refresh();
+
+    expect($this->order->status->value)->toEqual(OrderStatus::Completed->value);
+});
+it('checks admin can assign order to employee', function () {
+    $this->actingAs($this->admin);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->employee2->id,
+        'notes' => 'Reassigning to more experienced employee',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order assigned successfully.',
+            'order' => [
+                'assigned_to' => [
+                    'id' => $this->employee2->id,
                 ],
-            ]);
-
-        // RETURNED -> CANCELLED
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Cancelled->value,
-            'notes' => 'Order cancelled after return',
+            ],
         ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Cancelled->value,
+    $this->assertDatabaseHas('orders', [
+        'id' => $this->order->id,
+        'assigned_to' => $this->employee2->id,
+    ]);
+
+    // Check history was created for assignment change
+    $this->assertDatabaseHas('order_histories', [
+        'order_id' => $this->order->id,
+        'field_changed' => 'assigned_to',
+        'old_value' => $this->employee->id,
+        'new_value' => $this->employee2->id,
+        'created_by' => $this->admin->id,
+    ]);
+});
+it('checks super admin can assign orders', function () {
+    $this->actingAs($this->superAdmin);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->employee2->id,
+        'notes' => 'Super admin reassignment',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order assigned successfully.',
+            'order' => [
+                'assigned_to' => [
+                    'id' => $this->employee2->id,
                 ],
-            ]);
-    }
-
-    /**
-     * Test NOT_PAID flow: DELIVERED -> NOT_PAID -> PAID
-     */
-    #[Test]
-    public function it_checks_not_paid_to_paid_flow()
-    {
-        // Setup order in DELIVERED status
-        $this->order->update(['status' => OrderStatus::Delivered->value]);
-
-        $this->actingAs($this->employee);
-
-        // DELIVERED -> NOT_PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::NotPaid->value,
-            'notes' => 'Payment pending',
+            ],
         ]);
+});
+it('checks can assign order to administrator', function () {
+    $this->actingAs($this->superAdmin);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::NotPaid->value,
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->admin->id,
+        'notes' => 'Assigning to admin for review',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'message' => 'Order assigned successfully.',
+            'order' => [
+                'assigned_to' => [
+                    'id' => $this->admin->id,
                 ],
-            ]);
-
-        // NOT_PAID -> PAID
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Paid->value,
-            'notes' => 'Payment received after follow-up',
+            ],
         ]);
+});
+it('checks cannot assign order to customer', function () {
+    $this->actingAs($this->admin);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::Paid->value,
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->customer->id,
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['assigned_to'])
+        ->assertJson([
+            'errors' => [
+                'assigned_to' => [
+                    'The selected user cannot be assigned to orders.',
                 ],
-            ]);
-    }
-
-    /**
-     * Test invalid transition: Cannot go back from PAID status
-     */
-    #[Test]
-    public function it_checks_cannot_transition_from_paid_status()
-    {
-        $this->actingAs($this->employee);
-
-        // Set order to paid status
-        $this->order->update(['status' => OrderStatus::Paid->value]);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
+            ],
         ]);
+});
+it('checks cannot assign to nonexistent user', function () {
+    $this->actingAs($this->admin);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status'])
-            ->assertJson([
-                'errors' => [
-                    'status' => [
-                        'Invalid status transition.',
-                    ],
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => '01234567890',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['assigned_to'])
+        ->assertJson([
+            'errors' => [
+                'assigned_to' => [
+                    __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
                 ],
-            ]);
-    }
-
-    /**
-     * Test invalid transition: Cannot go back from CANCELLED status
-     */
-    #[Test]
-    public function it_checks_cannot_transition_from_cancelled_status()
-    {
-        $this->actingAs($this->employee);
-
-        // Set order to cancelled status
-        $this->order->update(['status' => OrderStatus::Cancelled->value]);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
+            ],
         ]);
+});
+it('checks employee cannot assign orders', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status'])
-            ->assertJson([
-                'errors' => [
-                    'status' => [
-                        'Invalid status transition.',
-                    ],
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->employee2->id,
+    ]);
+
+    $response->assertForbidden();
+});
+it('checks customer cannot assign orders', function () {
+    $this->actingAs($this->customer);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->employee2->id,
+    ]);
+
+    $response->assertForbidden();
+});
+it('checks assignment requires authentication', function () {
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
+        'assigned_to' => $this->employee2->id,
+    ]);
+
+    $response->assertUnauthorized();
+});
+it('checks assignment requires assigned to field', function () {
+    $this->actingAs($this->admin);
+
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", []);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['assigned_to'])
+        ->assertJson([
+            'errors' => [
+                'assigned_to' => [
+                    __('validation.custom.required', ['attribute' => __('validation.attributes.assigned_to')]),
                 ],
-            ]);
-    }
-
-    /**
-     * Test invalid transition: Cannot skip steps
-     */
-    #[Test]
-    public function it_checks_cannot_skip_transition_steps()
-    {
-        $this->actingAs($this->employee);
-
-        // Try to go from OPEN directly to DELIVERED (skipping IN_PROGRESS and READY_FOR_DELIVERY)
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Delivered->value,
+            ],
         ]);
+});
+it('checks view order history', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status'])
-            ->assertJson([
-                'errors' => [
-                    'status' => [
-                        'Invalid status transition.',
-                    ],
+    // Create some history entries
+    OrderHistory::factory()->count(3)->create([
+        'order_id' => $this->order->id,
+    ]);
+
+    $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'order_id',
+                    'field_changed',
+                    'old_value',
+                    'new_value',
+                    'comment',
+                    'created_by',
+                    'created_at',
                 ],
-            ]);
-    }
-
-    /**
-     * Test invalid transition: Cannot go backwards in the flow
-     */
-    #[Test]
-    public function it_checks_cannot_go_backwards_in_flow()
-    {
-        $this->actingAs($this->employee);
-
-        // Set order to IN_PROGRESS
-        $this->order->update(['status' => OrderStatus::InProgress->value]);
-
-        // Try to go back to OPEN
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Open->value,
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status'])
-            ->assertJson([
-                'errors' => [
-                    'status' => [
-                        'Invalid status transition.',
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test status update requires valid status
-     */
-    #[Test]
-    public function it_checks_update_status_validates_status()
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => 'InvalidStatus',
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['status'])
-            ->assertJson([
-                'errors' => [
-                    'status' => [
-                        'The selected status is invalid.',
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test status update requires authentication
-     */
-    #[Test]
-    public function it_checks_status_update_requires_authentication()
-    {
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-        ]);
-
-        $response->assertUnauthorized();
-    }
-
-    /**
-     * Test customer cannot update order status
-     */
-    #[Test]
-    public function it_checks_customer_cannot_update_order_status()
-    {
-        $this->actingAs($this->customer);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-        ]);
-
-        $response->assertForbidden();
-    }
-
-    /**
-     * Test employee can only update orders assigned to them or created by them
-     */
-    #[Test]
-    public function it_checks_employee_can_only_update_assigned_or_created_orders()
-    {
-        // Create another order not assigned to or created by the employee
-        $otherOrder = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'created_by' => $this->admin->id,
-            'assigned_to' => $this->employee2->id,
-            'status' => OrderStatus::Open->value,
-        ]);
-
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson("/api/v1/orders/{$otherOrder->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-        ]);
-
-        $response->assertForbidden();
-    }
-
-    /**
-     * Test admin can update any order status
-     */
-    #[Test]
-    public function it_checks_admin_can_update_any_order_status()
-    {
-        // Create order assigned to employee
-        $employeeOrder = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'created_by' => $this->employee->id,
-            'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::Open->value,
-        ]);
-
-        $this->actingAs($this->admin);
-
-        $response = $this->postJson("/api/v1/orders/{$employeeOrder->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-            'notes' => 'Admin updating status',
-        ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order status updated successfully.',
-                'order' => [
-                    'status' => OrderStatus::InProgress->value,
-                ],
-            ]);
-    }
-
-    /**
-     * Test marking order as completed updates actual_completion date
-     */
-    #[Test]
-    public function it_checks_marking_order_as_completed_sets_actual_completion_date()
-    {
-        // Setup order ready for delivery
-        $this->order->update([
-            'status' => OrderStatus::InProgress->value,
-            'actual_completion' => null,
-        ]);
-
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-            'status' => OrderStatus::Completed->value,
-            'notes' => 'Order completed',
-            'actual_completion' => now()->toIso8601String(), // Add actual_completion date
-        ]);
-
-        $response->assertOk();
-
-        // Note: The actual_completion date should be set when marking as COMPLETED
-        $this->order->refresh();
-
-        $this->assertEquals(OrderStatus::Completed->value, $this->order->status->value);
-    }
-
-    /**
-     * Test assigning order to employee with proper permissions
-     */
-    #[Test]
-    public function it_checks_admin_can_assign_order_to_employee()
-    {
-        $this->actingAs($this->admin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->employee2->id,
-            'notes' => 'Reassigning to more experienced employee',
-        ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order assigned successfully.',
-                'order' => [
-                    'assigned_to' => [
-                        'id' => $this->employee2->id,
-                    ],
-                ],
-            ]);
-
-        $this->assertDatabaseHas('orders', [
-            'id' => $this->order->id,
-            'assigned_to' => $this->employee2->id,
-        ]);
-
-        // Check history was created for assignment change
-        $this->assertDatabaseHas('order_histories', [
-            'order_id' => $this->order->id,
-            'field_changed' => 'assigned_to',
-            'old_value' => $this->employee->id,
-            'new_value' => $this->employee2->id,
-            'created_by' => $this->admin->id,
-        ]);
-    }
-
-    /**
-     * Test super admin can assign orders
-     */
-    #[Test]
-    public function it_checks_super_admin_can_assign_orders()
-    {
-        $this->actingAs($this->superAdmin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->employee2->id,
-            'notes' => 'Super admin reassignment',
-        ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order assigned successfully.',
-                'order' => [
-                    'assigned_to' => [
-                        'id' => $this->employee2->id,
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test can assign order to administrator
-     */
-    #[Test]
-    public function it_checks_can_assign_order_to_administrator()
-    {
-        $this->actingAs($this->superAdmin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->admin->id,
-            'notes' => 'Assigning to admin for review',
-        ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Order assigned successfully.',
-                'order' => [
-                    'assigned_to' => [
-                        'id' => $this->admin->id,
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test cannot assign order to customer
-     */
-    #[Test]
-    public function it_checks_cannot_assign_order_to_customer()
-    {
-        $this->actingAs($this->admin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->customer->id,
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['assigned_to'])
-            ->assertJson([
-                'errors' => [
-                    'assigned_to' => [
-                        'The selected user cannot be assigned to orders.',
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test cannot assign to non-existent user
-     */
-    #[Test]
-    public function it_checks_cannot_assign_to_nonexistent_user()
-    {
-        $this->actingAs($this->admin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => '01234567890',
-        ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['assigned_to'])
-            ->assertJson([
-                'errors' => [
-                    'assigned_to' => [
-                        __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test employee cannot assign orders (only admin and super admin can)
-     */
-    #[Test]
-    public function it_checks_employee_cannot_assign_orders()
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->employee2->id,
-        ]);
-
-        $response->assertForbidden();
-    }
-
-    /**
-     * Test customer cannot assign orders
-     */
-    #[Test]
-    public function it_checks_customer_cannot_assign_orders()
-    {
-        $this->actingAs($this->customer);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->employee2->id,
-        ]);
-
-        $response->assertForbidden();
-    }
-
-    /**
-     * Test assignment requires authentication
-     */
-    #[Test]
-    public function it_checks_assignment_requires_authentication()
-    {
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", [
-            'assigned_to' => $this->employee2->id,
-        ]);
-
-        $response->assertUnauthorized();
-    }
-
-    /**
-     * Test assignment requires assigned_to field
-     */
-    #[Test]
-    public function it_checks_assignment_requires_assigned_to_field()
-    {
-        $this->actingAs($this->admin);
-
-        $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/assign", []);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['assigned_to'])
-            ->assertJson([
-                'errors' => [
-                    'assigned_to' => [
-                        __('validation.custom.required', ['attribute' => __('validation.attributes.assigned_to')]),
-                    ],
-                ],
-            ]);
-    }
-
-    /**
-     * Test viewing order history
-     */
-    #[Test]
-    public function it_checks_view_order_history()
-    {
-        $this->actingAs($this->employee);
-
-        // Create some history entries
-        OrderHistory::factory()->count(3)->create([
-            'order_id' => $this->order->id,
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'order_id',
-                        'field_changed',
-                        'old_value',
-                        'new_value',
-                        'comment',
-                        'created_by',
-                        'created_at',
-                    ],
-                ],
-                'links',
-                'meta',
-            ])
-            ->assertJsonCount(3, 'data');
-    }
-
-    /**
-     * Test complete motor lifecycle: RECEIVED → AWAITING_REVIEW → REVIEWED → AWAITING_CUSTOMER_APPROVAL → READY_FOR_WORK → IN_PROGRESS → READY_FOR_DELIVERY → DELIVERED → PAID
-     */
-    #[Test]
-    public function it_checks_complete_motor_lifecycle_state_transitions()
-    {
-        $this->actingAs($this->employee);
-
-        // Create order in RECEIVED status
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'created_by' => $this->employee->id,
-            'assigned_to' => $this->employee->id,
-            'status' => OrderStatus::Received->value,
-        ]);
-
-        // RECEIVED → AWAITING_REVIEW
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::AwaitingReview->value,
-        ]);
-        $response->assertOk();
-
-        // AWAITING_REVIEW → REVIEWED
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::Reviewed->value,
-        ]);
-        $response->assertOk();
-
-        // Observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
-        $order->refresh();
-        $this->assertEquals(OrderStatus::AwaitingCustomerApproval, $order->status);
-
-        // AWAITING_CUSTOMER_APPROVAL → READY_FOR_WORK
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::ReadyForWork->value,
-        ]);
-        $response->assertOk();
-
-        // READY_FOR_WORK → IN_PROGRESS
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::InProgress->value,
-        ]);
-        $response->assertOk();
-
-        // IN_PROGRESS → READY_FOR_DELIVERY
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::ReadyForDelivery->value,
-        ]);
-        $response->assertOk();
-
-        // READY_FOR_DELIVERY → DELIVERED
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::Delivered->value,
-        ]);
-        $response->assertOk();
-
-        // DELIVERED → PAID
-        $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-            'status' => OrderStatus::Paid->value,
-        ]);
-        $response->assertOk();
-
-        $order->refresh();
-        $this->assertEquals(OrderStatus::Paid, $order->status);
-    }
-
-    /**
-     * Test history is returned in descending order
-     */
-    #[Test]
-    public function it_checks_history_is_ordered_by_newest_first()
-    {
-        $this->actingAs($this->employee);
-
-        // Create history entries with specific timestamps
-        $oldHistory = OrderHistory::factory()->create([
-            'order_id' => $this->order->id,
-            'created_at' => now()->subDays(2),
-        ]);
-
-        $newHistory = OrderHistory::factory()->create([
-            'order_id' => $this->order->id,
-            'created_at' => now(),
-        ]);
-
-        $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
-
-        $response->assertOk();
-
-        $history = $response->json('data');
-        $this->assertEquals($newHistory->id, $history[0]['id']);
-        $this->assertEquals($oldHistory->id, $history[1]['id']);
-    }
-}
+            ],
+            'links',
+            'meta',
+        ])
+        ->assertJsonCount(3, 'data');
+});
+it('checks complete motor lifecycle state transitions', function () {
+    $this->actingAs($this->employee);
+
+    // Create order in RECEIVED status
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+        'status' => OrderStatus::Received->value,
+    ]);
+
+    // RECEIVED → AWAITING_REVIEW
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::AwaitingReview->value,
+    ]);
+    $response->assertOk();
+
+    // AWAITING_REVIEW → REVIEWED
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::Reviewed->value,
+    ]);
+    $response->assertOk();
+
+    // Observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
+
+    // AWAITING_CUSTOMER_APPROVAL → READY_FOR_WORK
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::ReadyForWork->value,
+    ]);
+    $response->assertOk();
+
+    // READY_FOR_WORK → IN_PROGRESS
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::InProgress->value,
+    ]);
+    $response->assertOk();
+
+    // IN_PROGRESS → READY_FOR_DELIVERY
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::ReadyForDelivery->value,
+    ]);
+    $response->assertOk();
+
+    // READY_FOR_DELIVERY → DELIVERED
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::Delivered->value,
+    ]);
+    $response->assertOk();
+
+    // DELIVERED → PAID
+    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'status' => OrderStatus::Paid->value,
+    ]);
+    $response->assertOk();
+
+    $order->refresh();
+    expect($order->status)->toEqual(OrderStatus::Paid);
+});
+it('checks history is ordered by newest first', function () {
+    $this->actingAs($this->employee);
+
+    // Create history entries with specific timestamps
+    $oldHistory = OrderHistory::factory()->create([
+        'order_id' => $this->order->id,
+        'created_at' => now()->subDays(2),
+    ]);
+
+    $newHistory = OrderHistory::factory()->create([
+        'order_id' => $this->order->id,
+        'created_at' => now(),
+    ]);
+
+    $response = $this->getJson("/api/v1/orders/{$this->order->uuid}/history");
+
+    $response->assertOk();
+
+    $history = $response->json('data');
+    expect($history[0]['id'])->toEqual($newHistory->id);
+    expect($history[1]['id'])->toEqual($oldHistory->id);
+});
