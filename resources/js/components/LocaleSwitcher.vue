@@ -2,8 +2,19 @@
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@/i18n';
 import type { AppPageProps } from '@/types';
 import { router, usePage } from '@inertiajs/vue3';
+import { ChevronDown } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+interface Props {
+    showFlags?: boolean;
+    variant?: 'compact' | 'settings';
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    showFlags: false,
+    variant: 'compact',
+});
 
 const { t } = useI18n();
 const page = usePage<AppPageProps>();
@@ -22,6 +33,13 @@ const localeLabel = (value: string): string => {
     if (value === 'en') return t('common.english');
 
     return value;
+};
+
+const localeFlag = (value: string): string => {
+    if (value === 'es') return '🇪🇸';
+    if (value === 'en') return '🇺🇸';
+
+    return '';
 };
 
 function changeLocale(event: Event): void {
@@ -46,17 +64,35 @@ function changeLocale(event: Event): void {
 </script>
 
 <template>
-    <div class="flex items-center gap-2">
-        <label class="sr-only" for="locale-switcher">{{ t('common.language') }}</label>
-        <select
-            id="locale-switcher"
-            :aria-label="t('common.language')"
-            :disabled="changing"
-            :value="locale"
-            class="rounded-md border border-sidebar-border bg-background px-2 py-1 text-xs"
-            @change="changeLocale"
-        >
-            <option v-for="value in locales" :key="value" :value="value">{{ localeLabel(value) }}</option>
-        </select>
+    <div :class="props.variant === 'settings' ? 'grid gap-2' : 'flex items-center gap-2'">
+        <label :class="props.variant === 'settings' ? 'text-sm font-medium text-foreground' : 'sr-only'" for="locale-switcher">
+            {{ t('common.language') }}
+        </label>
+        <div class="relative">
+            <select
+                id="locale-switcher"
+                :aria-label="t('common.language')"
+                :class="[
+                    'appearance-none pr-10',
+                    props.variant === 'settings'
+                        ? 'h-12 w-full rounded-lg border border-input bg-background px-4 text-base shadow-sm transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+                        : 'rounded-md border border-sidebar-border bg-background px-2 py-1 text-xs',
+                ]"
+                :disabled="changing"
+                :value="locale"
+                @change="changeLocale"
+            >
+                <option v-for="value in locales" :key="value" :value="value">
+                    {{ props.showFlags ? `${localeFlag(value)} ${localeLabel(value)}` : localeLabel(value) }}
+                </option>
+            </select>
+            <ChevronDown
+                :class="[
+                    'pointer-events-none absolute right-3 text-muted-foreground',
+                    props.variant === 'settings' ? 'top-3.5 h-5 w-5' : 'top-1 h-4 w-4',
+                ]"
+                aria-hidden="true"
+            />
+        </div>
     </div>
 </template>

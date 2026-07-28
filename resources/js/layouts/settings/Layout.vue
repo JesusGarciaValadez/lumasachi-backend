@@ -13,6 +13,7 @@ const sidebarNavItems = computed<NavItem[]>(() => [
     { title: t('settings.profile'), href: '/settings/profile' },
     { title: t('settings.password'), href: '/settings/password' },
     { title: t('settings.appearance'), href: '/settings/appearance' },
+    { title: t('settings.language'), href: '/settings/language' },
 ]);
 
 const page = usePage();
