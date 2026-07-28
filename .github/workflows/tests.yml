@@ -125,7 +125,7 @@ jobs:
         run: |
           baseline_branch="${{ github.base_ref || github.ref_name }}"
           mkdir -p "$RUNNER_TEMP/pest-tia"
-          run_id="$(gh run list --workflow pest-tia-baseline.yml --branch "$baseline_branch" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)"
+          run_id="$(gh run list --workflow tia-baseline.yml --branch "$baseline_branch" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)"
 
           if [ -n "$run_id" ]; then
             gh run download "$run_id" --name pest-tia-baseline --dir "$RUNNER_TEMP/pest-tia"
