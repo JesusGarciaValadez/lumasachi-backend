@@ -56,4 +56,17 @@ describe('LocaleSwitcher', () => {
 
         expect(router.post).not.toHaveBeenCalled();
     });
+
+    it('renders the larger settings variant with flag labels', () => {
+        const wrapper = mount(LocaleSwitcher, {
+            props: {
+                showFlags: true,
+                variant: 'settings',
+            },
+        });
+
+        expect(wrapper.find('label').text()).toBe('Language');
+        expect(wrapper.find('select').classes()).toContain('h-12');
+        expect(wrapper.findAll('option').map((option) => option.text())).toEqual(['🇪🇸 Spanish', '🇺🇸 English']);
+    });
 });
