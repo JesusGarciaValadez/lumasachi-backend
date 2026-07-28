@@ -414,9 +414,26 @@ vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-datab
 
 ### Completion criteria
 
-- [ ] All ten Unit model files use Pest syntax.
-- [ ] Cast, relation, date, UUID, assignment, and persistence assertions are preserved.
-- [ ] Focused and full-suite gates pass.
+- [x] All ten Unit model files use Pest syntax.
+- [x] Cast, relation, date, UUID, assignment, and persistence assertions are preserved.
+- [x] Focused and full-suite gates pass.
+
+#### Step 4 execution record — 2026-07-28
+
+- Converted all ten files under `tests/Unit/app/Models` with Pest Drift. The conversion preserved the existing
+  `RefreshDatabase` behavior, Laravel test-case binding, setup fake, and model assertions; unused PHPUnit `Test`
+  attribute imports were removed.
+- Focused gate after Pint: `vendor/bin/sail php vendor/bin/pest --compact tests/Unit/app/Models` — 89 passed, 286
+  assertions, 10.54s.
+- Serial full Pest gate: `vendor/bin/sail php vendor/bin/pest --compact` — 612 passed, 4,623 assertions, 123.41s.
+- Parallel full Pest-backed gate: `vendor/bin/sail artisan test --compact --parallel --processes=8
+  --recreate-databases` — 612 passed, 4,618 assertions, 54.11s, 8 processes.
+- `vendor/bin/sail bin pint --dirty --format agent` completed successfully, and `git diff --check` passed. No PHPUnit
+  class, `Test` attribute, or PHPUnit import remains in the converted model files.
+- Initial Sail execution reported Docker/Podman unavailable inside the sandbox. Docker access was restored with
+  permission and the exact required commands were then rerun successfully.
+
+**Step 4 complete.**
 
 ## Step 5 — Convert the remaining Unit suite
 
@@ -881,17 +898,17 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
 
 Add one entry per completed step. Do not pre-fill results.
 
-| Step | Date | Agent/chat | Focused result | Full Pest result  | Coverage/TIA result | Notes |
-|------|------|------------|----------------|-------------------|---------------------|-------|
-| 1    |      |            |                | Not installed yet |                     |       |
-| 2    |      |            |                |                   |                     |       |
-| 3    |      |            |                |                   |                     |       |
-| 4    |      |            |                |                   |                     |       |
-| 5    |      |            |                |                   |                     |       |
-| 6    |      |            |                |                   |                     |       |
-| 7    |      |            |                |                   |                     |       |
-| 8    |      |            |                |                   |                     |       |
-| 9    |      |            |                |                   |                     |       |
-| 10   |      |            |                |                   |                     |       |
-| 11   |      |            |                |                   |                     |       |
-| 12   |      |            |                |                   |                     |       |
+| Step | Date       | Agent/chat | Focused result            | Full Pest result                                     | Coverage/TIA result | Notes                                                                                      |
+|------|------------|------------|---------------------------|------------------------------------------------------|---------------------|--------------------------------------------------------------------------------------------|
+| 1    |            |            |                           | Not installed yet                                    |                     |                                                                                            |
+| 2    |            |            |                           |                                                      |                     |                                                                                            |
+| 3    |            |            |                           |                                                      |                     |                                                                                            |
+| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope        | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases. |
+| 5    |            |            |                           |                                                      |                     |                                                                                            |
+| 6    |            |            |                           |                                                      |                     |                                                                                            |
+| 7    |            |            |                           |                                                      |                     |                                                                                            |
+| 8    |            |            |                           |                                                      |                     |                                                                                            |
+| 9    |            |            |                           |                                                      |                     |                                                                                            |
+| 10   |            |            |                           |                                                      |                     |                                                                                            |
+| 11   |            |            |                           |                                                      |                     |                                                                                            |
+| 12   |            |            |                           |                                                      |                     |                                                                                            |

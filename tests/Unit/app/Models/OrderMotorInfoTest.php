@@ -2,57 +2,44 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Models;
-
 use App\Models\Order;
 use App\Models\OrderMotorInfo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderMotorInfoTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    #[Test]
-    public function it_checks_casts_and_remaining_balance(): void
-    {
-        $order = Order::factory()->createQuietly();
+it('checks casts and remaining balance', function () {
+    $order = Order::factory()->createQuietly();
 
-        $info = OrderMotorInfo::create([
-            'order_id' => $order->id,
-            'brand' => 'Nissan',
-            'liters' => '2.5',
-            'year' => '2018',
-            'model' => 'Altima',
-            'cylinder_count' => '4',
-            'down_payment' => 1500.00,
-            'total_cost' => 1252.80,
-            'is_fully_paid' => false,
-        ]);
+    $info = OrderMotorInfo::create([
+        'order_id' => $order->id,
+        'brand' => 'Nissan',
+        'liters' => '2.5',
+        'year' => '2018',
+        'model' => 'Altima',
+        'cylinder_count' => '4',
+        'down_payment' => 1500.00,
+        'total_cost' => 1252.80,
+        'is_fully_paid' => false,
+    ]);
 
-        $this->assertSame(1500.00, (float) $info->down_payment);
-        $this->assertSame(1252.80, (float) $info->total_cost);
-        $this->assertFalse($info->is_fully_paid);
+    expect((float)$info->down_payment)->toBe(1500.00);
+    expect((float)$info->total_cost)->toBe(1252.80);
+    expect($info->is_fully_paid)->toBeFalse();
 
-        // remaining_balance = max(0, total_cost - down_payment) => 0
-        $this->assertSame(0.0, $info->remaining_balance);
-        $this->assertFalse($info->hasPendingPayment());
-    }
+    // remaining_balance = max(0, total_cost - down_payment) => 0
+    expect($info->remaining_balance)->toBe(0.0);
+    expect($info->hasPendingPayment())->toBeFalse();
+});
+it('compares payment amounts at currency precision', function () {
+    $order = Order::factory()->createQuietly();
 
-    #[Test]
-    public function it_compares_payment_amounts_at_currency_precision(): void
-    {
-        $order = Order::factory()->createQuietly();
+    $info = OrderMotorInfo::create([
+        'order_id' => $order->id,
+        'down_payment' => 0.10,
+        'total_cost' => 0.30,
+        'is_fully_paid' => false,
+    ]);
 
-        $info = OrderMotorInfo::create([
-            'order_id' => $order->id,
-            'down_payment' => 0.10,
-            'total_cost' => 0.30,
-            'is_fully_paid' => false,
-        ]);
-
-        $this->assertTrue($info->hasPendingPayment());
-        $this->assertSame(0.20, $info->remaining_balance);
-    }
-}
+    expect($info->hasPendingPayment())->toBeTrue();
+    expect($info->remaining_balance)->toBe(0.20);
+});

@@ -2,352 +2,309 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Models;
-
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class GenericOrderHistoryTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    #[Test]
-    public function it_checks_if_can_track_status_changes(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+it('checks if can track status changes', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Started working on the order',
-            'created_by' => $user->id,
-        ]);
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'comment' => 'Started working on the order',
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertEquals(OrderHistory::FIELD_STATUS, $history->field_changed);
-        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::InProgress->value, $history->getRawOriginal('new_value'));
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_STATUS);
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
 
-        // Test automatic casting
-        $this->assertInstanceOf(OrderStatus::class, $history->old_value);
-        $this->assertInstanceOf(OrderStatus::class, $history->new_value);
-        $this->assertEquals(OrderStatus::Open, $history->old_value);
-        $this->assertEquals(OrderStatus::InProgress, $history->new_value);
-    }
+    // Test automatic casting
+    expect($history->old_value)->toBeInstanceOf(OrderStatus::class);
+    expect($history->new_value)->toBeInstanceOf(OrderStatus::class);
+    expect($history->old_value)->toEqual(OrderStatus::Open);
+    expect($history->new_value)->toEqual(OrderStatus::InProgress);
+});
+it('checks if can track priority changes', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-    #[Test]
-    public function it_checks_if_can_track_priority_changes(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_PRIORITY,
+        'old_value' => OrderPriority::NORMAL->value,
+        'new_value' => OrderPriority::URGENT->value,
+        'comment' => 'Client requested urgent delivery',
+        'created_by' => $user->id,
+    ]);
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_PRIORITY,
-            'old_value' => OrderPriority::NORMAL->value,
-            'new_value' => OrderPriority::URGENT->value,
-            'comment' => 'Client requested urgent delivery',
-            'created_by' => $user->id,
-        ]);
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_PRIORITY);
 
-        $this->assertEquals(OrderHistory::FIELD_PRIORITY, $history->field_changed);
+    // Test automatic casting
+    expect($history->old_value)->toBeInstanceOf(OrderPriority::class);
+    expect($history->new_value)->toBeInstanceOf(OrderPriority::class);
+    expect($history->old_value)->toEqual(OrderPriority::NORMAL);
+    expect($history->new_value)->toEqual(OrderPriority::URGENT);
+});
+it('checks if can track assignment changes', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
+    $employee1 = User::factory()->create();
+    $employee2 = User::factory()->create();
 
-        // Test automatic casting
-        $this->assertInstanceOf(OrderPriority::class, $history->old_value);
-        $this->assertInstanceOf(OrderPriority::class, $history->new_value);
-        $this->assertEquals(OrderPriority::NORMAL, $history->old_value);
-        $this->assertEquals(OrderPriority::URGENT, $history->new_value);
-    }
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+        'old_value' => (string)$employee1->id,
+        'new_value' => (string)$employee2->id,
+        'comment' => 'Reassigned due to workload',
+        'created_by' => $user->id,
+    ]);
 
-    #[Test]
-    public function it_checks_if_can_track_assignment_changes(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
-        $employee1 = User::factory()->create();
-        $employee2 = User::factory()->create();
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_ASSIGNED_TO);
+    expect($history->old_value)->toEqual((string)$employee1->id);
+    expect($history->new_value)->toEqual((string)$employee2->id);
+});
+it('checks if can track date changes', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
+    $oldDate = Carbon::now()->subDays(5);
+    $newDate = Carbon::now()->addDays(2);
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
-            'old_value' => (string) $employee1->id,
-            'new_value' => (string) $employee2->id,
-            'comment' => 'Reassigned due to workload',
-            'created_by' => $user->id,
-        ]);
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
+        'old_value' => $oldDate->toISOString(),
+        'new_value' => $newDate->toISOString(),
+        'comment' => 'Delivery delayed due to supplier issue',
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertEquals(OrderHistory::FIELD_ASSIGNED_TO, $history->field_changed);
-        $this->assertEquals((string) $employee1->id, $history->old_value);
-        $this->assertEquals((string) $employee2->id, $history->new_value);
-    }
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_ESTIMATED_COMPLETION);
 
-    #[Test]
-    public function it_checks_if_can_track_date_changes(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
-        $oldDate = Carbon::now()->subDays(5);
-        $newDate = Carbon::now()->addDays(2);
+    // Test automatic casting to Carbon
+    expect($history->old_value)->toBeInstanceOf(Carbon::class);
+    expect($history->new_value)->toBeInstanceOf(Carbon::class);
+    expect($history->old_value->format('Y-m-d'))->toEqual($oldDate->format('Y-m-d'));
+    expect($history->new_value->format('Y-m-d'))->toEqual($newDate->format('Y-m-d'));
+});
+it('checks if can track text field changes', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
-            'old_value' => $oldDate->toISOString(),
-            'new_value' => $newDate->toISOString(),
-            'comment' => 'Delivery delayed due to supplier issue',
-            'created_by' => $user->id,
-        ]);
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_TITLE,
+        'old_value' => 'Old Title',
+        'new_value' => 'New Updated Title',
+        'comment' => 'Title corrected per client request',
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertEquals(OrderHistory::FIELD_ESTIMATED_COMPLETION, $history->field_changed);
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_TITLE);
+    expect($history->old_value)->toEqual('Old Title');
+    expect($history->new_value)->toEqual('New Updated Title');
+});
+it('checks if can handle null values', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-        // Test automatic casting to Carbon
-        $this->assertInstanceOf(Carbon::class, $history->old_value);
-        $this->assertInstanceOf(Carbon::class, $history->new_value);
-        $this->assertEquals($oldDate->format('Y-m-d'), $history->old_value->format('Y-m-d'));
-        $this->assertEquals($newDate->format('Y-m-d'), $history->new_value->format('Y-m-d'));
-    }
+    // Test setting a value from null
+    $history1 = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_NOTES,
+        'old_value' => null,
+        'new_value' => 'Some new notes',
+        'comment' => 'Added notes',
+        'created_by' => $user->id,
+    ]);
 
-    #[Test]
-    public function it_checks_if_can_track_text_field_changes(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    expect($history1->old_value)->toBeNull();
+    expect($history1->new_value)->toEqual('Some new notes');
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_TITLE,
-            'old_value' => 'Old Title',
-            'new_value' => 'New Updated Title',
-            'comment' => 'Title corrected per client request',
-            'created_by' => $user->id,
-        ]);
+    // Test setting a value to null
+    $history2 = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+        'old_value' => '123',
+        'new_value' => null,
+        'comment' => 'Unassigned from employee',
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertEquals(OrderHistory::FIELD_TITLE, $history->field_changed);
-        $this->assertEquals('Old Title', $history->old_value);
-        $this->assertEquals('New Updated Title', $history->new_value);
-    }
+    expect($history2->old_value)->toEqual('123');
+    expect($history2->new_value)->toBeNull();
+});
+it('checks if generates human readable descriptions', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-    #[Test]
-    public function it_checks_if_can_handle_null_values(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    // Test status change description
+    $history1 = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'created_by' => $user->id,
+    ]);
 
-        // Test setting a value from null
-        $history1 = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_NOTES,
-            'old_value' => null,
-            'new_value' => 'Some new notes',
-            'comment' => 'Added notes',
-            'created_by' => $user->id,
-        ]);
+    $expectedDescription = 'Status changed from Open to In Progress';
+    expect($history1->description)->toEqual($expectedDescription);
 
-        $this->assertNull($history1->old_value);
-        $this->assertEquals('Some new notes', $history1->new_value);
+    // Test new value only
+    $history2 = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_PRIORITY,
+        'old_value' => null,
+        'new_value' => OrderPriority::HIGH->value,
+        'created_by' => $user->id,
+    ]);
 
-        // Test setting a value to null
-        $history2 = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
-            'old_value' => '123',
-            'new_value' => null,
-            'comment' => 'Unassigned from employee',
-            'created_by' => $user->id,
-        ]);
+    $expectedDescription = 'Priority set to: High';
+    expect($history2->description)->toEqual($expectedDescription);
 
-        $this->assertEquals('123', $history2->old_value);
-        $this->assertNull($history2->new_value);
-    }
+    // Test value removed
+    $history3 = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_NOTES,
+        'old_value' => 'Some notes',
+        'new_value' => null,
+        'created_by' => $user->id,
+    ]);
 
-    #[Test]
-    public function it_checks_if_generates_human_readable_descriptions(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    $expectedDescription = 'Notes removed (was: Some notes)';
+    expect($history3->description)->toEqual($expectedDescription);
+});
+it('checks if formats date values in description', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
+    $date = Carbon::now()->addDays(5);
 
-        // Test status change description
-        $history1 = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id,
-        ]);
+    $history = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
+        'old_value' => null,
+        'new_value' => $date->toISOString(),
+        'created_by' => $user->id,
+    ]);
 
-        $expectedDescription = 'Status changed from Open to In Progress';
-        $this->assertEquals($expectedDescription, $history1->description);
+    $expectedDescription = __('orders.history_messages.set', [
+        'field' => __('orders.history_messages.fields.estimated_completion'),
+        'value' => $date->locale(app()->getLocale())->translatedFormat('M j, Y H:i'),
+    ]);
+    expect($history->description)->toEqual($expectedDescription);
+});
+it('checks if maintains backward compatibility with enum serialization', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-        // Test new value only
-        $history2 = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_PRIORITY,
-            'old_value' => null,
-            'new_value' => OrderPriority::HIGH->value,
-            'created_by' => $user->id,
-        ]);
+    $history = new OrderHistory();
+    $history->order_id = $order->id;
+    $history->field_changed = OrderHistory::FIELD_STATUS;
+    $history->created_by = $user->id;
 
-        $expectedDescription = 'Priority set to: High';
-        $this->assertEquals($expectedDescription, $history2->description);
+    // Test setting enum directly
+    $history->old_value = OrderStatus::Open;
+    $history->new_value = OrderStatus::Delivered;
 
-        // Test value removed
-        $history3 = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_NOTES,
-            'old_value' => 'Some notes',
-            'new_value' => null,
-            'created_by' => $user->id,
-        ]);
+    $history->save();
 
-        $expectedDescription = 'Notes removed (was: Some notes)';
-        $this->assertEquals($expectedDescription, $history3->description);
-    }
+    // Verify stored as string values
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
 
-    #[Test]
-    public function it_checks_if_formats_date_values_in_description(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
-        $date = Carbon::now()->addDays(5);
+    // Verify retrieved as enums
+    $freshHistory = OrderHistory::find($history->id);
+    expect($freshHistory->old_value)->toBeInstanceOf(OrderStatus::class);
+    expect($freshHistory->new_value)->toBeInstanceOf(OrderStatus::class);
+});
+it('checks if can query history by field', function () {
+    $order = Order::factory()->createQuietly();
+    $user = User::factory()->create();
 
-        $history = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_ESTIMATED_COMPLETION,
-            'old_value' => null,
-            'new_value' => $date->toISOString(),
-            'created_by' => $user->id,
-        ]);
+    // Create different types of history
+    OrderHistory::factory()->count(3)->create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_STATUS,
+    ]);
 
-        $expectedDescription = __('orders.history_messages.set', [
-            'field' => __('orders.history_messages.fields.estimated_completion'),
-            'value' => $date->locale(app()->getLocale())->translatedFormat('M j, Y H:i'),
-        ]);
-        $this->assertEquals($expectedDescription, $history->description);
-    }
+    OrderHistory::factory()->count(2)->create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_PRIORITY,
+    ]);
 
-    #[Test]
-    public function it_checks_if_maintains_backward_compatibility_with_enum_serialization(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    OrderHistory::factory()->create([
+        'order_id' => $order->id,
+        'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
+    ]);
 
-        $history = new OrderHistory();
-        $history->order_id = $order->id;
-        $history->field_changed = OrderHistory::FIELD_STATUS;
-        $history->created_by = $user->id;
+    // Query by field
+    $statusChanges = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_STATUS)
+        ->get();
 
-        // Test setting enum directly
-        $history->old_value = OrderStatus::Open;
-        $history->new_value = OrderStatus::Delivered;
+    $priorityChanges = OrderHistory::where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_PRIORITY)
+        ->get();
 
-        $history->save();
+    expect($statusChanges)->toHaveCount(3);
+    expect($priorityChanges)->toHaveCount(2);
+});
+it('checks if factory creates valid history entries', function () {
+    $history = OrderHistory::factory()->create();
 
-        // Verify stored as string values
-        $this->assertEquals(OrderStatus::Open->value, $history->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::Delivered->value, $history->getRawOriginal('new_value'));
+    expect($history->order_id)->not->toBeNull();
+    expect($history->field_changed)->not->toBeNull();
+    expect($history->created_by)->not->toBeNull();
+    expect([
+        OrderHistory::FIELD_STATUS,
+        OrderHistory::FIELD_PRIORITY,
+        OrderHistory::FIELD_ASSIGNED_TO,
+        OrderHistory::FIELD_TITLE,
+        OrderHistory::FIELD_ESTIMATED_COMPLETION,
+        OrderHistory::FIELD_ACTUAL_COMPLETION,
+        OrderHistory::FIELD_NOTES,
+    ])->toContain($history->field_changed);
+});
+it('checks if factory state methods work correctly', function () {
+    $order = Order::factory()->createQuietly();
 
-        // Verify retrieved as enums
-        $freshHistory = OrderHistory::find($history->id);
-        $this->assertInstanceOf(OrderStatus::class, $freshHistory->old_value);
-        $this->assertInstanceOf(OrderStatus::class, $freshHistory->new_value);
-    }
+    // Test status change state
+    $statusHistory = OrderHistory::factory()
+        ->statusChange(OrderStatus::Open, OrderStatus::Delivered)
+        ->create(['order_id' => $order->id]);
 
-    #[Test]
-    public function it_checks_if_can_query_history_by_field(): void
-    {
-        $order = Order::factory()->createQuietly();
-        $user = User::factory()->create();
+    expect($statusHistory->field_changed)->toEqual(OrderHistory::FIELD_STATUS);
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
 
-        // Create different types of history
-        OrderHistory::factory()->count(3)->create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-        ]);
+    // Test priority change state
+    $priorityHistory = OrderHistory::factory()
+        ->priorityChange(OrderPriority::LOW, OrderPriority::HIGH)
+        ->create(['order_id' => $order->id]);
 
-        OrderHistory::factory()->count(2)->create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_PRIORITY,
-        ]);
+    expect($priorityHistory->field_changed)->toEqual(OrderHistory::FIELD_PRIORITY);
+    expect($priorityHistory->getRawOriginal('old_value'))->toEqual(OrderPriority::LOW->value);
+    expect($priorityHistory->getRawOriginal('new_value'))->toEqual(OrderPriority::HIGH->value);
 
-        OrderHistory::factory()->create([
-            'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_ASSIGNED_TO,
-        ]);
+    // Test assignment change state
+    $oldAssignee = User::factory()->createQuietly();
+    $newAssignee = User::factory()->createQuietly();
 
-        // Query by field
-        $statusChanges = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_STATUS)
-            ->get();
+    $assignmentHistory = OrderHistory::factory()
+        ->assignmentChange($oldAssignee, $newAssignee)
+        ->create(['order_id' => $order->id]);
 
-        $priorityChanges = OrderHistory::where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_PRIORITY)
-            ->get();
-
-        $this->assertCount(3, $statusChanges);
-        $this->assertCount(2, $priorityChanges);
-    }
-
-    #[Test]
-    public function it_checks_if_factory_creates_valid_history_entries(): void
-    {
-        $history = OrderHistory::factory()->create();
-
-        $this->assertNotNull($history->order_id);
-        $this->assertNotNull($history->field_changed);
-        $this->assertNotNull($history->created_by);
-        $this->assertContains($history->field_changed, [
-            OrderHistory::FIELD_STATUS,
-            OrderHistory::FIELD_PRIORITY,
-            OrderHistory::FIELD_ASSIGNED_TO,
-            OrderHistory::FIELD_TITLE,
-            OrderHistory::FIELD_ESTIMATED_COMPLETION,
-            OrderHistory::FIELD_ACTUAL_COMPLETION,
-            OrderHistory::FIELD_NOTES,
-        ]);
-    }
-
-    #[Test]
-    public function it_checks_if_factory_state_methods_work_correctly(): void
-    {
-        $order = Order::factory()->createQuietly();
-
-        // Test status change state
-        $statusHistory = OrderHistory::factory()
-            ->statusChange(OrderStatus::Open, OrderStatus::Delivered)
-            ->create(['order_id' => $order->id]);
-
-        $this->assertEquals(OrderHistory::FIELD_STATUS, $statusHistory->field_changed);
-        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::Delivered->value, $statusHistory->getRawOriginal('new_value'));
-
-        // Test priority change state
-        $priorityHistory = OrderHistory::factory()
-            ->priorityChange(OrderPriority::LOW, OrderPriority::HIGH)
-            ->create(['order_id' => $order->id]);
-
-        $this->assertEquals(OrderHistory::FIELD_PRIORITY, $priorityHistory->field_changed);
-        $this->assertEquals(OrderPriority::LOW->value, $priorityHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
-
-        // Test assignment change state
-        $oldAssignee = User::factory()->createQuietly();
-        $newAssignee = User::factory()->createQuietly();
-
-        $assignmentHistory = OrderHistory::factory()
-            ->assignmentChange($oldAssignee, $newAssignee)
-            ->create(['order_id' => $order->id]);
-
-        $this->assertEquals(OrderHistory::FIELD_ASSIGNED_TO, $assignmentHistory->field_changed);
-        $this->assertEquals($oldAssignee->id, $assignmentHistory->getRawOriginal('old_value'));
-        $this->assertEquals($newAssignee->id, $assignmentHistory->getRawOriginal('new_value'));
-    }
-}
+    expect($assignmentHistory->field_changed)->toEqual(OrderHistory::FIELD_ASSIGNED_TO);
+    expect($assignmentHistory->getRawOriginal('old_value'))->toEqual($oldAssignee->id);
+    expect($assignmentHistory->getRawOriginal('new_value'))->toEqual($newAssignee->id);
+});

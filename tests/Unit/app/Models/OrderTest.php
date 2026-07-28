@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Models;
-
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
@@ -13,379 +11,241 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use ReflectionClass;
-use Tests\TestCase;
 
-/**
- * @SuppressWarnings(PHPMD.CamelCaseMethodName)
- */
-final class OrderTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    /**
-     * Test that Order model uses required traits
-     */
-    #[Test]
-    public function it_checks_if_order_uses_required_traits(): void
-    {
-        $order = new Order();
+it('checks if order uses required traits', function () {
+    $order = new Order();
 
-        // Check for HasFactory trait
-        $this->assertTrue(method_exists($order, 'factory'));
+    // Check for HasFactory trait
+    expect(method_exists($order, 'factory'))->toBeTrue();
 
-        // Check for HasUuids trait
-        $this->assertTrue(method_exists($order, 'uniqueIds'));
+    // Check for HasUuids trait
+    expect(method_exists($order, 'uniqueIds'))->toBeTrue();
 
-        // Check for HasAttachments trait
-        $this->assertTrue(method_exists($order, 'attachments'));
-    }
+    // Check for HasAttachments trait
+    expect(method_exists($order, 'attachments'))->toBeTrue();
+});
+it('checks if fillable attributes are set correctly', function () {
+    $order = new Order();
+    $fillable = $order->getFillable();
 
-    /**
-     * Test that fillable attributes are set correctly
-     */
-    #[Test]
-    public function it_checks_if_fillable_attributes_are_set_correctly(): void
-    {
-        $order = new Order();
-        $fillable = $order->getFillable();
+    $expectedFillable = [
+        'customer_id',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'estimated_completion',
+        'actual_completion',
+        'notes',
+        'created_by',
+        'updated_by',
+        'assigned_to',
+    ];
 
-        $expectedFillable = [
-            'customer_id',
-            'title',
-            'description',
-            'status',
-            'priority',
-            'estimated_completion',
-            'actual_completion',
-            'notes',
-            'created_by',
-            'updated_by',
-            'assigned_to',
-        ];
+    expect($fillable)->toEqual($expectedFillable);
+});
+it('checks if casts attributes are set correctly', function () {
+    $order = new Order();
+    $casts = $order->getCasts();
 
-        $this->assertEquals($expectedFillable, $fillable);
-    }
+    expect($casts)->toHaveKey('estimated_completion');
+    expect($casts)->toHaveKey('actual_completion');
+    $this->assertStringContainsString('datetime', $casts['estimated_completion']);
+    $this->assertStringContainsString('datetime', $casts['actual_completion']);
+});
+it('checks if customer relationship is correct', function () {
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
+    $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
 
-    /**
-     * Test that casts are set correctly
-     */
-    #[Test]
-    public function it_checks_if_casts_attributes_are_set_correctly(): void
-    {
-        $order = new Order();
-        $casts = $order->getCasts();
+    expect($order->customer)->toBeInstanceOf(User::class);
+    expect($order->customer->id)->toEqual($customer->id);
+    expect($order->customer->role->value)->toEqual(UserRole::CUSTOMER->value);
+});
+it('checks if customer relationship returns null for non customers', function () {
+    $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+    $order = Order::factory()->createQuietly(['customer_id' => $employee->id]);
 
-        $this->assertArrayHasKey('estimated_completion', $casts);
-        $this->assertArrayHasKey('actual_completion', $casts);
-        $this->assertStringContainsString('datetime', $casts['estimated_completion']);
-        $this->assertStringContainsString('datetime', $casts['actual_completion']);
-    }
+    expect($order->customer)->toBeNull();
+});
+it('checks if created by relationship is correct', function () {
+    $user = User::factory()->create();
+    $order = Order::factory()->createQuietly(['created_by' => $user->id]);
 
-    /**
-     * Test customer relationship
-     */
-    #[Test]
-    public function it_checks_if_customer_relationship_is_correct(): void
-    {
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
-        $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
+    expect($order->createdBy)->toBeInstanceOf(User::class);
+    expect($order->createdBy->id)->toEqual($user->id);
+});
+it('checks if updated by relationship is correct', function () {
+    $user = User::factory()->create();
+    $order = Order::factory()->createQuietly(['updated_by' => $user->id]);
 
-        $this->assertInstanceOf(User::class, $order->customer);
-        $this->assertEquals($customer->id, $order->customer->id);
-        $this->assertEquals(UserRole::CUSTOMER->value, $order->customer->role->value);
-    }
+    expect($order->updatedBy)->toBeInstanceOf(User::class);
+    expect($order->updatedBy->id)->toEqual($user->id);
+});
+it('checks if assigned to relationship is correct', function () {
+    $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+    $order = Order::factory()->createQuietly(['assigned_to' => $employee->id]);
 
-    /**
-     * Test customer relationship returns null for non-customer users
-     */
-    #[Test]
-    public function it_checks_if_customer_relationship_returns_null_for_non_customers(): void
-    {
-        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $order = Order::factory()->createQuietly(['customer_id' => $employee->id]);
+    expect($order->assignedTo)->toBeInstanceOf(User::class);
+    expect($order->assignedTo->id)->toEqual($employee->id);
+    expect($order->assignedTo->role->value)->toEqual(UserRole::EMPLOYEE->value);
+});
+it('checks if order histories relationship is correct', function () {
+    $order = Order::factory()->createQuietly();
 
-        $this->assertNull($order->customer);
-    }
+    // Create order histories
+    OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open,
+        'new_value' => OrderStatus::InProgress,
+        'comment' => 'Order started',
+        'created_by' => User::factory()->create()->id,
+    ]);
 
-    /**
-     * Test createdBy relationship
-     */
-    #[Test]
-    public function it_checks_if_created_by_relationship_is_correct(): void
-    {
-        $user = User::factory()->create();
-        $order = Order::factory()->createQuietly(['created_by' => $user->id]);
+    OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::InProgress,
+        'new_value' => OrderStatus::ReadyForDelivery,
+        'comment' => 'Order ready',
+        'created_by' => User::factory()->create()->id,
+    ]);
 
-        $this->assertInstanceOf(User::class, $order->createdBy);
-        $this->assertEquals($user->id, $order->createdBy->id);
-    }
+    expect($order->orderHistories)->toHaveCount(2);
+    $this->assertContainsOnlyInstancesOf(OrderHistory::class, $order->orderHistories);
+});
+it('checks if can create an order', function () {
+    $user = User::factory()->create();
+    $order = Order::factory()->createQuietly([
+        'created_by' => $user->id,
+        'updated_by' => $user->id,
+    ]);
 
-    /**
-     * Test updatedBy relationship
-     */
-    #[Test]
-    public function it_checks_if_updated_by_relationship_is_correct(): void
-    {
-        $user = User::factory()->create();
-        $order = Order::factory()->createQuietly(['updated_by' => $user->id]);
+    $this->assertDatabaseHas('orders', [
+        'id' => $order->id,
+        'created_by' => $user->id,
+    ]);
+});
+it('checks if belongs to a creator', function () {
+    $user = User::factory()->create();
+    $order = Order::factory()->createQuietly(['created_by' => $user->id]);
 
-        $this->assertInstanceOf(User::class, $order->updatedBy);
-        $this->assertEquals($user->id, $order->updatedBy->id);
-    }
+    expect($order->createdBy())->toBeInstanceOf(BelongsTo::class);
+    expect($order->createdBy->id)->toEqual($user->id);
+});
+it('checks if estimated completion date casting is correct', function () {
+    $date = now()->addDays(5);
+    $order = Order::factory()->createQuietly([
+        'estimated_completion' => $date,
+    ]);
 
-    /**
-     * Test assignedTo relationship
-     */
-    #[Test]
-    public function it_checks_if_assigned_to_relationship_is_correct(): void
-    {
-        $employee = User::factory()->create(['role' => UserRole::EMPLOYEE]);
-        $order = Order::factory()->createQuietly(['assigned_to' => $employee->id]);
+    expect($order->estimated_completion)->toBeInstanceOf(CarbonImmutable::class);
+    expect($order->estimated_completion->format('Y-m-d H:i:s'))->toEqual($date->format('Y-m-d H:i:s'));
+});
+it('checks if actual completion date casting is correct', function () {
+    $date = now()->subDays(2);
+    $order = Order::factory()->createQuietly([
+        'actual_completion' => $date,
+    ]);
 
-        $this->assertInstanceOf(User::class, $order->assignedTo);
-        $this->assertEquals($employee->id, $order->assignedTo->id);
-        $this->assertEquals(UserRole::EMPLOYEE->value, $order->assignedTo->role->value);
-    }
+    expect($order->actual_completion)->toBeInstanceOf(CarbonImmutable::class);
+    expect($order->actual_completion->format('Y-m-d H:i:s'))->toEqual($date->format('Y-m-d H:i:s'));
+});
+it('checks if actual completion can be null', function () {
+    $order = Order::factory()->createQuietly([
+        'actual_completion' => null,
+    ]);
 
-    /**
-     * Test orderHistories relationship
-     */
-    #[Test]
-    public function it_checks_if_order_histories_relationship_is_correct(): void
-    {
-        $order = Order::factory()->createQuietly();
+    expect($order->actual_completion)->toBeNull();
+});
+it('checks if mass assignment is correct', function () {
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
+    $creator = User::factory()->create();
 
-        // Create order histories
-        OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open,
-            'new_value' => OrderStatus::InProgress,
-            'comment' => 'Order started',
-            'created_by' => User::factory()->create()->id,
-        ]);
+    $data = [
+        'customer_id' => $customer->id,
+        'title' => 'Test Order',
+        'description' => 'Test Description',
+        'status' => OrderStatus::Open,
+        'priority' => OrderPriority::HIGH,
+        'estimated_completion' => now()->addDays(7),
+        'notes' => 'Test notes',
+        'created_by' => $creator->id,
+        'updated_by' => $creator->id,
+        'assigned_to' => $creator->id,
+    ];
 
-        OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::InProgress,
-            'new_value' => OrderStatus::ReadyForDelivery,
-            'comment' => 'Order ready',
-            'created_by' => User::factory()->create()->id,
-        ]);
+    $order = Order::factory()->createQuietly($data);
 
-        $this->assertCount(2, $order->orderHistories);
-        $this->assertContainsOnlyInstancesOf(OrderHistory::class, $order->orderHistories);
-    }
+    expect($order->title)->toEqual($data['title']);
+    expect($order->description)->toEqual($data['description']);
+    expect($order->status->value)->toEqual($data['status']->value);
+    expect($order->priority->value)->toEqual($data['priority']->value);
+    expect($order->notes)->toEqual($data['notes']);
+});
+it('checks if order can be created with minimum fields', function () {
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
+    $creator = User::factory()->create();
 
-    /**
-     * Test order can be created
-     */
-    #[Test]
-    public function it_checks_if_can_create_an_order(): void
-    {
-        $user = User::factory()->create();
-        $order = Order::factory()->createQuietly([
-            'created_by' => $user->id,
-            'updated_by' => $user->id,
-        ]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'title' => 'Minimal Order',
+        'description' => 'Minimal Description',
+        'status' => OrderStatus::Open,
+        'priority' => OrderPriority::NORMAL,
+        'estimated_completion' => now()->addDays(3),
+        'created_by' => $creator->id,
+        'updated_by' => $creator->id,
+        'assigned_to' => $creator->id,
+    ]);
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'created_by' => $user->id,
-        ]);
-    }
+    expect($order)->toBeInstanceOf(Order::class);
+    expect($order->id)->not->toBeNull();
+    expect($order->actual_completion)->toBeNull();
+    expect($order->notes)->toBeNull();
+    expect($order->assigned_to)->toEqual($creator->id);
+});
+it('checks if new factory returns correct instance', function () {
+    $factory = Order::factory();
 
-    /**
-     * Test belongs to a creator
-     */
-    #[Test]
-    public function it_checks_if_belongs_to_a_creator(): void
-    {
-        $user = User::factory()->create();
-        $order = Order::factory()->createQuietly(['created_by' => $user->id]);
+    expect($factory)->toBeInstanceOf(OrderFactory::class);
+});
+it('checks if uuid generation is correct', function () {
+    $order = Order::factory()->createQuietly();
 
-        $this->assertInstanceOf(BelongsTo::class, $order->createdBy());
-        $this->assertEquals($user->id, $order->createdBy->id);
-    }
+    expect($order->uuid)->not->toBeNull();
+    expect($order->uuid)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
+});
+it('checks if model table name is correct', function () {
+    $order = new Order();
 
-    /**
-     * Test date casting for estimated_completion
-     */
-    #[Test]
-    public function it_checks_if_estimated_completion_date_casting_is_correct(): void
-    {
-        $date = now()->addDays(5);
-        $order = Order::factory()->createQuietly([
-            'estimated_completion' => $date,
-        ]);
+    expect($order->getTable())->toEqual('orders');
+});
+it('checks if all status values are unique', function () {
+    $reflection = new ReflectionClass(Order::class);
+    $constants = $reflection->getConstants();
 
-        $this->assertInstanceOf(CarbonImmutable::class, $order->estimated_completion);
-        $this->assertEquals($date->format('Y-m-d H:i:s'), $order->estimated_completion->format('Y-m-d H:i:s'));
-    }
+    $statusConstants = array_filter($constants, function ($key) {
+        return str_starts_with($key, 'STATUS_');
+    }, ARRAY_FILTER_USE_KEY);
 
-    /**
-     * Test date casting for actual_completion
-     */
-    #[Test]
-    public function it_checks_if_actual_completion_date_casting_is_correct(): void
-    {
-        $date = now()->subDays(2);
-        $order = Order::factory()->createQuietly([
-            'actual_completion' => $date,
-        ]);
+    $statusValues = array_values($statusConstants);
+    $uniqueValues = array_unique($statusValues);
 
-        $this->assertInstanceOf(CarbonImmutable::class, $order->actual_completion);
-        $this->assertEquals($date->format('Y-m-d H:i:s'), $order->actual_completion->format('Y-m-d H:i:s'));
-    }
+    expect($uniqueValues)->toHaveCount(count($statusValues), 'Status values should be unique');
+});
+it('checks if all priority values are unique', function () {
+    $reflection = new ReflectionClass(Order::class);
+    $constants = $reflection->getConstants();
 
-    /**
-     * Test actual_completion can be null
-     */
-    #[Test]
-    public function it_checks_if_actual_completion_can_be_null(): void
-    {
-        $order = Order::factory()->createQuietly([
-            'actual_completion' => null,
-        ]);
+    $priorityConstants = array_filter($constants, function ($key) {
+        return str_starts_with($key, 'PRIORITY_');
+    }, ARRAY_FILTER_USE_KEY);
 
-        $this->assertNull($order->actual_completion);
-    }
+    $priorityValues = array_values($priorityConstants);
+    $uniqueValues = array_unique($priorityValues);
 
-    /**
-     * Test mass assignment
-     */
-    #[Test]
-    public function it_checks_if_mass_assignment_is_correct(): void
-    {
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
-        $creator = User::factory()->create();
-
-        $data = [
-            'customer_id' => $customer->id,
-            'title' => 'Test Order',
-            'description' => 'Test Description',
-            'status' => OrderStatus::Open,
-            'priority' => OrderPriority::HIGH,
-            'estimated_completion' => now()->addDays(7),
-            'notes' => 'Test notes',
-            'created_by' => $creator->id,
-            'updated_by' => $creator->id,
-            'assigned_to' => $creator->id,
-        ];
-
-        $order = Order::factory()->createQuietly($data);
-
-        $this->assertEquals($data['title'], $order->title);
-        $this->assertEquals($data['description'], $order->description);
-        $this->assertEquals($data['status']->value, $order->status->value);
-        $this->assertEquals($data['priority']->value, $order->priority->value);
-        $this->assertEquals($data['notes'], $order->notes);
-    }
-
-    /**
-     * Test order can be created with minimum required fields
-     */
-    #[Test]
-    public function it_checks_if_order_can_be_created_with_minimum_fields(): void
-    {
-        $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
-        $creator = User::factory()->create();
-
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'title' => 'Minimal Order',
-            'description' => 'Minimal Description',
-            'status' => OrderStatus::Open,
-            'priority' => OrderPriority::NORMAL,
-            'estimated_completion' => now()->addDays(3),
-            'created_by' => $creator->id,
-            'updated_by' => $creator->id,
-            'assigned_to' => $creator->id,
-        ]);
-
-        $this->assertInstanceOf(Order::class, $order);
-        $this->assertNotNull($order->id);
-        $this->assertNull($order->actual_completion);
-        $this->assertNull($order->notes);
-        $this->assertEquals($creator->id, $order->assigned_to);
-    }
-
-    /**
-     * Test that newFactory returns correct factory instance
-     */
-    #[Test]
-    public function it_checks_if_new_factory_returns_correct_instance(): void
-    {
-        $factory = Order::factory();
-
-        $this->assertInstanceOf(OrderFactory::class, $factory);
-    }
-
-    /**
-     * Test UUID generation
-     */
-    #[Test]
-    public function it_checks_if_uuid_generation_is_correct(): void
-    {
-        $order = Order::factory()->createQuietly();
-
-        $this->assertNotNull($order->uuid);
-        $this->assertMatchesRegularExpression(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
-            $order->uuid
-        );
-    }
-
-    /**
-     * Test model table name
-     */
-    #[Test]
-    public function it_checks_if_model_table_name_is_correct(): void
-    {
-        $order = new Order();
-
-        $this->assertEquals('orders', $order->getTable());
-    }
-
-    /**
-     * Test all status values are unique
-     */
-    #[Test]
-    public function it_checks_if_all_status_values_are_unique(): void
-    {
-        $reflection = new ReflectionClass(Order::class);
-        $constants = $reflection->getConstants();
-
-        $statusConstants = array_filter($constants, function ($key) {
-            return str_starts_with($key, 'STATUS_');
-        }, ARRAY_FILTER_USE_KEY);
-
-        $statusValues = array_values($statusConstants);
-        $uniqueValues = array_unique($statusValues);
-
-        $this->assertCount(count($statusValues), $uniqueValues, 'Status values should be unique');
-    }
-
-    /**
-     * Test all priority values are unique
-     */
-    #[Test]
-    public function it_checks_if_all_priority_values_are_unique(): void
-    {
-        $reflection = new ReflectionClass(Order::class);
-        $constants = $reflection->getConstants();
-
-        $priorityConstants = array_filter($constants, function ($key) {
-            return str_starts_with($key, 'PRIORITY_');
-        }, ARRAY_FILTER_USE_KEY);
-
-        $priorityValues = array_values($priorityConstants);
-        $uniqueValues = array_unique($priorityValues);
-
-        $this->assertCount(count($priorityValues), $uniqueValues, 'Priority values should be unique');
-    }
-}
+    expect($uniqueValues)->toHaveCount(count($priorityValues), 'Priority values should be unique');
+});
