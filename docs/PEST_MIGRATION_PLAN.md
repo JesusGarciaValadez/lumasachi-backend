@@ -492,10 +492,31 @@ vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-datab
 
 ### Completion criteria
 
-- [ ] All 27 Unit files use Pest syntax.
-- [ ] Unit runtime counts and assertion deltas are reconciled against Step 1.
-- [ ] Lifecycle, cleanup, factory, migration, and seeder behavior remains covered.
-- [ ] Unit, serial full-suite, and parallel full-suite gates pass.
+- [x] All 27 Unit files use Pest syntax.
+- [x] Unit runtime counts and assertion deltas are reconciled against Step 1.
+- [x] Lifecycle, cleanup, factory, migration, and seeder behavior remains covered.
+- [x] Unit, serial full-suite, and parallel full-suite gates pass.
+
+#### Step 5 execution record — 2026-07-28
+
+- Converted the five migration files, three factory files, two seeder files, `HasAttachmentsTest.php`, and
+  `OrderLifecycleServiceTest.php` to Pest syntax. The final Unit tree contains 27 Pest test files and no PHPUnit imports
+  or `Test` attributes.
+- Focused batches: migrations — 47 passed, 253 assertions, 4.25s; factories — 42 passed, 227 assertions, 8.79s;
+  seeders — 10 passed, 143 assertions, 16.39s; `HasAttachments` — 3 passed, 19 assertions, 0.76s; lifecycle service — 24
+  passed, 44 assertions, 4.99s. These total the planned 126 tests and 686 assertions for Step 5.
+- The Unit gate `vendor/bin/sail php vendor/bin/pest --compact tests/Unit` passed — 257 tests, 1,302 assertions, 43.38s.
+  The test count matches the Step 1 Unit inventory; Pest assertion totals are recorded as emitted because the prior plan
+  records runner-mode variation rather than a stable per-suite assertion baseline.
+- Serial full Pest gate: `vendor/bin/sail php vendor/bin/pest --compact` — 612 passed, 4,618 assertions, 133.11s.
+- Parallel full Pest-backed gate: `vendor/bin/sail artisan test --compact --parallel --processes=8
+  --recreate-databases` — 612 passed, 4,620 assertions, 54.42s, 8 processes.
+- `vendor/bin/sail bin pint --dirty --format agent` completed successfully, and `git diff --check` passed. The converted
+  helper and service setup preserve cleanup, fixture state, notifications, private-helper behavior, and lifecycle
+  assertions. Drift message-argument and helper-binding defects were corrected without changing the underlying tested
+  behavior.
+
+**Step 5 complete.**
 
 ## Step 6 — Convert foundational Feature tests
 
@@ -898,17 +919,17 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
 
 Add one entry per completed step. Do not pre-fill results.
 
-| Step | Date       | Agent/chat | Focused result            | Full Pest result                                     | Coverage/TIA result | Notes                                                                                      |
-|------|------------|------------|---------------------------|------------------------------------------------------|---------------------|--------------------------------------------------------------------------------------------|
-| 1    |            |            |                           | Not installed yet                                    |                     |                                                                                            |
-| 2    |            |            |                           |                                                      |                     |                                                                                            |
-| 3    |            |            |                           |                                                      |                     |                                                                                            |
-| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope        | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases. |
-| 5    |            |            |                           |                                                      |                     |                                                                                            |
-| 6    |            |            |                           |                                                      |                     |                                                                                            |
-| 7    |            |            |                           |                                                      |                     |                                                                                            |
-| 8    |            |            |                           |                                                      |                     |                                                                                            |
-| 9    |            |            |                           |                                                      |                     |                                                                                            |
-| 10   |            |            |                           |                                                      |                     |                                                                                            |
-| 11   |            |            |                           |                                                      |                     |                                                                                            |
-| 12   |            |            |                           |                                                      |                     |                                                                                            |
+| Step | Date       | Agent/chat | Focused result             | Full Pest result                                     | Coverage/TIA result | Notes                                                                                                             |
+|------|------------|------------|----------------------------|------------------------------------------------------|---------------------|-------------------------------------------------------------------------------------------------------------------|
+| 1    |            |            |                            | Not installed yet                                    |                     |                                                                                                                   |
+| 2    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 3    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions  | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope        | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases.                        |
+| 5    | 2026-07-28 | Codex      | 126 passed, 686 assertions | 612 passed, 4,618 serial; 612 passed, 4,620 parallel | Not in scope        | All 27 Unit files are Pest-only; Unit gate 257 passed, 1,302 assertions. Parallel run used 8 recreated databases. |
+| 6    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 7    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 8    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 9    |            |            |                            |                                                      |                     |                                                                                                                   |
+| 10   |            |            |                            |                                                      |                     |                                                                                                                   |
+| 11   |            |            |                            |                                                      |                     |                                                                                                                   |
+| 12   |            |            |                            |                                                      |                     |                                                                                                                   |

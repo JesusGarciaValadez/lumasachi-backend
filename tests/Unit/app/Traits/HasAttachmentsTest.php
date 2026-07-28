@@ -2,22 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Traits;
-
 use App\Traits\HasAttachments;
-use Mockery;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
-// Test class to verify formatting logic
 final class HasAttachmentsFormattingTest
 {
     use HasAttachments;
 
-    private $testSize = 0;
+    private int $testSize = 0;
 
-    public function setTestSize($size)
+    public function setTestSize(int $size): void
     {
         $this->testSize = $size;
     }
@@ -28,95 +21,66 @@ final class HasAttachmentsFormattingTest
     }
 }
 
-final class HasAttachmentsTest extends TestCase
-{
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
+afterEach(function (): void {
+    Mockery::close();
+});
+
+test('checks if trait has required methods', function (): void {
+    $reflection = new ReflectionClass(HasAttachments::class);
+    $methods = $reflection->getMethods();
+    $methodNames = array_map(function ($method): string {
+        return $method->getName();
+    }, $methods);
+
+    $expectedMethods = [
+        'attachments',
+        'attach',
+        'detach',
+        'hasAttachments',
+        'getAttachmentsByType',
+        'getImageAttachments',
+        'getDocumentAttachments',
+        'getTotalAttachmentsSize',
+        'getTotalAttachmentsSizeFormatted',
+        'detachAll',
+    ];
+
+    foreach ($expectedMethods as $method) {
+        expect($methodNames)->toContain($method);
     }
+});
 
-    /**
-     * Test that trait has all required methods
-     */
-    #[Test]
-    public function it_checks_if_trait_has_required_methods(): void
-    {
-        $reflection = new ReflectionClass(HasAttachments::class);
-        $methods = $reflection->getMethods();
-        $methodNames = array_map(function ($method) {
-            return $method->getName();
-        }, $methods);
+test('checks if get total attachments size formatted various sizes', function (): void {
+    $testObject = new HasAttachmentsFormattingTest();
 
-        $expectedMethods = [
-            'attachments',
-            'attach',
-            'detach',
-            'hasAttachments',
-            'getAttachmentsByType',
-            'getImageAttachments',
-            'getDocumentAttachments',
-            'getTotalAttachmentsSize',
-            'getTotalAttachmentsSizeFormatted',
-            'detachAll',
-        ];
+    $testObject->setTestSize(512);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('512 B');
 
-        foreach ($expectedMethods as $method) {
-            $this->assertContains($method, $methodNames, "Trait should have method: {$method}");
-        }
-    }
+    $testObject->setTestSize(1536);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1.5 KB');
 
-    /**
-     * Test getTotalAttachmentsSizeFormatted with various sizes
-     */
-    #[Test]
-    public function it_checks_if_get_total_attachments_size_formatted_various_sizes(): void
-    {
-        $testObject = new HasAttachmentsFormattingTest();
+    $testObject->setTestSize(1572864);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1.5 MB');
 
-        // Test bytes
-        $testObject->setTestSize(512);
-        $this->assertEquals('512 B', $testObject->getTotalAttachmentsSizeFormatted());
+    $testObject->setTestSize(1610612736);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1.5 GB');
 
-        // Test KB
-        $testObject->setTestSize(1536);
-        $this->assertEquals('1.5 KB', $testObject->getTotalAttachmentsSizeFormatted());
+    $testObject->setTestSize(1649267441664);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1.5 TB');
 
-        // Test MB
-        $testObject->setTestSize(1572864); // 1.5 MB
-        $this->assertEquals('1.5 MB', $testObject->getTotalAttachmentsSizeFormatted());
+    $testObject->setTestSize(0);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('0 B');
+});
 
-        // Test GB
-        $testObject->setTestSize(1610612736); // 1.5 GB
-        $this->assertEquals('1.5 GB', $testObject->getTotalAttachmentsSizeFormatted());
+test('checks if get total attachments size formatted edge cases', function (): void {
+    $testObject = new HasAttachmentsFormattingTest();
 
-        // Test TB
-        $testObject->setTestSize(1649267441664); // 1.5 TB
-        $this->assertEquals('1.5 TB', $testObject->getTotalAttachmentsSizeFormatted());
+    $testObject->setTestSize(1024);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1 KB');
 
-        // Test 0 bytes
-        $testObject->setTestSize(0);
-        $this->assertEquals('0 B', $testObject->getTotalAttachmentsSizeFormatted());
-    }
+    $testObject->setTestSize(1048576);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1 MB');
 
-    /**
-     * Test getTotalAttachmentsSizeFormatted edge cases
-     */
-    #[Test]
-    public function it_checks_if_get_total_attachments_size_formatted_edge_cases(): void
-    {
-        $testObject = new HasAttachmentsFormattingTest();
-
-        // Test exactly 1 KB
-        $testObject->setTestSize(1024);
-        $this->assertEquals('1 KB', $testObject->getTotalAttachmentsSizeFormatted());
-
-        // Test exactly 1 MB
-        $testObject->setTestSize(1048576);
-        $this->assertEquals('1 MB', $testObject->getTotalAttachmentsSizeFormatted());
-
-        // Test rounding
-        $testObject->setTestSize(1126); // 1.099609375 KB
-        $this->assertEquals('1.1 KB', $testObject->getTotalAttachmentsSizeFormatted());
-    }
-}
+    $testObject->setTestSize(1126);
+    expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1.1 KB');
+});
