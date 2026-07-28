@@ -2,259 +2,172 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Enums;
-
 use App\Enums\OrderPriority;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
-use ValueError;
 
-final class OrderPriorityTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    /**
-     * Test that all OrderPriority enum values are correctly defined.
-     */
-    #[Test]
-    public function it_checks_all_order_priority_enum_values_are_defined()
-    {
-        $priorities = OrderPriority::cases();
+it('checks all order priority enum values are defined', function () {
+    $priorities = OrderPriority::cases();
 
-        $this->assertCount(4, $priorities);
+    expect($priorities)->toHaveCount(4);
 
-        $expectedPriorities = [
-            'LOW' => 'Low',
-            'NORMAL' => 'Normal',
-            'HIGH' => 'High',
-            'URGENT' => 'Urgent',
-        ];
+    $expectedPriorities = [
+        'LOW' => 'Low',
+        'NORMAL' => 'Normal',
+        'HIGH' => 'High',
+        'URGENT' => 'Urgent',
+    ];
 
-        foreach ($priorities as $priority) {
-            $this->assertArrayHasKey($priority->name, $expectedPriorities);
-            $this->assertEquals($expectedPriorities[$priority->name], $priority->value);
-        }
+    foreach ($priorities as $priority) {
+        expect($expectedPriorities)->toHaveKey($priority->name);
+        expect($priority->value)->toEqual($expectedPriorities[$priority->name]);
     }
+});
+it('checks get priorities returns all values', function () {
+    $priorities = OrderPriority::getPriorities();
 
-    /**
-     * Test getPriorities static method returns all priority values.
-     */
-    #[Test]
-    public function it_checks_get_priorities_returns_all_values()
-    {
-        $priorities = OrderPriority::getPriorities();
-
-        $this->assertIsArray($priorities);
-        $this->assertCount(4, $priorities);
-        $this->assertEquals(['Low', 'Normal', 'High', 'Urgent'], $priorities);
-    }
-
-    /**
-     * Test getLabel method returns correct labels for each priority.
-     */
-    #[Test]
-    public function it_checks_get_label_returns_localized_labels(): void
-    {
-        foreach (['en', 'es'] as $locale) {
-            app()->setLocale($locale);
-
-            foreach (OrderPriority::cases() as $priority) {
-                $this->assertNotSame("orders.priority_labels.{$priority->value}", $priority->getLabel());
-            }
-        }
-    }
-
-    /**
-     * Test that all priority values can be stored in the database.
-     */
-    #[Test]
-    public function it_checks_all_priority_values_can_be_stored_in_database()
-    {
-        $user = User::factory()->create();
+    expect($priorities)->toBeArray();
+    expect($priorities)->toHaveCount(4);
+    expect($priorities)->toEqual(['Low', 'Normal', 'High', 'Urgent']);
+});
+it('checks get label returns localized labels', function () {
+    foreach (['en', 'es'] as $locale) {
+        app()->setLocale($locale);
 
         foreach (OrderPriority::cases() as $priority) {
-            $order = Order::factory()->createQuietly([
-                'customer_id' => $user->id,
-                'title' => 'Test Order with '.$priority->value.' priority',
-                'description' => 'Testing priority: '.$priority->value,
-                'status' => 'Open',
-                'priority' => $priority,
-                'created_by' => $user->id,
-                'assigned_to' => $user->id,
-            ]);
-
-            $this->assertNotNull($order);
-            $this->assertEquals($priority->value, $order->priority->value);
-
-            // Verify it's stored correctly in the database
-            $this->assertDatabaseHas('orders', [
-                'id' => $order->id,
-                'priority' => $priority->value,
-            ]);
+            $this->assertNotSame("orders.priority_labels.{$priority->value}", $priority->getLabel());
         }
     }
+});
+it('checks all priority values can be stored in database', function () {
+    $user = User::factory()->create();
 
-    /**
-     * Test that invalid priority values are rejected by the database.
-     */
-    #[Test]
-    public function it_checks_invalid_priority_values_are_rejected()
-    {
-        $this->expectException(ValueError::class);
-
-        $user = User::factory()->create();
-
-        Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'title' => 'Test Order with Invalid Priority',
-            'description' => 'This should fail',
-            'status' => 'Open',
-            'priority' => 'InvalidPriority', // This should fail
-            'created_by' => $user->id,
-            'assigned_to' => $user->id,
-        ]);
-    }
-
-    /**
-     * Test priority enum value comparison.
-     */
-    #[Test]
-    public function it_checks_priority_enum_value_comparison()
-    {
-        $lowPriority = OrderPriority::LOW;
-        $normalPriority = OrderPriority::NORMAL;
-        $highPriority = OrderPriority::HIGH;
-        $urgentPriority = OrderPriority::URGENT;
-
-        // Test same priority comparison
-        $this->assertTrue($lowPriority === OrderPriority::LOW);
-        $this->assertTrue($normalPriority === OrderPriority::NORMAL);
-
-        // Test different priority comparison
-        $this->assertFalse($lowPriority === $highPriority);
-        $this->assertFalse($normalPriority === $urgentPriority);
-    }
-
-    /**
-     * Test priority enum can be used with match expressions.
-     */
-    #[Test]
-    public function it_checks_priority_enum_with_match_expression()
-    {
-        $testCases = [
-            ['priority' => OrderPriority::LOW->value, 'expectedDays' => 7],
-            ['priority' => OrderPriority::NORMAL->value, 'expectedDays' => 3],
-            ['priority' => OrderPriority::HIGH->value, 'expectedDays' => 1],
-            ['priority' => OrderPriority::URGENT->value, 'expectedDays' => 0],
-        ];
-
-        foreach ($testCases as $testCase) {
-            $daysToComplete = match ($testCase['priority']) {
-                OrderPriority::LOW->value => 7,
-                OrderPriority::NORMAL->value => 3,
-                OrderPriority::HIGH->value => 1,
-                OrderPriority::URGENT->value => 0,
-            };
-
-            $this->assertEquals(
-                $testCase['expectedDays'],
-                $daysToComplete,
-                "Priority {$testCase['priority']} should have {$testCase['expectedDays']} days to complete"
-            );
-        }
-    }
-
-    /**
-     * Test that OrderPriority enum values are properly serialized to JSON.
-     */
-    #[Test]
-    public function it_checks_priority_enum_json_serialization()
-    {
-        $user = User::factory()->create();
-
+    foreach (OrderPriority::cases() as $priority) {
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'title' => 'Test Order for JSON',
-            'description' => 'Testing JSON serialization',
+            'title' => 'Test Order with ' . $priority->value . ' priority',
+            'description' => 'Testing priority: ' . $priority->value,
             'status' => 'Open',
-            'priority' => OrderPriority::HIGH,
+            'priority' => $priority,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
         ]);
 
-        $jsonData = $order->toJson();
-        $this->assertStringContainsString('"priority":"High"', $jsonData);
+        expect($order)->not->toBeNull();
+        expect($order->priority->value)->toEqual($priority->value);
 
-        $arrayData = $order->toArray();
-        $this->assertEquals('High', $arrayData['priority']);
+        // Verify it's stored correctly in the database
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'priority' => $priority->value,
+        ]);
     }
+});
+it('checks invalid priority values are rejected', function () {
+    $this->expectException(ValueError::class);
 
-    /**
-     * Test creating order with each priority using the enum directly.
-     */
-    #[Test]
-    public function it_checks_create_order_with_enum_values()
-    {
-        $user = User::factory()->create();
+    $user = User::factory()->create();
 
-        foreach (OrderPriority::cases() as $priority) {
-            $order = Order::factory()->createQuietly([
-                'customer_id' => $user->id,
-                'title' => 'Order with '.$priority->value,
-                'description' => 'Testing enum value assignment',
-                'status' => 'Open',
-                'priority' => $priority,
-                'created_by' => $user->id,
-                'assigned_to' => $user->id,
-            ]);
+    Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'title' => 'Test Order with Invalid Priority',
+        'description' => 'This should fail',
+        'status' => 'Open',
+        'priority' => 'InvalidPriority', // This should fail
+        'created_by' => $user->id,
+        'assigned_to' => $user->id,
+    ]);
+});
+it('checks priority enum value comparison', function () {
+    $lowPriority = OrderPriority::LOW;
+    $normalPriority = OrderPriority::NORMAL;
+    $highPriority = OrderPriority::HIGH;
+    $urgentPriority = OrderPriority::URGENT;
 
-            $this->assertEquals($priority->value, $order->fresh()->priority->value);
-        }
+    // Test same priority comparison
+    expect($lowPriority === OrderPriority::LOW)->toBeTrue();
+    expect($normalPriority === OrderPriority::NORMAL)->toBeTrue();
+
+    // Test different priority comparison
+    expect($lowPriority === $highPriority)->toBeFalse();
+    expect($normalPriority === $urgentPriority)->toBeFalse();
+});
+it('checks priority enum with match expression', function () {
+    $testCases = [
+        ['priority' => OrderPriority::LOW->value, 'expectedDays' => 7],
+        ['priority' => OrderPriority::NORMAL->value, 'expectedDays' => 3],
+        ['priority' => OrderPriority::HIGH->value, 'expectedDays' => 1],
+        ['priority' => OrderPriority::URGENT->value, 'expectedDays' => 0],
+    ];
+
+    foreach ($testCases as $testCase) {
+        $daysToComplete = match ($testCase['priority']) {
+            OrderPriority::LOW->value => 7,
+            OrderPriority::NORMAL->value => 3,
+            OrderPriority::HIGH->value => 1,
+            OrderPriority::URGENT->value => 0,
+        };
+
+        expect($daysToComplete)->toEqual($testCase['expectedDays']);
     }
+});
+it('checks priority enum json serialization', function () {
+    $user = User::factory()->create();
 
-    /**
-     * Test that all enum cases have unique values.
-     */
-    #[Test]
-    public function it_checks_all_priority_values_are_unique()
-    {
-        $values = OrderPriority::getPriorities();
-        $uniqueValues = array_unique($values);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'title' => 'Test Order for JSON',
+        'description' => 'Testing JSON serialization',
+        'status' => 'Open',
+        'priority' => OrderPriority::HIGH,
+        'created_by' => $user->id,
+        'assigned_to' => $user->id,
+    ]);
 
-        $this->assertCount(
-            count($values),
-            $uniqueValues,
-            'All priority values should be unique'
-        );
+    $jsonData = $order->toJson();
+    $this->assertStringContainsString('"priority":"High"', $jsonData);
+
+    $arrayData = $order->toArray();
+    expect($arrayData['priority'])->toEqual('High');
+});
+it('checks create order with enum values', function () {
+    $user = User::factory()->create();
+
+    foreach (OrderPriority::cases() as $priority) {
+        $order = Order::factory()->createQuietly([
+            'customer_id' => $user->id,
+            'title' => 'Order with ' . $priority->value,
+            'description' => 'Testing enum value assignment',
+            'status' => 'Open',
+            'priority' => $priority,
+            'created_by' => $user->id,
+            'assigned_to' => $user->id,
+        ]);
+
+        expect($order->fresh()->priority->value)->toEqual($priority->value);
     }
+});
+it('checks all priority values are unique', function () {
+    $values = OrderPriority::getPriorities();
+    $uniqueValues = array_unique($values);
 
-    /**
-     * Test priority ordering logic (conceptual test).
-     */
-    #[Test]
-    public function it_checks_priority_ordering_concept()
-    {
-        // Define expected priority order (from lowest to highest priority)
-        $priorityOrder = [
-            OrderPriority::LOW->value => 1,
-            OrderPriority::NORMAL->value => 2,
-            OrderPriority::HIGH->value => 3,
-            OrderPriority::URGENT->value => 4,
-        ];
+    expect($uniqueValues)->toHaveCount(count($values));
+});
+it('checks priority ordering concept', function () {
+    // Define expected priority order (from lowest to highest priority)
+    $priorityOrder = [
+        OrderPriority::LOW->value => 1,
+        OrderPriority::NORMAL->value => 2,
+        OrderPriority::HIGH->value => 3,
+        OrderPriority::URGENT->value => 4,
+    ];
 
-        // Verify that URGENT has higher priority value than HIGH
-        $this->assertGreaterThan(
-            $priorityOrder[OrderPriority::HIGH->value],
-            $priorityOrder[OrderPriority::URGENT->value]
-        );
+    // Verify that URGENT has higher priority value than HIGH
+    expect($priorityOrder[OrderPriority::URGENT->value])->toBeGreaterThan($priorityOrder[OrderPriority::HIGH->value]);
 
-        // Verify that LOW has lower priority value than NORMAL
-        $this->assertLessThan(
-            $priorityOrder[OrderPriority::NORMAL->value],
-            $priorityOrder[OrderPriority::LOW->value]
-        );
-    }
-}
+    // Verify that LOW has lower priority value than NORMAL
+    expect($priorityOrder[OrderPriority::LOW->value])->toBeLessThan($priorityOrder[OrderPriority::NORMAL->value]);
+});

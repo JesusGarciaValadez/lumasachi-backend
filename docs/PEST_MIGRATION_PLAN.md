@@ -355,9 +355,30 @@ vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-datab
 
 ### Completion criteria
 
-- [ ] All five enum files use Pest syntax.
-- [ ] No enum assertion or exception path was dropped.
-- [ ] Focused, serial full-suite, and parallel full-suite gates pass.
+- [x] All five enum files use Pest syntax.
+- [x] No enum assertion or exception path was dropped.
+- [x] Focused, serial full-suite, and parallel full-suite gates pass.
+
+#### Step 3 execution record — 2026-07-28
+
+- Pest Drift was run with `vendor/bin/sail php vendor/bin/pest --drift tests/Unit/app/Enums`; the installed Pest 4 Drift
+  command accepts the directory target and migrated all five enum files. The plan's single-file Drift example was not
+  accepted by this installed command because it treats the argument as a directory; that attempt made no edit.
+- Converted files: `OrderItemTypeTest.php`, `OrderPriorityTest.php`, `OrderStatusTest.php`, `UserRoleTest.php`, and
+  `UserTypeTest.php`. Each file preserves its original test-case count: 4, 11, 10, 7, and 10 respectively (42 total).
+- The first focused run found a Drift conversion issue where PHPUnit assertion-message arguments were interpreted as
+  additional Pest matcher values. Those matcher calls were corrected without changing the tested values or paths.
+- Focused gate: `vendor/bin/sail php vendor/bin/pest --compact tests/Unit/app/Enums` — 42 passed, 331 assertions, 3.77s
+  before formatting; the focused suite also passed after Pint.
+- Serial Pest gate: `vendor/bin/sail php vendor/bin/pest --compact` — 612 passed, 4,622 assertions, 103.89s.
+- Laravel serial Pest-backed gate: `vendor/bin/sail artisan test --compact` — 612 passed, 4,623 assertions, 147.48s.
+- Parallel Pest-backed gate: `vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-databases` —
+  612 passed, 4,619 assertions, 39.27s, 8 processes.
+- `vendor/bin/sail bin pint --dirty --format agent` completed successfully, and `git diff --check` passed. The enum
+  source contains no PHPUnit namespace, `Test` attribute, or test class declarations.
+- Assertion totals vary by runner mode, as they did in the Step 1 and Step 2 baselines; no test-count delta occurred.
+
+**Step 3 complete.**
 
 ## Step 4 — Convert Unit model tests
 
