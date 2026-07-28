@@ -2,233 +2,194 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Policies;
-
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class UserPolicyTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->artisan('migrate:fresh');
-        $this->seed(DatabaseSeeder::class);
-    }
+beforeEach(function () {
+    $this->artisan('migrate:fresh');
+    $this->seed(DatabaseSeeder::class);
+});
+it('can view any users permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-    /**
-     * Test viewAny users permissions.
-     */
-    #[Test]
-    public function it_can_view_any_users_permissions()
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Only Super Admin and Admin can view any users
+    expect($superAdmin->can('viewAny', User::class))->toBeTrue();
+    expect($admin->can('viewAny', User::class))->toBeTrue();
 
-        // Only Super Admin and Admin can view any users
-        $this->assertTrue($superAdmin->can('viewAny', User::class));
-        $this->assertTrue($admin->can('viewAny', User::class));
+    // Employees and Customers cannot view user lists
+    expect($employee->can('viewAny', User::class))->toBeFalse();
+    expect($customer->can('viewAny', User::class))->toBeFalse();
+});
+it('can view specific user permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
+    $customer1 = User::where('role', UserRole::CUSTOMER)->first();
+    $customer2 = User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer1->id)->first();
 
-        // Employees and Customers cannot view user lists
-        $this->assertFalse($employee->can('viewAny', User::class));
-        $this->assertFalse($customer->can('viewAny', User::class));
-    }
+    // Super Admin can view all users
+    expect($superAdmin->can('view', $superAdmin))->toBeTrue();
+    // own profile
+    expect($superAdmin->can('view', $admin))->toBeTrue();
+    expect($superAdmin->can('view', $employee1))->toBeTrue();
+    expect($superAdmin->can('view', $customer1))->toBeTrue();
 
-    /**
-     * Test view specific user permissions.
-     */
-    #[Test]
-    public function it_can_view_specific_user_permissions()
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
-        $customer1 = User::where('role', UserRole::CUSTOMER)->first();
-        $customer2 = User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer1->id)->first();
+    // Admin can view all users
+    expect($admin->can('view', $superAdmin))->toBeTrue();
+    expect($admin->can('view', $admin))->toBeTrue();
+    // own profile
+    expect($admin->can('view', $employee1))->toBeTrue();
+    expect($admin->can('view', $customer1))->toBeTrue();
 
-        // Super Admin can view all users
-        $this->assertTrue($superAdmin->can('view', $superAdmin)); // own profile
-        $this->assertTrue($superAdmin->can('view', $admin));
-        $this->assertTrue($superAdmin->can('view', $employee1));
-        $this->assertTrue($superAdmin->can('view', $customer1));
+    // Employee can only view their own profile
+    expect($employee1->can('view', $employee1))->toBeTrue();
+    // own profile
+    expect($employee1->can('view', $employee2))->toBeFalse();
+    expect($employee1->can('view', $admin))->toBeFalse();
+    expect($employee1->can('view', $customer1))->toBeFalse();
 
-        // Admin can view all users
-        $this->assertTrue($admin->can('view', $superAdmin));
-        $this->assertTrue($admin->can('view', $admin)); // own profile
-        $this->assertTrue($admin->can('view', $employee1));
-        $this->assertTrue($admin->can('view', $customer1));
+    // Customer can only view their own profile
+    expect($customer1->can('view', $customer1))->toBeTrue();
+    // own profile
+    expect($customer1->can('view', $customer2))->toBeFalse();
+    expect($customer1->can('view', $employee1))->toBeFalse();
+    expect($customer1->can('view', $admin))->toBeFalse();
+});
+it('can create user permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-        // Employee can only view their own profile
-        $this->assertTrue($employee1->can('view', $employee1)); // own profile
-        $this->assertFalse($employee1->can('view', $employee2));
-        $this->assertFalse($employee1->can('view', $admin));
-        $this->assertFalse($employee1->can('view', $customer1));
+    // Only Super Admin and Admin can create users
+    expect($superAdmin->can('create', User::class))->toBeTrue();
+    expect($admin->can('create', User::class))->toBeTrue();
 
-        // Customer can only view their own profile
-        $this->assertTrue($customer1->can('view', $customer1)); // own profile
-        $this->assertFalse($customer1->can('view', $customer2));
-        $this->assertFalse($customer1->can('view', $employee1));
-        $this->assertFalse($customer1->can('view', $admin));
-    }
+    // Employees and Customers cannot create users
+    expect($employee->can('create', User::class))->toBeFalse();
+    expect($customer->can('create', User::class))->toBeFalse();
+});
+it('can update user permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
+    $anotherAdmin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
 
-    /**
-     * Test create user permissions.
-     */
-    #[Test]
-    public function it_can_create_user_permissions()
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Super Admin can update any user including themselves
+    expect($superAdmin->can('update', $superAdmin))->toBeTrue();
+    // own profile
+    expect($superAdmin->can('update', $admin))->toBeTrue();
+    expect($superAdmin->can('update', $employee))->toBeTrue();
+    expect($superAdmin->can('update', $customer))->toBeTrue();
 
-        // Only Super Admin and Admin can create users
-        $this->assertTrue($superAdmin->can('create', User::class));
-        $this->assertTrue($admin->can('create', User::class));
+    // Admin can update any user including themselves
+    expect($admin->can('update', $admin))->toBeTrue();
+    // own profile
+    expect($admin->can('update', $anotherAdmin))->toBeTrue();
+    expect($admin->can('update', $employee))->toBeTrue();
+    expect($admin->can('update', $customer))->toBeTrue();
+    expect($admin->can('update', $superAdmin))->toBeTrue();
 
-        // Employees and Customers cannot create users
-        $this->assertFalse($employee->can('create', User::class));
-        $this->assertFalse($customer->can('create', User::class));
-    }
+    // can update super admin
+    // Employee can only update their own profile
+    expect($employee->can('update', $employee))->toBeTrue();
+    // own profile
+    expect($employee->can('update', $admin))->toBeFalse();
+    expect($employee->can('update', $customer))->toBeFalse();
 
-    /**
-     * Test update user permissions.
-     */
-    #[Test]
-    public function it_can_update_user_permissions()
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
-        $anotherAdmin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+    // Customer can only update their own profile
+    expect($customer->can('update', $customer))->toBeTrue();
+    // own profile
+    expect($customer->can('update', $employee))->toBeFalse();
+    expect($customer->can('update', $admin))->toBeFalse();
+});
+it('can delete user permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
+    $anotherSuperAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
 
-        // Super Admin can update any user including themselves
-        $this->assertTrue($superAdmin->can('update', $superAdmin)); // own profile
-        $this->assertTrue($superAdmin->can('update', $admin));
-        $this->assertTrue($superAdmin->can('update', $employee));
-        $this->assertTrue($superAdmin->can('update', $customer));
+    // Super Admin can delete other users but not themselves
+    expect($superAdmin->can('delete', $superAdmin))->toBeFalse();
+    // cannot delete self
+    expect($superAdmin->can('delete', $anotherSuperAdmin))->toBeTrue();
+    expect($superAdmin->can('delete', $admin))->toBeTrue();
+    expect($superAdmin->can('delete', $employee))->toBeTrue();
+    expect($superAdmin->can('delete', $customer))->toBeTrue();
 
-        // Admin can update any user including themselves
-        $this->assertTrue($admin->can('update', $admin)); // own profile
-        $this->assertTrue($admin->can('update', $anotherAdmin));
-        $this->assertTrue($admin->can('update', $employee));
-        $this->assertTrue($admin->can('update', $customer));
-        $this->assertTrue($admin->can('update', $superAdmin)); // can update super admin
+    // Admin cannot delete any user (including other admins)
+    expect($admin->can('delete', $admin))->toBeFalse();
+    // cannot delete self
+    expect($admin->can('delete', $superAdmin))->toBeFalse();
+    expect($admin->can('delete', $employee))->toBeFalse();
+    expect($admin->can('delete', $customer))->toBeFalse();
 
-        // Employee can only update their own profile
-        $this->assertTrue($employee->can('update', $employee)); // own profile
-        $this->assertFalse($employee->can('update', $admin));
-        $this->assertFalse($employee->can('update', $customer));
+    // Employee cannot delete any user
+    expect($employee->can('delete', $employee))->toBeFalse();
+    // cannot delete self
+    expect($employee->can('delete', $admin))->toBeFalse();
+    expect($employee->can('delete', $customer))->toBeFalse();
 
-        // Customer can only update their own profile
-        $this->assertTrue($customer->can('update', $customer)); // own profile
-        $this->assertFalse($customer->can('update', $employee));
-        $this->assertFalse($customer->can('update', $admin));
-    }
+    // Customer cannot delete any user
+    expect($customer->can('delete', $customer))->toBeFalse();
+    // cannot delete self
+    expect($customer->can('delete', $employee))->toBeFalse();
+    expect($customer->can('delete', $admin))->toBeFalse();
+});
+it('can permissions with inactive users', function () {
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $activeEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $inactiveEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', false)->first();
 
-    /**
-     * Test delete user permissions.
-     */
-    #[Test]
-    public function it_can_delete_user_permissions()
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
-        $anotherSuperAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR]);
+    // Admin can view and update inactive users
+    expect($admin->can('view', $inactiveEmployee))->toBeTrue();
+    expect($admin->can('update', $inactiveEmployee))->toBeTrue();
 
-        // Super Admin can delete other users but not themselves
-        $this->assertFalse($superAdmin->can('delete', $superAdmin)); // cannot delete self
-        $this->assertTrue($superAdmin->can('delete', $anotherSuperAdmin));
-        $this->assertTrue($superAdmin->can('delete', $admin));
-        $this->assertTrue($superAdmin->can('delete', $employee));
-        $this->assertTrue($superAdmin->can('delete', $customer));
+    // Inactive user can still view and update their own profile
+    expect($inactiveEmployee->can('view', $inactiveEmployee))->toBeTrue();
+    expect($inactiveEmployee->can('update', $inactiveEmployee))->toBeTrue();
 
-        // Admin cannot delete any user (including other admins)
-        $this->assertFalse($admin->can('delete', $admin)); // cannot delete self
-        $this->assertFalse($admin->can('delete', $superAdmin));
-        $this->assertFalse($admin->can('delete', $employee));
-        $this->assertFalse($admin->can('delete', $customer));
+    // Inactive user cannot view other users
+    expect($inactiveEmployee->can('view', $activeEmployee))->toBeFalse();
+    expect($inactiveEmployee->can('view', $admin))->toBeFalse();
 
-        // Employee cannot delete any user
-        $this->assertFalse($employee->can('delete', $employee)); // cannot delete self
-        $this->assertFalse($employee->can('delete', $admin));
-        $this->assertFalse($employee->can('delete', $customer));
+    // Active employee cannot view inactive employee
+    expect($activeEmployee->can('view', $inactiveEmployee))->toBeFalse();
+});
+it('can permissions with user types', function () {
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $individualCustomer = User::where('role', UserRole::CUSTOMER)
+        ->where('type', UserType::INDIVIDUAL)
+        ->first();
+    $businessCustomer = User::where('role', UserRole::CUSTOMER)
+        ->where('type', UserType::BUSINESS)
+        ->first();
 
-        // Customer cannot delete any user
-        $this->assertFalse($customer->can('delete', $customer)); // cannot delete self
-        $this->assertFalse($customer->can('delete', $employee));
-        $this->assertFalse($customer->can('delete', $admin));
-    }
+    // Admin can manage both individual and business users
+    expect($admin->can('view', $individualCustomer))->toBeTrue();
+    expect($admin->can('view', $businessCustomer))->toBeTrue();
+    expect($admin->can('update', $individualCustomer))->toBeTrue();
+    expect($admin->can('update', $businessCustomer))->toBeTrue();
 
-    /**
-     * Test edge cases with inactive users.
-     */
-    #[Test]
-    public function it_can_permissions_with_inactive_users()
-    {
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $activeEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $inactiveEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', false)->first();
+    // Individual customer cannot view business customer
+    expect($individualCustomer->can('view', $businessCustomer))->toBeFalse();
 
-        // Admin can view and update inactive users
-        $this->assertTrue($admin->can('view', $inactiveEmployee));
-        $this->assertTrue($admin->can('update', $inactiveEmployee));
+    // Business customer cannot view individual customer
+    expect($businessCustomer->can('view', $individualCustomer))->toBeFalse();
 
-        // Inactive user can still view and update their own profile
-        $this->assertTrue($inactiveEmployee->can('view', $inactiveEmployee));
-        $this->assertTrue($inactiveEmployee->can('update', $inactiveEmployee));
-
-        // Inactive user cannot view other users
-        $this->assertFalse($inactiveEmployee->can('view', $activeEmployee));
-        $this->assertFalse($inactiveEmployee->can('view', $admin));
-
-        // Active employee cannot view inactive employee
-        $this->assertFalse($activeEmployee->can('view', $inactiveEmployee));
-    }
-
-    /**
-     * Test permissions with different user types (Individual vs Business).
-     */
-    #[Test]
-    public function it_can_permissions_with_user_types()
-    {
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $individualCustomer = User::where('role', UserRole::CUSTOMER)
-            ->where('type', UserType::INDIVIDUAL)
-            ->first();
-        $businessCustomer = User::where('role', UserRole::CUSTOMER)
-            ->where('type', UserType::BUSINESS)
-            ->first();
-
-        // Admin can manage both individual and business users
-        $this->assertTrue($admin->can('view', $individualCustomer));
-        $this->assertTrue($admin->can('view', $businessCustomer));
-        $this->assertTrue($admin->can('update', $individualCustomer));
-        $this->assertTrue($admin->can('update', $businessCustomer));
-
-        // Individual customer cannot view business customer
-        $this->assertFalse($individualCustomer->can('view', $businessCustomer));
-
-        // Business customer cannot view individual customer
-        $this->assertFalse($businessCustomer->can('view', $individualCustomer));
-
-        // Both can view and update their own profiles
-        $this->assertTrue($individualCustomer->can('view', $individualCustomer));
-        $this->assertTrue($individualCustomer->can('update', $individualCustomer));
-        $this->assertTrue($businessCustomer->can('view', $businessCustomer));
-        $this->assertTrue($businessCustomer->can('update', $businessCustomer));
-    }
-}
+    // Both can view and update their own profiles
+    expect($individualCustomer->can('view', $individualCustomer))->toBeTrue();
+    expect($individualCustomer->can('update', $individualCustomer))->toBeTrue();
+    expect($businessCustomer->can('view', $businessCustomer))->toBeTrue();
+    expect($businessCustomer->can('update', $businessCustomer))->toBeTrue();
+});

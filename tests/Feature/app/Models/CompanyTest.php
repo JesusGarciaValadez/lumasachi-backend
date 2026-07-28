@@ -2,114 +2,83 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Models;
-
 use App\Models\Company;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class CompanyTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    /**
-     * Test company creation.
-     */
-    #[Test]
-    public function it_checks_if_create_company(): void
-    {
-        $companyData = [
-            'name' => 'Test Company',
-            'email' => 'test@example.com',
-            'phone' => '1234567890',
-            'address' => '123 Test Street',
-            'city' => 'Test City',
-            'state' => 'Test State',
-            'postal_code' => '12345',
-            'country' => 'Test Country',
-            'website' => 'http://www.test.com',
-            'description' => 'A test company',
-            'is_active' => true,
-            'contact_person' => 'John Doe',
-            'contact_email' => 'john@example.com',
-            'contact_phone' => '9876543210',
-        ];
+it('checks if create company', function () {
+    $companyData = [
+        'name' => 'Test Company',
+        'email' => 'test@example.com',
+        'phone' => '1234567890',
+        'address' => '123 Test Street',
+        'city' => 'Test City',
+        'state' => 'Test State',
+        'postal_code' => '12345',
+        'country' => 'Test Country',
+        'website' => 'http://www.test.com',
+        'description' => 'A test company',
+        'is_active' => true,
+        'contact_person' => 'John Doe',
+        'contact_email' => 'john@example.com',
+        'contact_phone' => '9876543210',
+    ];
 
-        $company = Company::create($companyData);
+    $company = Company::create($companyData);
 
-        $this->assertInstanceOf(Company::class, $company);
-        $this->assertEquals('Test Company', $company->name);
-        $this->assertEquals('test@example.com', $company->email);
-        $this->assertTrue($company->is_active);
-        $this->assertDatabaseHas('companies', [
-            'name' => 'Test Company',
-            'email' => 'test@example.com',
-        ]);
-    }
+    expect($company)->toBeInstanceOf(Company::class);
+    expect($company->name)->toEqual('Test Company');
+    expect($company->email)->toEqual('test@example.com');
+    expect($company->is_active)->toBeTrue();
+    $this->assertDatabaseHas('companies', [
+        'name' => 'Test Company',
+        'email' => 'test@example.com',
+    ]);
+});
+it('checks if read company', function () {
+    $company = Company::factory()->create();
 
-    /**
-     * Test company retrieval.
-     */
-    #[Test]
-    public function it_checks_if_read_company(): void
-    {
-        $company = Company::factory()->create();
+    // Test finding by UUID
+    $foundCompany = Company::find($company->id);
 
-        // Test finding by UUID
-        $foundCompany = Company::find($company->id);
+    expect($foundCompany)->toBeInstanceOf(Company::class);
+    expect($foundCompany->id)->toEqual($company->id);
+    expect($foundCompany->uuid)->toEqual($company->uuid);
+    expect($foundCompany->name)->toEqual($company->name);
+    expect($foundCompany->email)->toEqual($company->email);
+});
+it('checks if update company', function () {
+    $company = Company::factory()->create([
+        'name' => 'Original Name',
+    ]);
 
-        $this->assertInstanceOf(Company::class, $foundCompany);
-        $this->assertEquals($company->id, $foundCompany->id);
-        $this->assertEquals($company->uuid, $foundCompany->uuid);
-        $this->assertEquals($company->name, $foundCompany->name);
-        $this->assertEquals($company->email, $foundCompany->email);
-    }
+    // Update the company
+    $company->update([
+        'name' => 'Updated Name',
+        'description' => 'Updated description',
+    ]);
 
-    /**
-     * Test company update.
-     */
-    #[Test]
-    public function it_checks_if_update_company(): void
-    {
-        $company = Company::factory()->create([
-            'name' => 'Original Name',
-        ]);
+    // Refresh the model to get the latest data
+    $company->refresh();
 
-        // Update the company
-        $company->update([
-            'name' => 'Updated Name',
-            'description' => 'Updated description',
-        ]);
+    expect($company->name)->toEqual('Updated Name');
+    expect($company->description)->toEqual('Updated description');
+    $this->assertDatabaseHas('companies', [
+        'uuid' => $company->uuid,
+        'name' => 'Updated Name',
+    ]);
+});
+it('checks if delete company', function () {
+    $company = Company::factory()->create();
+    $companyId = $company->id;
 
-        // Refresh the model to get the latest data
-        $company->refresh();
+    // Delete the company
+    $company->delete();
 
-        $this->assertEquals('Updated Name', $company->name);
-        $this->assertEquals('Updated description', $company->description);
-        $this->assertDatabaseHas('companies', [
-            'uuid' => $company->uuid,
-            'name' => 'Updated Name',
-        ]);
-    }
+    // Verify it's deleted from database
+    $this->assertDatabaseMissing('companies', ['id' => $companyId]);
 
-    /**
-     * Test company deletion.
-     */
-    #[Test]
-    public function it_checks_if_delete_company(): void
-    {
-        $company = Company::factory()->create();
-        $companyId = $company->id;
-
-        // Delete the company
-        $company->delete();
-
-        // Verify it's deleted from database
-        $this->assertDatabaseMissing('companies', ['id' => $companyId]);
-
-        // Try to find the deleted company
-        $deletedCompany = Company::find($companyId);
-        $this->assertNull($deletedCompany);
-    }
-}
+    // Try to find the deleted company
+    $deletedCompany = Company::find($companyId);
+    expect($deletedCompany)->toBeNull();
+});

@@ -632,9 +632,28 @@ vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-datab
 
 ### Completion criteria
 
-- [ ] All 18 domain-supporting Feature files use Pest syntax.
-- [ ] Cleanup, role matrices, observers, mail, notifications, and validation remain covered.
-- [ ] Focused and full-suite gates pass.
+- [x] All 18 domain-supporting Feature files use Pest syntax.
+- [x] Cleanup, role matrices, observers, mail, notifications, and validation remain covered.
+- [x] Focused and full-suite gates pass.
+
+#### Step 7 execution record — 2026-07-28
+
+- Converted all 18 domain-supporting Feature files to Pest syntax: models, factory integration, policies, request
+  validation, observers, mail, notifications, and attachments. Per-file database/storage setup, role and ownership
+  matrices, fake ordering, notification/mail assertions, cleanup, and validation behavior were preserved. Two helpers
+  that shared the original class-local name `users()` were renamed to avoid global-function collisions after namespace
+  removal. The converted Step 7 tree contains no PHPUnit test classes, attributes, or imports.
+- Focused Step 7 gate: `vendor/bin/sail php vendor/bin/pest --compact tests/Feature/app/Http/Requests
+  tests/Feature/app/Mail tests/Feature/app/Models tests/Feature/app/Notifications tests/Feature/app/Observers
+  tests/Feature/app/Policies tests/Feature/app/Traits tests/Feature/database/factories` passed — 127 tests, 725
+  assertions, 38.84s.
+- Serial full Pest gate: `vendor/bin/sail php vendor/bin/pest --compact` passed — 612 tests, 4,620 assertions, 106.13s.
+- Parallel full Pest-backed gate: `vendor/bin/sail artisan test --compact --parallel --processes=8
+  --recreate-databases` passed — 612 tests, 4,618 assertions, 52.96s, 8 processes.
+- `vendor/bin/sail bin pint --dirty --format agent` completed successfully. Coverage and TIA were not changed or claimed
+  in this step; they remain covered by Steps 11–12.
+
+**Step 7 complete.**
 
 ## Step 8 — Convert controller, route, history, lifecycle, and tracking Feature tests
 
@@ -936,17 +955,17 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
 
 Add one entry per completed step. Do not pre-fill results.
 
-| Step | Date       | Agent/chat | Focused result              | Full Pest result                                     | Coverage/TIA result | Notes                                                                                                                             |
-|------|------------|------------|-----------------------------|------------------------------------------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| 1    |            |            |                             | Not installed yet                                    |                     |                                                                                                                                   |
-| 2    |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 3    |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions   | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope        | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases.                                        |
-| 5    | 2026-07-28 | Codex      | 126 passed, 686 assertions  | 612 passed, 4,618 serial; 612 passed, 4,620 parallel | Not in scope        | All 27 Unit files are Pest-only; Unit gate 257 passed, 1,302 assertions. Parallel run used 8 recreated databases.                 |
-| 6    | 2026-07-28 | Codex      | 42 passed, 1,047 assertions | 612 passed, 4,629 serial; 612 passed, 4,615 parallel | Not in scope        | All 12 foundational Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12. |
-| 7    |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 8    |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 9    |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 10   |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 11   |            |            |                             |                                                      |                     |                                                                                                                                   |
-| 12   |            |            |                             |                                                      |                     |                                                                                                                                   |
+| Step | Date       | Agent/chat | Focused result              | Full Pest result                                     | Coverage/TIA result | Notes                                                                                                                                  |
+|------|------------|------------|-----------------------------|------------------------------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| 1    |            |            |                             | Not installed yet                                    |                     |                                                                                                                                        |
+| 2    |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 3    |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions   | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope        | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases.                                             |
+| 5    | 2026-07-28 | Codex      | 126 passed, 686 assertions  | 612 passed, 4,618 serial; 612 passed, 4,620 parallel | Not in scope        | All 27 Unit files are Pest-only; Unit gate 257 passed, 1,302 assertions. Parallel run used 8 recreated databases.                      |
+| 6    | 2026-07-28 | Codex      | 42 passed, 1,047 assertions | 612 passed, 4,629 serial; 612 passed, 4,615 parallel | Not in scope        | All 12 foundational Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12.      |
+| 7    | 2026-07-28 | Codex      | 127 passed, 725 assertions  | 612 passed, 4,620 serial; 612 passed, 4,618 parallel | Not in scope        | All 18 domain-supporting Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12. |
+| 8    |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 9    |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 10   |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 11   |            |            |                             |                                                      |                     |                                                                                                                                        |
+| 12   |            |            |                             |                                                      |                     |                                                                                                                                        |

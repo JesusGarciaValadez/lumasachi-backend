@@ -2,335 +2,274 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Policies;
-
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderPolicyTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->artisan('migrate:fresh');
-        $this->seed(DatabaseSeeder::class);
-    }
+beforeEach(function () {
+    $this->artisan('migrate:fresh');
+    $this->seed(DatabaseSeeder::class);
+});
+it('checks if view any orders permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
+    $inactiveEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', false)->first();
 
-    /**
-     * Test viewAny policy for different user roles.
-     */
-    #[Test]
-    public function it_checks_if_view_any_orders_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
-        $inactiveEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', false)->first();
+    // All active users with these roles should be able to view any orders
+    expect($superAdmin->can('viewAny', Order::class))->toBeTrue();
+    expect($admin->can('viewAny', Order::class))->toBeTrue();
+    expect($employee->can('viewAny', Order::class))->toBeTrue();
+    expect($customer->can('viewAny', Order::class))->toBeTrue();
 
-        // All active users with these roles should be able to view any orders
-        $this->assertTrue($superAdmin->can('viewAny', Order::class));
-        $this->assertTrue($admin->can('viewAny', Order::class));
-        $this->assertTrue($employee->can('viewAny', Order::class));
-        $this->assertTrue($customer->can('viewAny', Order::class));
+    // Even inactive employees can view any orders
+    expect($inactiveEmployee->can('viewAny', Order::class))->toBeTrue();
+});
+it('checks if view specific order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-        // Even inactive employees can view any orders
-        $this->assertTrue($inactiveEmployee->can('viewAny', Order::class));
-    }
+    // Create orders with specific assignments
+    $orderAssignedToEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee->id,
+        'customer_id' => $customer->id,
+        'created_by' => $admin->id,
+    ]);
 
-    /**
-     * Test view policy for specific orders.
-     */
-    #[Test]
-    public function it_checks_if_view_specific_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    $orderCreatedByEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee->id,
+        'customer_id' => $customer->id,
+        'created_by' => $employee->id,
+    ]);
 
-        // Create orders with specific assignments
-        $orderAssignedToEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee->id,
-            'customer_id' => $customer->id,
-            'created_by' => $admin->id,
-        ]);
+    $orderForCustomer = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'assigned_to' => User::where('role', UserRole::EMPLOYEE)->where('id', '!=', $employee->id)->first()->id,
+        'created_by' => $admin->id,
+    ]);
 
-        $orderCreatedByEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee->id,
-            'customer_id' => $customer->id,
-            'created_by' => $employee->id,
-        ]);
+    $unrelatedOrder = Order::factory()->createQuietly([
+        'customer_id' => User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer->id)->first()->id,
+        'assigned_to' => User::where('role', UserRole::EMPLOYEE)->where('id', '!=', $employee->id)->first()->id,
+        'created_by' => $admin->id,
+    ]);
 
-        $orderForCustomer = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'assigned_to' => User::where('role', UserRole::EMPLOYEE)->where('id', '!=', $employee->id)->first()->id,
-            'created_by' => $admin->id,
-        ]);
+    // Super Admin and Admin can view all orders
+    expect($superAdmin->can('view', $orderAssignedToEmployee))->toBeTrue();
+    expect($superAdmin->can('view', $orderCreatedByEmployee))->toBeTrue();
+    expect($superAdmin->can('view', $orderForCustomer))->toBeTrue();
+    expect($superAdmin->can('view', $unrelatedOrder))->toBeTrue();
 
-        $unrelatedOrder = Order::factory()->createQuietly([
-            'customer_id' => User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer->id)->first()->id,
-            'assigned_to' => User::where('role', UserRole::EMPLOYEE)->where('id', '!=', $employee->id)->first()->id,
-            'created_by' => $admin->id,
-        ]);
+    expect($admin->can('view', $orderAssignedToEmployee))->toBeTrue();
+    expect($admin->can('view', $orderCreatedByEmployee))->toBeTrue();
+    expect($admin->can('view', $orderForCustomer))->toBeTrue();
+    expect($admin->can('view', $unrelatedOrder))->toBeTrue();
 
-        // Super Admin and Admin can view all orders
-        $this->assertTrue($superAdmin->can('view', $orderAssignedToEmployee));
-        $this->assertTrue($superAdmin->can('view', $orderCreatedByEmployee));
-        $this->assertTrue($superAdmin->can('view', $orderForCustomer));
-        $this->assertTrue($superAdmin->can('view', $unrelatedOrder));
+    // Employee can view orders assigned to them or created by them
+    expect($employee->can('view', $orderAssignedToEmployee))->toBeTrue();
+    expect($employee->can('view', $orderCreatedByEmployee))->toBeTrue();
+    expect($employee->can('view', $orderForCustomer))->toBeFalse();
+    expect($employee->can('view', $unrelatedOrder))->toBeFalse();
 
-        $this->assertTrue($admin->can('view', $orderAssignedToEmployee));
-        $this->assertTrue($admin->can('view', $orderCreatedByEmployee));
-        $this->assertTrue($admin->can('view', $orderForCustomer));
-        $this->assertTrue($admin->can('view', $unrelatedOrder));
+    // Customer can only view their own orders
+    expect($customer->can('view', $orderAssignedToEmployee))->toBeTrue();
+    expect($customer->can('view', $orderCreatedByEmployee))->toBeTrue();
+    expect($customer->can('view', $orderForCustomer))->toBeTrue();
+    expect($customer->can('view', $unrelatedOrder))->toBeFalse();
+});
+it('checks if create order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-        // Employee can view orders assigned to them or created by them
-        $this->assertTrue($employee->can('view', $orderAssignedToEmployee));
-        $this->assertTrue($employee->can('view', $orderCreatedByEmployee));
-        $this->assertFalse($employee->can('view', $orderForCustomer));
-        $this->assertFalse($employee->can('view', $unrelatedOrder));
+    // Only Super Admin, Admin, and Employee can create orders
+    expect($superAdmin->can('create', Order::class))->toBeTrue();
+    expect($admin->can('create', Order::class))->toBeTrue();
+    expect($employee->can('create', Order::class))->toBeTrue();
 
-        // Customer can only view their own orders
-        $this->assertTrue($customer->can('view', $orderAssignedToEmployee));
-        $this->assertTrue($customer->can('view', $orderCreatedByEmployee));
-        $this->assertTrue($customer->can('view', $orderForCustomer));
-        $this->assertFalse($customer->can('view', $unrelatedOrder));
-    }
+    // Customers cannot create orders (they must go through employees/admins)
+    expect($customer->can('create', Order::class))->toBeFalse();
+});
+it('checks if update order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-    /**
-     * Test create order permissions.
-     */
-    #[Test]
-    public function it_checks_if_create_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Create test orders
+    $orderAssignedToEmployee1 = Order::factory()->createQuietly([
+        'assigned_to' => $employee1->id,
+        'customer_id' => $customer->id,
+        'created_by' => $admin->id,
+    ]);
 
-        // Only Super Admin, Admin, and Employee can create orders
-        $this->assertTrue($superAdmin->can('create', Order::class));
-        $this->assertTrue($admin->can('create', Order::class));
-        $this->assertTrue($employee->can('create', Order::class));
+    $orderCreatedByEmployee1 = Order::factory()->createQuietly([
+        'assigned_to' => $employee2->id,
+        'customer_id' => $customer->id,
+        'created_by' => $employee1->id,
+    ]);
 
-        // Customers cannot create orders (they must go through employees/admins)
-        $this->assertFalse($customer->can('create', Order::class));
-    }
+    // Super Admin and Admin can update any order
+    expect($superAdmin->can('update', $orderAssignedToEmployee1))->toBeTrue();
+    expect($superAdmin->can('update', $orderCreatedByEmployee1))->toBeTrue();
+    expect($admin->can('update', $orderAssignedToEmployee1))->toBeTrue();
+    expect($admin->can('update', $orderCreatedByEmployee1))->toBeTrue();
 
-    /**
-     * Test update order permissions.
-     */
-    #[Test]
-    public function it_checks_if_update_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Employee can update orders assigned to them or created by them
+    expect($employee1->can('update', $orderAssignedToEmployee1))->toBeTrue();
+    expect($employee1->can('update', $orderCreatedByEmployee1))->toBeTrue();
 
-        // Create test orders
-        $orderAssignedToEmployee1 = Order::factory()->createQuietly([
-            'assigned_to' => $employee1->id,
-            'customer_id' => $customer->id,
-            'created_by' => $admin->id,
-        ]);
+    // Employee cannot update orders not assigned to them or created by them
+    expect($employee2->can('update', $orderAssignedToEmployee1))->toBeFalse();
 
-        $orderCreatedByEmployee1 = Order::factory()->createQuietly([
-            'assigned_to' => $employee2->id,
-            'customer_id' => $customer->id,
-            'created_by' => $employee1->id,
-        ]);
+    // Customer cannot update orders
+    expect($customer->can('update', $orderAssignedToEmployee1))->toBeFalse();
+    expect($customer->can('update', $orderCreatedByEmployee1))->toBeFalse();
+});
+test('only the owning customer can approve order services', function () {
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
+    $otherCustomer = User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer->id)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->first();
 
-        // Super Admin and Admin can update any order
-        $this->assertTrue($superAdmin->can('update', $orderAssignedToEmployee1));
-        $this->assertTrue($superAdmin->can('update', $orderCreatedByEmployee1));
-        $this->assertTrue($admin->can('update', $orderAssignedToEmployee1));
-        $this->assertTrue($admin->can('update', $orderCreatedByEmployee1));
+    $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
 
-        // Employee can update orders assigned to them or created by them
-        $this->assertTrue($employee1->can('update', $orderAssignedToEmployee1));
-        $this->assertTrue($employee1->can('update', $orderCreatedByEmployee1));
+    expect($customer->can('approve', $order))->toBeTrue();
+    expect($otherCustomer->can('approve', $order))->toBeFalse();
+    expect($employee->can('approve', $order))->toBeFalse();
+});
+it('checks if delete order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-        // Employee cannot update orders not assigned to them or created by them
-        $this->assertFalse($employee2->can('update', $orderAssignedToEmployee1));
+    $order = Order::factory()->createQuietly([
+        'assigned_to' => $employee->id,
+        'customer_id' => $customer->id,
+        'created_by' => $employee->id,
+    ]);
 
-        // Customer cannot update orders
-        $this->assertFalse($customer->can('update', $orderAssignedToEmployee1));
-        $this->assertFalse($customer->can('update', $orderCreatedByEmployee1));
-    }
+    // Only Super Admin can delete orders
+    expect($superAdmin->can('delete', $order))->toBeTrue();
+    expect($admin->can('delete', $order))->toBeFalse();
+    expect($employee->can('delete', $order))->toBeFalse();
+    expect($customer->can('delete', $order))->toBeFalse();
+});
+it('checks if restore order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-    #[Test]
-    public function only_the_owning_customer_can_approve_order_services(): void
-    {
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
-        $otherCustomer = User::where('role', UserRole::CUSTOMER)->where('id', '!=', $customer->id)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->first();
+    // Create soft-deleted orders
+    $deletedOrderAssignedToEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee1->id,
+        'customer_id' => $customer->id,
+        'created_by' => $admin->id,
+    ]);
+    $deletedOrderAssignedToEmployee->delete();
 
-        $order = Order::factory()->createQuietly(['customer_id' => $customer->id]);
+    $deletedOrderCreatedByEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee1->id,
+        'customer_id' => $customer->id,
+        'created_by' => $employee1->id,
+    ]);
+    $deletedOrderCreatedByEmployee->delete();
 
-        $this->assertTrue($customer->can('approve', $order));
-        $this->assertFalse($otherCustomer->can('approve', $order));
-        $this->assertFalse($employee->can('approve', $order));
-    }
+    // Super Admin and Admin can restore any order
+    expect($superAdmin->can('restore', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($superAdmin->can('restore', $deletedOrderCreatedByEmployee))->toBeTrue();
+    expect($admin->can('restore', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($admin->can('restore', $deletedOrderCreatedByEmployee))->toBeTrue();
 
-    /**
-     * Test delete order permissions.
-     */
-    #[Test]
-    public function it_checks_if_delete_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Employee can restore orders assigned to them or created by them
+    expect($employee1->can('restore', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($employee1->can('restore', $deletedOrderCreatedByEmployee))->toBeTrue();
 
-        $order = Order::factory()->createQuietly([
-            'assigned_to' => $employee->id,
-            'customer_id' => $customer->id,
-            'created_by' => $employee->id,
-        ]);
+    // Employee cannot restore orders not assigned to them or created by them
+    expect($employee2->can('restore', $deletedOrderAssignedToEmployee))->toBeFalse();
+    expect($employee2->can('restore', $deletedOrderCreatedByEmployee))->toBeFalse();
 
-        // Only Super Admin can delete orders
-        $this->assertTrue($superAdmin->can('delete', $order));
-        $this->assertFalse($admin->can('delete', $order));
-        $this->assertFalse($employee->can('delete', $order));
-        $this->assertFalse($customer->can('delete', $order));
-    }
+    // Customer cannot restore orders
+    expect($customer->can('restore', $deletedOrderAssignedToEmployee))->toBeFalse();
+    expect($customer->can('restore', $deletedOrderCreatedByEmployee))->toBeFalse();
+});
+it('checks if force delete order permissions', function () {
+    $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-    /**
-     * Test restore order permissions.
-     */
-    #[Test]
-    public function it_checks_if_restore_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Create soft-deleted orders
+    $deletedOrderAssignedToEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee1->id,
+        'customer_id' => $customer->id,
+        'created_by' => $admin->id,
+    ]);
+    $deletedOrderAssignedToEmployee->delete();
 
-        // Create soft-deleted orders
-        $deletedOrderAssignedToEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee1->id,
-            'customer_id' => $customer->id,
-            'created_by' => $admin->id,
-        ]);
-        $deletedOrderAssignedToEmployee->delete();
+    $deletedOrderCreatedByEmployee = Order::factory()->createQuietly([
+        'assigned_to' => $employee1->id,
+        'customer_id' => $customer->id,
+        'created_by' => $employee1->id,
+    ]);
+    $deletedOrderCreatedByEmployee->delete();
 
-        $deletedOrderCreatedByEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee1->id,
-            'customer_id' => $customer->id,
-            'created_by' => $employee1->id,
-        ]);
-        $deletedOrderCreatedByEmployee->delete();
+    // Super Admin and Admin can force delete any order
+    expect($superAdmin->can('forceDelete', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($superAdmin->can('forceDelete', $deletedOrderCreatedByEmployee))->toBeTrue();
+    expect($admin->can('forceDelete', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($admin->can('forceDelete', $deletedOrderCreatedByEmployee))->toBeTrue();
 
-        // Super Admin and Admin can restore any order
-        $this->assertTrue($superAdmin->can('restore', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($superAdmin->can('restore', $deletedOrderCreatedByEmployee));
-        $this->assertTrue($admin->can('restore', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($admin->can('restore', $deletedOrderCreatedByEmployee));
+    // Employee can force delete orders assigned to them or created by them
+    expect($employee1->can('forceDelete', $deletedOrderAssignedToEmployee))->toBeTrue();
+    expect($employee1->can('forceDelete', $deletedOrderCreatedByEmployee))->toBeTrue();
 
-        // Employee can restore orders assigned to them or created by them
-        $this->assertTrue($employee1->can('restore', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($employee1->can('restore', $deletedOrderCreatedByEmployee));
+    // Employee cannot force delete orders not assigned to them or created by them
+    expect($employee2->can('forceDelete', $deletedOrderAssignedToEmployee))->toBeFalse();
+    expect($employee2->can('forceDelete', $deletedOrderCreatedByEmployee))->toBeFalse();
 
-        // Employee cannot restore orders not assigned to them or created by them
-        $this->assertFalse($employee2->can('restore', $deletedOrderAssignedToEmployee));
-        $this->assertFalse($employee2->can('restore', $deletedOrderCreatedByEmployee));
+    // Customer cannot force delete orders
+    expect($customer->can('forceDelete', $deletedOrderAssignedToEmployee))->toBeFalse();
+    expect($customer->can('forceDelete', $deletedOrderCreatedByEmployee))->toBeFalse();
+});
+it('checks if order permissions with status transitions', function () {
+    $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
+    $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
+    $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-        // Customer cannot restore orders
-        $this->assertFalse($customer->can('restore', $deletedOrderAssignedToEmployee));
-        $this->assertFalse($customer->can('restore', $deletedOrderCreatedByEmployee));
-    }
+    // Create an order that goes through different statuses
+    $order = Order::factory()->createQuietly([
+        'status' => OrderStatus::Open->value,
+        'assigned_to' => $admin->id,
+        'customer_id' => $customer->id,
+        'created_by' => $admin->id,
+    ]);
 
-    /**
-     * Test force delete order permissions.
-     */
-    #[Test]
-    public function it_checks_if_force_delete_order_permissions(): void
-    {
-        $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee1 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $employee2 = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->where('id', '!=', $employee1->id)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
+    // Initially, employee cannot update unassigned order
+    expect($employee->can('update', $order))->toBeFalse();
 
-        // Create soft-deleted orders
-        $deletedOrderAssignedToEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee1->id,
-            'customer_id' => $customer->id,
-            'created_by' => $admin->id,
-        ]);
-        $deletedOrderAssignedToEmployee->delete();
+    // Assign order to employee
+    $order->assigned_to = $employee->id;
+    $order->status = OrderStatus::InProgress->value;
+    $order->save();
 
-        $deletedOrderCreatedByEmployee = Order::factory()->createQuietly([
-            'assigned_to' => $employee1->id,
-            'customer_id' => $customer->id,
-            'created_by' => $employee1->id,
-        ]);
-        $deletedOrderCreatedByEmployee->delete();
+    // Now employee can update the order
+    expect($employee->can('update', $order))->toBeTrue();
 
-        // Super Admin and Admin can force delete any order
-        $this->assertTrue($superAdmin->can('forceDelete', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($superAdmin->can('forceDelete', $deletedOrderCreatedByEmployee));
-        $this->assertTrue($admin->can('forceDelete', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($admin->can('forceDelete', $deletedOrderCreatedByEmployee));
-
-        // Employee can force delete orders assigned to them or created by them
-        $this->assertTrue($employee1->can('forceDelete', $deletedOrderAssignedToEmployee));
-        $this->assertTrue($employee1->can('forceDelete', $deletedOrderCreatedByEmployee));
-
-        // Employee cannot force delete orders not assigned to them or created by them
-        $this->assertFalse($employee2->can('forceDelete', $deletedOrderAssignedToEmployee));
-        $this->assertFalse($employee2->can('forceDelete', $deletedOrderCreatedByEmployee));
-
-        // Customer cannot force delete orders
-        $this->assertFalse($customer->can('forceDelete', $deletedOrderAssignedToEmployee));
-        $this->assertFalse($customer->can('forceDelete', $deletedOrderCreatedByEmployee));
-    }
-
-    /**
-     * Test complex scenarios with order status transitions.
-     */
-    #[Test]
-    public function it_checks_if_order_permissions_with_status_transitions(): void
-    {
-        $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
-        $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
-        $customer = User::where('role', UserRole::CUSTOMER)->first();
-
-        // Create an order that goes through different statuses
-        $order = Order::factory()->createQuietly([
-            'status' => OrderStatus::Open->value,
-            'assigned_to' => $admin->id,
-            'customer_id' => $customer->id,
-            'created_by' => $admin->id,
-        ]);
-
-        // Initially, employee cannot update unassigned order
-        $this->assertFalse($employee->can('update', $order));
-
-        // Assign order to employee
-        $order->assigned_to = $employee->id;
-        $order->status = OrderStatus::InProgress->value;
-        $order->save();
-
-        // Now employee can update the order
-        $this->assertTrue($employee->can('update', $order));
-
-        // Even when order is completed, assigned employee can still update
-        $order->status = OrderStatus::Paid->value;
-        $order->save();
-        $this->assertTrue($employee->can('update', $order));
-    }
-}
+    // Even when order is completed, assigned employee can still update
+    $order->status = OrderStatus::Paid->value;
+    $order->save();
+    expect($employee->can('update', $order))->toBeTrue();
+});
