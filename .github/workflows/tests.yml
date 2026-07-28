@@ -46,6 +46,8 @@ jobs:
           kv() { key="$1"; val="$2"; if grep -qE "^[#\s]*${key}=" .env; then sed -i "s|^[#\s]*${key}=.*|${key}=${val}|" .env; else echo "${key}=${val}" >> .env; fi; }
           kv APP_ENV local
           kv APP_DEBUG true
+          kv APP_LOCALE en
+          kv APP_FALLBACK_LOCALE en
           kv DB_CONNECTION pgsql
           kv DB_HOST pgsql
           kv DB_PORT 5432
@@ -58,6 +60,8 @@ jobs:
           kv() { key="$1"; val="$2"; if grep -qE "^[#\s]*${key}=" .env.testing; then sed -i "s|^[#\s]*${key}=.*|${key}=${val}|" .env.testing; else echo "${key}=${val}" >> .env.testing; fi; }
           kv APP_ENV testing
           kv APP_DEBUG true
+          kv APP_LOCALE en
+          kv APP_FALLBACK_LOCALE en
           kv DB_CONNECTION pgsql
           kv DB_HOST pgsql
           kv DB_PORT 5432
