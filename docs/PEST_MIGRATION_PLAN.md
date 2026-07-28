@@ -1070,6 +1070,17 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
   local fresh-TIA attempt executed all 635 tests but reproduced the documented macOS case-insensitive bind-mount
   `resources/js/Pages`/`resources/js/pages` graph-finalization error. The new CI workflows use a Linux runner and inject
   the override correctly with `sail exec -u sail -e`.
+- The first GitHub Actions run reached the TIA suite but failed nine locale-sensitive assertions because CI copied
+  `APP_LOCALE=es` from `.env.example`, while the migrated tests assert the English status labels. Both CI workflows now
+  set `APP_LOCALE=en` and `APP_FALLBACK_LOCALE=en` for deterministic test execution. The affected tests passed locally
+  with those container variables, and the full parallel Pest suite completed without reported assertion failures.
+- The baseline lookup logged `HTTP 404` because `pest-tia-baseline.yml` was not yet present on the repository default
+  branch; the command already falls back to a fresh local graph. This should resolve after the workflow is merged to the
+  default branch and has produced its first successful artifact.
+- `tests/Pest.php` now ignores an invalid `TIA_VITE_PAGES_DIR` override and disables automatic local TIA only when the
+  macOS Docker bind mount exposes `resources/js/Pages` and `resources/js/pages` as the same inode. This prevents the
+  IDE's ordinary Docker Compose check from entering the known recursive graph failure; Linux CI and explicit TIA runs
+  are unaffected. The IDE-style targeted run passed, and the full local parallel Pest suite passed with `--no-tia`.
 
 **Step 12 implementation is complete locally; final CI artifact upload/download verification remains pending the first
 GitHub Actions run.**
