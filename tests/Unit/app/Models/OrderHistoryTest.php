@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Models;
-
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
@@ -13,405 +11,313 @@ use App\Models\User;
 use Carbon\Carbon;
 use Database\Factories\OrderHistoryFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderHistoryTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    /**
-     * Test that OrderHistory uses required traits
-     */
-    #[Test]
-    public function it_checks_if_order_history_uses_required_traits(): void
-    {
-        $uses = class_uses(OrderHistory::class);
+it('checks if order history uses required traits', function () {
+    $uses = class_uses(OrderHistory::class);
 
-        $this->assertArrayHasKey('Illuminate\Database\Eloquent\Factories\HasFactory', $uses);
-        $this->assertArrayHasKey('Illuminate\Database\Eloquent\Concerns\HasUuids', $uses);
-        $this->assertArrayHasKey('App\Traits\HasAttachments', $uses);
-    }
+    expect($uses)->toHaveKey('Illuminate\Database\Eloquent\Factories\HasFactory');
+    expect($uses)->toHaveKey('Illuminate\Database\Eloquent\Concerns\HasUuids');
+    expect($uses)->toHaveKey('App\Traits\HasAttachments');
+});
+it('checks if order history has correct fillable attributes', function () {
+    $orderHistory = new OrderHistory();
 
-    /**
-     * Test that OrderHistory has correct fillable attributes
-     */
-    #[Test]
-    public function it_checks_if_order_history_has_correct_fillable_attributes(): void
-    {
-        $orderHistory = new OrderHistory();
+    $expected = [
+        'uuid',
+        'order_id',
+        'field_changed',
+        'old_value',
+        'new_value',
+        'comment',
+        'created_by',
+    ];
 
-        $expected = [
-            'uuid',
-            'order_id',
-            'field_changed',
-            'old_value',
-            'new_value',
-            'comment',
-            'created_by',
-        ];
+    expect($orderHistory->getFillable())->toEqual($expected);
+});
+it('checks if order history has correct casts', function () {
+    $orderHistory = new OrderHistory();
+    $casts = $orderHistory->getCasts();
 
-        $this->assertEquals($expected, $orderHistory->getFillable());
-    }
+    // The new schema doesn't have specific enum casts for old_value/new_value
+    // as they can contain different types of values
+    expect($casts)->toBeArray();
+});
+it('checks if order history belongs to order', function () {
+    $orderHistory = new OrderHistory();
+    $relation = $orderHistory->order();
 
-    /**
-     * Test that OrderHistory has correct casts
-     */
-    #[Test]
-    public function it_checks_if_order_history_has_correct_casts(): void
-    {
-        $orderHistory = new OrderHistory();
-        $casts = $orderHistory->getCasts();
+    expect($relation)->toBeInstanceOf(BelongsTo::class);
+    expect($relation->getForeignKeyName())->toEqual('order_id');
+    expect($relation->getRelated()::class)->toEqual(Order::class);
+});
+it('checks if order history belongs to user as created by', function () {
+    $orderHistory = new OrderHistory();
+    $relation = $orderHistory->createdBy();
 
-        // The new schema doesn't have specific enum casts for old_value/new_value
-        // as they can contain different types of values
-        $this->assertIsArray($casts);
-    }
+    expect($relation)->toBeInstanceOf(BelongsTo::class);
+    expect($relation->getForeignKeyName())->toEqual('created_by');
+    expect($relation->getRelated()::class)->toEqual(User::class);
+});
+it('checks if order history can be created with factory', function () {
+    $factory = OrderHistory::factory();
 
-    /**
-     * Test that OrderHistory belongs to Order
-     */
-    #[Test]
-    public function it_checks_if_order_history_belongs_to_order(): void
-    {
-        $orderHistory = new OrderHistory();
-        $relation = $orderHistory->order();
+    expect($factory)->toBeInstanceOf(OrderHistoryFactory::class);
+});
+it('checks if order history field tracking works correctly', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        $this->assertInstanceOf(BelongsTo::class, $relation);
-        $this->assertEquals('order_id', $relation->getForeignKeyName());
-        $this->assertEquals(Order::class, $relation->getRelated()::class);
-    }
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-    /**
-     * Test that OrderHistory belongs to User as createdBy
-     */
-    #[Test]
-    public function it_checks_if_order_history_belongs_to_user_as_created_by(): void
-    {
-        $orderHistory = new OrderHistory();
-        $relation = $orderHistory->createdBy();
+    // Create order history for status change
+    $statusHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'comment' => 'Status changed to in progress',
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertInstanceOf(BelongsTo::class, $relation);
-        $this->assertEquals('created_by', $relation->getForeignKeyName());
-        $this->assertEquals(User::class, $relation->getRelated()::class);
-    }
+    expect($statusHistory->field_changed)->toEqual('status');
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
 
-    /**
-     * Test that OrderHistory can be created with factory
-     */
-    #[Test]
-    public function it_checks_if_order_history_can_be_created_with_factory(): void
-    {
-        $factory = OrderHistory::factory();
+    // Check that getters return enum instances
+    expect($statusHistory->old_value)->toBeInstanceOf(OrderStatus::class);
+    expect($statusHistory->new_value)->toBeInstanceOf(OrderStatus::class);
+    expect($statusHistory->old_value)->toEqual(OrderStatus::Open);
+    expect($statusHistory->new_value)->toEqual(OrderStatus::InProgress);
 
-        $this->assertInstanceOf(OrderHistoryFactory::class, $factory);
-    }
+    // Create order history for priority change
+    $priorityHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'priority',
+        'old_value' => OrderPriority::NORMAL->value,
+        'new_value' => OrderPriority::HIGH->value,
+        'comment' => 'Priority increased',
+        'created_by' => $user->id,
+    ]);
 
-    /**
-     * Test that OrderHistory field tracking works correctly
-     */
-    #[Test]
-    public function it_checks_if_order_history_field_tracking_works_correctly(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+    expect($priorityHistory->field_changed)->toEqual('priority');
+    expect($priorityHistory->getRawOriginal('old_value'))->toEqual(OrderPriority::NORMAL->value);
+    expect($priorityHistory->getRawOriginal('new_value'))->toEqual(OrderPriority::HIGH->value);
 
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    // Check that getters return enum instances
+    expect($priorityHistory->old_value)->toBeInstanceOf(OrderPriority::class);
+    expect($priorityHistory->new_value)->toBeInstanceOf(OrderPriority::class);
+    expect($priorityHistory->old_value)->toEqual(OrderPriority::NORMAL);
+    expect($priorityHistory->new_value)->toEqual(OrderPriority::HIGH);
+});
+it('localizes history descriptions without changing canonical values', function () {
+    $history = OrderHistory::make([
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+    ]);
 
-        // Create order history for status change
-        $statusHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Status changed to in progress',
-            'created_by' => $user->id,
-        ]);
+    app()->setLocale('es');
+    expect($history->description)->toBe('Estatus cambió de Abierta a En progreso');
 
-        $this->assertEquals('status', $statusHistory->field_changed);
-        $this->assertEquals(OrderStatus::Open->value, $statusHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderStatus::InProgress->value, $statusHistory->getRawOriginal('new_value'));
-        // Check that getters return enum instances
-        $this->assertInstanceOf(OrderStatus::class, $statusHistory->old_value);
-        $this->assertInstanceOf(OrderStatus::class, $statusHistory->new_value);
-        $this->assertEquals(OrderStatus::Open, $statusHistory->old_value);
-        $this->assertEquals(OrderStatus::InProgress, $statusHistory->new_value);
+    app()->setLocale('en');
+    expect($history->description)->toBe('Status changed from Open to In Progress');
+    expect($history->getAttributes()['old_value'])->toBe(OrderStatus::Open->value);
+    expect($history->getAttributes()['new_value'])->toBe(OrderStatus::InProgress->value);
 
-        // Create order history for priority change
-        $priorityHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'priority',
-            'old_value' => OrderPriority::NORMAL->value,
-            'new_value' => OrderPriority::HIGH->value,
-            'comment' => 'Priority increased',
-            'created_by' => $user->id,
-        ]);
+    $date = OrderHistory::make([
+        'field_changed' => 'estimated_completion',
+        'old_value' => Carbon::parse('2026-07-27 12:00:00'),
+        'new_value' => null,
+    ]);
+    $boolean = OrderHistory::make([
+        'field_changed' => 'service_completed',
+        'old_value' => false,
+        'new_value' => true,
+    ]);
 
-        $this->assertEquals('priority', $priorityHistory->field_changed);
-        $this->assertEquals(OrderPriority::NORMAL->value, $priorityHistory->getRawOriginal('old_value'));
-        $this->assertEquals(OrderPriority::HIGH->value, $priorityHistory->getRawOriginal('new_value'));
-        // Check that getters return enum instances
-        $this->assertInstanceOf(OrderPriority::class, $priorityHistory->old_value);
-        $this->assertInstanceOf(OrderPriority::class, $priorityHistory->new_value);
-        $this->assertEquals(OrderPriority::NORMAL, $priorityHistory->old_value);
-        $this->assertEquals(OrderPriority::HIGH, $priorityHistory->new_value);
-    }
+    $this->assertStringContainsString('Estimated completion removed', $date->description);
+    expect($boolean->description)->toBe('Service completed changed from No to Yes');
 
-    #[Test]
-    public function it_localizes_history_descriptions_without_changing_canonical_values(): void
-    {
-        $history = OrderHistory::make([
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-        ]);
+    app()->setLocale('es');
+    $this->assertStringContainsString('Fecha estimada eliminado', $date->description);
+    expect($boolean->description)->toBe('Servicio realizado cambió de No a Sí');
+});
+it('checks if order history can have null values', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        app()->setLocale('es');
-        $this->assertSame('Estatus cambió de Abierta a En progreso', $history->description);
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-        app()->setLocale('en');
-        $this->assertSame('Status changed from Open to In Progress', $history->description);
-        $this->assertSame(OrderStatus::Open->value, $history->getAttributes()['old_value']);
-        $this->assertSame(OrderStatus::InProgress->value, $history->getAttributes()['new_value']);
+    // Create order history with null old_value (for initial creation)
+    $orderHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => null,
+        'new_value' => OrderStatus::Open->value,
+        'comment' => 'Initial order creation',
+        'created_by' => $user->id,
+    ]);
 
-        $date = OrderHistory::make([
-            'field_changed' => 'estimated_completion',
-            'old_value' => Carbon::parse('2026-07-27 12:00:00'),
-            'new_value' => null,
-        ]);
-        $boolean = OrderHistory::make([
-            'field_changed' => 'service_completed',
-            'old_value' => false,
-            'new_value' => true,
-        ]);
+    expect($orderHistory->old_value)->toBeNull();
+    expect($orderHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Open->value);
+    expect($orderHistory->field_changed)->toEqual('status');
 
-        $this->assertStringContainsString('Estimated completion removed', $date->description);
-        $this->assertSame('Service completed changed from No to Yes', $boolean->description);
+    // Check that getter returns enum instance
+    expect($orderHistory->new_value)->toBeInstanceOf(OrderStatus::class);
+    expect($orderHistory->new_value)->toEqual(OrderStatus::Open);
+});
+it('checks if order history can be created through mass assignment', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        app()->setLocale('es');
-        $this->assertStringContainsString('Fecha estimada eliminado', $date->description);
-        $this->assertSame('Servicio realizado cambió de No a Sí', $boolean->description);
-    }
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-    /**
-     * Test that OrderHistory can have null values
-     */
-    #[Test]
-    public function it_checks_if_order_history_can_have_null_values(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+    $data = [
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'comment' => 'Order status updated - Customer requested urgent delivery',
+        'created_by' => $user->id,
+    ];
 
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    $orderHistory = OrderHistory::create($data);
 
-        // Create order history with null old_value (for initial creation)
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => null,
-            'new_value' => OrderStatus::Open->value,
-            'comment' => 'Initial order creation',
-            'created_by' => $user->id,
-        ]);
+    expect($orderHistory)->toBeInstanceOf(OrderHistory::class);
+    expect($orderHistory->order_id)->toEqual($order->id);
+    expect($orderHistory->comment)->toEqual('Order status updated - Customer requested urgent delivery');
+    expect($orderHistory->created_by)->toEqual($user->id);
+});
+it('checks if order history comment field is nullable', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        $this->assertNull($orderHistory->old_value);
-        $this->assertEquals(OrderStatus::Open->value, $orderHistory->getRawOriginal('new_value'));
-        $this->assertEquals('status', $orderHistory->field_changed);
-        // Check that getter returns enum instance
-        $this->assertInstanceOf(OrderStatus::class, $orderHistory->new_value);
-        $this->assertEquals(OrderStatus::Open, $orderHistory->new_value);
-    }
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-    /**
-     * Test that OrderHistory can be created through mass assignment
-     */
-    #[Test]
-    public function it_checks_if_order_history_can_be_created_through_mass_assignment(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+    // Create order history without comment
+    $orderHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'created_by' => $user->id,
+    ]);
 
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    expect($orderHistory->comment)->toBeNull();
+});
+it('checks if order history generates uuid', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        $data = [
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Order status updated - Customer requested urgent delivery',
-            'created_by' => $user->id,
-        ];
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-        $orderHistory = OrderHistory::create($data);
+    $orderHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertInstanceOf(OrderHistory::class, $orderHistory);
-        $this->assertEquals($order->id, $orderHistory->order_id);
-        $this->assertEquals('Order status updated - Customer requested urgent delivery', $orderHistory->comment);
-        $this->assertEquals($user->id, $orderHistory->created_by);
-    }
+    expect($orderHistory->uuid)->not->toBeNull();
+    expect($orderHistory->uuid)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i');
+});
+it('checks if order history has correct table name', function () {
+    $orderHistory = new OrderHistory();
 
-    /**
-     * Test that OrderHistory comment field is nullable
-     */
-    #[Test]
-    public function it_checks_if_order_history_comment_field_is_nullable(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+    expect($orderHistory->getTable())->toEqual('order_histories');
+});
+it('checks if order history relationships load correctly', function () {
+    // Create users
+    $customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    $employee = User::factory()->create([
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
 
-        // Create order history without comment
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id,
-        ]);
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'created_by' => $customer->id,
+        'assigned_to' => $employee->id,
+    ]);
 
-        $this->assertNull($orderHistory->comment);
-    }
+    // Create order history
+    $orderHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'comment' => 'Employee started working on order',
+        'created_by' => $employee->id,
+    ]);
 
-    /**
-     * Test that OrderHistory generates UUID
-     */
-    #[Test]
-    public function it_checks_if_order_history_generates_uuid(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+    // Load relationships
+    $orderHistory->load(['order', 'createdBy']);
 
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
+    expect($orderHistory->order->id)->toEqual($order->id);
+    expect($orderHistory->createdBy->id)->toEqual($employee->id);
+});
+it('checks if order history cascades on order delete', function () {
+    // Create a user with customer role
+    $user = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
 
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id,
-        ]);
+    // Create an order
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'created_by' => $user->id,
+    ]);
 
-        $this->assertNotNull($orderHistory->uuid);
-        $this->assertMatchesRegularExpression(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-            $orderHistory->uuid
-        );
-    }
+    // Create order history
+    $orderHistory = OrderHistory::create([
+        'order_id' => $order->id,
+        'field_changed' => 'status',
+        'old_value' => OrderStatus::Open->value,
+        'new_value' => OrderStatus::InProgress->value,
+        'created_by' => $user->id,
+    ]);
 
-    /**
-     * Test that OrderHistory has correct table name
-     */
-    #[Test]
-    public function it_checks_if_order_history_has_correct_table_name(): void
-    {
-        $orderHistory = new OrderHistory();
+    $orderHistoryId = $orderHistory->id;
 
-        $this->assertEquals('order_histories', $orderHistory->getTable());
-    }
+    // Delete the order
+    $order->delete();
 
-    /**
-     * Test that OrderHistory relationships load correctly
-     */
-    #[Test]
-    public function it_checks_if_order_history_relationships_load_correctly(): void
-    {
-        // Create users
-        $customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
-
-        $employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-        ]);
-
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'created_by' => $customer->id,
-            'assigned_to' => $employee->id,
-        ]);
-
-        // Create order history
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'comment' => 'Employee started working on order',
-            'created_by' => $employee->id,
-        ]);
-
-        // Load relationships
-        $orderHistory->load(['order', 'createdBy']);
-
-        $this->assertEquals($order->id, $orderHistory->order->id);
-        $this->assertEquals($employee->id, $orderHistory->createdBy->id);
-    }
-
-    /**
-     * Test that OrderHistory cascades on order delete
-     */
-    #[Test]
-    public function it_checks_if_order_history_cascades_on_order_delete(): void
-    {
-        // Create a user with customer role
-        $user = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
-
-        // Create an order
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $user->id,
-            'created_by' => $user->id,
-        ]);
-
-        // Create order history
-        $orderHistory = OrderHistory::create([
-            'order_id' => $order->id,
-            'field_changed' => 'status',
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
-            'created_by' => $user->id,
-        ]);
-
-        $orderHistoryId = $orderHistory->id;
-
-        // Delete the order
-        $order->delete();
-
-        // Check that order history was deleted
-        $this->assertNull(OrderHistory::find($orderHistoryId));
-    }
-}
+    // Check that order history was deleted
+    expect(OrderHistory::find($orderHistoryId))->toBeNull();
+});
