@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Copy CI env
         run: |
@@ -77,8 +78,13 @@ jobs:
       - name: Ensure Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Wait for containers to be ready
-        run: composer require laravel/sail --dev
+      - name: Install Sail from lockfile
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
+          if ! composer show laravel/sail --direct >/dev/null 2>&1; then
+            echo "laravel/sail must be declared in composer.json before CI can run Sail." >&2
+            exit 1
+          fi
 
       - name: Build containers
         run: ./vendor/bin/sail build --no-cache
@@ -114,9 +120,11 @@ jobs:
       - name: Copy TIA baseline out of Sail
         run: |
           mkdir -p "$RUNNER_TEMP/pest-tia"
+          baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --baseline)"
           container_id="$(docker compose ps -q laravel.test)"
-          docker cp "$container_id:/home/sail/.pest/tia/." "$RUNNER_TEMP/pest-tia/"
-          test -n "$(find "$RUNNER_TEMP/pest-tia" -type f -print -quit)"
+          docker exec "$container_id" test -s "$baseline_path/graph.json"
+          docker cp "$container_id:$baseline_path/." "$RUNNER_TEMP/pest-tia/"
+          test -s "$RUNNER_TEMP/pest-tia/graph.json"
 
       - name: Upload Pest TIA baseline
         uses: actions/upload-artifact@v4
