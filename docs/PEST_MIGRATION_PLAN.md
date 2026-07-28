@@ -905,7 +905,7 @@ adding `--tia` to a script.
 6. Decide whether `pest()->tia()->always()->locally()` belongs in `tests/Pest.php` or whether explicit `--tia` scripts
    are clearer for the team. Keep `--no-tia` available for troubleshooting.
 7. Test what happens after restarting/recreating Sail. Pest documents TIA state under `~/.pest/tia/<project-key>/`. The
-   effective home directory is inside the container, so persistence across container recreation is currently unverified.
+   effective home directory is inside the container, so persistence across container recreation must be recorded.
 8. Do not change or repurpose `HOME` to move the cache. If persistence is required, design an explicit, narrowly scoped
    Sail bind mount or baseline copy process and obtain approval for that infrastructure change.
 9. Record baseline duration, replay duration, affected/uncached/replayed counts, coverage-driver name, and persistence
@@ -916,11 +916,14 @@ adding `--tia` to a script.
 ```bash
 vendor/bin/sail php -m
 vendor/bin/sail php vendor/bin/pest --compact
-vendor/bin/sail php vendor/bin/pest --parallel --tia --fresh
-vendor/bin/sail php vendor/bin/pest --parallel --tia
-vendor/bin/sail php vendor/bin/pest --baseline
+TIA_VITE_PAGES_DIR=resources/js/pages vendor/bin/sail php vendor/bin/pest --parallel --tia --fresh
+TIA_VITE_PAGES_DIR=resources/js/pages vendor/bin/sail php vendor/bin/pest --parallel --tia
 vendor/bin/sail php vendor/bin/pest --parallel --coverage --min=90
 ```
+
+In this Sail bind-mount environment, `TIA_VITE_PAGES_DIR=resources/js/pages` is required for Pest's JavaScript
+module-graph scan. The installed Pest 4.7.5 exposes `--fresh` for rebuilding the graph; the older `--baseline`
+example is not an available option in this installation.
 
 If direct Pest parallel execution hits stale test databases, first prepare them with:
 
@@ -932,12 +935,34 @@ Then retry the exact TIA command. Do not claim TIA is working based only on a no
 
 ### Completion criteria
 
-- [ ] A coverage driver is verified inside Sail.
-- [ ] A fresh TIA baseline completes successfully.
-- [ ] A no-change replay is demonstrably faster and reports replayed results.
-- [ ] An affected-change run selects a credible subset.
-- [ ] Sail cache persistence behavior is known and recorded.
-- [ ] The full non-TIA Pest suite still passes.
+- [x] A coverage driver is verified inside Sail.
+- [x] A fresh TIA baseline completes successfully.
+- [x] A no-change replay is demonstrably faster and reports replayed results.
+- [x] An affected-change run selects a credible subset.
+- [x] Sail cache persistence behavior is known and recorded.
+- [x] The full non-TIA Pest suite still passes.
+
+### Execution record — 2026-07-28
+
+- `vendor/bin/sail php -m` verified both PCOV and Xdebug inside Sail. Pest reports version 4.7.5.
+- `tests/Pest.php` now enables `pest()->tia()->always()->locally()`, so local runs use TIA by default while `--no-tia`
+  remains available. No dependency or `HOME` changes were made.
+- With `TIA_VITE_PAGES_DIR=resources/js/pages`, the fresh parallel baseline passed 635 tests and 4,619 assertions in
+  57.75s. The unchanged replay passed the same 635 tests with 635 replayed results in 2.34s.
+- A temporary, semantically equivalent change in `app/Enums/OrderStatus.php` selected 27 affected test files; TIA
+  executed 304 tests and replayed 331 in 42.22s. The application change was reverted after verification.
+- The TIA cache was found at `/home/sail/.pest/tia/html-c065f877060f85e8/graph.json` with `HOME=/home/sail`. It survived
+  `vendor/bin/sail restart`, and the subsequent run still selected the cached affected graph. The compose setup has no
+  `/home/sail` volume, so persistence across container recreation is not guaranteed and was not changed.
+- The full non-TIA parallel suite passed with 635 tests and 4,616 assertions in 49.71s. Parallel coverage encountered
+  the repository's PostgreSQL migration/database race; the serial coverage gate passed with 90.1% coverage, 635 tests,
+  and 4,615 assertions in 154.77s.
+- After restart and fresh-graph rebuild attempts, Pest sometimes reported all tests passing and then exited with a
+  `RecursiveDirectoryIterator` error while finalizing the JavaScript graph because `/var/www/html/resources/js/pages`
+  was not visible to that post-test scan. This is a Pest/Sail filesystem-discovery caveat, not a test assertion failure;
+  the explicit `TIA_VITE_PAGES_DIR` override produced successful baseline, replay, and affected-change runs.
+
+**Step 11 complete.**
 
 ## Step 12 — Integrate TIA with CI and complete final acceptance
 
