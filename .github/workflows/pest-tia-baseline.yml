@@ -1,21 +1,19 @@
-name: tests
-
-permissions:
-  actions: read
-  contents: read
+name: pest-tia-baseline
 
 on:
   push:
     branches:
       - develop
       - main
-  pull_request:
-    branches:
-      - develop
-      - main
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  sail-tests:
+  baseline:
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -23,7 +21,7 @@ jobs:
         env:
           MYSQL_DATABASE: testing
           MYSQL_ROOT_PASSWORD: password
-        ports: [3306:3306]
+        ports: [ 3306:3306 ]
         options: >-
           --health-cmd="mysqladmin ping -ppassword"
           --health-interval=10s
@@ -89,6 +87,7 @@ jobs:
 
       - name: Install frontend dependencies
         run: ./vendor/bin/sail yarn install
+
       - name: Build frontend assets
         run: ./vendor/bin/sail yarn run build
 
@@ -102,35 +101,23 @@ jobs:
           ./vendor/bin/sail artisan ziggy:generate
           ./vendor/bin/sail artisan ziggy:generate --env=testing
 
-      # - name: Create SQLite database file
-      #   run: touch database/testing.sqlite
-
       - name: Migrate testing DB
-        run: |
-          ./vendor/bin/sail artisan migrate --force
+        run: ./vendor/bin/sail artisan migrate --force
 
-      - name: Download TIA baseline when available
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Create fresh Pest TIA baseline
+        run: ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia --fresh
+
+      - name: Copy TIA baseline out of Sail
         run: |
-          baseline_branch="${{ github.base_ref || github.ref_name }}"
           mkdir -p "$RUNNER_TEMP/pest-tia"
-          run_id="$(gh run list --workflow pest-tia-baseline.yml --branch "$baseline_branch" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)"
+          container_id="$(docker compose ps -q laravel.test)"
+          docker cp "$container_id:/home/sail/.pest/tia/." "$RUNNER_TEMP/pest-tia/"
+          test -n "$(find "$RUNNER_TEMP/pest-tia" -type f -print -quit)"
 
-          if [ -n "$run_id" ]; then
-            gh run download "$run_id" --name pest-tia-baseline --dir "$RUNNER_TEMP/pest-tia"
-            container_id="$(docker compose ps -q laravel.test)"
-            docker exec "$container_id" mkdir -p /home/sail/.pest/tia
-            docker cp "$RUNNER_TEMP/pest-tia/." "$container_id:/home/sail/.pest/tia/"
-            docker exec "$container_id" chown -R sail:sail /home/sail/.pest/tia
-          else
-            echo "No successful TIA baseline was found for $baseline_branch; Pest will create a local baseline."
-          fi
-
-      - name: Pest TIA suite
-        run: |
-          ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia
-
-      - name: Pest full suite
-        run: |
-          ./vendor/bin/sail php vendor/bin/pest --parallel --no-tia
+      - name: Upload Pest TIA baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: pest-tia-baseline
+          path: ${{ runner.temp }}/pest-tia
+          include-hidden-files: true
+          retention-days: 30
