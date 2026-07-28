@@ -4,23 +4,6 @@ declare(strict_types=1);
 
 use App\Traits\HasAttachments;
 
-final class HasAttachmentsFormattingTest
-{
-    use HasAttachments;
-
-    private int $testSize = 0;
-
-    public function setTestSize(int $size): void
-    {
-        $this->testSize = $size;
-    }
-
-    public function getTotalAttachmentsSize(): int
-    {
-        return $this->testSize;
-    }
-}
-
 afterEach(function (): void {
     Mockery::close();
 });
@@ -51,7 +34,21 @@ test('checks if trait has required methods', function (): void {
 });
 
 test('checks if get total attachments size formatted various sizes', function (): void {
-    $testObject = new HasAttachmentsFormattingTest();
+    $testObject = new class {
+        use HasAttachments;
+
+        private int $testSize = 0;
+
+        public function setTestSize(int $size): void
+        {
+            $this->testSize = $size;
+        }
+
+        public function getTotalAttachmentsSize(): int
+        {
+            return $this->testSize;
+        }
+    };
 
     $testObject->setTestSize(512);
     expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('512 B');
@@ -73,7 +70,21 @@ test('checks if get total attachments size formatted various sizes', function ()
 });
 
 test('checks if get total attachments size formatted edge cases', function (): void {
-    $testObject = new HasAttachmentsFormattingTest();
+    $testObject = new class {
+        use HasAttachments;
+
+        private int $testSize = 0;
+
+        public function setTestSize(int $size): void
+        {
+            $this->testSize = $size;
+        }
+
+        public function getTotalAttachmentsSize(): int
+        {
+            return $this->testSize;
+        }
+    };
 
     $testObject->setTestSize(1024);
     expect($testObject->getTotalAttachmentsSizeFormatted())->toEqual('1 KB');
