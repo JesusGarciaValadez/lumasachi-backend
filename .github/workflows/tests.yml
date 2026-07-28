@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Copy CI env
         run: |
@@ -79,8 +80,13 @@ jobs:
       - name: Ensure Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Wait for containers to be ready
-        run: composer require laravel/sail --dev
+      - name: Install Sail from lockfile
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
+          if ! composer show laravel/sail --direct >/dev/null 2>&1; then
+            echo "laravel/sail must be declared in composer.json before CI can run Sail." >&2
+            exit 1
+          fi
 
       - name: Build containers
         run: ./vendor/bin/sail build --no-cache
@@ -124,9 +130,11 @@ jobs:
           if [ -n "$run_id" ]; then
             gh run download "$run_id" --name pest-tia-baseline --dir "$RUNNER_TEMP/pest-tia"
             container_id="$(docker compose ps -q laravel.test)"
-            docker exec "$container_id" mkdir -p /home/sail/.pest/tia
-            docker cp "$RUNNER_TEMP/pest-tia/." "$container_id:/home/sail/.pest/tia/"
-            docker exec "$container_id" chown -R sail:sail /home/sail/.pest/tia
+            baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --baseline)"
+            docker exec "$container_id" mkdir -p "$baseline_path"
+            docker cp "$RUNNER_TEMP/pest-tia/." "$container_id:$baseline_path/"
+            docker exec "$container_id" chown -R sail:sail "$baseline_path"
+            docker exec "$container_id" test -s "$baseline_path/graph.json"
           else
             echo "No successful TIA baseline was found for $baseline_branch; Pest will create a local baseline."
           fi
