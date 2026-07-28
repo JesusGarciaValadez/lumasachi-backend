@@ -64,75 +64,49 @@ it('checks if default role is employee', function () {
     expect($user->role)->toEqual(UserRole::EMPLOYEE);
     expect($user->role->value)->toEqual('Employee');
 });
-it('checks if user role permissions mapping', function () {
-    $testCases = [
-        [
-            'role' => UserRole::SUPER_ADMINISTRATOR,
-            'expected_permissions_count' => 18,
-            'must_have_permissions' => [
-                'users.delete',
-                'system.settings',
-                'system.logs',
-            ],
-        ],
-        [
-            'role' => UserRole::ADMINISTRATOR,
-            'expected_permissions_count' => 13,
-            'must_have_permissions' => [
-                'users.create',
-                'reports.export',
-            ],
-            'must_not_have_permissions' => [
-                'users.delete',
-                'system.settings',
-                'system.logs',
-            ],
-        ],
-        [
-            'role' => UserRole::EMPLOYEE,
-            'expected_permissions_count' => 5,
-            'must_have_permissions' => [
-                'orders.status_change',
-            ],
-            'must_not_have_permissions' => [
-                'users.create',
-                'reports.export',
-            ],
-        ],
-        [
-            'role' => UserRole::CUSTOMER,
-            'expected_permissions_count' => 1,
-            'must_have_permissions' => [
-                'orders.read',
-            ],
-            'must_not_have_permissions' => [
-                'orders.create',
-                'customers.read',
-            ],
-        ],
-    ];
+it('checks the :dataset user role permission mapping', function (
+    UserRole $role,
+    int      $expectedPermissionsCount,
+    array    $mustHavePermissions,
+    array    $mustNotHavePermissions,
+): void {
+    $permissions = UserRole::getPermissions($role);
 
-    foreach ($testCases as $testCase) {
-        $permissions = UserRole::getPermissions($testCase['role']);
+    expect($permissions)->toHaveCount($expectedPermissionsCount);
 
-        // Check permission count
-        expect($permissions)->toHaveCount($testCase['expected_permissions_count']);
-
-        // Check must-have permissions
-        if (isset($testCase['must_have_permissions'])) {
-            foreach ($testCase['must_have_permissions'] as $permission) {
-                expect($permissions)->toContain($permission);
-            }
-        }
-
-        // Check must-not-have permissions
-        if (isset($testCase['must_not_have_permissions'])) {
-            foreach ($testCase['must_not_have_permissions'] as $permission) {
-                expect($permissions)->not->toContain($permission);
-            }
-        }
+    foreach ($mustHavePermissions as $permission) {
+        expect($permissions)->toContain($permission);
     }
-});
+
+    foreach ($mustNotHavePermissions as $permission) {
+        expect($permissions)->not->toContain($permission);
+    }
+})->with([
+    'super administrator' => [
+        'role' => UserRole::SUPER_ADMINISTRATOR,
+        'expectedPermissionsCount' => 18,
+        'mustHavePermissions' => ['users.delete', 'system.settings', 'system.logs'],
+        'mustNotHavePermissions' => [],
+    ],
+    'administrator' => [
+        'role' => UserRole::ADMINISTRATOR,
+        'expectedPermissionsCount' => 13,
+        'mustHavePermissions' => ['users.create', 'reports.export'],
+        'mustNotHavePermissions' => ['users.delete', 'system.settings', 'system.logs'],
+    ],
+    'employee' => [
+        'role' => UserRole::EMPLOYEE,
+        'expectedPermissionsCount' => 5,
+        'mustHavePermissions' => ['orders.status_change'],
+        'mustNotHavePermissions' => ['users.create', 'reports.export'],
+    ],
+    'customer' => [
+        'role' => UserRole::CUSTOMER,
+        'expectedPermissionsCount' => 1,
+        'mustHavePermissions' => ['orders.read'],
+        'mustNotHavePermissions' => ['orders.create', 'customers.read'],
+    ],
+]);
 it('checks if user role labels', function () {
     $testCases = [
         ['role' => UserRole::SUPER_ADMINISTRATOR, 'expected' => 'Super Administrator'],

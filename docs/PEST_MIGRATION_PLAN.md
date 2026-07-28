@@ -853,10 +853,28 @@ vendor/bin/sail composer run test:types
 
 ### Completion criteria
 
-- [ ] Pest-native organization improves existing tests without weakening assertions.
-- [ ] Any test/assertion count delta is intentional and recorded.
-- [ ] Larastan and all Pest gates pass.
-- [ ] Optional plugins or test types were not added without an explicit decision.
+- [x] Pest-native organization improves existing tests without weakening assertions.
+- [x] Any test/assertion count delta is intentional and recorded.
+- [x] Larastan and all Pest gates pass.
+- [x] Optional plugins or test types were not added without an explicit decision.
+
+### Execution record — 2026-07-28
+
+- Replaced loop-based status-label and status-match checks in `OrderStatusTest`, localized priority-label and
+  priority-match checks in `OrderPriorityTest`, and role-permission mapping checks in `UserRoleTest` with named Pest
+  datasets. The original assertions and failure-path coverage remain unchanged; no production code was modified.
+- The focused Pest gate passed with 51 tests and 213 assertions. The serial full suite passed with 635 tests and 4,620
+  assertions in 217.62s. The previous 612-test suite increased by 23 because the five loop-based cases now execute as
+  individually named dataset cases; the assertion behavior remained equivalent.
+- The parallel full suite passed with `vendor/bin/sail artisan test --compact --parallel --processes=8
+  --recreate-databases`: 635 tests, 4,622 assertions, 67.28s, 8 processes.
+- `vendor/bin/sail composer run test:types` passed with no Larastan errors. Pint completed successfully, and the
+  coverage gate passed with 90.1% total coverage, 635 tests, 4,620 assertions, and 64.01s.
+- No optional plugins or new test types were added. The first coverage attempt encountered a Docker/Sail availability
+  error; `vendor/bin/sail artisan list` recovered application access and the exact coverage command was then rerun
+  successfully with Docker access.
+
+**Step 10 complete.**
 
 ## Step 11 — Enable and validate local TIA
 

@@ -58,22 +58,18 @@ it('checks if get statuses returns all values', function () {
         expect(in_array($v, $values, true))->toBeTrue("Statuses should contain new workflow value '{$v}'");
     }
 });
-it('checks if get label returns correct labels', function () {
-    $testCases = [
-        ['status' => OrderStatus::Open, 'expected' => 'Open'],
-        ['status' => OrderStatus::InProgress, 'expected' => 'In Progress'],
-        ['status' => OrderStatus::ReadyForDelivery, 'expected' => 'Ready for Delivery'],
-        ['status' => OrderStatus::Delivered, 'expected' => 'Delivered'],
-        ['status' => OrderStatus::Paid, 'expected' => 'Paid'],
-        ['status' => OrderStatus::Returned, 'expected' => 'Returned'],
-        ['status' => OrderStatus::NotPaid, 'expected' => 'Not Paid'],
-        ['status' => OrderStatus::Cancelled, 'expected' => 'Cancelled'],
-    ];
-
-    foreach ($testCases as $testCase) {
-        expect($testCase['status']->getLabel())->toEqual($testCase['expected']);
-    }
-});
+it('checks if the :dataset status label is correct', function (OrderStatus $status, string $expected): void {
+    expect($status->getLabel())->toEqual($expected);
+})->with([
+    'open' => [OrderStatus::Open, 'Open'],
+    'in progress' => [OrderStatus::InProgress, 'In Progress'],
+    'ready for delivery' => [OrderStatus::ReadyForDelivery, 'Ready for Delivery'],
+    'delivered' => [OrderStatus::Delivered, 'Delivered'],
+    'paid' => [OrderStatus::Paid, 'Paid'],
+    'returned' => [OrderStatus::Returned, 'Returned'],
+    'not paid' => [OrderStatus::NotPaid, 'Not Paid'],
+    'cancelled' => [OrderStatus::Cancelled, 'Cancelled'],
+]);
 it('checks if all status values can be stored in database', function () {
     $user = User::factory()->create();
 
@@ -132,26 +128,22 @@ it('checks if status enum value comparison', function () {
     expect($openStatus->value === $deliveredStatus->value)->toBeFalse();
     expect($inProgressStatus->value === $deliveredStatus->value)->toBeFalse();
 });
-it('checks if status enum with match expression', function () {
-    $testCases = [
-        ['status' => OrderStatus::Open, 'expectedHours' => 48],
-        ['status' => OrderStatus::InProgress, 'expectedHours' => 24],
-        ['status' => OrderStatus::ReadyForDelivery, 'expectedHours' => 8],
-        ['status' => OrderStatus::Delivered, 'expectedHours' => 0],
-    ];
+it('checks if the :dataset status match expression returns the expected hours', function (OrderStatus $status, int $expectedHours): void {
+    $hoursToComplete = match ($status) {
+        OrderStatus::Open => 48,
+        OrderStatus::InProgress => 24,
+        OrderStatus::ReadyForDelivery => 8,
+        OrderStatus::Delivered => 0,
+        default => null,
+    };
 
-    foreach ($testCases as $testCase) {
-        $hoursToComplete = match ($testCase['status']) {
-            OrderStatus::Open => 48,
-            OrderStatus::InProgress => 24,
-            OrderStatus::ReadyForDelivery => 8,
-            OrderStatus::Delivered => 0,
-            default => null,
-        };
-
-        expect($hoursToComplete)->toEqual($testCase['expectedHours']);
-    }
-});
+    expect($hoursToComplete)->toEqual($expectedHours);
+})->with([
+    'open' => [OrderStatus::Open, 48],
+    'in progress' => [OrderStatus::InProgress, 24],
+    'ready for delivery' => [OrderStatus::ReadyForDelivery, 8],
+    'delivered' => [OrderStatus::Delivered, 0],
+]);
 it('checks if status enum json serialization', function () {
     $user = User::factory()->create();
 

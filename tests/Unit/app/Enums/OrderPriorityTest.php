@@ -33,15 +33,20 @@ it('checks get priorities returns all values', function () {
     expect($priorities)->toHaveCount(4);
     expect($priorities)->toEqual(['Low', 'Normal', 'High', 'Urgent']);
 });
-it('checks get label returns localized labels', function () {
-    foreach (['en', 'es'] as $locale) {
-        app()->setLocale($locale);
+it('checks the :dataset priority label is localized', function (string $locale, OrderPriority $priority): void {
+    app()->setLocale($locale);
 
-        foreach (OrderPriority::cases() as $priority) {
-            $this->assertNotSame("orders.priority_labels.{$priority->value}", $priority->getLabel());
-        }
-    }
-});
+    expect($priority->getLabel())->not->toBe("orders.priority_labels.{$priority->value}");
+})->with([
+    'english low' => ['en', OrderPriority::LOW],
+    'english normal' => ['en', OrderPriority::NORMAL],
+    'english high' => ['en', OrderPriority::HIGH],
+    'english urgent' => ['en', OrderPriority::URGENT],
+    'spanish low' => ['es', OrderPriority::LOW],
+    'spanish normal' => ['es', OrderPriority::NORMAL],
+    'spanish high' => ['es', OrderPriority::HIGH],
+    'spanish urgent' => ['es', OrderPriority::URGENT],
+]);
 it('checks all priority values can be stored in database', function () {
     $user = User::factory()->create();
 
@@ -95,25 +100,21 @@ it('checks priority enum value comparison', function () {
     expect($lowPriority === $highPriority)->toBeFalse();
     expect($normalPriority === $urgentPriority)->toBeFalse();
 });
-it('checks priority enum with match expression', function () {
-    $testCases = [
-        ['priority' => OrderPriority::LOW->value, 'expectedDays' => 7],
-        ['priority' => OrderPriority::NORMAL->value, 'expectedDays' => 3],
-        ['priority' => OrderPriority::HIGH->value, 'expectedDays' => 1],
-        ['priority' => OrderPriority::URGENT->value, 'expectedDays' => 0],
-    ];
+it('checks if the :dataset priority match expression returns the expected days', function (OrderPriority $priority, int $expectedDays): void {
+    $daysToComplete = match ($priority->value) {
+        OrderPriority::LOW->value => 7,
+        OrderPriority::NORMAL->value => 3,
+        OrderPriority::HIGH->value => 1,
+        OrderPriority::URGENT->value => 0,
+    };
 
-    foreach ($testCases as $testCase) {
-        $daysToComplete = match ($testCase['priority']) {
-            OrderPriority::LOW->value => 7,
-            OrderPriority::NORMAL->value => 3,
-            OrderPriority::HIGH->value => 1,
-            OrderPriority::URGENT->value => 0,
-        };
-
-        expect($daysToComplete)->toEqual($testCase['expectedDays']);
-    }
-});
+    expect($daysToComplete)->toEqual($expectedDays);
+})->with([
+    'low' => [OrderPriority::LOW, 7],
+    'normal' => [OrderPriority::NORMAL, 3],
+    'high' => [OrderPriority::HIGH, 1],
+    'urgent' => [OrderPriority::URGENT, 0],
+]);
 it('checks priority enum json serialization', function () {
     $user = User::factory()->create();
 
