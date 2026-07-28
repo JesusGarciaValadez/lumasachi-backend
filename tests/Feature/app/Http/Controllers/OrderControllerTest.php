@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Http\Controllers;
-
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -13,484 +11,386 @@ use App\Models\Order;
 use App\Models\ServiceCatalog;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderControllerTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected Company $company;
+beforeEach(function () {
+    // Configure cache for tests: in-memory and clean state
+    config(['cache.default' => 'array']);
+    Cache::flush();
 
-    protected User $superAdmin;
+    $this->company = Company::factory()->create([
+        'name' => 'Test Company',
+        'email' => 'test@company.com',
+        'phone' => '1234567890',
+        'address' => '123 Main St, Anytown, USA',
+        'city' => 'Anytown',
+        'state' => 'CA',
+        'postal_code' => '12345',
+        'country' => 'USA',
+        'is_active' => true,
+    ]);
 
-    protected User $admin;
+    // Create users with different roles for testing
+    $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'company_id' => $this->company->id]);
+    $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'company_id' => $this->company->id]);
+    $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'company_id' => $this->company->id]);
+    $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+});
+it('checks if index returns only active orders for employee', function () {
+    $this->actingAs($this->employee);
 
-    protected User $employee;
+    // Create 5 orders with "active" statuses that should be returned
+    $orders = Order::factory()->count(5)->createQuietly([
+        'customer_id' => $this->customer->id,
+        'status' => OrderStatus::Open->value,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+    ]);
 
-    protected User $customer;
+    // Create orders for another employee that should not be returned
+    $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
+    $otherOrders = Order::factory()->count(5)->createQuietly([
+        'customer_id' => $this->customer->id,
+        'status' => OrderStatus::Completed->value,
+        'assigned_to' => $otherEmployee->id,
+        'created_by' => $this->admin->id,
+    ]);
+    $response = $this->getJson('/api/v1/orders');
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $response->assertOk()
+        ->assertJsonCount(5);
+});
+it('checks if store creates order with valid data', function () {
+    Notification::fake();
 
-        // Configure cache for tests: in-memory and clean state
-        config(['cache.default' => 'array']);
-        Cache::flush();
+    $this->actingAs($this->employee);
 
-        $this->company = Company::factory()->create([
-            'name' => 'Test Company',
-            'email' => 'test@company.com',
-            'phone' => '1234567890',
-            'address' => '123 Main St, Anytown, USA',
-            'city' => 'Anytown',
-            'state' => 'CA',
-            'postal_code' => '12345',
-            'country' => 'USA',
-            'is_active' => true,
+    $orderData = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test Order Title',
+        'description' => 'Test order description',
+        'priority' => OrderPriority::HIGH->value,
+        'notes' => 'Some notes about the order',
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => OrderItemType::CylinderHead->value],
+        ],
+    ];
+
+    $v1 = (int)Cache::get('orders:version', 0);
+
+    $response = $this->postJson('/api/v1/orders', $orderData);
+
+    $response->assertCreated();
+
+    $v2 = (int)Cache::get('orders:version', 0);
+    expect($v2)->toBeGreaterThan($v1, 'Orders cache version should bump on create');
+
+    $this->assertDatabaseHas('orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test Order Title',
+        'created_by' => $this->employee->id,
+    ]);
+
+    $order = Order::firstWhere('title', 'Test Order Title');
+    expect($order)->not->toBeNull();
+
+    $this->employee->notify(new OrderCreatedNotification($order));
+
+    Notification::assertSentTo(
+        $this->employee,
+        OrderCreatedNotification::class
+    );
+});
+it('checks if store validation fails with invalid data', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', []);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'priority', 'assigned_to', 'items']);
+});
+it('checks if store fails with invalid item type', function () {
+    $this->actingAs($this->employee);
+
+    $orderData = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Test Order',
+        'description' => 'Test description',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => 'invalid_type'],
+        ],
+    ];
+
+    $response = $this->postJson('/api/v1/orders', $orderData);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.item_type']);
+});
+it('checks if show returns order with relationships', function () {
+    $this->actingAs($this->employee);
+
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+        'updated_by' => $this->admin->id,
+    ]);
+
+    $response = $this->getJson('/api/v1/orders/' . $order->uuid);
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'id',
+            'title',
+            'description',
+            'status',
+            'priority',
+            'customer' => ['id', 'first_name', 'last_name', 'email'],
+            'assigned_to' => ['id', 'first_name', 'last_name', 'email'],
+            'created_by' => ['id', 'first_name', 'last_name', 'email'],
+            'updated_by' => ['id', 'first_name', 'last_name', 'email'],
         ]);
-        // Create users with different roles for testing
-        $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'company_id' => $this->company->id]);
-        $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'company_id' => $this->company->id]);
-        $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'company_id' => $this->company->id]);
-        $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
-    }
+});
+it('checks if update modifies order successfully', function () {
+    $this->actingAs($this->employee);
 
-    /**
-     * Test listing orders returns only active statuses for an employee.
-     */
-    #[Test]
-    public function it_checks_if_index_returns_only_active_orders_for_employee(): void
-    {
-        $this->actingAs($this->employee);
+    // Create an order that the employee created
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+    ]);
+    $updateData = [
+        'title' => 'Updated Order Title',
+        'status' => OrderStatus::InProgress->value,
+        'priority' => OrderPriority::URGENT->value,
+    ];
 
-        // Create 5 orders with "active" statuses that should be returned
-        $orders = Order::factory()->count(5)->createQuietly([
-            'customer_id' => $this->customer->id,
-            'status' => OrderStatus::Open->value,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->admin->id,
-        ]);
-        // Create orders for another employee that should not be returned
-        $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
-        $otherOrders = Order::factory()->count(5)->createQuietly([
-            'customer_id' => $this->customer->id,
-            'status' => OrderStatus::Completed->value,
-            'assigned_to' => $otherEmployee->id,
-            'created_by' => $this->admin->id,
-        ]);
-        $response = $this->getJson('/api/v1/orders');
+    $v1 = (int)Cache::get('orders:version', 0);
 
-        $response->assertOk()
-            ->assertJsonCount(5);
-    }
+    $response = $this->putJson('/api/v1/orders/' . $order->uuid, $updateData);
 
-    /**
-     * Test creating an order with valid data and sends a notification.
-     */
-    #[Test]
-    public function it_checks_if_store_creates_order_with_valid_data(): void
-    {
-        Notification::fake();
+    $response->assertOk();
 
-        $this->actingAs($this->employee);
+    $v2 = (int)Cache::get('orders:version', 0);
+    expect($v2)->toBe($v1 + 1, 'Orders cache version should bump on update');
 
-        $orderData = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test Order Title',
-            'description' => 'Test order description',
-            'priority' => OrderPriority::HIGH->value,
-            'notes' => 'Some notes about the order',
-            'assigned_to' => $this->employee->id,
-            'items' => [
-                ['item_type' => OrderItemType::CylinderHead->value],
-            ],
-        ];
-
-        $v1 = (int) Cache::get('orders:version', 0);
-
-        $response = $this->postJson('/api/v1/orders', $orderData);
-
-        $response->assertCreated();
-
-        $v2 = (int) Cache::get('orders:version', 0);
-        $this->assertGreaterThan($v1, $v2, 'Orders cache version should bump on create');
-
-        $this->assertDatabaseHas('orders', [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test Order Title',
-            'created_by' => $this->employee->id,
-        ]);
-
-        $order = Order::firstWhere('title', 'Test Order Title');
-        $this->assertNotNull($order);
-
-        $this->employee->notify(new OrderCreatedNotification($order));
-
-        Notification::assertSentTo(
-            $this->employee,
-            OrderCreatedNotification::class
-        );
-    }
-
-    /**
-     * Test validation errors when creating order with invalid data
-     */
-    #[Test]
-    public function it_checks_if_store_validation_fails_with_invalid_data(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->postJson('/api/v1/orders', []);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'title', 'description', 'priority', 'assigned_to', 'items']);
-    }
-
-    /**
-     * Test store with invalid item type
-     */
-    #[Test]
-    public function it_checks_if_store_fails_with_invalid_item_type(): void
-    {
-        $this->actingAs($this->employee);
-
-        $orderData = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test Order',
-            'description' => 'Test description',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $this->employee->id,
-            'items' => [
-                ['item_type' => 'invalid_type'],
-            ],
-        ];
-
-        $response = $this->postJson('/api/v1/orders', $orderData);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['items.0.item_type']);
-    }
-
-    /**
-     * Test showing a specific order
-     */
-    #[Test]
-    public function it_checks_if_show_returns_order_with_relationships(): void
-    {
-        $this->actingAs($this->employee);
-
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->admin->id,
-            'updated_by' => $this->admin->id,
-        ]);
-
-        $response = $this->getJson('/api/v1/orders/'.$order->uuid);
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'id',
-                'title',
-                'description',
-                'status',
-                'priority',
-                'customer' => ['id', 'first_name', 'last_name', 'email'],
-                'assigned_to' => ['id', 'first_name', 'last_name', 'email'],
-                'created_by' => ['id', 'first_name', 'last_name', 'email'],
-                'updated_by' => ['id', 'first_name', 'last_name', 'email'],
-            ]);
-    }
-
-    /**
-     * Test updating an order with valid data
-     */
-    #[Test]
-    public function it_checks_if_update_modifies_order_successfully(): void
-    {
-        $this->actingAs($this->employee);
-
-        // Create an order that the employee created
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'created_by' => $this->employee->id,
-            'assigned_to' => $this->employee->id,
-        ]);
-        $updateData = [
+    $response->assertJson([
+        'message' => 'Order updated successfully.',
+        'order' => [
             'title' => 'Updated Order Title',
             'status' => OrderStatus::InProgress->value,
             'priority' => OrderPriority::URGENT->value,
-        ];
+        ],
+    ]);
 
-        $v1 = (int) Cache::get('orders:version', 0);
+    $this->assertDatabaseHas('orders', [
+        'id' => $order->id,
+        'customer_id' => $this->customer->id,
+        'title' => 'Updated Order Title',
+        'updated_by' => $this->employee->id,
+    ]);
+});
+it('checks if update allows partial updates', function () {
+    $this->actingAs($this->employee);
 
-        $response = $this->putJson('/api/v1/orders/'.$order->uuid, $updateData);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'title' => 'Original Title',
+        'description' => 'Original Description',
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+    ]);
 
-        $response->assertOk();
+    $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
+        'title' => 'New Title Only',
+    ]);
 
-        $v2 = (int) Cache::get('orders:version', 0);
-        $this->assertSame($v1 + 1, $v2, 'Orders cache version should bump on update');
+    $response->assertOk();
 
-        $response->assertJson([
-            'message' => 'Order updated successfully.',
-            'order' => [
-                'title' => 'Updated Order Title',
-                'status' => OrderStatus::InProgress->value,
-                'priority' => OrderPriority::URGENT->value,
-            ],
-        ]);
+    $this->assertDatabaseHas('orders', [
+        'id' => $order->id,
+        'customer_id' => $this->customer->id,
+        'title' => 'New Title Only',
+        // 'description' => 'Original Description' // Should remain unchanged
+    ]);
+});
+it('checks if destroy deletes order successfully', function () {
+    $this->actingAs($this->superAdmin);
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'customer_id' => $this->customer->id,
-            'title' => 'Updated Order Title',
-            'updated_by' => $this->employee->id,
-        ]);
-    }
+    $order = Order::factory()->createQuietly();
 
-    /**
-     * Test partial update of an order
-     */
-    #[Test]
-    public function it_checks_if_update_allows_partial_updates(): void
-    {
-        $this->actingAs($this->employee);
+    $v1 = (int)Cache::get('orders:version', 0);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'title' => 'Original Title',
-            'description' => 'Original Description',
-            'created_by' => $this->employee->id,
-            'assigned_to' => $this->employee->id,
-        ]);
+    $response = $this->deleteJson('/api/v1/orders/' . $order->uuid);
 
-        $response = $this->putJson('/api/v1/orders/'.$order->uuid, [
-            'title' => 'New Title Only',
-        ]);
+    $response->assertOk();
 
-        $response->assertOk();
+    $v2 = (int)Cache::get('orders:version', 0);
+    expect($v2)->toBe($v1 + 1, 'Orders cache version should bump on delete');
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'customer_id' => $this->customer->id,
-            'title' => 'New Title Only',
-            // 'description' => 'Original Description' // Should remain unchanged
-        ]);
-    }
+    $response->assertJson([
+        'message' => 'Order deleted successfully.',
+    ]);
 
-    /**
-     * Test deleting an order
-     */
-    #[Test]
-    public function it_checks_if_destroy_deletes_order_successfully(): void
-    {
-        $this->actingAs($this->superAdmin);
+    $this->assertDatabaseMissing('orders', [
+        'id' => $order->id,
+    ]);
+});
+it('checks if unauthenticated access returns 401', function () {
+    $response = $this->getJson('/api/v1/orders');
+    $response->assertUnauthorized();
+});
+it('checks if show non existent order returns 404', function () {
+    $this->actingAs($this->employee);
 
-        $order = Order::factory()->createQuietly();
+    $response = $this->getJson('/api/v1/orders/non-existent-id');
+    $response->assertNotFound();
+});
+it('caches index responses and returns hit on second request', function () {
+    $this->actingAs($this->employee);
 
-        $v1 = (int) Cache::get('orders:version', 0);
+    // Create a couple of orders for this employee
+    $orders = Order::factory()->count(2)->createQuietly([
+        'customer_id' => $this->customer->id,
+        'status' => OrderStatus::Open->value,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+    ]);
 
-        $response = $this->deleteJson('/api/v1/orders/'.$order->uuid);
+    $first = $this->getJson('/api/v1/orders');
+    $first->assertOk()->assertHeader('X-Cache', 'MISS');
 
-        $response->assertOk();
+    $second = $this->getJson('/api/v1/orders');
+    $second->assertOk()->assertHeader('X-Cache', 'HIT');
+});
+it('checks if store creates order with motor info and items', function () {
+    Notification::fake();
 
-        $v2 = (int) Cache::get('orders:version', 0);
-        $this->assertSame($v1 + 1, $v2, 'Orders cache version should bump on delete');
+    $this->actingAs($this->employee);
 
-        $response->assertJson([
-            'message' => 'Order deleted successfully.',
-        ]);
-
-        $this->assertDatabaseMissing('orders', [
-            'id' => $order->id,
-        ]);
-    }
-
-    /**
-     * Test unauthorized access returns 401
-     */
-    #[Test]
-    public function it_checks_if_unauthenticated_access_returns_401(): void
-    {
-        $response = $this->getJson('/api/v1/orders');
-        $response->assertUnauthorized();
-    }
-
-    /**
-     * Test order not found returns 404
-     */
-    #[Test]
-    public function it_checks_if_show_non_existent_order_returns_404(): void
-    {
-        $this->actingAs($this->employee);
-
-        $response = $this->getJson('/api/v1/orders/non-existent-id');
-        $response->assertNotFound();
-    }
-
-    /**
-     * Test that index caches results and returns X-Cache HIT on second request
-     */
-    #[Test]
-    public function it_caches_index_responses_and_returns_hit_on_second_request(): void
-    {
-        $this->actingAs($this->employee);
-
-        // Create a couple of orders for this employee
-        $orders = Order::factory()->count(2)->createQuietly([
-            'customer_id' => $this->customer->id,
-            'status' => OrderStatus::Open->value,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->admin->id,
-        ]);
-
-        $first = $this->getJson('/api/v1/orders');
-        $first->assertOk()->assertHeader('X-Cache', 'MISS');
-
-        $second = $this->getJson('/api/v1/orders');
-        $second->assertOk()->assertHeader('X-Cache', 'HIT');
-    }
-
-    /**
-     * Test creating an order with motor_info and items.
-     */
-    #[Test]
-    public function it_checks_if_store_creates_order_with_motor_info_and_items(): void
-    {
-        Notification::fake();
-
-        $this->actingAs($this->employee);
-
-        $orderData = [
-            'customer_id' => $this->customer->id,
-            'title' => 'Motor Order with Items',
-            'description' => 'Order with motor info and items',
-            'priority' => OrderPriority::HIGH->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => [
-                'brand' => 'Nissan',
-                'liters' => '2.5',
-                'year' => '2022',
-                'model' => 'Altima',
-                'cylinder_count' => '4',
-                'down_payment' => 500,
-            ],
-            'items' => [
-                [
-                    'item_type' => OrderItemType::CylinderHead->value,
-                    'components' => ['bolts', 'valves', 'springs'],
-                ],
-                [
-                    'item_type' => OrderItemType::Crankshaft->value,
-                ],
-            ],
-        ];
-
-        $response = $this->postJson('/api/v1/orders', $orderData);
-
-        $response->assertCreated();
-
-        $order = Order::with('items.components')->firstWhere('title', 'Motor Order with Items');
-        $this->assertNotNull($order);
-
-        // Motor info
-        $this->assertDatabaseHas('order_motor_info', [
-            'order_id' => $order->id,
+    $orderData = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Motor Order with Items',
+        'description' => 'Order with motor info and items',
+        'priority' => OrderPriority::HIGH->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => [
             'brand' => 'Nissan',
             'liters' => '2.5',
-        ]);
+            'year' => '2022',
+            'model' => 'Altima',
+            'cylinder_count' => '4',
+            'down_payment' => 500,
+        ],
+        'items' => [
+            [
+                'item_type' => OrderItemType::CylinderHead->value,
+                'components' => ['bolts', 'valves', 'springs'],
+            ],
+            [
+                'item_type' => OrderItemType::Crankshaft->value,
+            ],
+        ],
+    ];
 
-        // Items
-        $this->assertCount(2, $order->items);
+    $response = $this->postJson('/api/v1/orders', $orderData);
 
-        // Components
-        $head = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
-        $this->assertCount(3, $head->components);
+    $response->assertCreated();
 
-        $crank = $order->items->firstWhere('item_type', OrderItemType::Crankshaft);
-        $this->assertCount(0, $crank->components);
-    }
+    $order = Order::with('items.components')->firstWhere('title', 'Motor Order with Items');
+    expect($order)->not->toBeNull();
 
-    /**
-     * Test that show caches result and returns X-Cache HIT on second request
-     */
-    #[Test]
-    public function it_caches_show_responses_and_returns_hit_on_second_request(): void
-    {
-        $this->actingAs($this->employee);
+    // Motor info
+    $this->assertDatabaseHas('order_motor_info', [
+        'order_id' => $order->id,
+        'brand' => 'Nissan',
+        'liters' => '2.5',
+    ]);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->admin->id,
-        ]);
+    // Items
+    expect($order->items)->toHaveCount(2);
 
-        $first = $this->getJson('/api/v1/orders/'.$order->uuid);
-        $first->assertOk()->assertHeader('X-Cache', 'MISS');
+    // Components
+    $head = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
+    expect($head->components)->toHaveCount(3);
 
-        $second = $this->getJson('/api/v1/orders/'.$order->uuid);
-        $second->assertOk()->assertHeader('X-Cache', 'HIT');
-    }
+    $crank = $order->items->firstWhere('item_type', OrderItemType::Crankshaft);
+    expect($crank->components)->toHaveCount(0);
+});
+it('caches show responses and returns hit on second request', function () {
+    $this->actingAs($this->employee);
 
-    #[Test]
-    public function it_returns_stable_motor_values_and_localized_resource_labels(): void
-    {
-        $this->actingAs($this->employee);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+    ]);
 
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->admin->id,
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::HIGH->value,
-        ]);
-        $item = $order->items()->createQuietly([
-            'item_type' => OrderItemType::EngineBlock->value,
-            'is_received' => true,
-        ]);
-        $item->components()->createQuietly([
-            'component_name' => 'camshaft',
-            'is_received' => true,
-        ]);
-        $catalogItem = ServiceCatalog::factory()->createQuietly([
-            'service_key' => 'wash_block',
-            'service_name_key' => 'service_catalog.wash_block',
-            'item_type' => OrderItemType::EngineBlock,
-        ]);
-        $item->services()->createQuietly([
-            'service_key' => $catalogItem->service_key,
-            'base_price' => '100.00',
-            'net_price' => '116.00',
-        ]);
+    $first = $this->getJson('/api/v1/orders/' . $order->uuid);
+    $first->assertOk()->assertHeader('X-Cache', 'MISS');
 
-        $response = $this->withHeaders(['Accept-Language' => 'es'])
-            ->getJson('/api/v1/orders/' . $order->uuid);
+    $second = $this->getJson('/api/v1/orders/' . $order->uuid);
+    $second->assertOk()->assertHeader('X-Cache', 'HIT');
+});
+it('returns stable motor values and localized resource labels', function () {
+    $this->actingAs($this->employee);
 
-        $response->assertOk()
-            ->assertJsonPath('status', $order->status->value)
-            ->assertJsonPath('status_label', 'Abierta')
-            ->assertJsonPath('priority', OrderPriority::HIGH->value)
-            ->assertJsonPath('priority_label', 'Alta')
-            ->assertJsonPath('items.0.item_type', OrderItemType::EngineBlock->value)
-            ->assertJsonPath('items.0.item_type_label', 'Block')
-            ->assertJsonPath('items.0.components.0.component_key', 'camshaft')
-            ->assertJsonPath('items.0.components.0.component_label', 'Árbol de levas')
-            ->assertJsonPath('services.0.service_key', 'wash_block')
-            ->assertJsonPath('services.0.service_name', 'Lavado de block');
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::HIGH->value,
+    ]);
+    $item = $order->items()->createQuietly([
+        'item_type' => OrderItemType::EngineBlock->value,
+        'is_received' => true,
+    ]);
+    $item->components()->createQuietly([
+        'component_name' => 'camshaft',
+        'is_received' => true,
+    ]);
+    $catalogItem = ServiceCatalog::factory()->createQuietly([
+        'service_key' => 'wash_block',
+        'service_name_key' => 'service_catalog.wash_block',
+        'item_type' => OrderItemType::EngineBlock,
+    ]);
+    $item->services()->createQuietly([
+        'service_key' => $catalogItem->service_key,
+        'base_price' => '100.00',
+        'net_price' => '116.00',
+    ]);
 
-        $english = $this->withHeaders(['Accept-Language' => 'en'])
-            ->getJson('/api/v1/orders/' . $order->uuid);
+    $response = $this->withHeaders(['Accept-Language' => 'es'])
+        ->getJson('/api/v1/orders/' . $order->uuid);
 
-        $english->assertOk()
-            ->assertHeader('X-Cache', 'MISS')
-            ->assertJsonPath('status_label', 'Open')
-            ->assertJsonPath('priority_label', 'High')
-            ->assertJsonPath('items.0.item_type_label', 'Engine Block')
-            ->assertJsonPath('items.0.components.0.component_label', 'Camshaft')
-            ->assertJsonPath('services.0.service_name', 'Engine block wash');
-    }
-}
+    $response->assertOk()
+        ->assertJsonPath('status', $order->status->value)
+        ->assertJsonPath('status_label', 'Abierta')
+        ->assertJsonPath('priority', OrderPriority::HIGH->value)
+        ->assertJsonPath('priority_label', 'Alta')
+        ->assertJsonPath('items.0.item_type', OrderItemType::EngineBlock->value)
+        ->assertJsonPath('items.0.item_type_label', 'Block')
+        ->assertJsonPath('items.0.components.0.component_key', 'camshaft')
+        ->assertJsonPath('items.0.components.0.component_label', 'Árbol de levas')
+        ->assertJsonPath('services.0.service_key', 'wash_block')
+        ->assertJsonPath('services.0.service_name', 'Lavado de block');
+
+    $english = $this->withHeaders(['Accept-Language' => 'en'])
+        ->getJson('/api/v1/orders/' . $order->uuid);
+
+    $english->assertOk()
+        ->assertHeader('X-Cache', 'MISS')
+        ->assertJsonPath('status_label', 'Open')
+        ->assertJsonPath('priority_label', 'High')
+        ->assertJsonPath('items.0.item_type_label', 'Engine Block')
+        ->assertJsonPath('items.0.components.0.component_label', 'Camshaft')
+        ->assertJsonPath('services.0.service_name', 'Engine block wash');
+});
