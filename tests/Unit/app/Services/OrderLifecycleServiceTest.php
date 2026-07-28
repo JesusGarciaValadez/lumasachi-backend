@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\app\Services;
-
 use App\Enums\OrderItemType;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -16,531 +14,414 @@ use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
 use App\Services\OrderLifecycleService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class OrderLifecycleServiceTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    protected OrderLifecycleService $service;
+beforeEach(function () {
+    Notification::fake();
 
-    protected Company $company;
+    $this->company = Company::factory()->create();
+    $this->admin = User::factory()->create([
+        'role' => UserRole::ADMINISTRATOR->value,
+        'company_id' => $this->company->id,
+        'is_active' => true,
+    ]);
+    $this->employee = User::factory()->create([
+        'role' => UserRole::EMPLOYEE->value,
+        'company_id' => $this->company->id,
+        'is_active' => true,
+    ]);
+    $this->customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+        'is_active' => true,
+    ]);
 
-    protected User $admin;
+    $this->service = app(OrderLifecycleService::class);
+});
+it('creates order with motor info and items', function () {
+    $data = validOrderData($this->customer, $this->employee);
 
-    protected User $employee;
+    $order = $this->service->createOrderWithMotorItems($data, $this->employee);
 
-    protected User $customer;
+    // Order created with correct status
+    expect($order)->toBeInstanceOf(Order::class);
+    expect($order->customer_id)->toBe($this->customer->id);
+    expect($order->title)->toBe('Test Motor Order');
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    // Motor info created
+    expect($order->motorInfo)->not->toBeNull();
+    expect($order->motorInfo->brand)->toBe('Honda');
+    expect($order->motorInfo->liters)->toBe('2.0');
+    expect($order->motorInfo->year)->toBe('2020');
 
-        Notification::fake();
+    // Items created
+    expect($order->items)->toHaveCount(2);
+    $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
+    expect($cylinderHead)->not->toBeNull();
+    expect($cylinderHead->is_received)->toBeTrue();
 
-        $this->company = Company::factory()->create();
-        $this->admin = User::factory()->create([
-            'role' => UserRole::ADMINISTRATOR->value,
-            'company_id' => $this->company->id,
-            'is_active' => true,
-        ]);
-        $this->employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-            'company_id' => $this->company->id,
-            'is_active' => true,
-        ]);
-        $this->customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-            'is_active' => true,
-        ]);
+    // Components created for cylinder head
+    expect($cylinderHead->components->count())->toBeGreaterThan(0);
+});
+it('creates order and transitions to awaiting review', function () {
+    $data = validOrderData($this->customer, $this->employee);
 
-        $this->service = app(OrderLifecycleService::class);
-    }
+    $order = $this->service->createOrderWithMotorItems($data, $this->employee);
+    $order->refresh();
 
-    // ---------------------------------------------------------------
-    // createOrderWithMotorItems
-    // ---------------------------------------------------------------
+    expect($order->status)->toBe(OrderStatus::AwaitingReview);
+});
+it('creates order with empty motor info', function () {
+    $data = validOrderData($this->customer, $this->employee);
+    $data['motor_info'] = [];
 
-    #[Test]
-    public function it_creates_order_with_motor_info_and_items(): void
-    {
-        $data = $this->validOrderData();
+    $order = $this->service->createOrderWithMotorItems($data, $this->employee);
 
-        $order = $this->service->createOrderWithMotorItems($data, $this->employee);
+    expect($order)->toBeInstanceOf(Order::class);
+    expect($order->motorInfo)->not->toBeNull();
+});
+it('creates items without components', function () {
+    $data = validOrderData($this->customer, $this->employee);
+    $data['items'] = [
+        ['item_type' => OrderItemType::Crankshaft->value],
+    ];
 
-        // Order created with correct status
-        $this->assertInstanceOf(Order::class, $order);
-        $this->assertSame($this->customer->id, $order->customer_id);
-        $this->assertSame('Test Motor Order', $order->title);
+    $order = $this->service->createOrderWithMotorItems($data, $this->employee);
 
-        // Motor info created
-        $this->assertNotNull($order->motorInfo);
-        $this->assertSame('Honda', $order->motorInfo->brand);
-        $this->assertSame('2.0', $order->motorInfo->liters);
-        $this->assertSame('2020', $order->motorInfo->year);
+    expect($order->items)->toHaveCount(1);
+    expect($order->items->first()->components)->toHaveCount(0);
+});
+it('submits budget for order in awaiting review', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingReview, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $catalog = createCatalogService('wash_block', 600.00);
 
-        // Items created
-        $this->assertCount(2, $order->items);
-        $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
-        $this->assertNotNull($cylinderHead);
-        $this->assertTrue($cylinderHead->is_received);
+    $servicesData = [
+        [
+            'order_item_id' => $item->id,
+            'service_key' => $catalog->service_key,
+            'measurement' => null,
+        ],
+    ];
 
-        // Components created for cylinder head
-        $this->assertGreaterThan(0, $cylinderHead->components->count());
-    }
+    $result = $this->service->submitBudget($order, $servicesData, $this->employee);
 
-    #[Test]
-    public function it_creates_order_and_transitions_to_awaiting_review(): void
-    {
-        $data = $this->validOrderData();
+    // Service created as budgeted
+    expect($result->services)->toHaveCount(1);
+    $svc = $result->services->first();
+    expect($svc->is_budgeted)->toBeTrue();
+    expect((float)$svc->base_price)->toBe(600.00);
+    expect((float)$svc->net_price)->toBe($catalog->net_price);
+});
+it('transitions to reviewed after budget', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingReview, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $catalog = createCatalogService('wash_block', 600.00);
 
-        $order = $this->service->createOrderWithMotorItems($data, $this->employee);
-        $order->refresh();
+    $this->service->submitBudget($order, [
+        ['order_item_id' => $item->id, 'service_key' => $catalog->service_key, 'measurement' => null],
+    ], $this->employee);
 
-        $this->assertSame(OrderStatus::AwaitingReview, $order->status);
-    }
+    $order->refresh();
 
-    #[Test]
-    public function it_creates_order_with_empty_motor_info(): void
-    {
-        $data = $this->validOrderData();
-        $data['motor_info'] = [];
+    // Observer auto-transitions REVIEWED → AWAITING_CUSTOMER_APPROVAL
+    expect($order->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+});
+it('rejects budget for order not in awaiting review', function () {
+    $order = createOrderInStatus(OrderStatus::Open, $this->customer, $this->employee);
 
-        $order = $this->service->createOrderWithMotorItems($data, $this->employee);
+    $this->expectException(InvalidArgumentException::class);
 
-        $this->assertInstanceOf(Order::class, $order);
-        $this->assertNotNull($order->motorInfo);
-    }
+    $this->service->submitBudget($order, [], $this->employee);
+});
+it('rejects budget for an item from another order', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingReview, $this->customer, $this->employee);
+    $otherOrder = createOrderInStatus(OrderStatus::AwaitingReview, $this->customer, $this->employee);
+    $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+    $catalog = createCatalogService('wash_block', 600.00);
 
-    #[Test]
-    public function it_creates_items_without_components(): void
-    {
-        $data = $this->validOrderData();
-        $data['items'] = [
-            ['item_type' => OrderItemType::Crankshaft->value],
-        ];
-
-        $order = $this->service->createOrderWithMotorItems($data, $this->employee);
-
-        $this->assertCount(1, $order->items);
-        $this->assertCount(0, $order->items->first()->components);
-    }
-
-    // ---------------------------------------------------------------
-    // submitBudget
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_submits_budget_for_order_in_awaiting_review(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $catalog = $this->createCatalogService('wash_block', 600.00);
-
-        $servicesData = [
+    try {
+        $this->service->submitBudget($order, [
             [
-                'order_item_id' => $item->id,
+                'order_item_id' => $otherItem->id,
                 'service_key' => $catalog->service_key,
                 'measurement' => null,
             ],
-        ];
-
-        $result = $this->service->submitBudget($order, $servicesData, $this->employee);
-
-        // Service created as budgeted
-        $this->assertCount(1, $result->services);
-        $svc = $result->services->first();
-        $this->assertTrue($svc->is_budgeted);
-        $this->assertSame(600.00, (float) $svc->base_price);
-        $this->assertSame($catalog->net_price, (float) $svc->net_price);
-    }
-
-    #[Test]
-    public function it_transitions_to_reviewed_after_budget(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $catalog = $this->createCatalogService('wash_block', 600.00);
-
-        $this->service->submitBudget($order, [
-            ['order_item_id' => $item->id, 'service_key' => $catalog->service_key, 'measurement' => null],
         ], $this->employee);
-
-        $order->refresh();
-        // Observer auto-transitions REVIEWED → AWAITING_CUSTOMER_APPROVAL
-        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->status);
+        $this->fail('A budget item from another order must be rejected.');
+    } catch (InvalidArgumentException) {
     }
 
-    #[Test]
-    public function it_rejects_budget_for_order_not_in_awaiting_review(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::Open);
+    $this->assertDatabaseMissing('order_services', [
+        'order_item_id' => $otherItem->id,
+        'service_key' => $catalog->service_key,
+    ]);
+});
+it('approves services and sets down payment', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingCustomerApproval, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
 
-        $this->expectException(InvalidArgumentException::class);
+    $result = $this->service->customerApproval($order, [$svc->id], 200.00, $this->customer);
 
-        $this->service->submitBudget($order, [], $this->employee);
+    $svc->refresh();
+    expect($svc->is_authorized)->toBeTrue();
+
+    $result->refresh();
+    expect((float)$result->motorInfo->down_payment)->toBe(200.00);
+    expect($result->status)->toBe(OrderStatus::ReadyForWork);
+});
+it('rejects approval for wrong status', function () {
+    $order = createOrderInStatus(OrderStatus::Open, $this->customer, $this->employee);
+
+    $this->expectException(InvalidArgumentException::class);
+
+    $this->service->customerApproval($order, [], null, $this->customer);
+});
+it('rejects approval for a service from another order', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingCustomerApproval, $this->customer, $this->employee);
+    $otherOrder = createOrderInStatus(OrderStatus::AwaitingCustomerApproval, $this->customer, $this->employee);
+    $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+    $otherService = OrderService::factory()->budgeted()->create([
+        'order_item_id' => $otherItem->id,
+        'is_authorized' => false,
+    ]);
+
+    try {
+        $this->service->customerApproval($order, [$otherService->id], null, $this->customer);
+        $this->fail('A service from another order must be rejected during approval.');
+    } catch (InvalidArgumentException) {
     }
 
-    #[Test]
-    public function it_rejects_budget_for_an_item_from_another_order(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $otherOrder = $this->createOrderInStatus(OrderStatus::AwaitingReview);
-        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
-        $catalog = $this->createCatalogService('wash_block', 600.00);
+    $otherService->refresh();
+    expect($otherService->is_authorized)->toBeFalse();
+    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+});
+it('rejects approval for a non budgeted service', function () {
+    $order = createOrderInStatus(OrderStatus::AwaitingCustomerApproval, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $service = OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_budgeted' => false,
+        'is_authorized' => false,
+    ]);
 
-        try {
-            $this->service->submitBudget($order, [
-                [
-                    'order_item_id' => $otherItem->id,
-                    'service_key' => $catalog->service_key,
-                    'measurement' => null,
-                ],
-            ], $this->employee);
-            $this->fail('A budget item from another order must be rejected.');
-        } catch (InvalidArgumentException) {
-        }
+    $this->expectException(InvalidArgumentException::class);
 
-        $this->assertDatabaseMissing('order_services', [
-            'order_item_id' => $otherItem->id,
-            'service_key' => $catalog->service_key,
-        ]);
+    $this->service->customerApproval($order, [$service->id], null, $this->customer);
+});
+it('marks services as completed', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForWork, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->authorized()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
+
+    $this->service->markWorkCompleted($order, [$svc->id], $this->employee);
+
+    $svc->refresh();
+    expect($svc->is_completed)->toBeTrue();
+});
+it('marks work completed from in progress', function () {
+    $order = createOrderInStatus(OrderStatus::InProgress, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $svc = OrderService::factory()->budgeted()->authorized()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 500.00,
+        'net_price' => 580.00,
+    ]);
+
+    $this->service->markWorkCompleted($order, [$svc->id], $this->employee);
+
+    $svc->refresh();
+    expect($svc->is_completed)->toBeTrue();
+});
+it('rejects work completed for wrong status', function () {
+    $order = createOrderInStatus(OrderStatus::Open, $this->customer, $this->employee);
+
+    $this->expectException(InvalidArgumentException::class);
+
+    $this->service->markWorkCompleted($order, [], $this->employee);
+});
+it('rejects work completed for a service from another order', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForWork, $this->customer, $this->employee);
+    $otherOrder = createOrderInStatus(OrderStatus::ReadyForWork, $this->customer, $this->employee);
+    $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
+    $otherService = OrderService::factory()->budgeted()->authorized()->create([
+        'order_item_id' => $otherItem->id,
+        'is_completed' => false,
+    ]);
+
+    try {
+        $this->service->markWorkCompleted($order, [$otherService->id], $this->employee);
+        $this->fail('A service from another order must be rejected during completion.');
+    } catch (InvalidArgumentException) {
     }
 
-    // ---------------------------------------------------------------
-    // customerApproval
-    // ---------------------------------------------------------------
+    $otherService->refresh();
+    expect($otherService->is_completed)->toBeFalse();
+    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForWork);
+});
+it('rejects work completed when any service is unauthorized', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForWork, $this->customer, $this->employee);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    $authorizedService = OrderService::factory()->budgeted()->authorized()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => false,
+    ]);
+    $unauthorizedService = OrderService::factory()->budgeted()->create([
+        'order_item_id' => $item->id,
+        'is_authorized' => false,
+        'is_completed' => false,
+    ]);
 
-    #[Test]
-    public function it_approves_services_and_sets_down_payment(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
-
-        $result = $this->service->customerApproval($order, [$svc->id], 200.00, $this->customer);
-
-        $svc->refresh();
-        $this->assertTrue($svc->is_authorized);
-
-        $result->refresh();
-        $this->assertSame(200.00, (float) $result->motorInfo->down_payment);
-        $this->assertSame(OrderStatus::ReadyForWork, $result->status);
+    try {
+        $this->service->markWorkCompleted(
+            $order,
+            [$authorizedService->id, $unauthorizedService->id],
+            $this->employee
+        );
+        $this->fail('Unauthorized services must not be marked as completed.');
+    } catch (InvalidArgumentException) {
     }
 
-    #[Test]
-    public function it_rejects_approval_for_wrong_status(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::Open);
+    expect($authorizedService->fresh()->is_completed)->toBeFalse();
+    expect($unauthorizedService->fresh()->is_completed)->toBeFalse();
+});
+it('marks order ready for delivery', function () {
+    $order = createOrderInStatus(OrderStatus::InProgress, $this->customer, $this->employee);
 
-        $this->expectException(InvalidArgumentException::class);
+    $result = $this->service->markReadyForDelivery($order, $this->employee);
 
-        $this->service->customerApproval($order, [], null, $this->customer);
-    }
+    $result->refresh();
+    expect($result->status)->toBe(OrderStatus::ReadyForDelivery);
+});
+it('marks ready for delivery from ready for work', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForWork, $this->customer, $this->employee);
 
-    #[Test]
-    public function it_rejects_approval_for_a_service_from_another_order(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
-        $otherOrder = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
-        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
-        $otherService = OrderService::factory()->budgeted()->create([
-            'order_item_id' => $otherItem->id,
-            'is_authorized' => false,
-        ]);
+    $result = $this->service->markReadyForDelivery($order, $this->employee);
 
-        try {
-            $this->service->customerApproval($order, [$otherService->id], null, $this->customer);
-            $this->fail('A service from another order must be rejected during approval.');
-        } catch (InvalidArgumentException) {
-        }
+    $result->refresh();
+    expect($result->status)->toBe(OrderStatus::ReadyForDelivery);
+});
+it('rejects ready for delivery from wrong status', function () {
+    $order = createOrderInStatus(OrderStatus::Open, $this->customer, $this->employee);
 
-        $otherService->refresh();
-        $this->assertFalse($otherService->is_authorized);
-        $this->assertSame(OrderStatus::AwaitingCustomerApproval, $order->fresh()->status);
-    }
+    $this->expectException(InvalidArgumentException::class);
 
-    #[Test]
-    public function it_rejects_approval_for_a_non_budgeted_service(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::AwaitingCustomerApproval);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $service = OrderService::factory()->create([
-            'order_item_id' => $item->id,
-            'is_budgeted' => false,
-            'is_authorized' => false,
-        ]);
+    $this->service->markReadyForDelivery($order, $this->employee);
+});
+it('delivers order', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForDelivery, $this->customer, $this->employee);
 
-        $this->expectException(InvalidArgumentException::class);
+    $result = $this->service->deliverOrder($order, $this->employee);
 
-        $this->service->customerApproval($order, [$service->id], null, $this->customer);
-    }
+    $result->refresh();
+    expect($result->status)->toBe(OrderStatus::Delivered);
+});
+it('delivers order with an overpayment', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForDelivery, $this->customer, $this->employee);
+    $order->motorInfo->update([
+        'down_payment' => 150.00,
+        'total_cost' => 100.00,
+    ]);
 
-    // ---------------------------------------------------------------
-    // markWorkCompleted
-    // ---------------------------------------------------------------
+    $result = $this->service->deliverOrder($order, $this->employee);
 
-    #[Test]
-    public function it_marks_services_as_completed(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->authorized()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
+    $result->refresh();
+    expect($result->status)->toBe(OrderStatus::Delivered);
+});
+it('rejects deliver from wrong status', function () {
+    $order = createOrderInStatus(OrderStatus::Open, $this->customer, $this->employee);
 
-        $this->service->markWorkCompleted($order, [$svc->id], $this->employee);
+    $this->expectException(InvalidArgumentException::class);
 
-        $svc->refresh();
-        $this->assertTrue($svc->is_completed);
-    }
+    $this->service->deliverOrder($order, $this->employee);
+});
+it('rejects delivery with a remaining balance', function () {
+    $order = createOrderInStatus(OrderStatus::ReadyForDelivery, $this->customer, $this->employee);
+    $order->motorInfo->update([
+        'down_payment' => 100.00,
+        'total_cost' => 100.01,
+    ]);
 
-    #[Test]
-    public function it_marks_work_completed_from_in_progress(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::InProgress);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $svc = OrderService::factory()->budgeted()->authorized()->create([
-            'order_item_id' => $item->id,
-            'base_price' => 500.00,
-            'net_price' => 580.00,
-        ]);
+    $this->expectException(InvalidArgumentException::class);
 
-        $this->service->markWorkCompleted($order, [$svc->id], $this->employee);
-
-        $svc->refresh();
-        $this->assertTrue($svc->is_completed);
-    }
-
-    #[Test]
-    public function it_rejects_work_completed_for_wrong_status(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::Open);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->markWorkCompleted($order, [], $this->employee);
-    }
-
-    #[Test]
-    public function it_rejects_work_completed_for_a_service_from_another_order(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-        $otherOrder = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-        $otherItem = OrderItem::factory()->received()->create(['order_id' => $otherOrder->id]);
-        $otherService = OrderService::factory()->budgeted()->authorized()->create([
-            'order_item_id' => $otherItem->id,
-            'is_completed' => false,
-        ]);
-
-        try {
-            $this->service->markWorkCompleted($order, [$otherService->id], $this->employee);
-            $this->fail('A service from another order must be rejected during completion.');
-        } catch (InvalidArgumentException) {
-        }
-
-        $otherService->refresh();
-        $this->assertFalse($otherService->is_completed);
-        $this->assertSame(OrderStatus::ReadyForWork, $order->fresh()->status);
-    }
-
-    #[Test]
-    public function it_rejects_work_completed_when_any_service_is_unauthorized(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-        $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
-        $authorizedService = OrderService::factory()->budgeted()->authorized()->create([
-            'order_item_id' => $item->id,
-            'is_completed' => false,
-        ]);
-        $unauthorizedService = OrderService::factory()->budgeted()->create([
-            'order_item_id' => $item->id,
-            'is_authorized' => false,
-            'is_completed' => false,
-        ]);
-
-        try {
-            $this->service->markWorkCompleted(
-                $order,
-                [$authorizedService->id, $unauthorizedService->id],
-                $this->employee
-            );
-            $this->fail('Unauthorized services must not be marked as completed.');
-        } catch (InvalidArgumentException) {
-        }
-
-        $this->assertFalse($authorizedService->fresh()->is_completed);
-        $this->assertFalse($unauthorizedService->fresh()->is_completed);
-    }
-
-    // ---------------------------------------------------------------
-    // markReadyForDelivery
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_marks_order_ready_for_delivery(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::InProgress);
-
-        $result = $this->service->markReadyForDelivery($order, $this->employee);
-
-        $result->refresh();
-        $this->assertSame(OrderStatus::ReadyForDelivery, $result->status);
-    }
-
-    #[Test]
-    public function it_marks_ready_for_delivery_from_ready_for_work(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForWork);
-
-        $result = $this->service->markReadyForDelivery($order, $this->employee);
-
-        $result->refresh();
-        $this->assertSame(OrderStatus::ReadyForDelivery, $result->status);
-    }
-
-    #[Test]
-    public function it_rejects_ready_for_delivery_from_wrong_status(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::Open);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->markReadyForDelivery($order, $this->employee);
-    }
-
-    // ---------------------------------------------------------------
-    // deliverOrder
-    // ---------------------------------------------------------------
-
-    #[Test]
-    public function it_delivers_order(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
-
-        $result = $this->service->deliverOrder($order, $this->employee);
-
-        $result->refresh();
-        $this->assertSame(OrderStatus::Delivered, $result->status);
-    }
-
-    #[Test]
-    public function it_delivers_order_with_an_overpayment(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
-        $order->motorInfo->update([
-            'down_payment' => 150.00,
-            'total_cost' => 100.00,
-        ]);
-
-        $result = $this->service->deliverOrder($order, $this->employee);
-
-        $result->refresh();
-        $this->assertSame(OrderStatus::Delivered, $result->status);
-    }
-
-    #[Test]
-    public function it_rejects_deliver_from_wrong_status(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::Open);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->deliverOrder($order, $this->employee);
-    }
-
-    #[Test]
-    public function it_rejects_delivery_with_a_remaining_balance(): void
-    {
-        $order = $this->createOrderInStatus(OrderStatus::ReadyForDelivery);
-        $order->motorInfo->update([
-            'down_payment' => 100.00,
-            'total_cost' => 100.01,
-        ]);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->service->deliverOrder($order, $this->employee);
-    }
-
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validOrderData(): array
-    {
-        return [
-            'customer_id' => $this->customer->id,
-            'title' => 'Test Motor Order',
-            'description' => 'Testing the motor order lifecycle',
-            'priority' => OrderPriority::HIGH->value,
-            'assigned_to' => $this->employee->id,
-            'motor_info' => [
-                'brand' => 'Honda',
-                'liters' => '2.0',
-                'year' => '2020',
-                'model' => 'Civic',
-                'cylinder_count' => '4',
-                'down_payment' => 0,
-            ],
-            'items' => [
-                [
-                    'item_type' => OrderItemType::CylinderHead->value,
-                    'components' => ['bolts', 'valves', 'springs'],
-                ],
-                [
-                    'item_type' => OrderItemType::EngineBlock->value,
-                    'components' => ['bearing_caps'],
-                ],
-            ],
-        ];
-    }
-
-    private function createOrderInStatus(OrderStatus $status): Order
-    {
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $this->employee->id,
-            'created_by' => $this->employee->id,
-            'updated_by' => $this->employee->id,
-            'status' => $status->value,
-        ]);
-
-        // Ensure motor info exists for totals calculation
-        OrderMotorInfo::create([
-            'order_id' => $order->id,
+    $this->service->deliverOrder($order, $this->employee);
+});
+// ---------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------
+/**
+ * @return array<string, mixed>
+ */
+function validOrderData(User $customer, User $employee): array
+{
+    return [
+        'customer_id' => $customer->id,
+        'title' => 'Test Motor Order',
+        'description' => 'Testing the motor order lifecycle',
+        'priority' => OrderPriority::HIGH->value,
+        'assigned_to' => $employee->id,
+        'motor_info' => [
+            'brand' => 'Honda',
+            'liters' => '2.0',
+            'year' => '2020',
+            'model' => 'Civic',
+            'cylinder_count' => '4',
             'down_payment' => 0,
-            'total_cost' => 0,
-            'is_fully_paid' => false,
-        ]);
+        ],
+        'items' => [
+            [
+                'item_type' => OrderItemType::CylinderHead->value,
+                'components' => ['bolts', 'valves', 'springs'],
+            ],
+            [
+                'item_type' => OrderItemType::EngineBlock->value,
+                'components' => ['bearing_caps'],
+            ],
+        ],
+    ];
+}
 
-        return $order;
-    }
+function createOrderInStatus(OrderStatus $status, User $customer, User $employee): Order
+{
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'assigned_to' => $employee->id,
+        'created_by' => $employee->id,
+        'updated_by' => $employee->id,
+        'status' => $status->value,
+    ]);
 
-    private function createCatalogService(string $key, float $price): ServiceCatalog
-    {
-        return ServiceCatalog::create([
-            'service_key' => $key,
-            'service_name_key' => "service_catalog.{$key}",
-            'item_type' => OrderItemType::EngineBlock->value,
-            'base_price' => $price,
-            'tax_percentage' => 16.00,
-            'requires_measurement' => false,
-            'is_active' => true,
-            'display_order' => 1,
-        ]);
-    }
+    // Ensure motor info exists for totals calculation
+    OrderMotorInfo::create([
+        'order_id' => $order->id,
+        'down_payment' => 0,
+        'total_cost' => 0,
+        'is_fully_paid' => false,
+    ]);
+
+    return $order;
+}
+
+function createCatalogService(string $key, float $price): ServiceCatalog
+{
+    return ServiceCatalog::create([
+        'service_key' => $key,
+        'service_name_key' => "service_catalog.{$key}",
+        'item_type' => OrderItemType::EngineBlock->value,
+        'base_price' => $price,
+        'tax_percentage' => 16.00,
+        'requires_measurement' => false,
+        'is_active' => true,
+        'display_order' => 1,
+    ]);
 }

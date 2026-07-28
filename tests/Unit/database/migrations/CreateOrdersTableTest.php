@@ -2,438 +2,341 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\database\migrations;
-
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class CreateOrdersTableTest extends TestCase
-{
-    use RefreshDatabase;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-    /**
-     * Test that orders table exists after migration.
-     */
-    #[Test]
-    public function it_checks_if_orders_table_exists(): void
-    {
-        $this->assertTrue(Schema::hasTable('orders'));
+it('checks if orders table exists', function () {
+    expect(Schema::hasTable('orders'))->toBeTrue();
+});
+it('checks if orders table has all required columns', function () {
+    $expectedColumns = [
+        'id',
+        'uuid',
+        'customer_id',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'estimated_completion',
+        'actual_completion',
+        'notes',
+        'created_by',
+        'updated_by',
+        'assigned_to',
+        'created_at',
+        'updated_at',
+    ];
+
+    foreach ($expectedColumns as $column) {
+        expect(Schema::hasColumn('orders', $column))->toBeTrue("Column '{$column}' does not exist in orders table");
+    }
+});
+it('checks if orders table column types', function () {
+    // Test UUID columns
+    if (config('database.default') === 'pgsql') {
+        // PostgreSQL returns 'uuid' for UUID columns
+        expect(Schema::getColumnType('orders', 'id'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'uuid'))->toEqual('uuid');
+        expect(Schema::getColumnType('orders', 'customer_id'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'created_by'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'updated_by'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'assigned_to'))->toEqual('int8');
+    }
+    if (config('database.default') === 'sqlite') {
+        // SQLite returns 'varchar' for UUID columns
+        expect(Schema::getColumnType('orders', 'id'))->toEqual('varchar');
+        expect(Schema::getColumnType('orders', 'uuid'))->toEqual('varchar');
+        expect(Schema::getColumnType('orders', 'customer_id'))->toEqual('varchar');
+        expect(Schema::getColumnType('orders', 'created_by'))->toEqual('varchar');
+        expect(Schema::getColumnType('orders', 'updated_by'))->toEqual('varchar');
+        expect(Schema::getColumnType('orders', 'assigned_to'))->toEqual('varchar');
+    } else {
+        // MySQL returns 'char' for UUID columns
+        expect(Schema::getColumnType('orders', 'id'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'uuid'))->toEqual('uuid');
+        expect(Schema::getColumnType('orders', 'customer_id'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'created_by'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'updated_by'))->toEqual('int8');
+        expect(Schema::getColumnType('orders', 'assigned_to'))->toEqual('int8');
     }
 
-    /**
-     * Test that the orders table has all required columns.
-     */
-    #[Test]
-    public function it_checks_if_orders_table_has_all_required_columns(): void
-    {
-        $expectedColumns = [
-            'id',
-            'uuid',
-            'customer_id',
-            'title',
-            'description',
-            'status',
-            'priority',
-            'estimated_completion',
-            'actual_completion',
-            'notes',
-            'created_by',
-            'updated_by',
-            'assigned_to',
-            'created_at',
-            'updated_at',
-        ];
-
-        foreach ($expectedColumns as $column) {
-            $this->assertTrue(
-                Schema::hasColumn('orders', $column),
-                "Column '{$column}' does not exist in orders table"
-            );
-        }
+    // Test string columns - PostgreSQL returns 'varchar' for string columns
+    $stringColumns = ['title'];
+    foreach ($stringColumns as $column) {
+        expect(['string', 'varchar'])->toContain(Schema::getColumnType('orders', $column));
     }
 
-    /**
-     * Test column types and properties.
-     */
-    #[Test]
-    public function it_checks_if_orders_table_column_types(): void
-    {
-        // Test UUID columns
-        if (config('database.default') === 'pgsql') {
-            // PostgreSQL returns 'uuid' for UUID columns
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'id'));
-            $this->assertEquals('uuid', Schema::getColumnType('orders', 'uuid'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'customer_id'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'created_by'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'updated_by'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'assigned_to'));
-        } if (config('database.default') === 'sqlite') {
-            // SQLite returns 'varchar' for UUID columns
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'id'));
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'uuid'));
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'customer_id'));
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'created_by'));
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'updated_by'));
-            $this->assertEquals('varchar', Schema::getColumnType('orders', 'assigned_to'));
-        } else {
-            // MySQL returns 'char' for UUID columns
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'id'));
-            $this->assertEquals('uuid', Schema::getColumnType('orders', 'uuid'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'customer_id'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'created_by'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'updated_by'));
-            $this->assertEquals('int8', Schema::getColumnType('orders', 'assigned_to'));
-        }
-
-        // Test string columns - PostgreSQL returns 'varchar' for string columns
-        $stringColumns = ['title'];
-        foreach ($stringColumns as $column) {
-            $this->assertContains(
-                Schema::getColumnType('orders', $column),
-                ['string', 'varchar'],
-                "Column '{$column}' is not of type string/varchar"
-            );
-        }
-
-        // Test text columns
-        $textColumns = ['description', 'notes'];
-        foreach ($textColumns as $column) {
-            $this->assertEquals('text', Schema::getColumnType('orders', $column));
-        }
-
-        // Test enum columns - PostgreSQL may return 'string' or 'varchar' for enums
-        $enumColumns = ['status', 'priority'];
-        foreach ($enumColumns as $column) {
-            $this->assertContains(
-                Schema::getColumnType('orders', $column),
-                ['enum', 'string', 'varchar'],
-                "Column '{$column}' is not of expected type"
-            );
-        }
-        // Test timestamp columns
-        $timestampColumns = ['estimated_completion', 'actual_completion', 'created_at', 'updated_at'];
-        foreach ($timestampColumns as $column) {
-            $this->assertContains(
-                Schema::getColumnType('orders', $column),
-                ['timestamp', 'datetime'],
-                "Column '{$column}' is not a timestamp"
-            );
-        }
+    // Test text columns
+    $textColumns = ['description', 'notes'];
+    foreach ($textColumns as $column) {
+        expect(Schema::getColumnType('orders', $column))->toEqual('text');
     }
 
-    /**
-     * Test index and foreign key constraints.
-     */
-    #[Test]
-    public function it_checks_if_index_and_foreign_key_constraints(): void
-    {
-        // Test indexes
-        $indexes = [
-            'orders_status_priority_index',
-            'orders_created_by_status_index',
-            'orders_assigned_to_status_index',
-        ];
-
-        foreach ($indexes as $index) {
-            $this->assertTrue(Schema::hasIndex('orders', $index));
-        }
-
-        // Test foreign key constraints
-        $foreignKeys = ['customer_id', 'created_by', 'updated_by', 'assigned_to'];
-        foreach ($foreignKeys as $foreignKey) {
-            $this->assertTrue(Schema::hasColumn('orders', $foreignKey));
-        }
+    // Test enum columns - PostgreSQL may return 'string' or 'varchar' for enums
+    $enumColumns = ['status', 'priority'];
+    foreach ($enumColumns as $column) {
+        expect(['enum', 'string', 'varchar'])->toContain(Schema::getColumnType('orders', $column));
     }
 
-    /**
-     * Test migration can be rolled back and rerun.
-     */
-    #[Test]
-    public function it_checks_if_migration_can_be_rolled_back_and_rerun(): void
-    {
-        // Table should exist after migration
-        $this->assertTrue(Schema::hasTable('orders'));
+    // Test timestamp columns
+    $timestampColumns = ['estimated_completion', 'actual_completion', 'created_at', 'updated_at'];
+    foreach ($timestampColumns as $column) {
+        expect(['timestamp', 'datetime'])->toContain(Schema::getColumnType('orders', $column));
+    }
+});
+it('checks if index and foreign key constraints', function () {
+    // Test indexes
+    $indexes = [
+        'orders_status_priority_index',
+        'orders_created_by_status_index',
+        'orders_assigned_to_status_index',
+    ];
 
-        // Drop dependent tables first to avoid foreign key constraint issues
-        Schema::dropIfExists('attachments');
-        Schema::dropIfExists('order_histories');
-        // New dependent tables introduced by motor items architecture
-        Schema::dropIfExists('order_services');
-        Schema::dropIfExists('order_item_components');
-        Schema::dropIfExists('order_items');
-        Schema::dropIfExists('order_motor_info');
-
-        // Run down method
-        $migration = include base_path('database/migrations/2025_07_27_164818_create_orders_table.php');
-        $migration->down();
-
-        // Table should not exist
-        $this->assertFalse(Schema::hasTable('orders'));
-
-        // Run up method again
-        $migration->up();
-
-        // Table should exist again
-        $this->assertTrue(Schema::hasTable('orders'));
+    foreach ($indexes as $index) {
+        expect(Schema::hasIndex('orders', $index))->toBeTrue();
     }
 
-    /**
-     * Test data insertion with the Order model.
-     */
-    #[Test]
-    public function it_checks_if_data_insertion_with_order_model(): void
-    {
-        $user = User::factory()->create();
+    // Test foreign key constraints
+    $foreignKeys = ['customer_id', 'created_by', 'updated_by', 'assigned_to'];
+    foreach ($foreignKeys as $foreignKey) {
+        expect(Schema::hasColumn('orders', $foreignKey))->toBeTrue();
+    }
+});
+it('checks if migration can be rolled back and rerun', function () {
+    // Table should exist after migration
+    expect(Schema::hasTable('orders'))->toBeTrue();
+
+    // Drop dependent tables first to avoid foreign key constraint issues
+    Schema::dropIfExists('attachments');
+    Schema::dropIfExists('order_histories');
+
+    // New dependent tables introduced by motor items architecture
+    Schema::dropIfExists('order_services');
+    Schema::dropIfExists('order_item_components');
+    Schema::dropIfExists('order_items');
+    Schema::dropIfExists('order_motor_info');
+
+    // Run down method
+    $migration = include base_path('database/migrations/2025_07_27_164818_create_orders_table.php');
+    $migration->down();
+
+    // Table should not exist
+    expect(Schema::hasTable('orders'))->toBeFalse();
+
+    // Run up method again
+    $migration->up();
+
+    // Table should exist again
+    expect(Schema::hasTable('orders'))->toBeTrue();
+});
+it('checks if data insertion with order model', function () {
+    $user = User::factory()->create();
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $user->id,
+        'title' => 'Test Order',
+        'description' => 'This is a test order.',
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::LOW->value,
+        'estimated_completion' => now(),
+        'actual_completion' => now(),
+        'notes' => 'Test notes.',
+        'created_by' => $user->id,
+        'assigned_to' => $user->id,
+    ]);
+
+    $this->assertDatabaseHas('orders', [
+        'title' => 'Test Order',
+        'description' => 'This is a test order.',
+    ]);
+});
+it('checks if nullable columns accept null', function () {
+    $customer = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'title' => 'Test Order with Nulls',
+        'description' => 'Testing nullable fields',
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::NORMAL->value,
+        'estimated_completion' => null,
+        'actual_completion' => null,
+        'notes' => null,
+        'created_by' => $creator->id,
+        'updated_by' => null,
+        'assigned_to' => $creator->id,
+    ]);
+
+    expect($order->estimated_completion)->toBeNull();
+    expect($order->actual_completion)->toBeNull();
+    expect($order->notes)->toBeNull();
+    expect($order->updated_by)->toBeNull();
+    expect($order->assigned_to)->toEqual($creator->id);
+});
+it('checks if required columns do not accept null', function () {
+    $requiredFields = [
+        'customer_id',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'created_by',
+        'assigned_to',
+    ];
+
+    $user = User::factory()->create();
+
+    foreach ($requiredFields as $field) {
+        try {
+            $data = [
+                'customer_id' => $user->id,
+                'title' => 'Test Order',
+                'description' => 'Test Description',
+                'status' => OrderStatus::Open->value,
+                'priority' => OrderPriority::NORMAL->value,
+                'created_by' => $user->id,
+                'assigned_to' => $user->id,
+            ];
+
+            // Set the current field to null
+            $data[$field] = null;
+
+            Order::factory()->createQuietly($data);
+
+            $this->fail("Field '{$field}' should not accept null values");
+        } catch (QueryException $e) {
+            // Expected exception for null constraint violation
+            expect(true)->toBeTrue();
+        }
+    }
+});
+it('checks if foreign key constraints work correctly', function () {
+    $customer = User::factory()->create();
+    $employee = User::factory()->create();
+
+    // Test creating order with valid foreign keys
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'title' => 'Test Foreign Keys',
+        'description' => 'Testing foreign key constraints',
+        'status' => OrderStatus::InProgress->value,
+        'priority' => OrderPriority::HIGH->value,
+        'created_by' => $employee->id,
+        'updated_by' => $employee->id,
+        'assigned_to' => $employee->id,
+    ]);
+
+    expect($order->customer_id)->toEqual($customer->id);
+    expect($order->created_by)->toEqual($employee->id);
+    expect($order->updated_by)->toEqual($employee->id);
+    expect($order->assigned_to)->toEqual($employee->id);
+
+    // Test that we cannot create order with non-existent user IDs
+    $this->expectException(QueryException::class);
+
+    Order::factory()->createQuietly([
+        'customer_id' => 99999, // Non-existent user ID
+        'title' => 'Invalid Foreign Key Test',
+        'description' => 'This should fail',
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::NORMAL->value,
+        'created_by' => $employee->id,
+    ]);
+});
+it('checks if all status enum values accepted', function () {
+    $user = User::factory()->create();
+    $statuses = OrderStatus::getStatuses();
+
+    foreach ($statuses as $status) {
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
-            'title' => 'Test Order',
-            'description' => 'This is a test order.',
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::LOW->value,
-            'estimated_completion' => now(),
-            'actual_completion' => now(),
-            'notes' => 'Test notes.',
+            'title' => 'Status Test: ' . $status,
+            'description' => 'Testing status value: ' . $status,
+            'status' => $status,
+            'priority' => OrderPriority::NORMAL->value,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
         ]);
 
         $this->assertDatabaseHas('orders', [
-            'title' => 'Test Order',
-            'description' => 'This is a test order.',
+            'title' => 'Status Test: ' . $status,
+            'status' => $status,
         ]);
     }
+});
+it('checks if all priority enum values accepted', function () {
+    $user = User::factory()->create();
+    $priorities = OrderPriority::getPriorities();
 
-    /**
-     * Test nullable columns can accept null values.
-     */
-    #[Test]
-    public function it_checks_if_nullable_columns_accept_null(): void
-    {
-        $customer = User::factory()->create();
-        $creator = User::factory()->create();
-
+    foreach ($priorities as $priority) {
         $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'title' => 'Test Order with Nulls',
-            'description' => 'Testing nullable fields',
+            'customer_id' => $user->id,
+            'title' => 'Priority Test: ' . $priority,
+            'description' => 'Testing priority value: ' . $priority,
             'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value,
-            'estimated_completion' => null,
-            'actual_completion' => null,
-            'notes' => null,
-            'created_by' => $creator->id,
-            'updated_by' => null,
-            'assigned_to' => $creator->id,
+            'priority' => $priority,
+            'created_by' => $user->id,
+            'assigned_to' => $user->id,
         ]);
 
-        $this->assertNull($order->estimated_completion);
-        $this->assertNull($order->actual_completion);
-        $this->assertNull($order->notes);
-        $this->assertNull($order->updated_by);
-        $this->assertEquals($creator->id, $order->assigned_to);
-    }
-
-    /**
-     * Test required columns do not accept null.
-     */
-    #[Test]
-    public function it_checks_if_required_columns_do_not_accept_null(): void
-    {
-        $requiredFields = [
-            'customer_id',
-            'title',
-            'description',
-            'status',
-            'priority',
-            'created_by',
-            'assigned_to',
-        ];
-
-        $user = User::factory()->create();
-
-        foreach ($requiredFields as $field) {
-            try {
-                $data = [
-                    'customer_id' => $user->id,
-                    'title' => 'Test Order',
-                    'description' => 'Test Description',
-                    'status' => OrderStatus::Open->value,
-                    'priority' => OrderPriority::NORMAL->value,
-                    'created_by' => $user->id,
-                    'assigned_to' => $user->id,
-                ];
-
-                // Set the current field to null
-                $data[$field] = null;
-
-                Order::factory()->createQuietly($data);
-
-                $this->fail("Field '{$field}' should not accept null values");
-            } catch (QueryException $e) {
-                // Expected exception for null constraint violation
-                $this->assertTrue(true);
-            }
-        }
-    }
-
-    /**
-     * Test foreign key constraints work correctly.
-     */
-    #[Test]
-    public function it_checks_if_foreign_key_constraints_work_correctly(): void
-    {
-        $customer = User::factory()->create();
-        $employee = User::factory()->create();
-
-        // Test creating order with valid foreign keys
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'title' => 'Test Foreign Keys',
-            'description' => 'Testing foreign key constraints',
-            'status' => OrderStatus::InProgress->value,
-            'priority' => OrderPriority::HIGH->value,
-            'created_by' => $employee->id,
-            'updated_by' => $employee->id,
-            'assigned_to' => $employee->id,
-        ]);
-
-        $this->assertEquals($customer->id, $order->customer_id);
-        $this->assertEquals($employee->id, $order->created_by);
-        $this->assertEquals($employee->id, $order->updated_by);
-        $this->assertEquals($employee->id, $order->assigned_to);
-
-        // Test that we cannot create order with non-existent user IDs
-        $this->expectException(QueryException::class);
-
-        Order::factory()->createQuietly([
-            'customer_id' => 99999, // Non-existent user ID
-            'title' => 'Invalid Foreign Key Test',
-            'description' => 'This should fail',
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value,
-            'created_by' => $employee->id,
+        $this->assertDatabaseHas('orders', [
+            'title' => 'Priority Test: ' . $priority,
+            'priority' => $priority,
         ]);
     }
+});
+it('checks if indexes exist on correct columns', function () {
+    // Get all indexes on the orders table
+    $indexes = collect(Schema::getIndexes('orders'));
 
-    /**
-     * Test all enum values for status field.
-     */
-    #[Test]
-    public function it_checks_if_all_status_enum_values_accepted(): void
-    {
-        $user = User::factory()->create();
-        $statuses = OrderStatus::getStatuses();
+    // Check for composite index on status and priority
+    $statusPriorityIndex = $indexes->first(function ($index) {
+        return $index['name'] === 'orders_status_priority_index';
+    });
+    expect($statusPriorityIndex)->not->toBeNull('Status-Priority composite index does not exist');
 
-        foreach ($statuses as $status) {
-            $order = Order::factory()->createQuietly([
-                'customer_id' => $user->id,
-                'title' => 'Status Test: '.$status,
-                'description' => 'Testing status value: '.$status,
-                'status' => $status,
-                'priority' => OrderPriority::NORMAL->value,
-                'created_by' => $user->id,
-                'assigned_to' => $user->id,
-            ]);
+    // Check for composite index on created_by and status
+    $createdByStatusIndex = $indexes->first(function ($index) {
+        return $index['name'] === 'orders_created_by_status_index';
+    });
+    expect($createdByStatusIndex)->not->toBeNull('CreatedBy-Status composite index does not exist');
 
-            $this->assertDatabaseHas('orders', [
-                'title' => 'Status Test: '.$status,
-                'status' => $status,
-            ]);
-        }
-    }
+    // Check for composite index on assigned_to and status
+    $assignedToStatusIndex = $indexes->first(function ($index) {
+        return $index['name'] === 'orders_assigned_to_status_index';
+    });
+    expect($assignedToStatusIndex)->not->toBeNull('AssignedTo-Status composite index does not exist');
+});
+it('checks if foreign key behaviors', function () {
+    $customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
+    $employee = User::factory()->create([
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
 
-    /**
-     * Test all enum values for priority field.
-     */
-    #[Test]
-    public function it_checks_if_all_priority_enum_values_accepted(): void
-    {
-        $user = User::factory()->create();
-        $priorities = OrderPriority::getPriorities();
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'title' => 'Test Cascade Behaviors',
+        'description' => 'Testing foreign key cascade behaviors',
+        'status' => OrderStatus::Open->value,
+        'priority' => OrderPriority::NORMAL->value,
+        'created_by' => $employee->id,
+        'assigned_to' => $employee->id,
+    ]);
 
-        foreach ($priorities as $priority) {
-            $order = Order::factory()->createQuietly([
-                'customer_id' => $user->id,
-                'title' => 'Priority Test: '.$priority,
-                'description' => 'Testing priority value: '.$priority,
-                'status' => OrderStatus::Open->value,
-                'priority' => $priority,
-                'created_by' => $user->id,
-                'assigned_to' => $user->id,
-            ]);
-
-            $this->assertDatabaseHas('orders', [
-                'title' => 'Priority Test: '.$priority,
-                'priority' => $priority,
-            ]);
-        }
-    }
-
-    /**
-     * Test indexes improve query performance.
-     */
-    #[Test]
-    public function it_checks_if_indexes_exist_on_correct_columns(): void
-    {
-        // Get all indexes on the orders table
-        $indexes = collect(Schema::getIndexes('orders'));
-
-        // Check for composite index on status and priority
-        $statusPriorityIndex = $indexes->first(function ($index) {
-            return $index['name'] === 'orders_status_priority_index';
-        });
-        $this->assertNotNull($statusPriorityIndex, 'Status-Priority composite index does not exist');
-
-        // Check for composite index on created_by and status
-        $createdByStatusIndex = $indexes->first(function ($index) {
-            return $index['name'] === 'orders_created_by_status_index';
-        });
-        $this->assertNotNull($createdByStatusIndex, 'CreatedBy-Status composite index does not exist');
-
-        // Check for composite index on assigned_to and status
-        $assignedToStatusIndex = $indexes->first(function ($index) {
-            return $index['name'] === 'orders_assigned_to_status_index';
-        });
-        $this->assertNotNull($assignedToStatusIndex, 'AssignedTo-Status composite index does not exist');
-    }
-
-    /**
-     * Test foreign key behaviors.
-     */
-    #[Test]
-    public function it_checks_if_foreign_key_behaviors(): void
-    {
-        $customer = User::factory()->create([
-            'role' => UserRole::CUSTOMER->value,
-        ]);
-        $employee = User::factory()->create([
-            'role' => UserRole::EMPLOYEE->value,
-        ]);
-
-        $order = Order::factory()->createQuietly([
-            'customer_id' => $customer->id,
-            'title' => 'Test Cascade Behaviors',
-            'description' => 'Testing foreign key cascade behaviors',
-            'status' => OrderStatus::Open->value,
-            'priority' => OrderPriority::NORMAL->value,
-            'created_by' => $employee->id,
-            'assigned_to' => $employee->id,
-        ]);
-
-        // The migration specifies nullOnDelete for customer_id
-        // and cascadeOnUpdate for all user foreign keys
-        // We can verify the relationships exist correctly
-        $this->assertNotNull($order->customer);
-        $this->assertNotNull($order->createdBy);
-        $this->assertEquals($customer->id, $order->customer->id);
-        $this->assertEquals($employee->id, $order->createdBy->id);
-    }
-}
+    // The migration specifies nullOnDelete for customer_id
+    // and cascadeOnUpdate for all user foreign keys
+    // We can verify the relationships exist correctly
+    expect($order->customer)->not->toBeNull();
+    expect($order->createdBy)->not->toBeNull();
+    expect($order->customer->id)->toEqual($customer->id);
+    expect($order->createdBy->id)->toEqual($employee->id);
+});
