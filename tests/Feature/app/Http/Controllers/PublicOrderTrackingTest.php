@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderHistoryEventType;
 use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
 use App\Enums\UserRole;
@@ -40,11 +41,17 @@ beforeEach(function () {
     OrderMotorInfo::create([
         'order_id' => $this->order->id,
         'brand' => 'Honda',
+        'liters' => '2.0',
         'model' => 'Civic',
         'year' => '2020',
+        'cylinder_count' => '4',
     ]);
 });
 it('returns order when uuid and date match', function () {
+    $otherOrder = Order::factory()->createQuietly([
+        'title' => 'Other public order',
+    ]);
+
     $response = $this->withHeaders(['Accept-Language' => 'es'])->postJson('/api/v1/orders/track', [
         'uuid' => $this->order->uuid,
         'created_date' => $this->order->created_at->toDateString(),
@@ -59,6 +66,10 @@ it('returns order when uuid and date match', function () {
                 'motor_info',
             ],
         ]);
+
+    $response->assertJsonPath('order.uuid', $this->order->uuid)
+        ->assertJsonPath('order.title', $this->order->title)
+        ->assertJsonMissing(['title' => $otherOrder->title]);
 });
 it('returns populated public collections with stable shapes', function () {
     $item = $this->order->items()->createQuietly([
@@ -116,6 +127,11 @@ it('returns populated public collections with stable shapes', function () {
                 'financials' => ['budgeted', 'authorized', 'completed', 'advance_payment', 'remaining_balance'],
             ],
         ])
+        ->assertJsonPath('order.motor_info.brand', 'Honda')
+        ->assertJsonPath('order.motor_info.liters', '2.0')
+        ->assertJsonPath('order.motor_info.year', '2020')
+        ->assertJsonPath('order.motor_info.model', 'Civic')
+        ->assertJsonPath('order.motor_info.cylinder_count', '4')
         ->assertJsonPath('order.items.0.components.0.component_name', 'camshaft')
         ->assertJsonPath('order.items.0.components.0.component_key', 'camshaft')
         ->assertJsonPath('order.items.0.components.0.component_label', 'Árbol de levas')
@@ -144,6 +160,20 @@ it('returns the order history and attachments', function () {
         'file_size' => 1024,
         'mime_type' => 'application/pdf',
         'uploaded_by' => $this->order->created_by,
+    ]);
+    $this->order->orderHistories()->createMany([
+        [
+            'field_changed' => 'payment_record',
+            'event_type' => OrderHistoryEventType::PaymentRecord,
+            'new_value' => '100.00',
+            'created_by' => $this->order->created_by,
+        ],
+        [
+            'field_changed' => 'refund',
+            'event_type' => OrderHistoryEventType::Refund,
+            'new_value' => '50.00',
+            'created_by' => $this->order->created_by,
+        ],
     ]);
     Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 public attachment');
 
@@ -178,7 +208,9 @@ it('returns the order history and attachments', function () {
         ])
         ->assertJsonFragment([
             'file_name' => 'work-order.pdf',
-        ]);
+        ])
+        ->assertJsonMissing(['field_changed' => 'payment_record'])
+        ->assertJsonMissing(['field_changed' => 'refund']);
 
     $response->assertJsonMissingPath('order.customer')
         ->assertJsonMissingPath('order.id')
@@ -271,7 +303,8 @@ it('validates required fields', function () {
     $response = $this->postJson('/api/v1/orders/track', []);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['uuid', 'created_date']);
+        ->assertJsonValidationErrors(['uuid', 'created_date'])
+        ->assertJsonMissingPath('order');
 });
 it('validates malformed tracking values', function () {
     $response = $this->postJson('/api/v1/orders/track', [
@@ -280,7 +313,8 @@ it('validates malformed tracking values', function () {
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['uuid', 'created_date']);
+        ->assertJsonValidationErrors(['uuid', 'created_date'])
+        ->assertJsonMissingPath('order');
 });
 it('rate limits repeated tracking requests', function () {
     $payload = [

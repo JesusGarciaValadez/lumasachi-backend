@@ -501,26 +501,33 @@ Primary file to inspect and preferably extend:
 
 Happy paths:
 
-- [ ] UUID plus the correct creation date returns only the matching order.
-- [ ] Assert visible motor, received-item, component, service, public history, and approved attachment fields.
-- [ ] Assert the current lifecycle is represented with a stable value and localized label.
+- [x] UUID plus the correct creation date returns only the matching order.
+- [x] Assert visible motor, received-item, component, service, public history, and approved attachment fields.
+- [x] Assert the current lifecycle is represented with a stable value and localized label.
 - [x] Follow Q4 for attachment preview/download behavior; the public payload now exposes opaque UUID-scoped
   preview/download URLs and endpoints verify the order UUID plus creation date.
 
 Security and failure edges:
 
-- [ ] Wrong UUID, wrong date, and a mismatched UUID/date pair use the same generic not-found response.
-- [ ] Malformed and missing fields produce validation errors without disclosing order existence.
-- [ ] Public history excludes private payment and refund events.
-- [ ] Public resources do not expose internal database IDs, customer/staff records, actor identities, storage paths, or
+- [x] Wrong UUID, wrong date, and a mismatched UUID/date pair use the same generic not-found response.
+- [x] Malformed and missing fields produce validation errors without disclosing order existence.
+- [x] Public history excludes private payment and refund events.
+- [x] Public resources do not expose internal database IDs, customer/staff records, actor identities, storage paths, or
   unapproved attachment identifiers.
-- [ ] Throttling remains covered as an implementation security regression.
+- [x] Throttling remains covered as an implementation security regression.
 
 Completion gate:
 
-- [ ] The public payload contains only fields intentionally approved for public display.
+- [x] The public payload contains only fields intentionally approved for public display.
 - [x] Q4 is resolved with full file preview/download tests, not metadata-only assertions.
-- [x] Run `PublicOrderTrackingTest.php` and record the result: 16 passed (148 assertions).
+- [x] Run `PublicOrderTrackingTest.php` and record the result: 16 passed (160 assertions).
+
+Stage 7 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php`: 16 passed
+  (160 assertions).
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
 
 ## Stage 8 — Add stable browser selectors
 
