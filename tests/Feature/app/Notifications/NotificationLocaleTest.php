@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Mail\OrderCreatedMail;
 use App\Models\Order;
@@ -33,7 +33,7 @@ it('renders order created mail in each recipient locale', function () {
     $order = Order::factory()->createQuietly([
         'customer_id' => $spanishCustomer->id,
         'assigned_to' => $employee->id,
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
         'priority' => OrderPriority::HIGH->value,
         'title' => 'Rectificado Ñ',
     ]);
@@ -45,10 +45,10 @@ it('renders order created mail in each recipient locale', function () {
 
     expect($spanishMail->locale)->toBe('es');
     $this->assertStringContainsString('Nueva orden creada', $spanishContent);
-    $this->assertStringContainsString('Estatus: En progreso', $spanishContent);
+    $this->assertStringContainsString('Estatus: Lista para trabajo', $spanishContent);
     $this->assertStringContainsString('Prioridad: Alta', $spanishContent);
     $this->assertStringContainsString('Rectificado Ñ', $spanishContent);
-    $this->assertStringNotContainsString('Status: In Progress', $spanishContent);
+    $this->assertStringNotContainsString('Status: Ready for Work', $spanishContent);
 
     app()->setLocale('es');
     $englishMail = (new OrderCreatedNotification($order))->toMail($englishCustomer);
@@ -56,10 +56,10 @@ it('renders order created mail in each recipient locale', function () {
 
     expect($englishMail->locale)->toBe('en');
     $this->assertStringContainsString('New Order Created', $englishContent);
-    $this->assertStringContainsString('Status: In Progress', $englishContent);
+    $this->assertStringContainsString('Status: Ready for Work', $englishContent);
     $this->assertStringContainsString('Priority: High', $englishContent);
     $this->assertStringContainsString('Rectificado Ñ', $englishContent);
-    $this->assertStringNotContainsString('Estatus: En progreso', $englishContent);
+    $this->assertStringNotContainsString('Estatus: Lista para trabajo', $englishContent);
 });
 it('localizes every lifecycle and audit notification', function () {
     $customer = User::factory()->create([
@@ -68,7 +68,7 @@ it('localizes every lifecycle and audit notification', function () {
     ]);
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
         'priority' => OrderPriority::HIGH->value,
     ]);
 
@@ -89,7 +89,7 @@ it('localizes every lifecycle and audit notification', function () {
             $message = $notification->toMail($customer)->toArray();
 
             expect($message['subject'])->toBe(__($subjectKey));
-            expect($message['introLines'])->toContain(__('notifications.status_label', ['status' => $order->status->getLabel()]));
+            expect($message['introLines'])->toContain(__('notifications.status_label', ['status' => $order->lifecycleStatus()->getLabel()]));
         }
 
         $audit = (new OrderAuditNotification($order, 'created'))->toMail($customer)->toArray();

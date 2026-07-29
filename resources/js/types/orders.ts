@@ -13,8 +13,6 @@ export type OrderPaymentStatus = 'Unpaid' | 'Partially Paid' | 'Paid';
 
 export type RefundStatus = 'Requested' | 'Approved' | 'Processed' | 'Rejected';
 
-export type OrderStatus = OrderLifecycleStatus | 'Open' | 'In Progress' | 'Completed' | 'Paid' | 'Not Paid' | 'On Hold' | OrderDispositionStatus;
-
 export const ORDER_STATUS_SEQUENCE: OrderLifecycleStatus[] = [
     'Received',
     'Awaiting Review',
@@ -189,9 +187,7 @@ export interface OrderBasePayload {
     uuid: string;
     title: string;
     description: string;
-    status: OrderStatus;
-    status_label?: string | null;
-    lifecycle_status?: OrderLifecycleStatus | null;
+    lifecycle_status: OrderLifecycleStatus;
     lifecycle_status_label?: string | null;
     disposition_status?: OrderDispositionStatus | null;
     disposition_status_label?: string | null;
@@ -239,8 +235,6 @@ export type OrderSummary = Pick<
     | 'id'
     | 'uuid'
     | 'title'
-    | 'status'
-    | 'status_label'
     | 'lifecycle_status'
     | 'lifecycle_status_label'
     | 'disposition_status'
@@ -388,9 +382,7 @@ export interface PublicOrderPayload {
     uuid: string;
     title: string;
     description: string;
-    status: OrderStatus;
-    status_label?: string | null;
-    lifecycle_status?: OrderLifecycleStatus | null;
+    lifecycle_status: OrderLifecycleStatus;
     lifecycle_status_label?: string | null;
     disposition_status?: OrderDispositionStatus | null;
     disposition_status_label?: string | null;
@@ -516,13 +508,8 @@ export function normalizeOrder(resource: ResourcePayload<OrderPayload>): Order {
 
 export function resolveLifecycleStatus(
     lifecycleStatus: OrderLifecycleStatus | null | undefined,
-    legacyStatus: OrderStatus,
 ): OrderLifecycleStatus | null {
-    if (lifecycleStatus) {
-        return lifecycleStatus;
-    }
-
-    return ORDER_STATUS_SEQUENCE.includes(legacyStatus as OrderLifecycleStatus) ? (legacyStatus as OrderLifecycleStatus) : null;
+    return lifecycleStatus ?? null;
 }
 
 export function normalizePublicOrder(resource: ResourcePayload<PublicOrderPayload>): PublicOrder {

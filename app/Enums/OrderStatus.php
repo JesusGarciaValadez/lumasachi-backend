@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+/**
+ * Legacy status vocabulary retained only by historical migrations and
+ * migration fixtures. Application order state uses the domain enums.
+ */
 enum OrderStatus: string
 {
     case Received = 'Received';

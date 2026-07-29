@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Http\Requests\AssignOrderRequest;
 use App\Http\Requests\CustomerApprovalRequest;
 use App\Http\Requests\DeliverOrderRequest;
@@ -307,14 +308,29 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
         $actor = $this->authenticatedUser($request);
-        $newStatus = isset($validated['status'])
-            ? OrderStatus::from($validated['status'])
+        $newLifecycleStatus = isset($validated['lifecycle_status'])
+            ? OrderLifecycleStatus::from($validated['lifecycle_status'])
+            : null;
+        $newDispositionStatus = isset($validated['disposition_status'])
+            ? OrderDispositionStatus::from($validated['disposition_status'])
             : null;
 
-        unset($validated['status']);
+        unset($validated['lifecycle_status'], $validated['disposition_status']);
 
-        if ($newStatus) {
-            $order = $this->lifecycleService->transition($order, $newStatus, $actor, $validated);
+        if ($newLifecycleStatus) {
+            $order = $this->lifecycleService->transition($order, $newLifecycleStatus, $actor, $validated);
+        } elseif ($newDispositionStatus) {
+            $order = $this->lifecycleService->setDisposition(
+                $order,
+                $newDispositionStatus,
+                $actor,
+                $validated['notes'] ?? null,
+            );
+            unset($validated['notes']);
+
+            if ($validated !== []) {
+                $order->update($validated);
+            }
         } elseif ($validated !== []) {
             $order->update([
                 ...$validated,
@@ -351,7 +367,7 @@ final class OrderController extends Controller
 
         $order = $this->lifecycleService->transition(
             $order,
-            OrderStatus::from($validated['status']),
+            OrderLifecycleStatus::from($validated['lifecycle_status']),
             $this->authenticatedUser($request),
         );
 

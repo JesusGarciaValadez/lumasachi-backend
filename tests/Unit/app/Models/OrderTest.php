@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -34,7 +34,6 @@ it('checks if fillable attributes are set correctly', function () {
         'customer_id',
         'title',
         'description',
-        'status',
         'lifecycle_status',
         'disposition_status',
         'priority',
@@ -99,18 +98,18 @@ it('checks if order histories relationship is correct', function () {
     // Create order histories
     OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open,
-        'new_value' => OrderStatus::InProgress,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received,
+        'new_value' => OrderLifecycleStatus::AwaitingReview,
         'comment' => 'Order started',
         'created_by' => User::factory()->create()->id,
     ]);
 
     OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::InProgress,
-        'new_value' => OrderStatus::ReadyForDelivery,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::AwaitingReview,
+        'new_value' => OrderLifecycleStatus::Reviewed,
         'comment' => 'Order ready',
         'created_by' => User::factory()->create()->id,
     ]);
@@ -170,7 +169,7 @@ it('checks if mass assignment is correct', function () {
         'customer_id' => $customer->id,
         'title' => 'Test Order',
         'description' => 'Test Description',
-        'status' => OrderStatus::Open,
+        'lifecycle_status' => OrderLifecycleStatus::Received,
         'priority' => OrderPriority::HIGH,
         'estimated_completion' => now()->addDays(7),
         'notes' => 'Test notes',
@@ -183,7 +182,7 @@ it('checks if mass assignment is correct', function () {
 
     expect($order->title)->toEqual($data['title']);
     expect($order->description)->toEqual($data['description']);
-    expect($order->status->value)->toEqual($data['status']->value);
+    expect($order->lifecycleStatus())->toEqual($data['lifecycle_status']);
     expect($order->priority->value)->toEqual($data['priority']->value);
     expect($order->notes)->toEqual($data['notes']);
 });
@@ -195,7 +194,7 @@ it('checks if order can be created with minimum fields', function () {
         'customer_id' => $customer->id,
         'title' => 'Minimal Order',
         'description' => 'Minimal Description',
-        'status' => OrderStatus::Open,
+        'lifecycle_status' => OrderLifecycleStatus::Received,
         'priority' => OrderPriority::NORMAL,
         'estimated_completion' => now()->addDays(3),
         'created_by' => $creator->id,

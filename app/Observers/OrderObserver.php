@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Notifications\OrderAuditNotification;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderDeliveredNotification;
-use App\Notifications\OrderPaidNotification;
 use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderReadyForWorkNotification;
 use App\Notifications\OrderReceivedNotification;
@@ -69,7 +68,8 @@ final class OrderObserver
     {
         $trackedFields = [
             'uuid',
-            'status',
+            'lifecycle_status',
+            'disposition_status',
             'priority',
             'assigned_to',
             'estimated_completion',
@@ -116,8 +116,8 @@ final class OrderObserver
         }
 
         // After logging changes, handle status transition side-effects
-        $oldStatus = $original['status'] ?? null;
-        $newStatus = $order->status?->value;
+        $oldStatus = $original['lifecycle_status'] ?? null;
+        $newStatus = $order->lifecycleStatus()?->value;
 
         if ($oldStatus !== $newStatus && $newStatus) {
             $this->handleStatusTransition($order, $newStatus);
@@ -161,29 +161,25 @@ final class OrderObserver
     {
         /** @var array<string, array{notification: class-string, audit: string|null}> */
         $transitions = [
-            OrderStatus::Received->value => [
+            OrderLifecycleStatus::Received->value => [
                 'notification' => OrderReceivedNotification::class,
                 'audit' => 'received',
             ],
-            OrderStatus::Reviewed->value => [
+            OrderLifecycleStatus::Reviewed->value => [
                 'notification' => OrderReviewedNotification::class,
                 'audit' => 'reviewed',
             ],
-            OrderStatus::ReadyForWork->value => [
+            OrderLifecycleStatus::ReadyForWork->value => [
                 'notification' => OrderReadyForWorkNotification::class,
                 'audit' => 'ready_for_work',
             ],
-            OrderStatus::ReadyForDelivery->value => [
+            OrderLifecycleStatus::ReadyForDelivery->value => [
                 'notification' => OrderReadyForDeliveryNotification::class,
                 'audit' => null,
             ],
-            OrderStatus::Delivered->value => [
+            OrderLifecycleStatus::Delivered->value => [
                 'notification' => OrderDeliveredNotification::class,
                 'audit' => 'delivered',
-            ],
-            OrderStatus::Paid->value => [
-                'notification' => OrderPaidNotification::class,
-                'audit' => 'paid',
             ],
         ];
 
@@ -202,12 +198,12 @@ final class OrderObserver
         }
 
         // Auto-transition: Reviewed → Awaiting Customer Approval
-        if ($newStatus === OrderStatus::Reviewed->value) {
-            $this->statusStateMachine->transitionQuietly($order, OrderStatus::AwaitingCustomerApproval);
+        if ($newStatus === OrderLifecycleStatus::Reviewed->value) {
+            $this->statusStateMachine->transitionQuietly($order, OrderLifecycleStatus::AwaitingCustomerApproval);
             $this->recordStatusHistory(
                 $order,
-                OrderStatus::Reviewed->value,
-                OrderStatus::AwaitingCustomerApproval->value
+                OrderLifecycleStatus::Reviewed->value,
+                OrderLifecycleStatus::AwaitingCustomerApproval->value
             );
         }
     }
@@ -217,8 +213,8 @@ final class OrderObserver
         OrderHistory::create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'event_type' => OrderHistory::eventTypeFor(OrderHistory::FIELD_STATUS, $newStatus),
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'event_type' => OrderHistory::eventTypeFor(OrderHistory::FIELD_LIFECYCLE_STATUS, $newStatus),
             'old_value' => $oldStatus,
             'new_value' => $newStatus,
             'created_by' => auth()->id() ?? $order->updated_by,

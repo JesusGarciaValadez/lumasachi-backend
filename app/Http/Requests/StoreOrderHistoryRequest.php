@@ -31,7 +31,7 @@ final class StoreOrderHistoryRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'exists:orders,id'],
-            'field_changed' => ['required', 'string', 'in:status,priority,title,assigned_to,estimated_completion,notes'],
+            'field_changed' => ['required', 'string', 'in:lifecycle_status,disposition_status,priority,title,assigned_to,estimated_completion,notes'],
             'old_value' => ['nullable', 'string'],
             'new_value' => ['nullable', 'string'],
             'comment' => ['nullable', 'string', 'max:1000'],

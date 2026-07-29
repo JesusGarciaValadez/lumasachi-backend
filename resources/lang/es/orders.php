@@ -64,7 +64,8 @@ return [
         'boolean_true' => 'Sí',
         'boolean_false' => 'No',
         'fields' => [
-            'status' => 'Estatus',
+            'lifecycle_status' => 'Estatus del ciclo de vida',
+            'disposition_status' => 'Disposición',
             'payment_status' => 'Estatus de pago',
             'payment_record' => 'Pago recibido',
             'refund' => 'Reembolso',
@@ -89,20 +90,14 @@ return [
         'Reviewed' => 'Revisada',
         'Awaiting Customer Approval' => 'Esperando aprobación del cliente',
         'Ready for Work' => 'Lista para trabajo',
-        'Open' => 'Abierta',
-        'In Progress' => 'En progreso',
         'Ready for Delivery' => 'Lista para entrega',
-        'Completed' => 'Completada',
         'Delivered' => 'Entregada',
-        'Paid' => 'Pagada',
         'Returned' => 'Devuelta',
-        'Not Paid' => 'No pagada',
-        'On Hold' => 'En espera',
         'Cancelled' => 'Cancelada',
     ],
 
     'validation' => [
-        'mark_ready_for_delivery_status' => 'La orden debe estar en estado En progreso o Lista para trabajo.',
+        'mark_ready_for_delivery_status' => 'La orden debe estar en estado Lista para trabajo.',
     ],
 
     'priority_labels' => [

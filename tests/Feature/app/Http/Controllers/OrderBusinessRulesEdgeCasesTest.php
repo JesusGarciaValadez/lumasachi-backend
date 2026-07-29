@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use App\Enums\OrderItemType;
+use App\Enums\OrderLifecycleStatus;
+use App\Enums\OrderLifecycleStatus as OrderStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
@@ -57,7 +58,7 @@ test('order creation notifies the customer and every active audit role', functio
     $response = $this->postJson('/api/v1/orders', validOrderPayload());
 
     $response->assertCreated()
-        ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
 
     Notification::assertSentTo($this->customer, OrderCreatedNotification::class);
     Notification::assertSentTo(
@@ -102,7 +103,7 @@ test('customer approval rejects a negative down payment', function () {
         ->assertJsonValidationErrors(['down_payment']);
 
     expect($service->fresh()->is_authorized)->toBeFalse();
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 test('budget rejects an item that belongs to another order', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -128,7 +129,7 @@ test('budget rejects an item that belongs to another order', function () {
         'order_item_id' => $otherItem->id,
         'service_key' => $catalog->service_key,
     ]);
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingReview);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
 test('budget rejects an unreceived item', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -181,7 +182,7 @@ test('budget rejects a service key that is not in the catalog', function () {
         ->assertJsonValidationErrors(['services.0.service_key']);
 
     $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingReview);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
 test('budget rejects a service for a different item type', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -200,7 +201,7 @@ test('budget rejects a service for a different item type', function () {
         ->assertJsonValidationErrors(['services.0.service_key']);
 
     $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingReview);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
 test('budget rejects an inactive catalog service', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -219,7 +220,7 @@ test('budget rejects an inactive catalog service', function () {
         ->assertJsonValidationErrors(['services.0.service_key']);
 
     $this->assertDatabaseMissing('order_services', ['order_item_id' => $item->id]);
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingReview);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
 test('budget rejects a non array services payload', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -229,7 +230,7 @@ test('budget rejects a non array services payload', function () {
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['services']);
 
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingReview);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
 test('customer approval rejects a service that belongs to another order', function () {
     $this->actingAs($this->customer);
@@ -243,7 +244,7 @@ test('customer approval rejects a service that belongs to another order', functi
         ->assertJsonValidationErrors(['authorized_service_ids.0']);
 
     expect($otherService->fresh()->is_authorized)->toBeFalse();
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 test('customer approval rejects a service that is not budgeted', function () {
     $this->actingAs($this->customer);
@@ -267,7 +268,7 @@ test('customer approval rejects a non integer service id', function () {
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['authorized_service_ids.0']);
 
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 test('a different customer cannot submit approval', function () {
     $otherCustomer = User::factory()->create([
@@ -289,7 +290,7 @@ test('a different customer cannot submit approval', function () {
         ])->assertForbidden();
 
     expect($service->fresh()->is_authorized)->toBeFalse();
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 test('work completion rejects a service that belongs to another order', function () {
     $order = createOrder(OrderStatus::ReadyForWork);
@@ -302,7 +303,7 @@ test('work completion rejects a service that belongs to another order', function
         ->assertJsonValidationErrors(['completed_service_ids.0']);
 
     expect($otherService->fresh()->is_completed)->toBeFalse();
-    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForWork);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
 });
 test('work completion rejects a service that is not authorized', function () {
     $order = createOrder(OrderStatus::ReadyForWork);
@@ -326,7 +327,7 @@ test('work completion rejects a service that is already completed', function () 
         ->assertJsonValidationErrors(['completed_service_ids.0']);
 
     expect($completedService->fresh()->is_completed)->toBeTrue();
-    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForWork);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
 });
 test('work completion rejects a mixed authorized and unauthorized selection atomically', function () {
     $order = createOrder(OrderStatus::ReadyForWork);
@@ -376,7 +377,7 @@ test('work completion rejects a non integer service id', function () {
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['completed_service_ids.0']);
 
-    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForWork);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
 });
 test('order creation rejects a component from a different item type', function () {
     $payload = validOrderPayload();
@@ -417,7 +418,7 @@ test('quotation totals follow budgeted authorized and completed services', funct
     ])->assertOk();
 
     $order->refresh();
-    expect($order->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
     expect((float)$order->services()->sum('base_price'))->toBe(3760.00);
     expect((float)$order->services()->sum('net_price'))->toBe(4361.60);
 
@@ -476,7 +477,7 @@ test('delivery requires the remaining balance to be paid', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['payment']);
 
-    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForDelivery);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForDelivery);
     Notification::assertNotSentTo($this->customer, OrderDeliveredNotification::class);
     Notification::assertNotSentTo($this->administrator, OrderAuditNotification::class);
 
@@ -484,7 +485,7 @@ test('delivery requires the remaining balance to be paid', function () {
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertOk()
-        ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
 });
 test('delivery accepts exact payment overpayment and zero total orders', function () {
     foreach ([
@@ -511,19 +512,19 @@ test('delivery accepts exact payment overpayment and zero total orders', functio
 
         $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
             ->assertOk()
-            ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+            ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
     }
 });
 test('reviewed to awaiting customer approval records both status changes', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
 
     $order->update([
-        'status' => OrderStatus::Reviewed->value,
+        'lifecycle_status' => OrderLifecycleStatus::Reviewed->value,
         'updated_by' => $this->employee->id,
     ]);
 
     $statusChanges = $order->orderHistories()
-        ->where('field_changed', 'status')
+        ->where('field_changed', 'lifecycle_status')
         ->oldest('id')
         ->get();
 
@@ -532,14 +533,14 @@ test('reviewed to awaiting customer approval records both status changes', funct
     expect($statusChanges[0]->new_value)->toBe(OrderStatus::Reviewed);
     expect($statusChanges[1]->old_value)->toBe(OrderStatus::Reviewed);
     expect($statusChanges[1]->new_value)->toBe(OrderStatus::AwaitingCustomerApproval);
-    expect($order->fresh()->status)->toBe(OrderStatus::AwaitingCustomerApproval);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 test('delivery notifies the customer and every active audit role', function () {
     $order = createOrder(OrderStatus::ReadyForDelivery);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertOk()
-        ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
 
     Notification::assertSentTo($this->customer, OrderDeliveredNotification::class);
     Notification::assertSentTo(

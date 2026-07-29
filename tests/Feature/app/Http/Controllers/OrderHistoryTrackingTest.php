@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -20,24 +20,24 @@ it('checks if tracks status changes when updating order', function () {
 
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'created_by' => $user->id,
     ]);
 
     $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     $response->assertOk();
 
     // Check that history was created
     $history = OrderHistory::where('order_id', $order->id)
-        ->where('field_changed', OrderHistory::FIELD_STATUS)
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
         ->first();
 
     expect($history)->not->toBeNull();
-    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::AwaitingReview->value);
     expect($history->created_by)->toEqual($user->id);
 });
 it('checks if tracks priority changes when updating order', function () {
@@ -75,13 +75,13 @@ it('checks if tracks multiple field changes in single update', function () {
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
-        'status' => OrderStatus::ReadyForDelivery->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
         'priority' => OrderPriority::LOW->value,
         'title' => 'Original Title',
     ]);
 
     $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
         'priority' => OrderPriority::HIGH->value,
         'title' => 'Updated Title',
     ]);
@@ -94,16 +94,16 @@ it('checks if tracks multiple field changes in single update', function () {
     // Should have 3 history entries (status, priority, title)
     expect($histories)->toHaveCount(3);
     expect($histories->pluck('field_changed')->toArray())->toEqualCanonicalizing([
-        OrderHistory::FIELD_STATUS,
+        OrderHistory::FIELD_LIFECYCLE_STATUS,
         OrderHistory::FIELD_PRIORITY,
         OrderHistory::FIELD_TITLE,
     ]);
 
     // Verify each field change
-    $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
+    $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS);
     expect($statusHistory)->not->toBeNull();
-    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::ReadyForDelivery->value);
-    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::ReadyForDelivery->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::Delivered->value);
 
     $priorityHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_PRIORITY);
     expect($priorityHistory)->not->toBeNull();
@@ -183,7 +183,7 @@ it('checks if does not create history when no changes made', function () {
 
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'title' => 'Test Order',
     ]);
@@ -193,7 +193,7 @@ it('checks if does not create history when no changes made', function () {
 
     // Update with same values
     $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'title' => 'Test Order',
     ]);
@@ -302,7 +302,7 @@ it('checks if order history index filters by field', function () {
     // Create different types of history
     OrderHistory::factory()->count(5)->create([
         'order_id' => $order->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
     ]);
 
     OrderHistory::factory()->count(3)->create([
@@ -311,14 +311,14 @@ it('checks if order history index filters by field', function () {
     ]);
 
     // Filter by status field
-    $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=" . OrderHistory::FIELD_STATUS);
+    $response = $this->getJson("/api/v1/orders/{$order->uuid}/history?field=" . OrderHistory::FIELD_LIFECYCLE_STATUS);
 
     $response->assertOk();
     expect($response->json('data'))->toHaveCount(5);
 
     // Verify all results are status changes
     foreach ($response->json('data') as $history) {
-        expect($history['field_changed'])->toEqual(OrderHistory::FIELD_STATUS);
+        expect($history['field_changed'])->toEqual(OrderHistory::FIELD_LIFECYCLE_STATUS);
     }
 });
 it('checks if order history shows human readable descriptions', function () {
@@ -326,12 +326,12 @@ it('checks if order history shows human readable descriptions', function () {
     Sanctum::actingAs($user);
 
     $order = Order::factory()->createQuietly([
-        'status' => OrderStatus::ReadyForDelivery->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
     ]);
 
     // Create a status change
     $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
     $response = $this->getJson("/api/v1/orders/{$order->uuid}/history");
@@ -340,7 +340,7 @@ it('checks if order history shows human readable descriptions', function () {
 
     $history = $response->json('data.0');
     expect($history['description'])->not->toBeNull();
-    $this->assertStringContainsString('Status changed from', $history['description']);
+    $this->assertStringContainsString('Lifecycle status changed from', $history['description']);
     $this->assertStringContainsString('Ready for Delivery', $history['description']);
     $this->assertStringContainsString('Delivered', $history['description']);
 });
@@ -352,11 +352,11 @@ it('returns history only for the requested order', function () {
     $otherOrder = Order::factory()->createQuietly();
     $requestedHistory = OrderHistory::factory()->create([
         'order_id' => $requestedOrder->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
     ]);
     OrderHistory::factory()->create([
         'order_id' => $otherOrder->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
     ]);
 
     $response = $this->getJson("/api/v1/orders/{$requestedOrder->uuid}/history");

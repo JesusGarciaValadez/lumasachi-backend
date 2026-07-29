@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
-use App\Notifications\OrderAuditNotification;
-use App\Notifications\OrderPaidNotification;
+use App\Services\OrderPaymentService;
 use Illuminate\Support\Facades\Notification;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-it('sends paid notification to customer and audit to admins', function () {
+it('records payment without changing lifecycle status', function () {
     Notification::fake();
     $users = paymentNotificationUsers();
 
@@ -20,13 +19,13 @@ it('sends paid notification to customer and audit to admins', function () {
         'customer_id' => $users['customer']->id,
         'assigned_to' => $users['employee']->id,
         'created_by' => $users['admin']->id,
-        'status' => OrderStatus::NotPaid->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
-    $order->update(['status' => OrderStatus::Paid->value]);
+    app(OrderPaymentService::class)->recordPayment($order, '25.00', $users['employee']);
 
-    Notification::assertSentTo($users['customer'], OrderPaidNotification::class);
-    Notification::assertSentTo($users['admin'], OrderAuditNotification::class);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::Delivered)
+        ->and($order->fresh()->totalPaid())->toBe('25.00');
 });
 /**
  * @return array{customer: User, employee: User, admin: User}

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -30,7 +30,7 @@ final class StoreOrderRequest extends FormRequest
             'customer_id' => 'required|exists:users,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'status' => 'required|string|in:'.implode(',', OrderStatus::getStatuses()),
+            'lifecycle_status' => 'required|string|in:' . implode(',', OrderLifecycleStatus::getStatuses()),
             'priority' => 'required|string|in:'.implode(',', [
                 OrderPriority::LOW->value,
                 OrderPriority::NORMAL->value,
@@ -54,8 +54,8 @@ final class StoreOrderRequest extends FormRequest
             'customer_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.customer_id')]),
             'title.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.title')]),
             'description.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.description')]),
-            'status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.status')]),
-            'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
+            'lifecycle_status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.status')]),
+            'lifecycle_status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
             'priority.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.priority')]),
             'priority.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.priority')]),
             'estimated_completion.after' => __('validation.custom.after', ['attribute' => __('validation.attributes.estimated_completion'), 'date' => 'now']),

@@ -69,7 +69,6 @@ final class Order extends Model
         'customer_id',
         'title',
         'description',
-        'status',
         'lifecycle_status',
         'disposition_status',
         'priority',
@@ -91,7 +90,6 @@ final class Order extends Model
         'estimated_completion' => 'datetime',
         'actual_completion' => 'datetime',
         'priority' => OrderPriority::class,
-        'status' => OrderStatus::class,
         'lifecycle_status' => OrderLifecycleStatus::class,
         'disposition_status' => OrderDispositionStatus::class,
     ];
@@ -99,12 +97,51 @@ final class Order extends Model
     /**
      * @return array<string, string>
      */
-    public static function domainStatusAttributes(OrderStatus $status): array
+    public static function domainStatusAttributes(OrderLifecycleStatus $status): array
     {
-        return array_filter([
-            'lifecycle_status' => $status->lifecycleStatus()?->value,
-            'disposition_status' => $status->dispositionStatus()?->value,
-        ]);
+        return ['lifecycle_status' => $status->value];
+    }
+
+    /**
+     * Translate legacy fixture input without persisting the removed status column.
+     */
+    public function setStatusAttribute(mixed $value): void
+    {
+        $status = $value instanceof OrderStatus ? $value : OrderStatus::tryFrom((string)$value);
+
+        if ($status === null) {
+            return;
+        }
+
+        $lifecycle = match ($status) {
+            OrderStatus::InProgress => OrderLifecycleStatus::ReadyForWork,
+            OrderStatus::Completed => OrderLifecycleStatus::ReadyForDelivery,
+            OrderStatus::Open, OrderStatus::OnHold => OrderLifecycleStatus::Received,
+            OrderStatus::Paid, OrderStatus::NotPaid, OrderStatus::Returned, OrderStatus::Cancelled => null,
+            default => OrderLifecycleStatus::tryFrom($status->value),
+        };
+
+        if ($lifecycle !== null) {
+            $this->attributes['lifecycle_status'] = $lifecycle->value;
+        }
+
+        if (in_array($status, [OrderStatus::Returned, OrderStatus::Cancelled], true)) {
+            $this->attributes['disposition_status'] = $status->value;
+        }
+    }
+
+    /**
+     * Expose the old in-memory name only to avoid breaking historical fixtures.
+     */
+    public function getStatusAttribute(): ?OrderStatus
+    {
+        if ($this->disposition_status !== null) {
+            return OrderStatus::tryFrom($this->disposition_status->value);
+        }
+
+        return $this->lifecycle_status instanceof OrderLifecycleStatus
+            ? OrderStatus::tryFrom($this->lifecycle_status->value)
+            : null;
     }
 
     /**
@@ -229,12 +266,12 @@ final class Order extends Model
 
     public function lifecycleStatus(): ?OrderLifecycleStatus
     {
-        return $this->lifecycle_status ?? $this->status?->lifecycleStatus();
+        return $this->lifecycle_status;
     }
 
     public function dispositionStatus(): ?OrderDispositionStatus
     {
-        return $this->disposition_status ?? $this->status?->dispositionStatus();
+        return $this->disposition_status;
     }
 
     public function hasPendingPayment(): bool

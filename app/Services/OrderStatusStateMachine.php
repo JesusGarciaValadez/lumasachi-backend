@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\User;
 use InvalidArgumentException;
@@ -12,37 +13,25 @@ use InvalidArgumentException;
 final class OrderStatusStateMachine
 {
     /**
-     * The current transition map is retained for compatibility with existing
-     * application behavior until the unresolved legacy/payment decisions are
-     * settled in the subsequent plan steps.
-     *
-     * @var array<string, list<OrderStatus>>
+     * @var array<string, list<OrderLifecycleStatus>>
      */
     private const TRANSITIONS = [
-        OrderStatus::Received->value => [OrderStatus::AwaitingReview, OrderStatus::Cancelled],
-        OrderStatus::AwaitingReview->value => [OrderStatus::Reviewed, OrderStatus::Cancelled],
-        OrderStatus::Reviewed->value => [OrderStatus::AwaitingCustomerApproval, OrderStatus::Cancelled],
-        OrderStatus::AwaitingCustomerApproval->value => [OrderStatus::ReadyForWork, OrderStatus::Cancelled],
-        OrderStatus::ReadyForWork->value => [OrderStatus::InProgress, OrderStatus::ReadyForDelivery, OrderStatus::Cancelled],
-        OrderStatus::Open->value => [OrderStatus::InProgress, OrderStatus::Cancelled, OrderStatus::OnHold],
-        OrderStatus::InProgress->value => [OrderStatus::ReadyForDelivery, OrderStatus::Completed, OrderStatus::Cancelled, OrderStatus::OnHold],
-        OrderStatus::OnHold->value => [OrderStatus::InProgress, OrderStatus::Cancelled],
-        OrderStatus::ReadyForDelivery->value => [OrderStatus::Delivered, OrderStatus::Cancelled],
-        OrderStatus::Delivered->value => [OrderStatus::Paid, OrderStatus::Returned, OrderStatus::NotPaid],
-        OrderStatus::Paid->value => [],
-        OrderStatus::Returned->value => [OrderStatus::Cancelled],
-        OrderStatus::NotPaid->value => [OrderStatus::Paid, OrderStatus::Cancelled],
-        OrderStatus::Cancelled->value => [],
-        OrderStatus::Completed->value => [],
+        OrderLifecycleStatus::Received->value => [OrderLifecycleStatus::AwaitingReview],
+        OrderLifecycleStatus::AwaitingReview->value => [OrderLifecycleStatus::Reviewed],
+        OrderLifecycleStatus::Reviewed->value => [OrderLifecycleStatus::AwaitingCustomerApproval],
+        OrderLifecycleStatus::AwaitingCustomerApproval->value => [OrderLifecycleStatus::ReadyForWork],
+        OrderLifecycleStatus::ReadyForWork->value => [OrderLifecycleStatus::ReadyForDelivery],
+        OrderLifecycleStatus::ReadyForDelivery->value => [OrderLifecycleStatus::Delivered],
+        OrderLifecycleStatus::Delivered->value => [],
     ];
 
     /**
-     * Determine whether two stored values represent an allowed transition.
+     * Determine whether two stored values represent an allowed lifecycle transition.
      */
     public function canTransitionValues(string $currentStatus, string $newStatus): bool
     {
-        $current = OrderStatus::tryFrom($currentStatus);
-        $new = OrderStatus::tryFrom($newStatus);
+        $current = OrderLifecycleStatus::tryFrom($currentStatus);
+        $new = OrderLifecycleStatus::tryFrom($newStatus);
 
         return $current !== null
             && $new !== null
@@ -50,45 +39,43 @@ final class OrderStatusStateMachine
     }
 
     /**
-     * Determine whether the requested transition is allowed.
+     * Determine whether the requested lifecycle transition is allowed.
      */
-    public function canTransition(OrderStatus $currentStatus, OrderStatus $newStatus): bool
+    public function canTransition(OrderLifecycleStatus $currentStatus, OrderLifecycleStatus $newStatus): bool
     {
         return $currentStatus === $newStatus
             || in_array($newStatus, $this->nextStatuses($currentStatus), true);
     }
 
     /**
-     * Get the next permitted statuses for the current status.
+     * Get the next permitted lifecycle statuses.
      *
-     * @return list<OrderStatus>
+     * @return list<OrderLifecycleStatus>
      */
-    public function nextStatuses(OrderStatus $currentStatus): array
+    public function nextStatuses(OrderLifecycleStatus $currentStatus): array
     {
         return self::TRANSITIONS[$currentStatus->value] ?? [];
     }
 
     /**
-     * Transition an order and persist the actor responsible for the change.
+     * Transition an order through its lifecycle.
      *
-     * @throws InvalidArgumentException
-     */
-    /**
      * @param array<string, mixed> $additionalAttributes
      *
      * @throws InvalidArgumentException
      */
     public function transition(
         Order $order,
-        OrderStatus $newStatus,
+        OrderLifecycleStatus $newStatus,
         User $actor,
         array $additionalAttributes = [],
     ): Order
     {
-        $this->assertCanTransition($order->status, $newStatus);
+        $this->assertOrderCanChangeLifecycle($order);
+        $this->assertCanTransition($order->lifecycleStatus(), $newStatus);
 
-        $order->update(array_merge($additionalAttributes, Order::domainStatusAttributes($newStatus), [
-            'status' => $newStatus->value,
+        $order->update(array_merge($additionalAttributes, [
+            'lifecycle_status' => $newStatus->value,
             'updated_by' => $actor->id,
         ]));
 
@@ -96,35 +83,76 @@ final class OrderStatusStateMachine
     }
 
     /**
-     * Persist an internally-managed transition without firing model events.
-     *
-     * The observer uses this only for the documented automatic
-     * Reviewed → Awaiting Customer Approval transition, whose history row is
-     * recorded explicitly by that observer.
+     * Persist an internally-managed lifecycle transition without firing model events.
      *
      * @throws InvalidArgumentException
      */
-    public function transitionQuietly(Order $order, OrderStatus $newStatus): void
+    public function transitionQuietly(Order $order, OrderLifecycleStatus $newStatus): void
     {
-        $this->assertCanTransition($order->status, $newStatus);
+        $this->assertOrderCanChangeLifecycle($order);
+        $this->assertCanTransition($order->lifecycleStatus(), $newStatus);
 
-        $order->updateQuietly(array_merge(
-            ['status' => $newStatus->value],
-            Order::domainStatusAttributes($newStatus),
-        ));
+        $order->updateQuietly(['lifecycle_status' => $newStatus->value]);
+    }
+
+    /**
+     * Set a terminal order disposition.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function setDisposition(
+        Order                  $order,
+        OrderDispositionStatus $disposition,
+        User                   $actor,
+        ?string                $note = null,
+    ): Order
+    {
+        if ($order->dispositionStatus() !== null) {
+            throw new InvalidArgumentException('A terminal order disposition cannot be changed.');
+        }
+
+        $attributes = [
+            'disposition_status' => $disposition->value,
+            'updated_by' => $actor->id,
+        ];
+
+        if ($note !== null) {
+            $attributes['notes'] = $this->appendNote($order->notes, $note);
+        }
+
+        $order->update($attributes);
+
+        return $order;
     }
 
     /**
      * @throws InvalidArgumentException
      */
-    private function assertCanTransition(OrderStatus $currentStatus, OrderStatus $newStatus): void
+    private function assertOrderCanChangeLifecycle(Order $order): void
     {
-        if ($this->canTransition($currentStatus, $newStatus)) {
+        if ($order->dispositionStatus() !== null) {
+            throw new InvalidArgumentException('A terminal order disposition cannot resume the lifecycle.');
+        }
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function assertCanTransition(?OrderLifecycleStatus $currentStatus, OrderLifecycleStatus $newStatus): void
+    {
+        if ($currentStatus !== null && $this->canTransition($currentStatus, $newStatus)) {
             return;
         }
 
+        $currentValue = $currentStatus?->value ?? 'Unknown';
+
         throw new InvalidArgumentException(
-            "Invalid status transition from [{$currentStatus->value}] to [{$newStatus->value}]."
+            "Invalid lifecycle transition from [{$currentValue}] to [{$newStatus->value}]."
         );
+    }
+
+    private function appendNote(?string $existingNotes, string $note): string
+    {
+        return blank($existingNotes) ? $note : $existingNotes . "\n" . $note;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\App\Services;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Services\OrderStatusStateMachine;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -12,26 +12,23 @@ use Tests\TestCase;
 final class OrderStatusStateMachineTest extends TestCase
 {
     /**
-     * @return iterable<string, array{OrderStatus, OrderStatus}>
+     * @return iterable<string, array{OrderLifecycleStatus, OrderLifecycleStatus}>
      */
     public static function permittedTransitions(): iterable
     {
-        yield from self::transitionsFrom(OrderStatus::Received, [OrderStatus::AwaitingReview, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::AwaitingReview, [OrderStatus::Reviewed, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::Reviewed, [OrderStatus::AwaitingCustomerApproval, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::AwaitingCustomerApproval, [OrderStatus::ReadyForWork, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::ReadyForWork, [OrderStatus::InProgress, OrderStatus::ReadyForDelivery, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::Open, [OrderStatus::InProgress, OrderStatus::Cancelled, OrderStatus::OnHold]);
-        yield from self::transitionsFrom(OrderStatus::InProgress, [OrderStatus::ReadyForDelivery, OrderStatus::Completed, OrderStatus::Cancelled, OrderStatus::OnHold]);
-        yield from self::transitionsFrom(OrderStatus::OnHold, [OrderStatus::InProgress, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::ReadyForDelivery, [OrderStatus::Delivered, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::Delivered, [OrderStatus::Paid, OrderStatus::Returned, OrderStatus::NotPaid]);
-        yield from self::transitionsFrom(OrderStatus::NotPaid, [OrderStatus::Paid, OrderStatus::Cancelled]);
-        yield from self::transitionsFrom(OrderStatus::Returned, [OrderStatus::Cancelled]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::Received, [OrderLifecycleStatus::AwaitingReview]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::AwaitingReview, [OrderLifecycleStatus::Reviewed]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::Reviewed, [OrderLifecycleStatus::AwaitingCustomerApproval]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::AwaitingCustomerApproval, [OrderLifecycleStatus::ReadyForWork]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::ReadyForWork, [OrderLifecycleStatus::ReadyForDelivery]);
+        yield from self::transitionsFrom(OrderLifecycleStatus::ReadyForDelivery, [OrderLifecycleStatus::Delivered]);
     }
 
     #[DataProvider('permittedTransitions')]
-    public function test_permitted_status_transition_is_allowed(OrderStatus $current, OrderStatus $new): void
+    public function test_permitted_lifecycle_transition_is_allowed(
+        OrderLifecycleStatus $current,
+        OrderLifecycleStatus $new,
+    ): void
     {
         $stateMachine = new OrderStatusStateMachine();
 
@@ -39,29 +36,28 @@ final class OrderStatusStateMachineTest extends TestCase
         $this->assertContains($new, $stateMachine->nextStatuses($current));
     }
 
-    public function test_rejected_status_transition_is_not_allowed(): void
+    public function test_rejected_lifecycle_transitions_are_not_allowed(): void
     {
         $stateMachine = new OrderStatusStateMachine();
 
-        $this->assertFalse($stateMachine->canTransition(OrderStatus::Received, OrderStatus::Delivered));
-        $this->assertFalse($stateMachine->canTransition(OrderStatus::InProgress, OrderStatus::Open));
-        $this->assertFalse($stateMachine->canTransition(OrderStatus::Paid, OrderStatus::InProgress));
-        $this->assertFalse($stateMachine->canTransition(OrderStatus::Cancelled, OrderStatus::Received));
+        $this->assertFalse($stateMachine->canTransition(OrderLifecycleStatus::Received, OrderLifecycleStatus::Delivered));
+        $this->assertFalse($stateMachine->canTransition(OrderLifecycleStatus::ReadyForWork, OrderLifecycleStatus::Received));
+        $this->assertFalse($stateMachine->canTransition(OrderLifecycleStatus::Delivered, OrderLifecycleStatus::ReadyForWork));
     }
 
-    public function test_unknown_status_values_are_rejected(): void
+    public function test_unknown_lifecycle_values_are_rejected(): void
     {
         $stateMachine = new OrderStatusStateMachine();
 
-        $this->assertFalse($stateMachine->canTransitionValues('Unknown', OrderStatus::Received->value));
-        $this->assertFalse($stateMachine->canTransitionValues(OrderStatus::Received->value, 'Unknown'));
+        $this->assertFalse($stateMachine->canTransitionValues('Unknown', OrderLifecycleStatus::Received->value));
+        $this->assertFalse($stateMachine->canTransitionValues(OrderLifecycleStatus::Received->value, 'Unknown'));
     }
 
     /**
-     * @param list<OrderStatus> $newStatuses
-     * @return iterable<string, array{OrderStatus, OrderStatus}>
+     * @param list<OrderLifecycleStatus> $newStatuses
+     * @return iterable<string, array{OrderLifecycleStatus, OrderLifecycleStatus}>
      */
-    private static function transitionsFrom(OrderStatus $current, array $newStatuses): iterable
+    private static function transitionsFrom(OrderLifecycleStatus $current, array $newStatuses): iterable
     {
         foreach ($newStatuses as $new) {
             yield $current->value . ' -> ' . $new->value => [$current, $new];

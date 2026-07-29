@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -32,13 +32,10 @@ it('checks if factory generates all required fields', function () {
 });
 it('checks if factory generates valid field changed values', function () {
     $validFields = [
-        'status',
+        'lifecycle_status',
         'priority',
         'assigned_to',
         'title',
-        'estimated_completion',
-        'actual_completion',
-        'notes',
     ];
 
     $orderHistory = OrderHistory::factory()->make();
@@ -51,11 +48,11 @@ it('checks if factory generates appropriate values based on field', function () 
     for ($i = 0; $i < 10; $i++) {
         $orderHistory = OrderHistory::factory()->make();
 
-        if ($orderHistory->field_changed === 'status') {
-            $validStatuses = array_map(fn($status) => $status->value, OrderStatus::cases());
+        if ($orderHistory->field_changed === 'lifecycle_status') {
+            $validStatuses = array_map(fn($status) => $status->value, OrderLifecycleStatus::cases());
             // Handle the case where getter returns enum instance
-            $oldValue = $orderHistory->old_value instanceof OrderStatus ? $orderHistory->old_value->value : $orderHistory->old_value;
-            $newValue = $orderHistory->new_value instanceof OrderStatus ? $orderHistory->new_value->value : $orderHistory->new_value;
+            $oldValue = $orderHistory->old_value instanceof OrderLifecycleStatus ? $orderHistory->old_value->value : $orderHistory->old_value;
+            $newValue = $orderHistory->new_value instanceof OrderLifecycleStatus ? $orderHistory->new_value->value : $orderHistory->new_value;
             if ($oldValue !== null) {
                 expect($validStatuses)->toContain($oldValue);
             }
@@ -104,9 +101,9 @@ it('checks if optional comment field', function () {
 });
 it('checks if factory can override attributes', function () {
     $customComment = 'Custom comment for this history entry';
-    $customFieldChanged = 'status';
-    $customOldValue = OrderStatus::Open->value;
-    $customNewValue = OrderStatus::Delivered->value;
+    $customFieldChanged = 'lifecycle_status';
+    $customOldValue = OrderLifecycleStatus::Received->value;
+    $customNewValue = OrderLifecycleStatus::Delivered->value;
 
     $orderHistory = OrderHistory::factory()->create([
         'comment' => $customComment,
@@ -159,7 +156,8 @@ it('checks if factory generates realistic data', function () {
 
     // Field changed should be one of the expected values
     expect([
-        'status',
+        'lifecycle_status',
+        'disposition_status',
         'priority',
         'assigned_to',
         'title',
@@ -216,25 +214,25 @@ it('checks if factory generates uuid', function () {
     expect($orderHistory->uuid)->not->toBeNull();
     expect($orderHistory->uuid)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i');
 });
-it('checks if factory can create specific status transition', function () {
+it('checks if factory can create specific lifecycle transition', function () {
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
         'created_by' => $customer->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $orderHistory = OrderHistory::factory()->create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Order processing started',
     ]);
 
-    expect($orderHistory->field_changed)->toEqual('status');
-    expect($orderHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($orderHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
+    expect($orderHistory->field_changed)->toEqual('lifecycle_status');
+    expect($orderHistory->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($orderHistory->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::AwaitingReview->value);
     expect($orderHistory->comment)->toEqual('Order processing started');
 });
 it('checks if factory can create priority change only', function () {

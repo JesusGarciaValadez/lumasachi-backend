@@ -91,7 +91,9 @@ const order = {
     uuid: 'order-uuid',
     title: 'Engine service',
     description: 'Order description',
-    status: 'Ready for Delivery',
+    lifecycle_status: 'Ready for Delivery',
+    disposition_status: null,
+    payment_status: 'Paid',
     priority: 'Normal',
     items: [],
     services: [],
@@ -106,7 +108,7 @@ const order = {
     },
 } as Order;
 
-const deliveredOrder = { ...order, status: 'Delivered' } as Order;
+const deliveredOrder = { ...order, lifecycle_status: 'Delivered' } as Order;
 
 function mountPage() {
     return mount(Show, {

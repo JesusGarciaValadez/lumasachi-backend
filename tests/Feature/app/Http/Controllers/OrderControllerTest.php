@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\OrderItemType;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
@@ -46,7 +46,7 @@ it('checks if index returns only active orders for employee', function () {
     // Create 5 orders with "active" statuses that should be returned
     $orders = Order::factory()->count(5)->createQuietly([
         'customer_id' => $this->customer->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'assigned_to' => $this->employee->id,
         'created_by' => $this->admin->id,
     ]);
@@ -55,7 +55,7 @@ it('checks if index returns only active orders for employee', function () {
     $otherEmployee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
     $otherOrders = Order::factory()->count(5)->createQuietly([
         'customer_id' => $this->customer->id,
-        'status' => OrderStatus::Completed->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
         'assigned_to' => $otherEmployee->id,
         'created_by' => $this->admin->id,
     ]);
@@ -167,7 +167,7 @@ it('checks if show returns order with relationships', function () {
             'id',
             'title',
             'description',
-            'status',
+            'lifecycle_status',
             'priority',
             'customer' => ['id', 'first_name', 'last_name', 'email'],
             'assigned_to' => ['id', 'first_name', 'last_name', 'email'],
@@ -183,11 +183,11 @@ it('checks if update modifies order successfully', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
     $updateData = [
         'title' => 'Updated Order Title',
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
         'priority' => OrderPriority::URGENT->value,
     ];
 
@@ -204,7 +204,7 @@ it('checks if update modifies order successfully', function () {
         'message' => 'Order updated successfully.',
         'order' => [
             'title' => 'Updated Order Title',
-            'status' => OrderStatus::InProgress->value,
+            'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
             'priority' => OrderPriority::URGENT->value,
         ],
     ]);
@@ -223,15 +223,15 @@ it('rejects invalid status transitions on general order updates', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
-    $response->assertUnprocessable()->assertJsonValidationErrors(['status']);
-    expect($order->fresh()->status)->toBe(OrderStatus::Open);
+    $response->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::Received);
 });
 it('checks if update allows partial updates', function () {
     $this->actingAs($this->employee);
@@ -295,7 +295,7 @@ it('caches index responses and returns hit on second request', function () {
     // Create a couple of orders for this employee
     $orders = Order::factory()->count(2)->createQuietly([
         'customer_id' => $this->customer->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'assigned_to' => $this->employee->id,
         'created_by' => $this->admin->id,
     ]);
@@ -382,7 +382,7 @@ it('returns stable motor values and localized resource labels', function () {
         'customer_id' => $this->customer->id,
         'assigned_to' => $this->employee->id,
         'created_by' => $this->admin->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::HIGH->value,
     ]);
     $item = $order->items()->createQuietly([
@@ -408,8 +408,8 @@ it('returns stable motor values and localized resource labels', function () {
         ->getJson('/api/v1/orders/' . $order->uuid);
 
     $response->assertOk()
-        ->assertJsonPath('status', $order->status->value)
-        ->assertJsonPath('status_label', 'Abierta')
+        ->assertJsonPath('lifecycle_status', $order->lifecycleStatus()->value)
+        ->assertJsonPath('lifecycle_status_label', 'Recibida')
         ->assertJsonPath('priority', OrderPriority::HIGH->value)
         ->assertJsonPath('priority_label', 'Alta')
         ->assertJsonPath('items.0.item_type', OrderItemType::EngineBlock->value)
@@ -424,7 +424,7 @@ it('returns stable motor values and localized resource labels', function () {
 
     $english->assertOk()
         ->assertHeader('X-Cache', 'MISS')
-        ->assertJsonPath('status_label', 'Open')
+        ->assertJsonPath('lifecycle_status_label', 'Received')
         ->assertJsonPath('priority_label', 'High')
         ->assertJsonPath('items.0.item_type_label', 'Engine Block')
         ->assertJsonPath('items.0.components.0.component_label', 'Camshaft')

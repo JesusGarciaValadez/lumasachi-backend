@@ -40,7 +40,7 @@ const indicatorLabels = computed(() => ({
 const refundStatusLabels = computed(() => tm('orders.refund_status_labels') as Record<string, string>);
 
 function lifecycleStatus(order: OrderSummary): OrderLifecycleStatus | null {
-    return resolveLifecycleStatus(order.lifecycle_status, order.status);
+    return resolveLifecycleStatus(order.lifecycle_status);
 }
 
 function refundStatuses(order: OrderSummary): RefundStatus[] {

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
@@ -17,7 +18,7 @@ final class OrderLifecycleService
 {
     public function __construct(
         private OrderStatusStateMachine $statusStateMachine,
-        private OrderPaymentService     $paymentService,
+        private OrderPaymentService $paymentService,
     )
     {
     }
@@ -38,7 +39,7 @@ final class OrderLifecycleService
         $order = DB::transaction(function () use ($validated, $creator, $motorInfo, $items) {
             $order = Order::create(array_merge($validated, [
                 'uuid' => Str::uuid7()->toString(),
-                'status' => OrderStatus::Received->value,
+                'lifecycle_status' => OrderLifecycleStatus::Received->value,
                 'created_by' => $creator->id,
                 'updated_by' => $creator->id,
             ]));
@@ -76,7 +77,7 @@ final class OrderLifecycleService
         });
 
         // Transition to AWAITING_REVIEW (triggers observer → history + notifications)
-        $this->statusStateMachine->transition($order, OrderStatus::AwaitingReview, $creator);
+        $this->statusStateMachine->transition($order, OrderLifecycleStatus::AwaitingReview, $creator);
 
         // Reload relationships for the caller
         return $order->load(['motorInfo', 'items.components']);
@@ -90,7 +91,7 @@ final class OrderLifecycleService
      */
     public function submitBudget(Order $order, array $servicesData, User $reviewer): Order
     {
-        $this->assertStatus($order, [OrderStatus::AwaitingReview]);
+        $this->assertStatus($order, [OrderLifecycleStatus::AwaitingReview]);
         $this->assertOrderItemsBelongToOrder($order, array_column($servicesData, 'order_item_id'));
 
         DB::transaction(function () use ($servicesData) {
@@ -114,7 +115,7 @@ final class OrderLifecycleService
         });
 
         // Transition to REVIEWED → observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
-        $this->statusStateMachine->transition($order, OrderStatus::Reviewed, $reviewer);
+        $this->statusStateMachine->transition($order, OrderLifecycleStatus::Reviewed, $reviewer);
 
         return $order->load('services.catalogItem');
     }
@@ -127,7 +128,7 @@ final class OrderLifecycleService
      */
     public function customerApproval(Order $order, array $authorizedServiceIds, ?float $downPayment, User $approver): Order
     {
-        $this->assertStatus($order, [OrderStatus::AwaitingCustomerApproval]);
+        $this->assertStatus($order, [OrderLifecycleStatus::AwaitingCustomerApproval]);
         $this->assertBudgetedServicesBelongToOrder($order, $authorizedServiceIds);
 
         DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment, $approver) {
@@ -138,7 +139,7 @@ final class OrderLifecycleService
             }
         });
 
-        $this->statusStateMachine->transition($order, OrderStatus::ReadyForWork, $approver);
+        $this->statusStateMachine->transition($order, OrderLifecycleStatus::ReadyForWork, $approver);
 
         return $order;
     }
@@ -150,7 +151,7 @@ final class OrderLifecycleService
      */
     public function markWorkCompleted(Order $order, array $completedServiceIds, User $technician): Order
     {
-        $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
+        $this->assertStatus($order, [OrderLifecycleStatus::ReadyForWork]);
         $this->assertAuthorizedServicesBelongToOrder($order, $completedServiceIds);
 
         DB::transaction(function () use ($order, $completedServiceIds): void {
@@ -172,9 +173,9 @@ final class OrderLifecycleService
      */
     public function markReadyForDelivery(Order $order, User $technician): Order
     {
-        $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
+        $this->assertStatus($order, [OrderLifecycleStatus::ReadyForWork]);
 
-        $this->statusStateMachine->transition($order, OrderStatus::ReadyForDelivery, $technician);
+        $this->statusStateMachine->transition($order, OrderLifecycleStatus::ReadyForDelivery, $technician);
 
         return $order;
     }
@@ -184,10 +185,10 @@ final class OrderLifecycleService
      */
     public function deliverOrder(Order $order, User $actor): Order
     {
-        $this->assertStatus($order, [OrderStatus::ReadyForDelivery]);
+        $this->assertStatus($order, [OrderLifecycleStatus::ReadyForDelivery]);
         $this->assertNoPendingPayment($order);
 
-        $this->statusStateMachine->transition($order, OrderStatus::Delivered, $actor);
+        $this->statusStateMachine->transition($order, OrderLifecycleStatus::Delivered, $actor);
 
         return $order;
     }
@@ -200,28 +201,38 @@ final class OrderLifecycleService
      */
     public function transition(
         Order $order,
-        OrderStatus $newStatus,
-        User  $actor,
+        OrderLifecycleStatus $newStatus,
+        User                 $actor,
         array $additionalAttributes = [],
     ): Order
     {
         return $this->statusStateMachine->transition($order, $newStatus, $actor, $additionalAttributes);
     }
 
+    public function setDisposition(
+        Order                  $order,
+        OrderDispositionStatus $disposition,
+        User                   $actor,
+        ?string                $note,
+    ): Order
+    {
+        return $this->statusStateMachine->setDisposition($order, $disposition, $actor, $note);
+    }
+
     /**
      * Assert the order is in one of the expected statuses.
      *
-     * @param  array<OrderStatus>  $expected
+     * @param array<OrderLifecycleStatus> $expected
      *
      * @throws InvalidArgumentException
      */
     private function assertStatus(Order $order, array $expected): void
     {
-        if (! in_array($order->status, $expected, true)) {
-            $labels = array_map(fn (OrderStatus $expectedStatus) => $expectedStatus->value, $expected);
+        if (!in_array($order->lifecycleStatus(), $expected, true)) {
+            $labels = array_map(fn(OrderLifecycleStatus $expectedStatus) => $expectedStatus->value, $expected);
 
             throw new InvalidArgumentException(
-                'Order must be in status ['.implode(', ', $labels)."] but is in [{$order->status->value}]."
+                'Order must be in lifecycle status [' . implode(', ', $labels) . "] but is in [{$order->lifecycleStatus()?->value}]."
             );
         }
     }

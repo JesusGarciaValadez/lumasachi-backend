@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Services\OrderStatusStateMachine;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -29,10 +29,10 @@ final class UpdateOrderStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => [
+            'lifecycle_status' => [
                 'required',
                 'string',
-                'in:'.implode(',', OrderStatus::getStatuses()),
+                'in:' . implode(',', OrderLifecycleStatus::getStatuses()),
             ],
             'notes' => 'nullable|string|max:500',
         ];
@@ -44,8 +44,8 @@ final class UpdateOrderStatusRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.status')]),
-            'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
+            'lifecycle_status.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.lifecycle_status')]),
+            'lifecycle_status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.lifecycle_status')]),
             'notes.max' => __('validation.custom.max', ['attribute' => __('validation.attributes.notes'), 'max' => 500]),
         ];
     }
@@ -61,16 +61,14 @@ final class UpdateOrderStatusRequest extends FormRequest
             function (Validator $validator) use ($stateMachine): void {
                 /** @var Order|null $order */
                 $order = $this->route('order');
-                $status = $this->input('status');
-                $newStatus = is_string($status) ? OrderStatus::tryFrom($status) : null;
+                $status = $this->input('lifecycle_status');
+                $newStatus = is_string($status) ? OrderLifecycleStatus::tryFrom($status) : null;
 
                 if ($order && $newStatus) {
-                    if (!$stateMachine->canTransition($order->status, $newStatus)) {
-                        $validator->errors()->add('status', 'Invalid status transition.');
-                    }
-
-                    if ($newStatus === OrderStatus::Completed && empty($this->actual_completion)) {
-                        $validator->errors()->add('actual_completion', 'The actual completion date is required when the status is completed.');
+                    if ($order->dispositionStatus() !== null) {
+                        $validator->errors()->add('lifecycle_status', 'A terminal disposition cannot resume the lifecycle.');
+                    } elseif (!$order->lifecycleStatus() || !$stateMachine->canTransition($order->lifecycleStatus(), $newStatus)) {
+                        $validator->errors()->add('lifecycle_status', 'Invalid lifecycle transition.');
                     }
                 }
             },

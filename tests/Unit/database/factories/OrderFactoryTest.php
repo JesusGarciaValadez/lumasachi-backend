@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
@@ -27,7 +27,7 @@ it('checks if factory generates all required fields', function () {
     expect($order->customer_id)->not->toBeNull();
     expect($order->title)->not->toBeNull();
     expect($order->description)->not->toBeNull();
-    expect($order->status)->not->toBeNull();
+    expect($order->lifecycleStatus())->not->toBeNull();
     expect($order->priority)->not->toBeNull();
     expect($order->estimated_completion)->not->toBeNull();
     expect($order->created_by)->not->toBeNull();
@@ -36,27 +36,18 @@ it('checks if factory generates all required fields', function () {
 it('checks if factory generates valid status', function () {
     $validStatuses = [
         // New workflow values
-        OrderStatus::Received->value,
-        OrderStatus::AwaitingReview->value,
-        OrderStatus::Reviewed->value,
-        OrderStatus::AwaitingCustomerApproval->value,
-        OrderStatus::ReadyForWork->value,
-        // Existing values
-        OrderStatus::Open->value,
-        OrderStatus::InProgress->value,
-        OrderStatus::ReadyForDelivery->value,
-        OrderStatus::Delivered->value,
-        OrderStatus::Paid->value,
-        OrderStatus::Returned->value,
-        OrderStatus::NotPaid->value,
-        OrderStatus::Cancelled->value,
-        OrderStatus::OnHold->value,
-        OrderStatus::Completed->value,
+        OrderLifecycleStatus::Received->value,
+        OrderLifecycleStatus::AwaitingReview->value,
+        OrderLifecycleStatus::Reviewed->value,
+        OrderLifecycleStatus::AwaitingCustomerApproval->value,
+        OrderLifecycleStatus::ReadyForWork->value,
+        OrderLifecycleStatus::ReadyForDelivery->value,
+        OrderLifecycleStatus::Delivered->value,
     ];
 
     $order = Order::factory()->createQuietly();
 
-    expect($validStatuses)->toContain($order->status->value);
+    expect($validStatuses)->toContain($order->lifecycleStatus()->value);
 });
 it('checks if factory generates valid priority', function () {
     $validPriorities = [
@@ -80,7 +71,7 @@ it('checks if factory creates associated users', function () {
 it('checks if completed state', function () {
     $order = Order::factory()->completed()->createQuietly();
 
-    expect($order->status->value)->toEqual(OrderStatus::Delivered->value);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
     expect($order->actual_completion)->not->toBeNull();
     expect($order->actual_completion)->toBeInstanceOf(CarbonImmutable::class);
     expect($order->actual_completion)->toBeLessThanOrEqual(Carbon::now());
@@ -89,7 +80,7 @@ it('checks if completed state', function () {
 it('checks if open state', function () {
     $order = Order::factory()->open()->createQuietly();
 
-    expect($order->status->value)->toEqual(OrderStatus::Open->value);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::Received);
     expect($order->actual_completion)->toBeNull();
 });
 it('checks if estimated completion is in future', function () {
@@ -131,17 +122,17 @@ it('checks if optional fields', function () {
 });
 it('checks if factory can override attributes', function () {
     $customTitle = 'Custom Order Title';
-    $customStatus = OrderStatus::Paid->value;
+    $customStatus = OrderLifecycleStatus::ReadyForDelivery->value;
     $customPriority = OrderPriority::URGENT->value;
 
     $order = Order::factory()->createQuietly([
         'title' => $customTitle,
-        'status' => $customStatus,
+        'lifecycle_status' => $customStatus,
         'priority' => $customPriority,
     ]);
 
     expect($order->title)->toEqual($customTitle);
-    expect($order->status->value)->toEqual($customStatus);
+    expect($order->lifecycleStatus()->value)->toEqual($customStatus);
     expect($order->priority->value)->toEqual($customPriority);
 });
 it('checks if factory with specific customer', function () {
@@ -190,7 +181,7 @@ it('checks if chaining states', function () {
         ->completed()
         ->createQuietly(['priority' => OrderPriority::URGENT->value]);
 
-    expect($order->status->value)->toEqual(OrderStatus::Delivered->value);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
     expect($order->actual_completion)->not->toBeNull();
     expect($order->priority->value)->toEqual(OrderPriority::URGENT->value);
 });

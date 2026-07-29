@@ -64,6 +64,7 @@ return [
         'items.*.components.*' => 'component',
         'items.*.item_type' => 'item type',
         'locale' => 'language',
+        'lifecycle_status' => 'lifecycle status',
         'motor_info' => [
             'brand' => 'motor brand',
             'cylinder_count' => 'cylinder count',
@@ -83,7 +84,6 @@ return [
         'services' => 'services',
         'services.*.order_item_id' => 'order item',
         'services.*.service_key' => 'service',
-        'status' => 'status',
         'title' => 'title',
         'last_name' => 'last name',
         'uuid' => 'order UUID',

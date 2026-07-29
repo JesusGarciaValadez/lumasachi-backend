@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use BackedEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -22,7 +23,7 @@ final class OrderHistoryFactory extends Factory
     public function definition(): array
     {
         $field = $this->faker->randomElement([
-            OrderHistory::FIELD_STATUS,
+            OrderHistory::FIELD_LIFECYCLE_STATUS,
             OrderHistory::FIELD_PRIORITY,
             OrderHistory::FIELD_ASSIGNED_TO,
             OrderHistory::FIELD_TITLE,
@@ -32,9 +33,9 @@ final class OrderHistoryFactory extends Factory
         $newValue = null;
 
         switch ($field) {
-            case OrderHistory::FIELD_STATUS:
-                $oldValue = $this->faker->randomElement(OrderStatus::cases());
-                $newValue = $this->faker->randomElement(OrderStatus::cases());
+            case OrderHistory::FIELD_LIFECYCLE_STATUS:
+                $oldValue = $this->faker->randomElement(OrderLifecycleStatus::cases());
+                $newValue = $this->faker->randomElement(OrderLifecycleStatus::cases());
                 break;
             case OrderHistory::FIELD_PRIORITY:
                 $oldValue = $this->faker->randomElement(OrderPriority::cases());
@@ -61,11 +62,11 @@ final class OrderHistoryFactory extends Factory
         ];
     }
 
-    public function statusChange(OrderStatus $oldStatus, OrderStatus $newStatus): self
+    public function statusChange(BackedEnum $oldStatus, BackedEnum $newStatus): self
     {
         return $this->state(function (array $attributes) use ($oldStatus, $newStatus) {
             return [
-                'field_changed' => OrderHistory::FIELD_STATUS,
+                'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
                 'old_value' => $oldStatus,
                 'new_value' => $newStatus,
             ];

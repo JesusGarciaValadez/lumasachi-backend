@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
@@ -31,7 +31,7 @@ beforeEach(function () {
         'customer_id' => $customer->id,
         'assigned_to' => $employee->id,
         'created_by' => $employee->id,
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
     ]);
 
     OrderMotorInfo::create([
@@ -52,7 +52,7 @@ it('returns order when uuid and date match', function () {
             'order' => [
                 'uuid',
                 'title',
-                'status',
+                'lifecycle_status',
                 'motor_info',
             ],
         ]);
@@ -129,9 +129,9 @@ it('returns populated public collections with stable shapes', function () {
 });
 it('returns the order history and attachments', function () {
     $history = $this->order->orderHistories()->create([
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::ReadyForWork,
-        'new_value' => OrderStatus::InProgress,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::AwaitingCustomerApproval,
+        'new_value' => OrderLifecycleStatus::ReadyForWork,
         'created_by' => $this->order->created_by,
     ]);
     $attachment = $this->order->attachments()->create([
@@ -166,7 +166,7 @@ it('returns the order history and attachments', function () {
             ],
         ])
         ->assertJsonFragment([
-            'field_changed' => 'status',
+            'field_changed' => 'lifecycle_status',
         ])
         ->assertJsonFragment([
             'file_name' => 'work-order.pdf',
@@ -205,7 +205,7 @@ it('returns empty services components history and attachment collections when no
 it('returns stable values and localized status and priority labels', function () {
     app()->setLocale('es');
     $this->order->forceFill([
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
         'priority' => OrderPriority::URGENT->value,
     ])->saveQuietly();
 
@@ -216,8 +216,8 @@ it('returns stable values and localized status and priority labels', function ()
         ]);
 
     $response->assertOk()
-        ->assertJsonPath('order.status', OrderStatus::InProgress->value)
-        ->assertJsonPath('order.status_label', 'En progreso')
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForWork->value)
+        ->assertJsonPath('order.lifecycle_status_label', 'Lista para trabajo')
         ->assertJsonPath('order.priority', OrderPriority::URGENT->value)
         ->assertJsonPath('order.priority_label', 'Urgente');
 });

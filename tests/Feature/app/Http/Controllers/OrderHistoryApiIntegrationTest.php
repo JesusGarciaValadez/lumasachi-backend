@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -21,9 +21,9 @@ it('checks if all order history endpoints include description field', function (
     // Create order history
     $orderHistory = OrderHistory::factory()->create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Customer requested priority handling',
         'created_by' => $admin->id,
     ]);
@@ -34,13 +34,13 @@ it('checks if all order history endpoints include description field', function (
     $data = $response->json('data');
     if (is_array($data) && count($data) > 0) {
         expect($data[0])->toHaveKey('description');
-        expect($data[0]['description'])->toEqual('Status changed from Open to In Progress');
+        expect($data[0]['description'])->toEqual('Lifecycle status changed from Received to Awaiting Review');
     }
 
     // Test 2: GET /api/v1/history/{id} (show)
     $response = $this->getJson("/api/v1/history/{$orderHistory->uuid}");
     $response->assertStatus(200)
-        ->assertJsonPath('data.description', 'Status changed from Open to In Progress');
+        ->assertJsonPath('data.description', 'Lifecycle status changed from Received to Awaiting Review');
 
     // Test 3: POST /api/v1/history (store)
     $newOrder = Order::factory()->createQuietly();
@@ -61,7 +61,7 @@ it('checks if all order history endpoints include description field', function (
     $data = $response->json('data');
     if (is_array($data) && count($data) > 0) {
         expect($data[0])->toHaveKey('description');
-        expect($data[0]['description'])->toEqual('Status changed from Open to In Progress');
+        expect($data[0]['description'])->toEqual('Lifecycle status changed from Received to Awaiting Review');
     }
 });
 it('checks if order history resource format', function () {
@@ -117,20 +117,20 @@ it('checks if automatic description generation on order update', function () {
     $order = Order::factory()->createQuietly([
         'uuid' => Str::uuid7()->toString(),
         'customer_id' => $customer->id,
-        'status' => OrderStatus::ReadyForDelivery->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
         'priority' => OrderPriority::NORMAL->value,
     ]);
 
     // Update order status (should trigger OrderObserver to create history)
     $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
     $response->assertStatus(200);
 
     // Check that history was created with proper description
     $history = OrderHistory::where('order_id', $order->id)
-        ->where('field_changed', 'status')
+        ->where('field_changed', 'lifecycle_status')
         ->first();
 
     expect($history)->not->toBeNull();
@@ -142,7 +142,7 @@ it('checks if automatic description generation on order update', function () {
 
     $data = $response->json('data');
     if (is_array($data) && count($data) > 0) {
-        $statusHistory = collect($data)->firstWhere('field_changed', 'status');
+        $statusHistory = collect($data)->firstWhere('field_changed', 'lifecycle_status');
         expect($statusHistory)->not->toBeNull();
         expect($statusHistory)->toHaveKey('description');
         expect($statusHistory['description'])->not->toBeNull();
@@ -160,9 +160,9 @@ it('checks if order history filtering includes description', function () {
     OrderHistory::factory()->create([
         'uuid' => Str::uuid7()->toString(),
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $admin->id,
     ]);
 
@@ -183,9 +183,9 @@ it('checks if order history filtering includes description', function () {
 
     if (is_array($data) && count($data) > 0) {
         foreach ($data as $history) {
-            expect($history['field_changed'])->toEqual('status');
+            expect($history['field_changed'])->toEqual('lifecycle_status');
             expect($history)->toHaveKey('description');
-            $this->assertStringContainsString('Status changed', $history['description']);
+            $this->assertStringContainsString('Lifecycle status changed', $history['description']);
         }
     }
 });

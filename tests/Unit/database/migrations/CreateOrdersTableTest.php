@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
@@ -22,7 +22,6 @@ it('checks if orders table has all required columns', function () {
         'customer_id',
         'title',
         'description',
-        'status',
         'lifecycle_status',
         'disposition_status',
         'priority',
@@ -82,7 +81,7 @@ it('checks if orders table column types', function () {
     }
 
     // Test enum columns - PostgreSQL may return 'string' or 'varchar' for enums
-    $enumColumns = ['status', 'priority'];
+    $enumColumns = ['lifecycle_status', 'disposition_status', 'priority'];
     foreach ($enumColumns as $column) {
         expect(['enum', 'string', 'varchar'])->toContain(Schema::getColumnType('orders', $column));
     }
@@ -94,16 +93,7 @@ it('checks if orders table column types', function () {
     }
 });
 it('checks if index and foreign key constraints', function () {
-    // Test indexes
-    $indexes = [
-        'orders_status_priority_index',
-        'orders_created_by_status_index',
-        'orders_assigned_to_status_index',
-    ];
-
-    foreach ($indexes as $index) {
-        expect(Schema::hasIndex('orders', $index))->toBeTrue();
-    }
+    expect(Schema::hasIndex('orders', 'orders_status_priority_index'))->toBeFalse();
 
     // Test foreign key constraints
     $foreignKeys = ['customer_id', 'created_by', 'updated_by', 'assigned_to'];
@@ -146,7 +136,7 @@ it('checks if data insertion with order model', function () {
         'customer_id' => $user->id,
         'title' => 'Test Order',
         'description' => 'This is a test order.',
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::LOW->value,
         'estimated_completion' => now(),
         'actual_completion' => now(),
@@ -168,7 +158,7 @@ it('checks if nullable columns accept null', function () {
         'customer_id' => $customer->id,
         'title' => 'Test Order with Nulls',
         'description' => 'Testing nullable fields',
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'estimated_completion' => null,
         'actual_completion' => null,
@@ -189,7 +179,7 @@ it('checks if required columns do not accept null', function () {
         'customer_id',
         'title',
         'description',
-        'status',
+        'lifecycle_status',
         'priority',
         'created_by',
         'assigned_to',
@@ -203,7 +193,7 @@ it('checks if required columns do not accept null', function () {
                 'customer_id' => $user->id,
                 'title' => 'Test Order',
                 'description' => 'Test Description',
-                'status' => OrderStatus::Open->value,
+                'lifecycle_status' => OrderLifecycleStatus::Received->value,
                 'priority' => OrderPriority::NORMAL->value,
                 'created_by' => $user->id,
                 'assigned_to' => $user->id,
@@ -230,7 +220,7 @@ it('checks if foreign key constraints work correctly', function () {
         'customer_id' => $customer->id,
         'title' => 'Test Foreign Keys',
         'description' => 'Testing foreign key constraints',
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
         'priority' => OrderPriority::HIGH->value,
         'created_by' => $employee->id,
         'updated_by' => $employee->id,
@@ -249,21 +239,21 @@ it('checks if foreign key constraints work correctly', function () {
         'customer_id' => 99999, // Non-existent user ID
         'title' => 'Invalid Foreign Key Test',
         'description' => 'This should fail',
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'created_by' => $employee->id,
     ]);
 });
 it('checks if all status enum values accepted', function () {
     $user = User::factory()->create();
-    $statuses = OrderStatus::getStatuses();
+    $statuses = OrderLifecycleStatus::getStatuses();
 
     foreach ($statuses as $status) {
         $order = Order::factory()->createQuietly([
             'customer_id' => $user->id,
             'title' => 'Status Test: ' . $status,
             'description' => 'Testing status value: ' . $status,
-            'status' => $status,
+            'lifecycle_status' => $status,
             'priority' => OrderPriority::NORMAL->value,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
@@ -271,7 +261,7 @@ it('checks if all status enum values accepted', function () {
 
         $this->assertDatabaseHas('orders', [
             'title' => 'Status Test: ' . $status,
-            'status' => $status,
+            'lifecycle_status' => $status,
         ]);
     }
 });
@@ -284,7 +274,7 @@ it('checks if all priority enum values accepted', function () {
             'customer_id' => $user->id,
             'title' => 'Priority Test: ' . $priority,
             'description' => 'Testing priority value: ' . $priority,
-            'status' => OrderStatus::Open->value,
+            'lifecycle_status' => OrderLifecycleStatus::Received->value,
             'priority' => $priority,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
@@ -300,23 +290,10 @@ it('checks if indexes exist on correct columns', function () {
     // Get all indexes on the orders table
     $indexes = collect(Schema::getIndexes('orders'));
 
-    // Check for composite index on status and priority
-    $statusPriorityIndex = $indexes->first(function ($index) {
-        return $index['name'] === 'orders_status_priority_index';
-    });
-    expect($statusPriorityIndex)->not->toBeNull('Status-Priority composite index does not exist');
-
-    // Check for composite index on created_by and status
-    $createdByStatusIndex = $indexes->first(function ($index) {
-        return $index['name'] === 'orders_created_by_status_index';
-    });
-    expect($createdByStatusIndex)->not->toBeNull('CreatedBy-Status composite index does not exist');
-
-    // Check for composite index on assigned_to and status
-    $assignedToStatusIndex = $indexes->first(function ($index) {
-        return $index['name'] === 'orders_assigned_to_status_index';
-    });
-    expect($assignedToStatusIndex)->not->toBeNull('AssignedTo-Status composite index does not exist');
+    expect($indexes->pluck('name')->all())
+        ->not->toContain('orders_status_priority_index')
+        ->not->toContain('orders_created_by_status_index')
+        ->not->toContain('orders_assigned_to_status_index');
 });
 it('checks if foreign key behaviors', function () {
     $customer = User::factory()->create([
@@ -330,7 +307,7 @@ it('checks if foreign key behaviors', function () {
         'customer_id' => $customer->id,
         'title' => 'Test Cascade Behaviors',
         'description' => 'Testing foreign key cascade behaviors',
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'created_by' => $employee->id,
         'assigned_to' => $employee->id,

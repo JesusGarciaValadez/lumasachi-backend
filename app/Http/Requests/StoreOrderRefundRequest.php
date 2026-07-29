@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
 use App\Models\Order;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
@@ -45,7 +44,7 @@ final class StoreOrderRefundRequest extends FormRequest
             /** @var Order|null $order */
             $order = $this->route('order');
 
-            if ($order && !in_array($order->status, [OrderStatus::Returned, OrderStatus::Cancelled], true)) {
+            if ($order && $order->dispositionStatus() === null) {
                 $validator->errors()->add('status', 'Refunds can only be requested for returned or cancelled orders.');
             }
         });

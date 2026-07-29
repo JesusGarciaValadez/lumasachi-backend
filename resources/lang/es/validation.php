@@ -64,6 +64,7 @@ return [
         'items.*.components.*' => 'componente',
         'items.*.item_type' => 'tipo de pieza',
         'locale' => 'idioma',
+        'lifecycle_status' => 'estado del ciclo de vida',
         'motor_info' => [
             'brand' => 'marca del motor',
             'cylinder_count' => 'cantidad de cilindros',
@@ -83,7 +84,6 @@ return [
         'services' => 'servicios',
         'services.*.order_item_id' => 'pieza de la orden',
         'services.*.service_key' => 'servicio',
-        'status' => 'estatus',
         'title' => 'título',
         'last_name' => 'apellido',
         'uuid' => 'UUID de la orden',

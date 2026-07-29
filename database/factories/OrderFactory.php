@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
@@ -28,7 +28,7 @@ final class OrderFactory extends Factory
             'customer_id' => User::factory()->state(fn () => ['role' => UserRole::CUSTOMER]),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
-            'status' => $this->faker->randomElement(OrderStatus::cases())->value,
+            'lifecycle_status' => $this->faker->randomElement(OrderLifecycleStatus::cases())->value,
             'priority' => $this->faker->randomElement(OrderPriority::cases())->value,
             'estimated_completion' => $this->faker->dateTimeBetween('now', '+30 days'),
             'actual_completion' => null,
@@ -55,7 +55,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => OrderStatus::Delivered->value,
+                'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
                 'actual_completion' => $this->faker->dateTimeBetween('-7 days', 'now'),
             ];
         });
@@ -65,7 +65,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status' => OrderStatus::Open->value,
+                'lifecycle_status' => OrderLifecycleStatus::Received->value,
                 'actual_completion' => null,
             ];
         });
