@@ -15,6 +15,10 @@ use InvalidArgumentException;
 
 final class OrderLifecycleService
 {
+    public function __construct(private OrderStatusStateMachine $statusStateMachine)
+    {
+    }
+
     /**
      * Create an order with motor info, items, and components inside a transaction.
      * After creation, transitions from RECEIVED → AWAITING_REVIEW.
@@ -65,10 +69,7 @@ final class OrderLifecycleService
         });
 
         // Transition to AWAITING_REVIEW (triggers observer → history + notifications)
-        $order->update([
-            'status' => OrderStatus::AwaitingReview->value,
-            'updated_by' => $creator->id,
-        ]);
+        $this->statusStateMachine->transition($order, OrderStatus::AwaitingReview, $creator);
 
         // Reload relationships for the caller
         return $order->load(['motorInfo', 'items.components']);
@@ -108,10 +109,7 @@ final class OrderLifecycleService
         $order->recalculateTotals();
 
         // Transition to REVIEWED → observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
-        $order->update([
-            'status' => OrderStatus::Reviewed->value,
-            'updated_by' => $reviewer->id,
-        ]);
+        $this->statusStateMachine->transition($order, OrderStatus::Reviewed, $reviewer);
 
         return $order->load('services.catalogItem');
     }
@@ -137,10 +135,7 @@ final class OrderLifecycleService
 
         $order->recalculateTotals();
 
-        $order->update([
-            'status' => OrderStatus::ReadyForWork->value,
-            'updated_by' => $approver->id,
-        ]);
+        $this->statusStateMachine->transition($order, OrderStatus::ReadyForWork, $approver);
 
         return $order;
     }
@@ -178,10 +173,7 @@ final class OrderLifecycleService
 
         $order->recalculateTotals();
 
-        $order->update([
-            'status' => OrderStatus::ReadyForDelivery->value,
-            'updated_by' => $technician->id,
-        ]);
+        $this->statusStateMachine->transition($order, OrderStatus::ReadyForDelivery, $technician);
 
         return $order;
     }
@@ -194,12 +186,25 @@ final class OrderLifecycleService
         $this->assertStatus($order, [OrderStatus::ReadyForDelivery]);
         $this->assertNoPendingPayment($order);
 
-        $order->update([
-            'status' => OrderStatus::Delivered->value,
-            'updated_by' => $actor->id,
-        ]);
+        $this->statusStateMachine->transition($order, OrderStatus::Delivered, $actor);
 
         return $order;
+    }
+
+    /**
+     * Transition an order through the shared status state machine.
+     */
+    /**
+     * @param array<string, mixed> $additionalAttributes
+     */
+    public function transition(
+        Order       $order,
+        OrderStatus $newStatus,
+        User        $actor,
+        array       $additionalAttributes = [],
+    ): Order
+    {
+        return $this->statusStateMachine->transition($order, $newStatus, $actor, $additionalAttributes);
     }
 
     /**

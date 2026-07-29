@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Services\OrderStatusStateMachine;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -50,52 +51,29 @@ final class UpdateOrderStatusRequest extends FormRequest
     }
 
     /**
-     * Configure the validator instance.
+     * Configure post-validation transition checks.
+     *
+     * @return array<int, callable(Validator): void>
      */
-    public function withValidator(Validator $validator): void
+    public function after(OrderStatusStateMachine $stateMachine): array
     {
-        $validator->after(function (Validator $validator): void {
-            /** @var Order|null $order */
-            $order = $this->route('order');
-            $newStatus = OrderStatus::tryFrom($this->status);
+        return [
+            function (Validator $validator) use ($stateMachine): void {
+                /** @var Order|null $order */
+                $order = $this->route('order');
+                $status = $this->input('status');
+                $newStatus = is_string($status) ? OrderStatus::tryFrom($status) : null;
 
-            if ($order && $newStatus) {
-                // Check if the status transition is valid
-                if (! $this->isValidStatusTransition($order->status, $newStatus)) {
-                    $validator->errors()->add('status', 'Invalid status transition.');
+                if ($order && $newStatus) {
+                    if (!$stateMachine->canTransition($order->status, $newStatus)) {
+                        $validator->errors()->add('status', 'Invalid status transition.');
+                    }
+
+                    if ($newStatus === OrderStatus::Completed && empty($this->actual_completion)) {
+                        $validator->errors()->add('actual_completion', 'The actual completion date is required when the status is completed.');
+                    }
                 }
-
-                // Check for completion date if status is COMPLETED
-                if ($newStatus->value === OrderStatus::Completed->value && empty($this->actual_completion)) {
-                    $validator->errors()->add('actual_completion', 'The actual completion date is required when the status is completed.');
-                }
-            }
-        });
-    }
-
-    /**
-     * Checks if the transition from the current status to the new status is valid.
-     */
-    protected function isValidStatusTransition(OrderStatus $currentStatus, OrderStatus $newStatus): bool
-    {
-        $allowedTransitions = [
-            OrderStatus::Received->value => [OrderStatus::AwaitingReview, OrderStatus::Cancelled],
-            OrderStatus::AwaitingReview->value => [OrderStatus::Reviewed, OrderStatus::Cancelled],
-            OrderStatus::Reviewed->value => [OrderStatus::AwaitingCustomerApproval, OrderStatus::Cancelled],
-            OrderStatus::AwaitingCustomerApproval->value => [OrderStatus::ReadyForWork, OrderStatus::Cancelled],
-            OrderStatus::ReadyForWork->value => [OrderStatus::InProgress, OrderStatus::Cancelled],
-            OrderStatus::Open->value => [OrderStatus::InProgress, OrderStatus::Cancelled, OrderStatus::OnHold],
-            OrderStatus::InProgress->value => [OrderStatus::ReadyForDelivery, OrderStatus::Completed, OrderStatus::Cancelled, OrderStatus::OnHold],
-            OrderStatus::OnHold->value => [OrderStatus::InProgress, OrderStatus::Cancelled],
-            OrderStatus::ReadyForDelivery->value => [OrderStatus::Delivered, OrderStatus::Cancelled],
-            OrderStatus::Delivered->value => [OrderStatus::Paid, OrderStatus::Returned, OrderStatus::NotPaid],
-            OrderStatus::Paid->value => [],
-            OrderStatus::Returned->value => [OrderStatus::Cancelled],
-            OrderStatus::NotPaid->value => [OrderStatus::Paid, OrderStatus::Cancelled],
-            OrderStatus::Cancelled->value => [],
-            OrderStatus::Completed->value => [],
+            },
         ];
-
-        return in_array($newStatus, $allowedTransitions[$currentStatus->value] ?? []);
     }
 }

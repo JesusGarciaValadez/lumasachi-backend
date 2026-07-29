@@ -15,6 +15,7 @@ use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderReadyForWorkNotification;
 use App\Notifications\OrderReceivedNotification;
 use App\Notifications\OrderReviewedNotification;
+use App\Services\OrderStatusStateMachine;
 use App\Traits\CachesOrders;
 use App\Traits\NotifiesAdmins;
 use BackedEnum;
@@ -31,6 +32,10 @@ final class OrderObserver
      */
     /** @var array<int|string, array<string, mixed>> */
     protected static array $originals = [];
+
+    public function __construct(private OrderStatusStateMachine $statusStateMachine)
+    {
+    }
 
     /**
      * Handle the Order "created" event.
@@ -197,7 +202,7 @@ final class OrderObserver
 
         // Auto-transition: Reviewed → Awaiting Customer Approval
         if ($newStatus === OrderStatus::Reviewed->value) {
-            $order->updateQuietly(['status' => OrderStatus::AwaitingCustomerApproval->value]);
+            $this->statusStateMachine->transitionQuietly($order, OrderStatus::AwaitingCustomerApproval);
             $this->recordStatusHistory(
                 $order,
                 OrderStatus::Reviewed->value,

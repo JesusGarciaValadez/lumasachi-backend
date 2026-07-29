@@ -165,6 +165,7 @@ it('checks if update modifies order successfully', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
+        'status' => OrderStatus::Open->value,
     ]);
     $updateData = [
         'title' => 'Updated Order Title',
@@ -196,6 +197,23 @@ it('checks if update modifies order successfully', function () {
         'title' => 'Updated Order Title',
         'updated_by' => $this->employee->id,
     ]);
+});
+it('rejects invalid status transitions on general order updates', function () {
+    $this->actingAs($this->employee);
+
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $this->customer->id,
+        'created_by' => $this->employee->id,
+        'assigned_to' => $this->employee->id,
+        'status' => OrderStatus::Open->value,
+    ]);
+
+    $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
+        'status' => OrderStatus::Delivered->value,
+    ]);
+
+    $response->assertUnprocessable()->assertJsonValidationErrors(['status']);
+    expect($order->fresh()->status)->toBe(OrderStatus::Open);
 });
 it('checks if update allows partial updates', function () {
     $this->actingAs($this->employee);

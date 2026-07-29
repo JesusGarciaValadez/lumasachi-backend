@@ -6,8 +6,11 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
+use App\Models\Order;
+use App\Services\OrderStatusStateMachine;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class UpdateOrderRequest extends FormRequest
 {
@@ -56,6 +59,32 @@ final class UpdateOrderRequest extends FormRequest
             'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
             'priority.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.priority')]),
             'assigned_to.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
+        ];
+    }
+
+    /**
+     * Validate a status change through the shared state machine when this
+     * general update endpoint includes a status.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(OrderStatusStateMachine $stateMachine): array
+    {
+        return [
+            function (Validator $validator) use ($stateMachine): void {
+                if (!$this->filled('status')) {
+                    return;
+                }
+
+                /** @var Order|null $order */
+                $order = $this->route('order');
+                $status = $this->input('status');
+                $newStatus = is_string($status) ? OrderStatus::tryFrom($status) : null;
+
+                if ($order && $newStatus && !$stateMachine->canTransition($order->status, $newStatus)) {
+                    $validator->errors()->add('status', 'Invalid status transition.');
+                }
+            },
         ];
     }
 }

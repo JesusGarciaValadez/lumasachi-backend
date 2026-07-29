@@ -117,7 +117,7 @@ it('checks if automatic description generation on order update', function () {
     $order = Order::factory()->createQuietly([
         'uuid' => Str::uuid7()->toString(),
         'customer_id' => $customer->id,
-        'status' => OrderStatus::Open->value,
+        'status' => OrderStatus::ReadyForDelivery->value,
         'priority' => OrderPriority::NORMAL->value,
     ]);
 
