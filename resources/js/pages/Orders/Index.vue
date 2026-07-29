@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import OrderStatusIndicators from '@/components/orders/OrderStatusIndicators.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDateTime } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
-import type { OrderSummary } from '@/types/orders';
+import type { OrderLifecycleStatus, OrderSummary, RefundStatus } from '@/types/orders';
+import { resolveLifecycleStatus } from '@/types/orders';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+const { t, tm } = useI18n();
 
 defineProps<{
     can_create_order: boolean;
@@ -23,6 +25,24 @@ const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
 const error = ref<OrderApiError | null>(null);
 const orderApi = useOrderApi();
+
+const indicatorLabels = computed(() => ({
+    lifecycle: t('orders.lifecycle_status'),
+    priority: t('orders.priority'),
+    payment: t('orders.payment_status'),
+    disposition: t('orders.disposition_status'),
+    refund: t('orders.refund_status'),
+}));
+
+const refundStatusLabels = computed(() => tm('orders.refund_status_labels') as Record<string, string>);
+
+function lifecycleStatus(order: OrderSummary): OrderLifecycleStatus | null {
+    return resolveLifecycleStatus(order.lifecycle_status, order.status);
+}
+
+function refundStatuses(order: OrderSummary): RefundStatus[] {
+    return (order.refunds ?? []).map((refund) => refund.status);
+}
 
 onMounted(async () => {
     try {
@@ -68,10 +88,23 @@ onMounted(async () => {
                             <div v-for="o in orders" :key="o.uuid" class="flex items-center justify-between gap-4 py-3">
                                 <div class="min-w-0">
                                     <div class="truncate font-medium">{{ o.title }}</div>
-                                    <div class="truncate text-xs text-muted-foreground">
-                                        {{ t('orders.status') }}: {{ o.status_label ?? t('orders.status') }} • {{ t('orders.priority') }}:
-                                        {{ o.priority_label ?? t('orders.priority') }} • {{ t('orders.created_at') }}:
-                                        {{ formatDateTime(o.created_at) }}
+                                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                                        <OrderStatusIndicators
+                                            :disposition-status="o.disposition_status"
+                                            :disposition-status-label="o.disposition_status_label"
+                                            :labels="indicatorLabels"
+                                            :lifecycle-status="lifecycleStatus(o)"
+                                            :lifecycle-status-label="o.lifecycle_status_label"
+                                            :payment-status="o.payment_status"
+                                            :payment-status-label="o.payment_status_label"
+                                            :priority="o.priority"
+                                            :priority-label="o.priority_label"
+                                            :refund-status-labels="refundStatusLabels"
+                                            :refund-statuses="refundStatuses(o)"
+                                        />
+                                    </div>
+                                    <div class="mt-1 truncate text-xs text-muted-foreground">
+                                        {{ t('orders.created_at') }}: {{ formatDateTime(o.created_at) }}
                                     </div>
                                 </div>
                                 <Link :href="route('web.orders.show', o.uuid)" class="shrink-0 text-sm underline">{{ t('common.view') }}</Link>

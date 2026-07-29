@@ -1,36 +1,28 @@
-export type OrderStatus =
+export type OrderLifecycleStatus =
     | 'Received'
     | 'Awaiting Review'
     | 'Reviewed'
     | 'Awaiting Customer Approval'
     | 'Ready for Work'
-    | 'Open'
-    | 'In Progress'
     | 'Ready for Delivery'
-    | 'Completed'
-    | 'Delivered'
-    | 'Paid'
-    | 'Returned'
-    | 'Not Paid'
-    | 'On Hold'
-    | 'Cancelled';
+    | 'Delivered';
 
-export const ORDER_STATUS_SEQUENCE: OrderStatus[] = [
+export type OrderDispositionStatus = 'Returned' | 'Cancelled';
+
+export type OrderPaymentStatus = 'Unpaid' | 'Partially Paid' | 'Paid';
+
+export type RefundStatus = 'Requested' | 'Approved' | 'Processed' | 'Rejected';
+
+export type OrderStatus = OrderLifecycleStatus | 'Open' | 'In Progress' | 'Completed' | 'Paid' | 'Not Paid' | 'On Hold' | OrderDispositionStatus;
+
+export const ORDER_STATUS_SEQUENCE: OrderLifecycleStatus[] = [
     'Received',
     'Awaiting Review',
     'Reviewed',
     'Awaiting Customer Approval',
     'Ready for Work',
-    'Open',
-    'In Progress',
     'Ready for Delivery',
-    'Completed',
     'Delivered',
-    'Paid',
-    'Returned',
-    'Not Paid',
-    'On Hold',
-    'Cancelled',
 ];
 
 export type OrderPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
@@ -121,6 +113,23 @@ export interface OrderServicePayload {
     net_price: MoneyValue;
 }
 
+export interface OrderRefundPayload {
+    id: number;
+    uuid: string;
+    order_id: number;
+    source_payment_id?: number | null;
+    amount: MoneyValue;
+    status: RefundStatus;
+    status_label?: string | null;
+    reason?: string | null;
+    requested_at?: string | null;
+    approved_at?: string | null;
+    rejected_at?: string | null;
+    processed_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface OrderHistoryPayload {
     id: number;
     uuid: string;
@@ -182,6 +191,12 @@ export interface OrderBasePayload {
     description: string;
     status: OrderStatus;
     status_label?: string | null;
+    lifecycle_status?: OrderLifecycleStatus | null;
+    lifecycle_status_label?: string | null;
+    disposition_status?: OrderDispositionStatus | null;
+    disposition_status_label?: string | null;
+    payment_status?: OrderPaymentStatus | null;
+    payment_status_label?: string | null;
     priority: OrderPriority;
     priority_label?: string | null;
     estimated_completion?: string | null;
@@ -199,6 +214,7 @@ export interface OrderPayload extends OrderBasePayload {
     motor_info?: ResourcePayload<MotorInfoPayload> | null;
     items?: ResourcePayload<OrderItemPayload[]> | null;
     services?: ResourcePayload<OrderServicePayload[]> | null;
+    refunds?: ResourcePayload<OrderRefundPayload[]> | null;
     history?: ResourcePayload<OrderHistoryPayload[]> | null;
     attachments?: ResourcePayload<OrderAttachmentPayload[]> | null;
     financials?: FinancialTotals | null;
@@ -212,12 +228,31 @@ export interface Order extends OrderBasePayload {
     motor_info?: MotorInfoPayload | null;
     items: OrderItem[];
     services: OrderServicePayload[];
+    refunds?: OrderRefundPayload[];
     history: OrderHistory[];
     attachments: OrderAttachment[];
     financials?: FinancialTotals | null;
 }
 
-export type OrderSummary = Pick<OrderBasePayload, 'id' | 'uuid' | 'title' | 'status' | 'status_label' | 'priority' | 'priority_label' | 'created_at'>;
+export type OrderSummary = Pick<
+    OrderBasePayload,
+    | 'id'
+    | 'uuid'
+    | 'title'
+    | 'status'
+    | 'status_label'
+    | 'lifecycle_status'
+    | 'lifecycle_status_label'
+    | 'disposition_status'
+    | 'disposition_status_label'
+    | 'payment_status'
+    | 'payment_status_label'
+    | 'priority'
+    | 'priority_label'
+    | 'created_at'
+> & {
+    refunds?: OrderRefundPayload[];
+};
 
 export interface OrderCapabilities {
     create_order: boolean;
@@ -355,6 +390,10 @@ export interface PublicOrderPayload {
     description: string;
     status: OrderStatus;
     status_label?: string | null;
+    lifecycle_status?: OrderLifecycleStatus | null;
+    lifecycle_status_label?: string | null;
+    disposition_status?: OrderDispositionStatus | null;
+    disposition_status_label?: string | null;
     priority: OrderPriority;
     priority_label?: string | null;
     estimated_completion?: string | null;
@@ -469,9 +508,21 @@ export function normalizeOrder(resource: ResourcePayload<OrderPayload>): Order {
         motor_info: unwrapResource(raw.motor_info) ?? null,
         items: unwrapCollection(raw.items).map(normalizeOrderItem),
         services: unwrapCollection(raw.services),
+        refunds: unwrapCollection(raw.refunds),
         history: unwrapCollection(raw.history).map(normalizeHistory),
         attachments: unwrapCollection(raw.attachments).map(normalizeAttachment),
     };
+}
+
+export function resolveLifecycleStatus(
+    lifecycleStatus: OrderLifecycleStatus | null | undefined,
+    legacyStatus: OrderStatus,
+): OrderLifecycleStatus | null {
+    if (lifecycleStatus) {
+        return lifecycleStatus;
+    }
+
+    return ORDER_STATUS_SEQUENCE.includes(legacyStatus as OrderLifecycleStatus) ? (legacyStatus as OrderLifecycleStatus) : null;
 }
 
 export function normalizePublicOrder(resource: ResourcePayload<PublicOrderPayload>): PublicOrder {

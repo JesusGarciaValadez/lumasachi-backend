@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\OrderRefund;
 use App\Models\ServiceCatalog;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
@@ -62,6 +63,23 @@ it('checks if index returns only active orders for employee', function () {
 
     $response->assertOk()
         ->assertJsonCount(5);
+});
+it('includes refund status indicators in the authenticated order list', function () {
+    $order = Order::factory()->createQuietly([
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->admin->id,
+    ]);
+
+    OrderRefund::factory()->create([
+        'order_id' => $order->id,
+        'requested_by' => $this->employee->id,
+    ]);
+
+    $this->actingAs($this->employee)
+        ->getJson('/api/v1/orders')
+        ->assertOk()
+        ->assertJsonPath('0.uuid', $order->uuid)
+        ->assertJsonPath('0.refunds.0.status', 'Requested');
 });
 it('checks if store creates order with valid data', function () {
     Notification::fake();

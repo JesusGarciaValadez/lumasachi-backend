@@ -544,7 +544,7 @@ Verification completed:
 The step is marked done because its persistence, resource, history, and focused/full verification requirements are
 complete. The unresolved legacy-status migration decisions remain explicitly deferred to Step 7.
 
-### Step 6 — Update the UI presentation
+### Step 6 — Update the UI presentation — DONE
 
 Scope:
 
@@ -586,6 +586,46 @@ Completion gate:
 
 - All four UI surfaces use the same server-provided status contract.
 - No UI control is treated as the authority for authorization or transitions.
+
+**Step 6 status: complete.**
+
+Implementation completed:
+
+- Updated Dashboard, Orders index, authenticated order detail, and public tracking to use the separate lifecycle,
+  payment, disposition, priority, and authenticated refund fields.
+- Replaced the mixed-status timeline sequence with the seven confirmed lifecycle statuses only. A special legacy status
+  such as Paid, Returned, or Cancelled is not silently converted into a lifecycle step when the server has no lifecycle
+  value for it.
+- Updated the progress component to render a connected horizontal timeline on larger screens and a connected vertical
+  timeline on mobile, with an accessible `aria-current="step"` marker for the active lifecycle state.
+- Added shared status indicators so priority is shown as `Priority: <value>` with one consistent badge color, while
+  payment, disposition, and refund states remain distinct from lifecycle progress. Multiple refund statuses are shown
+  without inventing an aggregate status.
+- Kept public tracking read-only and public-safe: payment and refund statuses/totals were not exposed because the
+  business rules do not confirm them as public data. Authenticated order lists now load refund statuses when available.
+- Added frontend coverage for lifecycle-only progress, accessible active-step markup, distinct indicators, and special
+  legacy-status handling. Added backend coverage that authenticated order lists include loaded refund indicators.
+
+Verification completed:
+
+- `vendor/bin/sail yarn run test:unit`: 57 tests passed.
+- `vendor/bin/sail yarn vue-tsc --noEmit`: passed.
+- Targeted ESLint on changed frontend files: passed.
+- `vendor/bin/sail yarn run build`: passed. Vite emitted only the existing chunk-size warning for the large order-detail
+  chunk.
+- Targeted Prettier check on changed Step 6 files: passed.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- Focused backend order controller/domain contract tests: 18 tests passed; the updated order controller file: 16 tests
+  passed.
+- `git diff --check`: passed.
+- The project-wide `vendor/bin/sail yarn run format:check` still reports the known pre-existing
+  `resources/views/vendor/mail/html/themes/default.css` formatting baseline; that unrelated file was not changed.
+- The initial Sail verification attempt reported `Docker or Podman is not running`. Permission was requested to access
+  the local Docker runtime, the same Sail commands were retried successfully, and the environment issue did not block
+  completion.
+
+The step is marked as done because its UI requirements and focused verification are complete. Do not treat payment or
+refund data as public until the business rules explicitly authorize that exposure.
 
 ### Step 7 — Data migration and compatibility rollout
 

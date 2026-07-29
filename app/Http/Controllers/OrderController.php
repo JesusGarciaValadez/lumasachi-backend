@@ -58,7 +58,7 @@ final class OrderController extends Controller
         $hit = Cache::has($key);
 
         $payload = Cache::remember($key, now()->addSeconds(self::ttlIndex()), function () use ($user) {
-            $orders = Order::with(['customer', 'assignedTo', 'createdBy'])
+            $orders = Order::with(['customer', 'assignedTo', 'createdBy', 'refunds'])
                 ->when($user->isCustomer(), function ($query) use ($user) {
                     $query->where('customer_id', $user->id);
                 })
