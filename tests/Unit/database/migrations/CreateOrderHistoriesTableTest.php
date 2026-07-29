@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -52,9 +52,9 @@ it('checks if nullable columns can be null', function () {
     // Test with nullable columns as null
     $history = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open,
-        'new_value' => OrderStatus::InProgress,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received,
+        'new_value' => OrderLifecycleStatus::AwaitingReview,
         'created_by' => $user->id,
         // Comment is nullable and left as null
     ]);
@@ -69,9 +69,9 @@ it('checks if foreign key constraints', function () {
     // Create order history
     $history = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open,
-        'new_value' => OrderStatus::InProgress,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received,
+        'new_value' => OrderLifecycleStatus::AwaitingReview,
         'comment' => 'Status changed',
         'created_by' => $user->id,
     ]);
@@ -88,18 +88,18 @@ it('checks if can create order history with all fields', function () {
 
     $history = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Status changed - Customer requested urgent handling',
         'created_by' => $user->id,
     ]);
 
     expect($history)->toBeInstanceOf(OrderHistory::class);
     expect($history->order_id)->toEqual($order->id);
-    expect($history->field_changed)->toEqual('status');
-    expect($history->old_value->value)->toEqual('Open');
-    expect($history->new_value->value)->toEqual('In Progress');
+    expect($history->field_changed)->toEqual('lifecycle_status');
+    expect($history->old_value->value)->toEqual('Received');
+    expect($history->new_value->value)->toEqual('Awaiting Review');
     expect($history->comment)->toEqual('Status changed - Customer requested urgent handling');
     expect($history->created_by)->toEqual($user->id);
 });
@@ -109,9 +109,9 @@ it('checks if uuid primary key', function () {
 
     $history = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open,
-        'new_value' => OrderStatus::InProgress,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received,
+        'new_value' => OrderLifecycleStatus::AwaitingReview,
         'created_by' => $user->id,
     ]);
 

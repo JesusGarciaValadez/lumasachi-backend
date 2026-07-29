@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -26,43 +27,43 @@ beforeEach(function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 });
-it('checks complete valid state transition flow', function () {
+it('checks complete valid lifecycle transition flow', function () {
     $this->actingAs($this->employee);
 
-    // Step 1: OPEN -> IN_PROGRESS
+    // Step 1: RECEIVED -> AWAITING_REVIEW
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
-        'notes' => 'Starting work on this order',
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
+        'notes' => 'Starting review of this order',
     ]);
 
     $response->assertOk()
         ->assertJson([
             'message' => 'Order status updated successfully.',
             'order' => [
-                'status' => OrderStatus::InProgress->value,
+                'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
             ],
         ]);
 
     $this->assertDatabaseHas('orders', [
         'id' => $this->order->id,
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     // Check history was created
     $this->assertDatabaseHas('order_histories', [
         'order_id' => $this->order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => 'lifecycle_status',
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $this->employee->id,
     ]);
 
-    // Step 2: IN_PROGRESS -> READY_FOR_DELIVERY
+    // Step 2: AWAITING_REVIEW -> REVIEWED (observer advances to approval)
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::ReadyForDelivery->value,
+        'lifecycle_status' => OrderLifecycleStatus::Reviewed->value,
         'notes' => 'Order is ready for delivery',
     ]);
 
@@ -70,13 +71,13 @@ it('checks complete valid state transition flow', function () {
         ->assertJson([
             'message' => 'Order status updated successfully.',
             'order' => [
-                'status' => OrderStatus::ReadyForDelivery->value,
+                'lifecycle_status' => OrderLifecycleStatus::AwaitingCustomerApproval->value,
             ],
         ]);
 
-    // Step 3: READY_FOR_DELIVERY -> DELIVERED
+    // Step 3: AWAITING_CUSTOMER_APPROVAL -> READY_FOR_WORK
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
         'notes' => 'Order delivered to customer',
     ]);
 
@@ -84,147 +85,130 @@ it('checks complete valid state transition flow', function () {
         ->assertJson([
             'message' => 'Order status updated successfully.',
             'order' => [
-                'status' => OrderStatus::Delivered->value,
+                'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
             ],
         ]);
 
-    // Step 4: DELIVERED -> PAID
+    // Step 4: READY_FOR_WORK -> READY_FOR_DELIVERY
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Paid->value,
-        'notes' => 'Payment received',
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
+        'notes' => 'Work is ready for delivery',
     ]);
 
     $response->assertOk()
         ->assertJson([
             'message' => 'Order status updated successfully.',
             'order' => [
-                'status' => OrderStatus::Paid->value,
+                'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
             ],
         ]);
 
-    // Verify complete history chain
+    // Step 5: READY_FOR_DELIVERY -> DELIVERED
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
+        'notes' => 'Order delivered to customer',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
+
+    // Verify lifecycle history chain. Payment is recorded separately.
     $histories = OrderHistory::where('order_id', $this->order->id)
-        ->where('field_changed', 'status')
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
         ->orderBy('created_at', 'asc')
         ->get();
 
-    expect($histories)->toHaveCount(4);
+    expect($histories)->toHaveCount(6);
 
     // The OrderHistory model casts values to enums, so we need to get the value property
-    expect($histories[0]->old_value?->value ?? $histories[0]->old_value)->toEqual(OrderStatus::Open->value);
-    expect($histories[0]->new_value?->value ?? $histories[0]->new_value)->toEqual(OrderStatus::InProgress->value);
-    expect($histories[1]->old_value?->value ?? $histories[1]->old_value)->toEqual(OrderStatus::InProgress->value);
-    expect($histories[1]->new_value?->value ?? $histories[1]->new_value)->toEqual(OrderStatus::ReadyForDelivery->value);
-    expect($histories[2]->old_value?->value ?? $histories[2]->old_value)->toEqual(OrderStatus::ReadyForDelivery->value);
-    expect($histories[2]->new_value?->value ?? $histories[2]->new_value)->toEqual(OrderStatus::Delivered->value);
-    expect($histories[3]->old_value?->value ?? $histories[3]->old_value)->toEqual(OrderStatus::Delivered->value);
-    expect($histories[3]->new_value?->value ?? $histories[3]->new_value)->toEqual(OrderStatus::Paid->value);
+    expect($histories->pluck('new_value')->map(fn($value) => $value?->value ?? $value)->all())
+        ->toEqual([
+            OrderLifecycleStatus::AwaitingReview->value,
+            OrderLifecycleStatus::Reviewed->value,
+            OrderLifecycleStatus::AwaitingCustomerApproval->value,
+            OrderLifecycleStatus::ReadyForWork->value,
+            OrderLifecycleStatus::ReadyForDelivery->value,
+            OrderLifecycleStatus::Delivered->value,
+        ]);
 });
-it('checks can cancel order from open status', function () {
+it('checks can cancel order from received lifecycle status', function () {
     $this->actingAs($this->employee);
 
-    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Cancelled->value,
+    $response = $this->putJson("/api/v1/orders/{$this->order->uuid}", [
+        'disposition_status' => OrderDispositionStatus::Cancelled->value,
         'notes' => 'Customer cancelled the order',
     ]);
 
     $response->assertOk()
         ->assertJson([
-            'message' => 'Order status updated successfully.',
-            'order' => [
-                'status' => OrderStatus::Cancelled->value,
-            ],
+            'message' => 'Order updated successfully.',
+            'order' => ['disposition_status' => OrderDispositionStatus::Cancelled->value],
         ]);
 
     $this->assertDatabaseHas('orders', [
         'id' => $this->order->id,
-        'status' => OrderStatus::Cancelled->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
+        'disposition_status' => OrderDispositionStatus::Cancelled->value,
     ]);
 });
-it('checks return and cancel flow', function () {
+it('checks returned and cancelled are terminal dispositions', function () {
     // Setup order in DELIVERED status
-    $this->order->update(['status' => OrderStatus::Delivered->value]);
+    $this->order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
     $this->actingAs($this->employee);
 
     // DELIVERED -> RETURNED
-    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Returned->value,
+    $response = $this->putJson("/api/v1/orders/{$this->order->uuid}", [
+        'disposition_status' => OrderDispositionStatus::Returned->value,
         'notes' => 'Customer returned the order',
     ]);
 
     $response->assertOk()
         ->assertJson([
-            'message' => 'Order status updated successfully.',
-            'order' => [
-                'status' => OrderStatus::Returned->value,
-            ],
+            'message' => 'Order updated successfully.',
+            'order' => ['disposition_status' => OrderDispositionStatus::Returned->value],
         ]);
 
-    // RETURNED -> CANCELLED
+    // A returned order cannot be changed or resume lifecycle.
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Cancelled->value,
-        'notes' => 'Order cancelled after return',
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
-    $response->assertOk()
-        ->assertJson([
-            'message' => 'Order status updated successfully.',
-            'order' => [
-                'status' => OrderStatus::Cancelled->value,
-            ],
-        ]);
+    $response->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
 });
-it('checks not paid to paid flow', function () {
+it('checks payment status is independent from lifecycle status', function () {
     // Setup order in DELIVERED status
-    $this->order->update(['status' => OrderStatus::Delivered->value]);
+    $this->order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
     $this->actingAs($this->employee);
 
-    // DELIVERED -> NOT_PAID
-    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::NotPaid->value,
-        'notes' => 'Payment pending',
+    $response = $this->getJson("/api/v1/orders/{$this->order->uuid}");
+    $response->assertOk()->assertJsonPath('payment_status', 'Unpaid');
+
+    // Record payment without changing lifecycle.
+    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/payments", [
+        'amount' => 100,
     ]);
 
-    $response->assertOk()
-        ->assertJson([
-            'message' => 'Order status updated successfully.',
-            'order' => [
-                'status' => OrderStatus::NotPaid->value,
-            ],
-        ]);
-
-    // NOT_PAID -> PAID
-    $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Paid->value,
-        'notes' => 'Payment received after follow-up',
-    ]);
-
-    $response->assertOk()
-        ->assertJson([
-            'message' => 'Order status updated successfully.',
-            'order' => [
-                'status' => OrderStatus::Paid->value,
-            ],
-        ]);
+    $response->assertCreated()->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
+    $response->assertJsonPath('order.payment_status', 'Paid');
 });
 it('checks cannot transition from paid status', function () {
     $this->actingAs($this->employee);
 
     // Set order to paid status
-    $this->order->update(['status' => OrderStatus::Paid->value]);
+    $this->order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['status'])
+        ->assertJsonValidationErrors(['lifecycle_status'])
         ->assertJson([
             'errors' => [
-                'status' => [
-                    'Invalid status transition.',
+                'lifecycle_status' => [
+                    'Invalid lifecycle transition.',
                 ],
             ],
         ]);
@@ -233,18 +217,21 @@ it('checks cannot transition from cancelled status', function () {
     $this->actingAs($this->employee);
 
     // Set order to cancelled status
-    $this->order->update(['status' => OrderStatus::Cancelled->value]);
+    $this->order->update([
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
+        'disposition_status' => OrderDispositionStatus::Cancelled->value,
+    ]);
 
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['status'])
+        ->assertJsonValidationErrors(['lifecycle_status'])
         ->assertJson([
             'errors' => [
-                'status' => [
-                    'Invalid status transition.',
+                'lifecycle_status' => [
+                    'A terminal disposition cannot resume the lifecycle.',
                 ],
             ],
         ]);
@@ -254,15 +241,15 @@ it('checks cannot skip transition steps', function () {
 
     // Try to go from OPEN directly to DELIVERED (skipping IN_PROGRESS and READY_FOR_DELIVERY)
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Delivered->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['status'])
+        ->assertJsonValidationErrors(['lifecycle_status'])
         ->assertJson([
             'errors' => [
-                'status' => [
-                    'Invalid status transition.',
+                'lifecycle_status' => [
+                    'Invalid lifecycle transition.',
                 ],
             ],
         ]);
@@ -271,19 +258,19 @@ it('checks cannot go backwards in flow', function () {
     $this->actingAs($this->employee);
 
     // Set order to IN_PROGRESS
-    $this->order->update(['status' => OrderStatus::InProgress->value]);
+    $this->order->update(['lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value]);
 
     // Try to go back to OPEN
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['status'])
+        ->assertJsonValidationErrors(['lifecycle_status'])
         ->assertJson([
             'errors' => [
-                'status' => [
-                    'Invalid status transition.',
+                'lifecycle_status' => [
+                    'Invalid lifecycle transition.',
                 ],
             ],
         ]);
@@ -292,22 +279,22 @@ it('checks update status validates status', function () {
     $this->actingAs($this->employee);
 
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => 'InvalidStatus',
+        'lifecycle_status' => 'InvalidStatus',
     ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['status'])
+        ->assertJsonValidationErrors(['lifecycle_status'])
         ->assertJson([
             'errors' => [
-                'status' => [
-                    'The selected status is invalid.',
+                'lifecycle_status' => [
+                    'The selected lifecycle status is invalid.',
                 ],
             ],
         ]);
 });
 it('checks status update requires authentication', function () {
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     $response->assertUnauthorized();
@@ -316,7 +303,7 @@ it('checks customer cannot update order status', function () {
     $this->actingAs($this->customer);
 
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     $response->assertForbidden();
@@ -327,13 +314,13 @@ it('checks employee can only update assigned or created orders', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->admin->id,
         'assigned_to' => $this->employee2->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $this->actingAs($this->employee);
 
     $response = $this->postJson("/api/v1/orders/{$otherOrder->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     $response->assertForbidden();
@@ -344,13 +331,13 @@ it('checks admin can update any order status', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $this->actingAs($this->admin);
 
     $response = $this->postJson("/api/v1/orders/{$employeeOrder->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
         'notes' => 'Admin updating status',
     ]);
 
@@ -358,21 +345,21 @@ it('checks admin can update any order status', function () {
         ->assertJson([
             'message' => 'Order status updated successfully.',
             'order' => [
-                'status' => OrderStatus::InProgress->value,
+                'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
             ],
         ]);
 });
 it('checks marking order as completed sets actual completion date', function () {
     // Setup order ready for delivery
     $this->order->update([
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
         'actual_completion' => null,
     ]);
 
     $this->actingAs($this->employee);
 
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
-        'status' => OrderStatus::Completed->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
         'notes' => 'Order completed',
         'actual_completion' => now()->toIso8601String(), // Add actual_completion date
     ]);
@@ -382,7 +369,7 @@ it('checks marking order as completed sets actual completion date', function () 
     // Note: The actual_completion date should be set when marking as COMPLETED
     $this->order->refresh();
 
-    expect($this->order->status->value)->toEqual(OrderStatus::Completed->value);
+    expect($this->order->lifecycleStatus())->toEqual(OrderLifecycleStatus::ReadyForDelivery);
 });
 it('checks admin can assign order to employee', function () {
     $this->actingAs($this->admin);
@@ -563,57 +550,45 @@ it('checks complete motor lifecycle state transitions', function () {
         'customer_id' => $this->customer->id,
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
-        'status' => OrderStatus::Received->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     // RECEIVED → AWAITING_REVIEW
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::AwaitingReview->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
     $response->assertOk();
 
     // AWAITING_REVIEW → REVIEWED
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::Reviewed->value,
+        'lifecycle_status' => OrderLifecycleStatus::Reviewed->value,
     ]);
     $response->assertOk();
 
     // Observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::AwaitingCustomerApproval);
 
     // AWAITING_CUSTOMER_APPROVAL → READY_FOR_WORK
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::ReadyForWork->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
     ]);
     $response->assertOk();
 
-    // READY_FOR_WORK → IN_PROGRESS
+    // READY_FOR_WORK → READY_FOR_DELIVERY
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::InProgress->value,
-    ]);
-    $response->assertOk();
-
-    // IN_PROGRESS → READY_FOR_DELIVERY
-    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::ReadyForDelivery->value,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
     ]);
     $response->assertOk();
 
     // READY_FOR_DELIVERY → DELIVERED
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::Delivered->value,
-    ]);
-    $response->assertOk();
-
-    // DELIVERED → PAID
-    $response = $this->postJson("/api/v1/orders/{$order->uuid}/status", [
-        'status' => OrderStatus::Paid->value,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
     $response->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::Paid);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
 });
 it('checks history is ordered by newest first', function () {
     $this->actingAs($this->employee);

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\Attachment;
@@ -79,31 +80,31 @@ it('checks if seeder creates orders with various statuses', function () {
     // Test specific orders exist
     $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
     expect($urgentOrder)->not->toBeNull();
-    expect($urgentOrder->status->value)->toEqual(OrderStatus::InProgress->value);
+    expect($urgentOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::ReadyForWork);
     expect($urgentOrder->priority->value)->toEqual(OrderPriority::URGENT->value);
     expect($urgentOrder->assigned_to)->not->toBeNull();
 
     // Test order in ready for delivery status
     $readyOrder = Order::where('title', 'Business Card Design')->first();
     expect($readyOrder)->not->toBeNull();
-    expect($readyOrder->status->value)->toEqual(OrderStatus::ReadyForDelivery->value);
+    expect($readyOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::ReadyForDelivery);
 
     // Test completed and paid order
     $paidOrder = Order::where('title', 'Logo Design Project')->first();
     expect($paidOrder)->not->toBeNull();
-    expect($paidOrder->status->value)->toEqual(OrderStatus::Paid->value);
+    expect($paidOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
     expect($paidOrder->actual_completion)->not->toBeNull();
 
     // Test open unassigned order
     $openOrder = Order::where('title', 'Marketing Campaign Materials')->first();
     expect($openOrder)->not->toBeNull();
-    expect($openOrder->status->value)->toEqual(OrderStatus::Open->value);
+    expect($openOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::Received);
     expect($openOrder->assigned_to)->not->toBeNull();
 
     // Test cancelled order
     $cancelledOrder = Order::where('title', 'Product Photography')->first();
     expect($cancelledOrder)->not->toBeNull();
-    expect($cancelledOrder->status->value)->toEqual(OrderStatus::Cancelled->value);
+    expect($cancelledOrder->dispositionStatus())->toEqual(OrderDispositionStatus::Cancelled);
 });
 it('checks if seeder creates proper order history', function () {
     $this->seed(DatabaseSeeder::class);
@@ -111,8 +112,8 @@ it('checks if seeder creates proper order history', function () {
     // Test urgent order has creation history
     $urgentOrder = Order::where('title', 'Urgent Website Redesign')->first();
     $creationHistory = OrderHistory::where('order_id', $urgentOrder->id)
-        ->where('field_changed', 'status')
-        ->where('new_value', OrderStatus::Open->value)
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+        ->where('new_value', OrderLifecycleStatus::Received->value)
         ->whereNull('old_value')
         ->first();
     expect($creationHistory)->not->toBeNull();
@@ -123,8 +124,8 @@ it('checks if seeder creates proper order history', function () {
     expect($paidOrderHistories->count())->toBeGreaterThanOrEqual(4);
 
     // Verify payment history exists
-    $paymentHistory = $paidOrderHistories->where('field_changed', 'status')
-        ->where('new_value', OrderStatus::Paid->value)->first();
+    $paymentHistory = $paidOrderHistories->where('field_changed', OrderHistory::FIELD_PAYMENT_STATUS)
+        ->where('new_value', 'Paid')->first();
     expect($paymentHistory)->not->toBeNull();
     $this->assertStringContainsString('Payment received', $paymentHistory->comment);
 });
@@ -188,12 +189,12 @@ it('checks if seeder maintains business logic integrity', function () {
 
     // Test that specific completed orders from seeder have actual completion dates
     $logoOrder = Order::where('title', 'Logo Design Project')->first();
-    if ($logoOrder && $logoOrder->status === OrderStatus::Paid->value) {
+    if ($logoOrder && $logoOrder->lifecycleStatus() === OrderLifecycleStatus::Delivered) {
         expect($logoOrder->actual_completion)->not->toBeNull();
     }
 
     // Test that cancelled orders don't have assigned employees
-    $cancelledOrders = Order::where('status', OrderStatus::Cancelled->value)
+    $cancelledOrders = Order::where('disposition_status', OrderDispositionStatus::Cancelled->value)
         ->whereNotNull('assigned_to')
         ->count();
     expect($cancelledOrders)->toBeGreaterThanOrEqual(1);
@@ -226,7 +227,7 @@ it('checks if seeder creates diverse order history field changes', function () {
         OrderHistory::FIELD_ESTIMATED_COMPLETION,
         OrderHistory::FIELD_NOTES,
         OrderHistory::FIELD_PRIORITY,
-        OrderHistory::FIELD_STATUS,
+        OrderHistory::FIELD_LIFECYCLE_STATUS,
         OrderHistory::FIELD_TITLE,
     ];
 

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -42,14 +42,14 @@ it('checks order creation with relationships', function () {
     expect($order->assignedTo->id)->toEqual($assignee->id);
 });
 it('checks order status transitions', function () {
-    $order = Order::factory()->createQuietly(['status' => OrderStatus::Open->value]);
-    $order->update(['status' => OrderStatus::InProgress->value]);
+    $order = Order::factory()->createQuietly(['lifecycle_status' => OrderLifecycleStatus::Received->value]);
+    $order->update(['lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value]);
 
-    expect($order->status->value)->toEqual(OrderStatus::InProgress->value);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::ReadyForWork);
 
-    $order->update(['status' => OrderStatus::Delivered->value]);
+    $order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
-    expect($order->status->value)->toEqual(OrderStatus::Delivered->value);
+    expect($order->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
 });
 it('checks order attachments', function () {
     $order = Order::factory()->createQuietly();
@@ -125,12 +125,12 @@ it('checks order date casting', function () {
 it('checks order factory states', function () {
     // Test completed state
     $completedOrder = Order::factory()->completed()->createQuietly();
-    expect($completedOrder->status->value)->toEqual(OrderStatus::Delivered->value);
+    expect($completedOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::Delivered);
     expect($completedOrder->actual_completion)->not->toBeNull();
 
     // Test open state
     $openOrder = Order::factory()->open()->createQuietly();
-    expect($openOrder->status->value)->toEqual(OrderStatus::Open->value);
+    expect($openOrder->lifecycleStatus())->toEqual(OrderLifecycleStatus::Received);
     expect($openOrder->actual_completion)->toBeNull();
 });
 it('checks has attachments trait methods', function () {
@@ -219,7 +219,6 @@ it('checks mass assignment protection', function () {
         'customer_id',
         'title',
         'description',
-        'status',
         'lifecycle_status',
         'disposition_status',
         'priority',
@@ -249,21 +248,18 @@ it('checks order priority values', function () {
 });
 it('checks order status values', function () {
     $statuses = [
-        OrderStatus::Open->value,
-        OrderStatus::InProgress->value,
-        OrderStatus::ReadyForDelivery->value,
-        OrderStatus::Delivered->value,
-        OrderStatus::Paid->value,
-        OrderStatus::Returned->value,
-        OrderStatus::NotPaid->value,
-        OrderStatus::Cancelled->value,
-        OrderStatus::OnHold->value,
-        OrderStatus::Completed->value,
+        OrderLifecycleStatus::Received->value,
+        OrderLifecycleStatus::AwaitingReview->value,
+        OrderLifecycleStatus::Reviewed->value,
+        OrderLifecycleStatus::AwaitingCustomerApproval->value,
+        OrderLifecycleStatus::ReadyForWork->value,
+        OrderLifecycleStatus::ReadyForDelivery->value,
+        OrderLifecycleStatus::Delivered->value,
     ];
 
     foreach ($statuses as $status) {
-        $order = Order::factory()->createQuietly(['status' => $status]);
-        expect($order->status->value)->toEqual($status);
+        $order = Order::factory()->createQuietly(['lifecycle_status' => $status]);
+        expect($order->lifecycleStatus()->value)->toEqual($status);
     }
 });
 it('checks order with null optional fields', function () {

@@ -34,7 +34,7 @@ final class OrderPaidNotification extends Notification implements ShouldQueue, S
             ->greeting(__('notifications.greeting'))
             ->line(__('notifications.order_paid.line'))
             ->line(__('notifications.order_label', ['uuid' => $this->order->uuid]))
-            ->line(__('notifications.status_label', ['status' => $this->order->status->getLabel()]))
+            ->line(__('notifications.status_label', ['status' => $this->order->lifecycleStatus()?->getLabel()]))
             ->action(__('notifications.view_order'), route('web.orders.show', $this->order))
             ->salutation(__('notifications.salutation'));
     }
@@ -44,7 +44,7 @@ final class OrderPaidNotification extends Notification implements ShouldQueue, S
     {
         return [
             'order_id' => $this->order->uuid,
-            'status' => $this->order->status->value,
+            'status' => $this->order->lifecycleStatus()?->value,
         ];
     }
 }

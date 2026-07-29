@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ServiceCatalog;
@@ -60,8 +60,8 @@ final class SubmitBudgetRequest extends FormRequest
             /** @var Order|null $order */
             $order = $this->route('order');
 
-            if ($order && $order->status !== OrderStatus::AwaitingReview) {
-                $validator->errors()->add('status', 'Order must be in Awaiting Review status.');
+            if ($order && $order->lifecycleStatus() !== OrderLifecycleStatus::AwaitingReview) {
+                $validator->errors()->add('lifecycle_status', 'Order must be in Awaiting Review status.');
             }
 
             $services = $this->input('services', []);

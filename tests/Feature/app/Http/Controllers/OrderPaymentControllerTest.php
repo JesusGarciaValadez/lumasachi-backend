@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\OrderItemType;
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
@@ -98,7 +98,7 @@ it('derives payment status again when the completed total changes', function ():
 });
 
 it('blocks delivery while the ledger leaves an amount due', function (): void {
-    $order = paymentTestOrder(OrderStatus::ReadyForDelivery);
+    $order = paymentTestOrder(OrderLifecycleStatus::ReadyForDelivery);
     paymentTestService($order, 100.00);
     OrderPayment::factory()->create([
         'order_id' => $order->id,
@@ -118,17 +118,17 @@ it('blocks delivery while the ledger leaves an amount due', function (): void {
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertOk()
-        ->assertJsonPath('order.status', OrderStatus::Delivered->value);
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
 });
 
-function paymentTestOrder(OrderStatus $status = OrderStatus::AwaitingReview): Order
+function paymentTestOrder(OrderLifecycleStatus $status = OrderLifecycleStatus::AwaitingReview): Order
 {
     $order = Order::factory()->createQuietly([
         'customer_id' => test()->customer->id,
         'assigned_to' => test()->employee->id,
         'created_by' => test()->employee->id,
         'updated_by' => test()->employee->id,
-        'status' => $status->value,
+        'lifecycle_status' => $status->value,
     ]);
 
     OrderMotorInfo::create(['order_id' => $order->id]);

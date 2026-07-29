@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\OrderDispositionStatus;
 use App\Enums\OrderHistoryEventType;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
@@ -32,7 +34,12 @@ final class OrderHistory extends Model
     /**
      * Available fields that can be tracked
      */
+    public const FIELD_LIFECYCLE_STATUS = 'lifecycle_status';
+
+    /** @deprecated Historical read compatibility only. */
     public const FIELD_STATUS = 'status';
+
+    public const FIELD_DISPOSITION_STATUS = 'disposition_status';
 
     public const FIELD_PAYMENT_STATUS = 'payment_status';
 
@@ -121,10 +128,12 @@ final class OrderHistory extends Model
     public static function eventTypeFor(string $field, mixed $newValue = null): OrderHistoryEventType
     {
         return match ($field) {
+            self::FIELD_LIFECYCLE_STATUS => OrderHistoryEventType::Lifecycle,
+            self::FIELD_DISPOSITION_STATUS => OrderHistoryEventType::Disposition,
+            self::FIELD_STATUS => self::statusEventType($newValue),
             self::FIELD_PAYMENT_STATUS => OrderHistoryEventType::Payment,
             self::FIELD_PAYMENT_RECORD => OrderHistoryEventType::PaymentRecord,
             self::FIELD_REFUND => OrderHistoryEventType::Refund,
-            self::FIELD_STATUS => self::statusEventType($newValue),
             default => OrderHistoryEventType::Attribute,
         };
     }
@@ -254,10 +263,28 @@ final class OrderHistory extends Model
 
         $eventType = OrderHistoryEventType::tryFrom((string)$this->getRawOriginal('event_type'));
 
-        if ($eventType === OrderHistoryEventType::Payment) {
+        if ($eventType === OrderHistoryEventType::Payment || $field === self::FIELD_PAYMENT_STATUS) {
             return $value instanceof OrderPaymentStatus
                 ? $value
                 : OrderPaymentStatus::tryFrom((string)$value) ?? $value;
+        }
+
+        if ($eventType === OrderHistoryEventType::Lifecycle || $field === self::FIELD_LIFECYCLE_STATUS) {
+            return $value instanceof OrderLifecycleStatus
+                ? $value
+                : OrderLifecycleStatus::tryFrom((string)$value) ?? $value;
+        }
+
+        if ($eventType === OrderHistoryEventType::Disposition || $field === self::FIELD_DISPOSITION_STATUS) {
+            return $value instanceof OrderDispositionStatus
+                ? $value
+                : OrderDispositionStatus::tryFrom((string)$value) ?? $value;
+        }
+
+        if ($field === self::FIELD_STATUS) {
+            return $value instanceof OrderStatus
+                ? $value
+                : OrderStatus::tryFrom((string)$value) ?? $value;
         }
 
         if ($eventType === OrderHistoryEventType::Refund) {
@@ -267,12 +294,6 @@ final class OrderHistory extends Model
         }
 
         switch ($field) {
-            case self::FIELD_STATUS:
-                if ($value instanceof OrderStatus) {
-                    return $value;
-                }
-
-                return $value ? OrderStatus::tryFrom($value) : null;
             case self::FIELD_PRIORITY:
                 if ($value instanceof OrderPriority) {
                     return $value;
@@ -371,8 +392,8 @@ final class OrderHistory extends Model
             : OrderStatus::tryFrom((string)$value);
 
         return match (true) {
-            $status?->lifecycleStatus() !== null => OrderHistoryEventType::Lifecycle,
-            $status?->dispositionStatus() !== null => OrderHistoryEventType::Disposition,
+            $status !== null && OrderLifecycleStatus::tryFrom($status->value) !== null => OrderHistoryEventType::Lifecycle,
+            $status !== null && OrderDispositionStatus::tryFrom($status->value) !== null => OrderHistoryEventType::Disposition,
             $status?->paymentStatus() !== null => OrderHistoryEventType::Payment,
             default => OrderHistoryEventType::Attribute,
         };

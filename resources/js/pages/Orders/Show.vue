@@ -92,16 +92,16 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ]);
 
 const isStaff = computed(() => capabilities.create_order);
-const canReview = computed(() => capabilities.submit_budget && order.value.status === 'Awaiting Review');
-const canApprove = computed(() => capabilities.approve_services && order.value.status === 'Awaiting Customer Approval');
-const canComplete = computed(() => capabilities.complete_services && ['Ready for Work', 'In Progress'].includes(order.value.status));
-const canMarkReady = computed(() => capabilities.mark_ready_for_delivery && ['Ready for Work', 'In Progress'].includes(order.value.status));
+const canReview = computed(() => capabilities.submit_budget && order.value.lifecycle_status === 'Awaiting Review');
+const canApprove = computed(() => capabilities.approve_services && order.value.lifecycle_status === 'Awaiting Customer Approval');
+const canComplete = computed(() => capabilities.complete_services && order.value.lifecycle_status === 'Ready for Work');
+const canMarkReady = computed(() => capabilities.mark_ready_for_delivery && order.value.lifecycle_status === 'Ready for Work');
 const remainingBalance = computed(() => Number(order.value.financials?.remaining_balance ?? 0));
-const canViewDelivery = computed(() => isStaff.value && order.value.status === 'Ready for Delivery');
+const canViewDelivery = computed(() => isStaff.value && order.value.lifecycle_status === 'Ready for Delivery');
 const canDeliver = computed(() => capabilities.deliver_order && remainingBalance.value <= 0);
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
-const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() => resolveLifecycleStatus(order.value.lifecycle_status, order.value.status));
+const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() => resolveLifecycleStatus(order.value.lifecycle_status));
 const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),
     priority: t('orders.priority'),

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
+use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Models\Attachment;
@@ -154,7 +156,7 @@ final class DatabaseSeeder extends Seeder
             'customer_id' => $businessCustomer1->id,
             'title' => 'Urgent Website Redesign',
             'description' => 'Complete redesign of company website with modern UI/UX. Must be responsive and include e-commerce functionality.',
-            'status' => OrderStatus::InProgress->value,
+            'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
             'priority' => OrderPriority::URGENT->value,
             'estimated_completion' => Carbon::now()->addDays(7),
             'created_by' => $businessCustomer1->id,
@@ -168,7 +170,7 @@ final class DatabaseSeeder extends Seeder
             'customer_id' => $customer1->id,
             'title' => 'Business Card Design',
             'description' => 'Design and print 500 business cards with new company branding.',
-            'status' => OrderStatus::ReadyForDelivery->value,
+            'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
             'priority' => OrderPriority::NORMAL->value,
             'estimated_completion' => Carbon::now()->addDays(3),
             'created_by' => $customer1->id,
@@ -181,7 +183,7 @@ final class DatabaseSeeder extends Seeder
             'customer_id' => $customer2->id,
             'title' => 'Logo Design Project',
             'description' => 'Create new company logo with 3 variations and brand guidelines document.',
-            'status' => OrderStatus::Paid->value,
+            'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
             'priority' => OrderPriority::HIGH->value,
             'estimated_completion' => Carbon::now()->subDays(5),
             'actual_completion' => Carbon::now()->subDays(7),
@@ -196,7 +198,7 @@ final class DatabaseSeeder extends Seeder
             'customer_id' => $businessCustomer2->id,
             'title' => 'Marketing Campaign Materials',
             'description' => 'Design materials for Q4 marketing campaign including posters, flyers, and social media graphics.',
-            'status' => OrderStatus::Open->value,
+            'lifecycle_status' => OrderLifecycleStatus::Received->value,
             'priority' => OrderPriority::NORMAL->value,
             'estimated_completion' => Carbon::now()->addDays(14),
             'created_by' => $businessCustomer2->id,
@@ -209,7 +211,8 @@ final class DatabaseSeeder extends Seeder
             'customer_id' => $customer1->id,
             'title' => 'Product Photography',
             'description' => 'Professional photography session for new product line.',
-            'status' => OrderStatus::Cancelled->value,
+            'lifecycle_status' => OrderLifecycleStatus::Received->value,
+            'disposition_status' => OrderDispositionStatus::Cancelled->value,
             'priority' => OrderPriority::LOW->value,
             'estimated_completion' => Carbon::now()->addDays(10),
             'created_by' => $customer1->id,
@@ -230,9 +233,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
             'old_value' => null,
-            'new_value' => OrderStatus::Open->value,
+            'new_value' => OrderLifecycleStatus::Received->value,
             'comment' => 'Order created with urgent priority',
             'created_by' => $businessCustomer1->id,
             'created_at' => $order1->created_at,
@@ -252,9 +255,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order1->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'old_value' => OrderLifecycleStatus::Received->value,
+            'new_value' => OrderLifecycleStatus::ReadyForWork->value,
             'comment' => 'Work started on the project',
             'created_by' => $admin->id,
             'created_at' => $order1->created_at->addHours(2),
@@ -275,9 +278,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order2->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::InProgress->value,
-            'new_value' => OrderStatus::ReadyForDelivery->value,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'old_value' => OrderLifecycleStatus::ReadyForWork->value,
+            'new_value' => OrderLifecycleStatus::ReadyForDelivery->value,
             'comment' => 'Design completed and sent to print. Cards will be ready for pickup tomorrow',
             'created_by' => $employee2->id,
             'created_at' => Carbon::now()->subDays(1),
@@ -287,9 +290,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::InProgress->value,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'old_value' => OrderLifecycleStatus::Received->value,
+            'new_value' => OrderLifecycleStatus::ReadyForWork->value,
             'comment' => 'Designer started working on logo concepts',
             'created_by' => $employee3->id,
             'created_at' => $order3->created_at->addHours(1),
@@ -309,9 +312,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::InProgress->value,
-            'new_value' => OrderStatus::ReadyForDelivery->value,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'old_value' => OrderLifecycleStatus::ReadyForWork->value,
+            'new_value' => OrderLifecycleStatus::ReadyForDelivery->value,
             'comment' => 'Logo designs completed and approved by customer',
             'created_by' => $employee3->id,
             'created_at' => $order3->actual_completion->subDays(2),
@@ -320,9 +323,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::ReadyForDelivery->value,
-            'new_value' => OrderStatus::Delivered->value,
+            'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+            'old_value' => OrderLifecycleStatus::ReadyForDelivery->value,
+            'new_value' => OrderLifecycleStatus::Delivered->value,
             'comment' => 'Files delivered to customer via email',
             'created_by' => $employee3->id,
             'created_at' => $order3->actual_completion->subDays(1),
@@ -331,9 +334,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order3->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Delivered->value,
-            'new_value' => OrderStatus::Paid->value,
+            'field_changed' => OrderHistory::FIELD_PAYMENT_STATUS,
+            'old_value' => null,
+            'new_value' => OrderPaymentStatus::Paid->value,
             'comment' => 'Payment received in full via bank transfer',
             'created_by' => $admin->id,
             'created_at' => $order3->actual_completion,
@@ -354,9 +357,9 @@ final class DatabaseSeeder extends Seeder
         OrderHistory::factory()->create([
             'uuid' => Str::uuid7()->toString(),
             'order_id' => $order5->id,
-            'field_changed' => OrderHistory::FIELD_STATUS,
-            'old_value' => OrderStatus::Open->value,
-            'new_value' => OrderStatus::Cancelled->value,
+            'field_changed' => OrderHistory::FIELD_DISPOSITION_STATUS,
+            'old_value' => null,
+            'new_value' => OrderDispositionStatus::Cancelled->value,
             'comment' => 'Order cancelled by customer. Customer cited budget constraints',
             'created_by' => $admin->id,
         ]);
@@ -526,8 +529,8 @@ final class DatabaseSeeder extends Seeder
 
         // Attachment for Order History (proof of payment)
         $paymentHistory = OrderHistory::where('order_id', $order3->id)
-            ->where('field_changed', OrderHistory::FIELD_STATUS)
-            ->where('new_value', OrderStatus::Paid->value)
+            ->where('field_changed', OrderHistory::FIELD_PAYMENT_STATUS)
+            ->where('new_value', OrderPaymentStatus::Paid->value)
             ->first();
 
         if ($paymentHistory) {

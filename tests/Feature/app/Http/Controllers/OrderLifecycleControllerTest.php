@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\OrderItemType;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
@@ -72,7 +72,7 @@ it('creates order with motor info and items via api', function () {
     $response = $this->postJson('/api/v1/orders', $payload);
 
     $response->assertCreated()
-        ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
 
     $this->assertDatabaseHas('order_payments', [
         'order_id' => Order::query()->latest('id')->value('id'),
@@ -167,7 +167,7 @@ it('requires authentication to create order', function () {
 it('submits budget for order', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::AwaitingReview);
     $item = OrderItem::factory()->received()->create([
         'order_id' => $order->id,
         'item_type' => OrderItemType::CylinderHead->value,
@@ -190,12 +190,12 @@ it('submits budget for order', function () {
 
     // Order should transition through REVIEWED to AWAITING_CUSTOMER_APPROVAL
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::AwaitingCustomerApproval);
 });
 it('rejects budget for wrong status', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::Received);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
         'services' => [],
@@ -206,7 +206,7 @@ it('rejects budget for wrong status', function () {
 it('approves services via api', function () {
     $this->actingAs($this->customer);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingCustomerApproval);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::AwaitingCustomerApproval);
     $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
     $svc = OrderService::factory()->budgeted()->create([
         'order_item_id' => $item->id,
@@ -220,19 +220,19 @@ it('approves services via api', function () {
     ]);
 
     $response->assertOk()
-        ->assertJsonPath('order.status', OrderStatus::ReadyForWork->value)
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForWork->value)
         ->assertJsonPath('order.financials.authorized', '580.00')
         ->assertJsonPath('order.financials.advance_payment', '300.00');
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::ReadyForWork);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::ReadyForWork);
     expect($order->totalPaid())->toBe('300.00');
     expect(OrderPayment::where('order_id', $order->id)->count())->toBe(1);
 });
 it('rejects approval for wrong status', function () {
     $this->actingAs($this->customer);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::Received);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
         'authorized_service_ids' => [1],
@@ -243,7 +243,7 @@ it('rejects approval for wrong status', function () {
 it('marks services completed via api', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForWork);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::ReadyForWork);
     $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
     $svc = OrderService::factory()->budgeted()->authorized()->create([
         'order_item_id' => $item->id,
@@ -265,57 +265,57 @@ it('marks services completed via api', function () {
 it('rejects work completion for wrong status', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::Received);
     $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
     $svc = OrderService::factory()->budgeted()->authorized()->create(['order_item_id' => $item->id]);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
         'completed_service_ids' => [$svc->id],
     ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['status']);
+        ->assertJsonValidationErrors(['lifecycle_status']);
 
     expect($svc->fresh()->is_completed)->toBeFalse();
-    expect($order->fresh()->status)->toBe(OrderStatus::Open);
+    expect($order->fresh()->lifecycle_status)->toBe(OrderLifecycleStatus::Received);
 });
 it('marks order ready for delivery via api', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::InProgress);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::ReadyForWork);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery");
 
     $response->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::ReadyForDelivery);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::ReadyForDelivery);
 });
 it('rejects ready for delivery for wrong status', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::Received);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['status']);
+        ->assertJsonValidationErrors(['lifecycle_status']);
 
-    expect($order->fresh()->status)->toBe(OrderStatus::Open);
+    expect($order->fresh()->lifecycle_status)->toBe(OrderLifecycleStatus::Received);
 });
 it('delivers order via api', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForDelivery);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::ReadyForDelivery);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
     $response->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::Delivered);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::Delivered);
 });
 it('rejects deliver for wrong status', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::Open);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::Received);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
 
@@ -353,7 +353,7 @@ it('completes full motor order lifecycle', function () {
 
     $order = Order::firstWhere('title', 'Full Lifecycle Test');
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::AwaitingReview);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::AwaitingReview);
 
     $item = $order->items->first();
 
@@ -370,7 +370,7 @@ it('completes full motor order lifecycle', function () {
     $budgetResponse->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::AwaitingCustomerApproval);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::AwaitingCustomerApproval);
 
     // Step 3: Customer approval
     $this->actingAs($this->customer);
@@ -382,7 +382,7 @@ it('completes full motor order lifecycle', function () {
     $approvalResponse->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::ReadyForWork);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::ReadyForWork);
 
     // Step 4: Mark work completed
     $this->actingAs($this->employee);
@@ -396,19 +396,19 @@ it('completes full motor order lifecycle', function () {
     $readyResponse->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::ReadyForDelivery);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::ReadyForDelivery);
 
     // Step 6: Deliver
     $deliverResponse = $this->postJson("/api/v1/orders/{$order->uuid}/deliver");
     $deliverResponse->assertOk();
 
     $order->refresh();
-    expect($order->status)->toEqual(OrderStatus::Delivered);
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::Delivered);
 });
 it('forbids customer from submitting budget', function () {
     $this->actingAs($this->customer);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::AwaitingReview);
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
         'services' => [],
@@ -417,18 +417,18 @@ it('forbids customer from submitting budget', function () {
     $response->assertForbidden();
 });
 it('forbids customer from delivering an order', function () {
-    $order = createLifecycleOrderInStatus(OrderStatus::ReadyForDelivery);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::ReadyForDelivery);
 
     $this->actingAs($this->customer)
         ->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertForbidden();
 
-    expect($order->fresh()->status)->toBe(OrderStatus::ReadyForDelivery);
+    expect($order->fresh()->lifecycle_status)->toBe(OrderLifecycleStatus::ReadyForDelivery);
 });
 it('returns order with motor info items and services', function () {
     $this->actingAs($this->employee);
 
-    $order = createLifecycleOrderInStatus(OrderStatus::AwaitingReview);
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::AwaitingReview);
     $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
     OrderService::factory()->budgeted()->create([
         'order_item_id' => $item->id,
@@ -448,14 +448,14 @@ it('returns order with motor info items and services', function () {
 // ---------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------
-function createLifecycleOrderInStatus(OrderStatus $status): Order
+function createLifecycleOrderInStatus(OrderLifecycleStatus $status): Order
 {
     $order = Order::factory()->createQuietly([
         'customer_id' => test()->customer->id,
         'assigned_to' => test()->employee->id,
         'created_by' => test()->employee->id,
         'updated_by' => test()->employee->id,
-        'status' => $status->value,
+        'lifecycle_status' => $status->value,
     ]);
 
     OrderMotorInfo::create([

@@ -29,7 +29,7 @@ const fieldErrors = computed(() => error.value?.validationErrors ?? {});
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
 const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() =>
-    order.value ? resolveLifecycleStatus(order.value.lifecycle_status, order.value.status) : null,
+    order.value ? resolveLifecycleStatus(order.value.lifecycle_status) : null,
 );
 const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),

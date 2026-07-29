@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,8 +31,8 @@ final class DeliverOrderRequest extends FormRequest
             /** @var Order|null $order */
             $order = $this->route('order');
 
-            if ($order && $order->status !== OrderStatus::ReadyForDelivery) {
-                $validator->errors()->add('status', 'Order must be in Ready for Delivery status.');
+            if ($order && $order->lifecycleStatus() !== OrderLifecycleStatus::ReadyForDelivery) {
+                $validator->errors()->add('lifecycle_status', 'Order must be in Ready for Delivery status.');
             }
 
             if ($order && $order->hasPendingPayment()) {

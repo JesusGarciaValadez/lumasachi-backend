@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -22,10 +22,10 @@ it('sends received notifications to customer and admins', function () {
         'customer_id' => $users['customer']->id,
         'assigned_to' => $users['employee']->id,
         'created_by' => $users['admin']->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
-    $order->update(['status' => OrderStatus::Received->value]);
+    $order->update(['lifecycle_status' => OrderLifecycleStatus::Received->value]);
 
     Notification::assertSentTo($users['customer'], OrderReceivedNotification::class);
 

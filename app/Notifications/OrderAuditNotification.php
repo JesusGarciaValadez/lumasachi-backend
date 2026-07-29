@@ -43,7 +43,7 @@ final class OrderAuditNotification extends Notification implements ShouldQueue, 
             ->line(__('notifications.audit.line'))
             ->line(__('notifications.audit.event', ['event' => $event]))
             ->line(__('notifications.audit.order', ['uuid' => $this->order->uuid]))
-            ->line(__('notifications.audit.status', ['status' => $this->order->status->getLabel()]))
+            ->line(__('notifications.audit.status', ['status' => $this->order->lifecycleStatus()?->getLabel()]))
             ->line(__('notifications.priority_label', ['priority' => $this->order->priority->getLabel()]))
             ->salutation(__('notifications.salutation'));
     }
@@ -53,7 +53,7 @@ final class OrderAuditNotification extends Notification implements ShouldQueue, 
     {
         return [
             'order_id' => $this->order->uuid,
-            'status' => $this->order->status->value,
+            'status' => $this->order->lifecycleStatus()?->value,
             'event' => $this->event,
         ];
     }

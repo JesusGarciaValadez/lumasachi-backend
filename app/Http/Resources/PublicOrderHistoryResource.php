@@ -26,7 +26,7 @@ final class PublicOrderHistoryResource extends JsonResource
     private function publicFieldName(): string
     {
         return match ($this->field_changed) {
-            'status' => 'status',
+            'lifecycle_status' => 'lifecycle_status',
             'priority' => 'priority',
             'item_received', 'item_component_received' => 'items',
             'service_budgeted', 'service_authorized', 'service_completed' => 'services',
@@ -37,7 +37,7 @@ final class PublicOrderHistoryResource extends JsonResource
 
     private function publicDescription(): string
     {
-        return in_array($this->field_changed, ['status', 'priority'], true)
+        return in_array($this->field_changed, ['lifecycle_status', 'disposition_status', 'priority'], true)
             ? $this->description
             : __('orders.public_history_updated');
     }

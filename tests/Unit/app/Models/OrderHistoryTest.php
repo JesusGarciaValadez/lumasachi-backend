@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -81,22 +81,22 @@ it('checks if order history field tracking works correctly', function () {
     // Create order history for status change
     $statusHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Status changed to in progress',
         'created_by' => $user->id,
     ]);
 
-    expect($statusHistory->field_changed)->toEqual('status');
-    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
+    expect($statusHistory->field_changed)->toEqual(OrderHistory::FIELD_LIFECYCLE_STATUS);
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::AwaitingReview->value);
 
     // Check that getters return enum instances
-    expect($statusHistory->old_value)->toBeInstanceOf(OrderStatus::class);
-    expect($statusHistory->new_value)->toBeInstanceOf(OrderStatus::class);
-    expect($statusHistory->old_value)->toEqual(OrderStatus::Open);
-    expect($statusHistory->new_value)->toEqual(OrderStatus::InProgress);
+    expect($statusHistory->old_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($statusHistory->new_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($statusHistory->old_value)->toEqual(OrderLifecycleStatus::Received);
+    expect($statusHistory->new_value)->toEqual(OrderLifecycleStatus::AwaitingReview);
 
     // Create order history for priority change
     $priorityHistory = OrderHistory::create([
@@ -120,18 +120,18 @@ it('checks if order history field tracking works correctly', function () {
 });
 it('localizes history descriptions without changing canonical values', function () {
     $history = OrderHistory::make([
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
 
     app()->setLocale('es');
-    expect($history->description)->toBe('Estatus cambió de Abierta a En progreso');
+    expect($history->description)->toBe('Estatus del ciclo de vida cambió de Recibida a Esperando revisión');
 
     app()->setLocale('en');
-    expect($history->description)->toBe('Status changed from Open to In Progress');
-    expect($history->getAttributes()['old_value'])->toBe(OrderStatus::Open->value);
-    expect($history->getAttributes()['new_value'])->toBe(OrderStatus::InProgress->value);
+    expect($history->description)->toBe('Lifecycle status changed from Received to Awaiting Review');
+    expect($history->getAttributes()['old_value'])->toBe(OrderLifecycleStatus::Received->value);
+    expect($history->getAttributes()['new_value'])->toBe(OrderLifecycleStatus::AwaitingReview->value);
 
     $date = OrderHistory::make([
         'field_changed' => 'estimated_completion',
@@ -166,20 +166,20 @@ it('checks if order history can have null values', function () {
     // Create order history with null old_value (for initial creation)
     $orderHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
         'old_value' => null,
-        'new_value' => OrderStatus::Open->value,
+        'new_value' => OrderLifecycleStatus::Received->value,
         'comment' => 'Initial order creation',
         'created_by' => $user->id,
     ]);
 
     expect($orderHistory->old_value)->toBeNull();
-    expect($orderHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Open->value);
-    expect($orderHistory->field_changed)->toEqual('status');
+    expect($orderHistory->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($orderHistory->field_changed)->toEqual(OrderHistory::FIELD_LIFECYCLE_STATUS);
 
     // Check that getter returns enum instance
-    expect($orderHistory->new_value)->toBeInstanceOf(OrderStatus::class);
-    expect($orderHistory->new_value)->toEqual(OrderStatus::Open);
+    expect($orderHistory->new_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($orderHistory->new_value)->toEqual(OrderLifecycleStatus::Received);
 });
 it('checks if order history can be created through mass assignment', function () {
     // Create a user with customer role
@@ -195,9 +195,9 @@ it('checks if order history can be created through mass assignment', function ()
 
     $data = [
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Order status updated - Customer requested urgent delivery',
         'created_by' => $user->id,
     ];
@@ -224,9 +224,9 @@ it('checks if order history comment field is nullable', function () {
     // Create order history without comment
     $orderHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $user->id,
     ]);
 
@@ -246,9 +246,9 @@ it('checks if order history generates uuid', function () {
 
     $orderHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $user->id,
     ]);
 
@@ -280,9 +280,9 @@ it('checks if order history relationships load correctly', function () {
     // Create order history
     $orderHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Employee started working on order',
         'created_by' => $employee->id,
     ]);
@@ -308,9 +308,9 @@ it('checks if order history cascades on order delete', function () {
     // Create order history
     $orderHistory = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => 'status',
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $user->id,
     ]);
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Locale;
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Attachment;
 use App\Models\Order;
@@ -63,9 +63,9 @@ it('checks if store creates new order history', function () {
     ]);
     $orderHistoryData = [
         'order_id' => $order->id,
-        'field_changed' => 'status',
+        'field_changed' => 'lifecycle_status',
         'old_value' => null,
-        'new_value' => OrderStatus::Delivered->value,
+        'new_value' => OrderLifecycleStatus::Delivered->value,
         'comment' => $this->faker->sentence(),
     ];
 
@@ -86,7 +86,7 @@ it('checks if store creates new order history', function () {
 
     // Verify the description accessor works correctly in the response
     $responseData = $response->json('data');
-    expect($responseData['description'])->toEqual('Status set to: Delivered');
+    expect($responseData['description'])->toEqual('Lifecycle status set to: Delivered');
 });
 it('checks if show order history', function () {
     $orderHistory = OrderHistory::factory()->create();
@@ -134,7 +134,7 @@ it('checks if order for order history', function () {
 
     $response->assertStatus(200)
         ->assertJsonStructure([
-            'order' => ['id', 'status'],
+            'order' => ['id', 'lifecycle_status'],
         ]);
 });
 it('checks if order attachments for order history', function () {

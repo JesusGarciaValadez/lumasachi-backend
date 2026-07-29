@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\OrderItemType;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Models\ServiceCatalog;
 use Database\Seeders\ServiceCatalogSeeder;
 
@@ -63,7 +63,7 @@ it('covers domain and custom validation translation keys in both locales', funct
 
     $keys = [];
 
-    foreach (OrderStatus::cases() as $status) {
+    foreach (OrderLifecycleStatus::cases() as $status) {
         $keys[] = 'orders.status_labels.' . $status->value;
     }
 

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\OrderStatusStateMachine;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -33,7 +34,11 @@ final class UpdateOrderRequest extends FormRequest
             'customer_id' => 'sometimes|required|exists:users,id',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
-            'status' => 'sometimes|required|string|in:'.implode(',', OrderStatus::getStatuses()),
+            'lifecycle_status' => 'sometimes|required|string|in:' . implode(',', OrderLifecycleStatus::getStatuses()),
+            'disposition_status' => 'sometimes|required|string|in:' . implode(',', [
+                    OrderDispositionStatus::Returned->value,
+                    OrderDispositionStatus::Cancelled->value,
+                ]),
             'priority' => 'sometimes|required|string|in:'.implode(',', [
                 OrderPriority::LOW->value,
                 OrderPriority::NORMAL->value,
@@ -56,7 +61,7 @@ final class UpdateOrderRequest extends FormRequest
             'customer_id.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.customer_id')]),
             'title.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.title')]),
             'description.required' => __('validation.custom.required', ['attribute' => __('validation.attributes.description')]),
-            'status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.status')]),
+            'lifecycle_status.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.lifecycle_status')]),
             'priority.in' => __('validation.custom.in', ['attribute' => __('validation.attributes.priority')]),
             'assigned_to.exists' => __('validation.custom.exists', ['attribute' => __('validation.attributes.assigned_to')]),
         ];
@@ -72,17 +77,28 @@ final class UpdateOrderRequest extends FormRequest
     {
         return [
             function (Validator $validator) use ($stateMachine): void {
-                if (!$this->filled('status')) {
-                    return;
-                }
-
                 /** @var Order|null $order */
                 $order = $this->route('order');
-                $status = $this->input('status');
-                $newStatus = is_string($status) ? OrderStatus::tryFrom($status) : null;
+                $status = $this->input('lifecycle_status');
+                $newStatus = is_string($status) ? OrderLifecycleStatus::tryFrom($status) : null;
 
-                if ($order && $newStatus && !$stateMachine->canTransition($order->status, $newStatus)) {
-                    $validator->errors()->add('status', 'Invalid status transition.');
+                if ($this->filled('lifecycle_status')
+                    && $order
+                    && $newStatus
+                    && (!$order->lifecycleStatus() || !$stateMachine->canTransition($order->lifecycleStatus(), $newStatus))) {
+                    $validator->errors()->add('lifecycle_status', 'Invalid lifecycle transition.');
+                }
+
+                if ($this->filled('disposition_status') && blank($this->input('notes'))) {
+                    $validator->errors()->add('notes', 'A note is required when setting a terminal disposition.');
+                }
+
+                if ($this->filled('lifecycle_status') && $this->filled('disposition_status')) {
+                    $validator->errors()->add('disposition_status', 'Update lifecycle and disposition separately.');
+                }
+
+                if ($order?->dispositionStatus() !== null && $this->filled('disposition_status')) {
+                    $validator->errors()->add('disposition_status', 'A terminal disposition cannot be changed.');
                 }
             },
         ];

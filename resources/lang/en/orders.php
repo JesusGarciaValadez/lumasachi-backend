@@ -64,7 +64,8 @@ return [
         'boolean_true' => 'Yes',
         'boolean_false' => 'No',
         'fields' => [
-            'status' => 'Status',
+            'lifecycle_status' => 'Lifecycle status',
+            'disposition_status' => 'Disposition',
             'payment_status' => 'Payment status',
             'payment_record' => 'Payment received',
             'refund' => 'Refund',
@@ -89,20 +90,14 @@ return [
         'Reviewed' => 'Reviewed',
         'Awaiting Customer Approval' => 'Awaiting Customer Approval',
         'Ready for Work' => 'Ready for Work',
-        'Open' => 'Open',
-        'In Progress' => 'In Progress',
         'Ready for Delivery' => 'Ready for Delivery',
-        'Completed' => 'Completed',
         'Delivered' => 'Delivered',
-        'Paid' => 'Paid',
         'Returned' => 'Returned',
-        'Not Paid' => 'Not Paid',
-        'On Hold' => 'On Hold',
         'Cancelled' => 'Cancelled',
     ],
 
     'validation' => [
-        'mark_ready_for_delivery_status' => 'Order must be in In Progress or Ready for Work status.',
+        'mark_ready_for_delivery_status' => 'Order must be in Ready for Work status.',
     ],
 
     'priority_labels' => [

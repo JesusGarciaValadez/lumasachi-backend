@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\User;
 
@@ -28,19 +28,13 @@ final class OrderCapabilityService
 
         return [
             'create_order' => $user->can('create', Order::class),
-            'submit_budget' => $canUpdate && $order->status === OrderStatus::AwaitingReview,
+            'submit_budget' => $canUpdate && $order->lifecycleStatus() === OrderLifecycleStatus::AwaitingReview,
             'approve_services' => $user->can('approve', $order)
-                && $order->status === OrderStatus::AwaitingCustomerApproval,
-            'complete_services' => $canUpdate && in_array($order->status, [
-                    OrderStatus::ReadyForWork,
-                    OrderStatus::InProgress,
-                ], true),
-            'mark_ready_for_delivery' => $canUpdate && in_array($order->status, [
-                    OrderStatus::ReadyForWork,
-                    OrderStatus::InProgress,
-                ], true),
+                && $order->lifecycleStatus() === OrderLifecycleStatus::AwaitingCustomerApproval,
+            'complete_services' => $canUpdate && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForWork,
+            'mark_ready_for_delivery' => $canUpdate && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForWork,
             'deliver_order' => $canUpdate
-                && $order->status === OrderStatus::ReadyForDelivery
+                && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForDelivery
                 && !$order->hasPendingPayment(),
         ];
     }

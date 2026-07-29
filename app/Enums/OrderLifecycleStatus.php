@@ -14,6 +14,14 @@ enum OrderLifecycleStatus: string
     case ReadyForDelivery = 'Ready for Delivery';
     case Delivered = 'Delivered';
 
+    /**
+     * @return list<string>
+     */
+    public static function getStatuses(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
     public function getLabel(): string
     {
         return __('orders.status_labels.' . $this->value);

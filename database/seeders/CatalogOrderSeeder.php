@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\OrderItemType;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderMotorInfo;
@@ -55,7 +55,7 @@ final class CatalogOrderSeeder extends Seeder
             'customer_id' => $customer->id,
             'title' => 'Rectificado Ford Fiesta 1.6 – Block, Cigüeñal y Bielas',
             'description' => 'Orden de trabajo #1140. Lavado, rectificado de cilindros, ajuste de bancada, cepillado, rectificado de cigüeñal y bielas completo.',
-            'status' => OrderStatus::InProgress->value,
+            'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
             'priority' => OrderPriority::HIGH->value,
             'estimated_completion' => Carbon::now()->addDays(10),
             'created_by' => $customer->id,
@@ -142,7 +142,7 @@ final class CatalogOrderSeeder extends Seeder
             'customer_id' => $customer2->id,
             'title' => 'Rectificado VW Beetle – Cabeza y Especiales',
             'description' => 'Orden de trabajo #3476. Lavado, prueba hidráulica, guías, asientos, soldadura y cepillado de cabeza VW.',
-            'status' => OrderStatus::AwaitingCustomerApproval->value,
+            'lifecycle_status' => OrderLifecycleStatus::AwaitingCustomerApproval->value,
             'priority' => OrderPriority::NORMAL->value,
             'estimated_completion' => Carbon::now()->addDays(14),
             'created_by' => $customer2->id,
@@ -198,7 +198,7 @@ final class CatalogOrderSeeder extends Seeder
             'customer_id' => $customer->id,
             'title' => 'Reconstrucción Nissan Altima 2.5 – Cabeza y Block',
             'description' => 'Orden completada. Lavado, prueba, cepillado de cabeza, rectificado de cilindros del block, ajuste de bancada.',
-            'status' => OrderStatus::Paid->value,
+            'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
             'priority' => OrderPriority::NORMAL->value,
             'estimated_completion' => Carbon::now()->subDays(5),
             'actual_completion' => Carbon::now()->subDays(3),

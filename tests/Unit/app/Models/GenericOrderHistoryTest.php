@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
-use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
@@ -17,22 +17,22 @@ it('checks if can track status changes', function () {
 
     $history = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'comment' => 'Started working on the order',
         'created_by' => $user->id,
     ]);
 
-    expect($history->field_changed)->toEqual(OrderHistory::FIELD_STATUS);
-    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::InProgress->value);
+    expect($history->field_changed)->toEqual(OrderHistory::FIELD_LIFECYCLE_STATUS);
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::AwaitingReview->value);
 
     // Test automatic casting
-    expect($history->old_value)->toBeInstanceOf(OrderStatus::class);
-    expect($history->new_value)->toBeInstanceOf(OrderStatus::class);
-    expect($history->old_value)->toEqual(OrderStatus::Open);
-    expect($history->new_value)->toEqual(OrderStatus::InProgress);
+    expect($history->old_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($history->new_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($history->old_value)->toEqual(OrderLifecycleStatus::Received);
+    expect($history->new_value)->toEqual(OrderLifecycleStatus::AwaitingReview);
 });
 it('checks if can track priority changes', function () {
     $order = Order::factory()->createQuietly();
@@ -151,13 +151,13 @@ it('checks if generates human readable descriptions', function () {
     // Test status change description
     $history1 = OrderHistory::create([
         'order_id' => $order->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
-        'old_value' => OrderStatus::Open->value,
-        'new_value' => OrderStatus::InProgress->value,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
+        'old_value' => OrderLifecycleStatus::Received->value,
+        'new_value' => OrderLifecycleStatus::AwaitingReview->value,
         'created_by' => $user->id,
     ]);
 
-    $expectedDescription = 'Status changed from Open to In Progress';
+    $expectedDescription = 'Lifecycle status changed from Received to Awaiting Review';
     expect($history1->description)->toEqual($expectedDescription);
 
     // Test new value only
@@ -209,23 +209,23 @@ it('checks if maintains backward compatibility with enum serialization', functio
 
     $history = new OrderHistory();
     $history->order_id = $order->id;
-    $history->field_changed = OrderHistory::FIELD_STATUS;
+    $history->field_changed = OrderHistory::FIELD_LIFECYCLE_STATUS;
     $history->created_by = $user->id;
 
     // Test setting enum directly
-    $history->old_value = OrderStatus::Open;
-    $history->new_value = OrderStatus::Delivered;
+    $history->old_value = OrderLifecycleStatus::Received;
+    $history->new_value = OrderLifecycleStatus::Delivered;
 
     $history->save();
 
     // Verify stored as string values
-    expect($history->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($history->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
+    expect($history->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($history->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::Delivered->value);
 
     // Verify retrieved as enums
     $freshHistory = OrderHistory::find($history->id);
-    expect($freshHistory->old_value)->toBeInstanceOf(OrderStatus::class);
-    expect($freshHistory->new_value)->toBeInstanceOf(OrderStatus::class);
+    expect($freshHistory->old_value)->toBeInstanceOf(OrderLifecycleStatus::class);
+    expect($freshHistory->new_value)->toBeInstanceOf(OrderLifecycleStatus::class);
 });
 it('checks if can query history by field', function () {
     $order = Order::factory()->createQuietly();
@@ -234,7 +234,7 @@ it('checks if can query history by field', function () {
     // Create different types of history
     OrderHistory::factory()->count(3)->create([
         'order_id' => $order->id,
-        'field_changed' => OrderHistory::FIELD_STATUS,
+        'field_changed' => OrderHistory::FIELD_LIFECYCLE_STATUS,
     ]);
 
     OrderHistory::factory()->count(2)->create([
@@ -249,7 +249,7 @@ it('checks if can query history by field', function () {
 
     // Query by field
     $statusChanges = OrderHistory::where('order_id', $order->id)
-        ->where('field_changed', OrderHistory::FIELD_STATUS)
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
         ->get();
 
     $priorityChanges = OrderHistory::where('order_id', $order->id)
@@ -266,7 +266,7 @@ it('checks if factory creates valid history entries', function () {
     expect($history->field_changed)->not->toBeNull();
     expect($history->created_by)->not->toBeNull();
     expect([
-        OrderHistory::FIELD_STATUS,
+        OrderHistory::FIELD_LIFECYCLE_STATUS,
         OrderHistory::FIELD_PRIORITY,
         OrderHistory::FIELD_ASSIGNED_TO,
         OrderHistory::FIELD_TITLE,
@@ -280,12 +280,12 @@ it('checks if factory state methods work correctly', function () {
 
     // Test status change state
     $statusHistory = OrderHistory::factory()
-        ->statusChange(OrderStatus::Open, OrderStatus::Delivered)
+        ->statusChange(OrderLifecycleStatus::Received, OrderLifecycleStatus::Delivered)
         ->create(['order_id' => $order->id]);
 
-    expect($statusHistory->field_changed)->toEqual(OrderHistory::FIELD_STATUS);
-    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
-    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
+    expect($statusHistory->field_changed)->toEqual(OrderHistory::FIELD_LIFECYCLE_STATUS);
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderLifecycleStatus::Received->value);
+    expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderLifecycleStatus::Delivered->value);
 
     // Test priority change state
     $priorityHistory = OrderHistory::factory()

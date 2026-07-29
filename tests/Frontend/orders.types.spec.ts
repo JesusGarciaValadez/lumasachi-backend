@@ -13,9 +13,9 @@ describe('public order normalization', () => {
         ]);
     });
 
-    it('uses the server lifecycle status and does not infer one from a special legacy status', () => {
-        expect(resolveLifecycleStatus('Ready for Work', 'Paid')).toBe('Ready for Work');
-        expect(resolveLifecycleStatus(null, 'Paid')).toBeNull();
+    it('uses the server lifecycle status without inferring from payment status', () => {
+        expect(resolveLifecycleStatus('Ready for Work')).toBe('Ready for Work');
+        expect(resolveLifecycleStatus(null)).toBeNull();
     });
 
     it('unwraps nested public collections and keeps empty collections stable', () => {
@@ -24,7 +24,7 @@ describe('public order normalization', () => {
                 uuid: 'order-uuid',
                 title: 'Engine service',
                 description: 'Public description',
-                status: 'Awaiting Review',
+                lifecycle_status: 'Awaiting Review',
                 priority: 'Normal',
                 motor_info: { data: { brand: 'Brand' } },
                 items: {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OrderHistoryEventType;
-use App\Enums\OrderStatus;
 use App\Enums\RefundStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
@@ -19,14 +18,14 @@ use InvalidArgumentException;
 final class OrderRefundService
 {
     public function requestRefund(
-        Order         $order,
+        Order  $order,
         string|int|float $amount,
-        string        $reason,
+        string $reason,
         ?OrderPayment $sourcePayment,
-        User          $requester,
+        User   $requester,
     ): OrderRefund
     {
-        if (!in_array($order->status, [OrderStatus::Returned, OrderStatus::Cancelled], true)) {
+        if ($order->dispositionStatus() === null) {
             throw new InvalidArgumentException('Refunds can only be requested for returned or cancelled orders.');
         }
 
@@ -148,10 +147,10 @@ final class OrderRefundService
     }
 
     private function recordHistory(
-        OrderRefund   $refund,
+        OrderRefund  $refund,
         ?RefundStatus $oldStatus,
-        RefundStatus  $newStatus,
-        User          $actor,
+        RefundStatus $newStatus,
+        User         $actor,
     ): void
     {
         OrderHistory::create([

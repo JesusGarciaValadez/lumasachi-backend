@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -51,8 +51,8 @@ final class MarkWorkCompletedRequest extends FormRequest
             /** @var Order|null $order */
             $order = $this->route('order');
 
-            if ($order && ! in_array($order->status, [OrderStatus::ReadyForWork, OrderStatus::InProgress], true)) {
-                $validator->errors()->add('status', 'Order must be in Ready for Work or In Progress status.');
+            if ($order && $order->lifecycleStatus() !== OrderLifecycleStatus::ReadyForWork) {
+                $validator->errors()->add('lifecycle_status', 'Order must be in Ready for Work status.');
             }
         });
     }

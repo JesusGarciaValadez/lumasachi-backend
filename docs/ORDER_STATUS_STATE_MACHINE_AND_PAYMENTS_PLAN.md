@@ -11,7 +11,8 @@ Determine and implement a simple, maintainable order-status design that supports
 - A separate, auditable refund workflow.
 - Consistent Dashboard, Orders, order-detail, and public-tracking presentation.
 
-This file is a plan only. Do not implement application code until the relevant step is explicitly started.
+This file records the implementation plan and the verified status of each step. Application changes are made only for
+the explicitly started step and are recorded below.
 
 ## Conclusion
 
@@ -95,26 +96,25 @@ Review these files before implementation and update the plan if the checkout has
 The database currently stores `orders.status` as a string with a PostgreSQL check constraint containing the mixed status
 values. Adding or removing values therefore requires a data/schema migration even if the PHP enum changes.
 
-## Status model decisions required before coding
+## Status model decisions
 
 ### Lifecycle sequence
 
-The exact sequence must be confirmed before implementation. The business rules clearly cover Received, Awaiting Review,
-Reviewed, Awaiting Customer Approval, Ready for Work, Ready for Delivery, and Delivered. The current code also contains
-Open, In Progress, Completed, and On Hold, but these are not all defined in `Business_Rules.md`.
+Approved canonical lifecycle sequence:
 
-Do not silently add or remove those statuses. Decide whether they are:
+`Received → Awaiting Review → Reviewed → Awaiting Customer Approval → Ready for Work → Ready for Delivery → Delivered`
 
-1. Current valid lifecycle states to retain.
-2. Legacy states to migrate.
-3. States to remove from the application.
+`Open`, `In Progress`, `On Hold`, and `Completed` are retired from new lifecycle changes. Existing values are normalized
+by the Step 7 migration policy: `Completed` maps to `Ready for Delivery`; `In Progress` maps to `Ready for Work`;
+`Open` and `On Hold` map to `Received` because that is the least-claiming lifecycle state. This last mapping is an
+explicit migration assumption for the non-production application, not a business-rule assertion.
 
-Also confirm whether the requested display label “Awaiting revision” means the existing `Awaiting Review` status.
+`Unpaid` is the payment-status label. `Not Paid` is not a lifecycle value and is not used for new status changes.
 
 ### Disposition status
 
-Keep Returned and Cancelled outside the lifecycle timeline. Confirm whether an order can resume its lifecycle after
-either disposition; the current code treats some terminal statuses as non-transitionable.
+Keep Returned and Cancelled outside the lifecycle timeline. They are terminal dispositions and cannot resume the
+lifecycle. If work must continue later, create a new order or define a separate reopening rule.
 
 ### Refund request permissions
 
@@ -125,14 +125,14 @@ defined and must follow the existing order policy until the business specifies o
 
 ### Step 1 — Freeze the domain vocabulary and inventory existing data — DONE
 
-**Step 1 status: complete.** The inventory and explicit migration blockers are documented. The unresolved domain
-decisions below must be answered before Step 2 defines the state machine.
+**Step 1 status: complete.** The inventory and status vocabulary decisions are documented and approved for
+implementation.
 
 Scope:
 
-- Confirm the lifecycle sequence and exact stored values.
-- Confirm whether `Not Paid` is renamed to `Unpaid` at the API/UI level.
-- Confirm whether Open, Completed, and On Hold remain valid.
+- Confirm the canonical lifecycle sequence and exact stored values.
+- Confirm `Unpaid` as the payment-status label.
+- Confirm that Open, In Progress, On Hold, and Completed are retired from new lifecycle changes.
 - Inventory existing orders using Paid, Not Paid, Returned, or Cancelled.
 - Inspect their status history to identify the last lifecycle status.
 
@@ -181,34 +181,34 @@ Received → Awaiting Review → Reviewed → Awaiting Customer Approval
 → Ready for Work → Ready for Delivery → Delivered
 ```
 
-This sequence is documented as the confirmed subset, not as permission to silently remove or migrate `Open`, `In
-Progress`, `Completed`, or `On Hold`. Those four values require a business decision before Step 2 can define the
-canonical transition map.
+The approved resolution is to use this sequence as the complete canonical lifecycle. `Completed` is migrated to `Ready
+for Delivery`; `In Progress` is migrated to `Ready for Work`; and the less-specific `Open` and `On Hold` values are
+migrated to `Received` as the least-claiming non-production migration choice.
 
 The refund vocabulary in this plan is `Requested`, `Approved`, `Processed`, and `Rejected`. No refund table, model, or
 persisted refund status currently exists; these remain planned workflow values rather than current database data.
 
 ##### Existing database status inventory
 
-The live database query returned 54 orders:
+The pre-migration live database query returned 54 orders:
 
-| Stored status                | Order count | Migration classification                                          |
-|------------------------------|------------:|-------------------------------------------------------------------|
-| `Awaiting Customer Approval` |           3 | Confirmed lifecycle.                                              |
-| `Awaiting Review`            |           2 | Confirmed lifecycle.                                              |
-| `Cancelled`                  |           4 | Disposition; migration decision required for each record.         |
-| `Delivered`                  |           6 | Confirmed lifecycle.                                              |
-| `In Progress`                |           4 | Unresolved value; migration decision required for each record.    |
-| `Not Paid`                   |           1 | Payment status; `Not Paid` versus `Unpaid` requires confirmation. |
-| `On Hold`                    |           1 | Unresolved value; migration decision required for this record.    |
-| `Open`                       |           5 | Unresolved value; migration decision required for each record.    |
-| `Paid`                       |           7 | Payment status; migration decision required for each record.      |
-| `Ready for Delivery`         |           5 | Confirmed lifecycle.                                              |
-| `Ready for Work`             |           7 | Confirmed lifecycle.                                              |
-| `Received`                   |           1 | Confirmed lifecycle.                                              |
-| `Returned`                   |           6 | Disposition; migration decision required for each record.         |
-| `Reviewed`                   |           2 | Confirmed lifecycle.                                              |
-| `Completed`                  |           0 | No existing rows found; its future validity is still unresolved.  |
+| Stored status                | Order count | Migration classification                                   |
+|------------------------------|------------:|------------------------------------------------------------|
+| `Awaiting Customer Approval` |           3 | Confirmed lifecycle.                                       |
+| `Awaiting Review`            |           2 | Confirmed lifecycle.                                       |
+| `Cancelled`                  |           4 | Terminal disposition.                                      |
+| `Delivered`                  |           6 | Confirmed lifecycle.                                       |
+| `In Progress`                |           4 | Legacy value; maps to `Ready for Work`.                    |
+| `Not Paid`                   |           1 | Legacy payment label; canonical label is `Unpaid`.         |
+| `On Hold`                    |           1 | Legacy value; maps to `Received`.                          |
+| `Open`                       |           5 | Legacy value; maps to `Received`.                          |
+| `Paid`                       |           7 | Payment status; not a lifecycle value.                     |
+| `Ready for Delivery`         |           5 | Confirmed lifecycle.                                       |
+| `Ready for Work`             |           7 | Confirmed lifecycle.                                       |
+| `Received`                   |           1 | Confirmed lifecycle.                                       |
+| `Returned`                   |           6 | Terminal disposition.                                      |
+| `Reviewed`                   |           2 | Confirmed lifecycle.                                       |
+| `Completed`                  |           0 | Legacy value; maps to `Ready for Delivery` if encountered. |
 
 The special-status subset is 18 records: 7 `Paid`, 1 `Not Paid`, 6 `Returned`, and 4 `Cancelled`.
 
@@ -222,24 +222,20 @@ Status history was inspected for all 18 special-status orders. Only two orders h
 - Order ID `8` is currently `Cancelled`, with history `Open → Cancelled`. `Open` is not defined by the business rules,
   so the last lifecycle status remains unresolved.
 
-The other 16 special-status orders have no status-history rows in the live database. Their last lifecycle status cannot
-be inferred from the current data. The migration must not invent one.
+The other 16 special-status orders had no status-history rows in the pre-migration database. Their lifecycle status was
+not inferred; the approved explicit mapping policy was applied instead.
 
-##### Decisions required before Step 2
+##### Approved resolutions
 
-These questions are intentionally recorded here instead of being inferred in code:
+1. `Open`, `In Progress`, `On Hold`, and `Completed` are retired from new lifecycle changes and use the explicit
+   mappings recorded above.
+2. `Unpaid` is the single payment-status label. `Not Paid` is legacy data only and is not a lifecycle status.
+3. `Returned` and `Cancelled` are terminal dispositions and cannot resume the lifecycle. Refunds remain separate.
+4. The 18 pre-migration special-status records were normalized using the approved mappings. No current order remains
+   unresolved; order-history rows were normalized to the canonical domains, including the contradictory order 6 and the
+   Open history associated with order 8.
 
-1. Should `Open`, `In Progress`, and `On Hold` remain valid lifecycle statuses? If yes, where do they fit in the
-   confirmed sequence? If no, what exact legacy mapping should be used?
-2. Should `Completed` remain valid? The current service does not use it and the business rules describe
-   `Ready for Delivery` after work is finished.
-3. Should the stored/API/UI value `Not Paid` be renamed to `Unpaid`, or should the existing value be preserved?
-4. Can `Returned` or `Cancelled` orders resume lifecycle progress, or are they terminal dispositions?
-5. What exact lifecycle status should be assigned to each existing special-status order whose history is absent or
-   contradictory? Until answered, all 18 special-status records are explicitly blocked from automatic migration.
-
-Step 1 is complete. The next implementation step must not silently resolve the listed business decisions; Step 2 is
-blocked until they are answered.
+Step 1 is complete, and Step 7 records the resulting data migration and verification.
 
 ##### Verification and environment note
 
@@ -519,8 +515,8 @@ Completion gate:
 
 Implementation completed:
 
-- Added nullable `lifecycle_status` and `disposition_status` columns with indexes. The existing mixed `status` column
-  remains as a compatibility value; unresolved legacy records were not silently mapped.
+- Added nullable `lifecycle_status` and `disposition_status` columns with indexes, then completed the migration to the
+  canonical contract. The mixed `orders.status` column was removed because the application is not in production.
 - Added stable `OrderLifecycleStatus`, `OrderDispositionStatus`, and `OrderPaymentStatus` enums with localized labels.
   Authenticated and public resources now expose lifecycle and disposition fields separately; authenticated resources
   also expose derived payment status and refund records. Existing public tracking restrictions remain in place.
@@ -542,7 +538,7 @@ Verification completed:
   confirm with `vendor/bin/sail artisan list`, and retry the same Sail command before judging the code.
 
 The step is marked done because its persistence, resource, history, and focused/full verification requirements are
-complete. The unresolved legacy-status migration decisions remain explicitly deferred to Step 7.
+complete. The final legacy-data normalization is recorded in Step 7.
 
 ### Step 6 — Update the UI presentation — DONE
 
@@ -648,40 +644,53 @@ Completion gate:
 - Migration report contains zero unresolved records, or the remaining records have explicit business decisions.
 - Existing orders retain their financial and history meaning.
 
-**Step 7 status: in progress; data decisions remain blocked.**
+**Step 7 status: complete.**
 
-Implementation completed so far:
+Approved migration decisions:
 
-- Added a post-schema backfill migration for domain fields. It copies only the lifecycle values explicitly defined by
-  `Business_Rules.md` and maps `Returned`/`Cancelled` to disposition. It does not infer a lifecycle value for `Paid`,
-  `Not Paid`, `Open`, `In Progress`, `On Hold`, or any other unresolved record.
-- Retained the mixed `orders.status` column as a compatibility value because removing it would break unresolved legacy
-  records and existing consumers before their replacement values are decided.
-- Added the read-only `orders:domain-status-report` Artisan command. It lists unresolved orders and counts payment
-  records whose actor is unknown; it never mutates records or invents metadata.
-- The existing payment-ledger backfill was run before the legacy motor-information payment columns were removed. It
-  preserved the legacy motor-information creation timestamp as `received_at` and left the actor `NULL`, as required by
-  the available data.
+- Canonical lifecycle values are `Received`, `Awaiting Review`, `Reviewed`, `Awaiting Customer Approval`, `Ready for
+Work`, `Ready for Delivery`, and `Delivered`.
+- `Completed` maps to `Ready for Delivery`.
+- `In Progress` maps to `Ready for Work`.
+- `Open` and `On Hold` map to `Received`, the least-claiming lifecycle state. This is an explicit migration assumption
+  for the non-production application because neither value has a reliable business-rule equivalent.
+- `Returned` and `Cancelled` become terminal dispositions. They do not resume the lifecycle, and refunds remain a
+  separate workflow.
+- `Unpaid` is the payment-status label. `Not Paid` is not a lifecycle status and is not used by new status changes.
+- The application is not in production, so the mixed `orders.status` column and obsolete status contract were removed
+  instead of retaining a compatibility alias.
+
+Implementation completed:
+
+- Added and ran the canonical backfill migration for existing orders and histories. All 54 current orders now have a
+  canonical lifecycle/disposition representation, and legacy status-history field names were normalized.
+- Removed the mixed `orders.status` column and the old status API/resource/frontend contract. New status changes accept
+  only canonical lifecycle values or terminal dispositions.
+- Added the read-only `orders:domain-status-report` Artisan command. It now reports zero orders requiring canonical
+  status review and does not invent metadata.
+- Preserved the two payment records with unknown actor metadata; no actor was guessed or assigned.
+- The migration is intentionally irreversible because the application is not in production and the legacy mixed
+  structure is no longer part of the application contract.
 
 Verification completed:
 
-- `vendor/bin/sail artisan migrate --no-interaction`: passed; all pending payment, refund, domain-status, history, and
-  step-7 backfill migrations completed.
-- `vendor/bin/sail artisan orders:domain-status-report --no-interaction`: reported 36 safely mapped orders, 18
-  unresolved orders, and 2 payments with an unknown actor in the current database.
-- Focused tests: 55 passed, 159 assertions. Full recreated parallel suite:
-  `vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-databases` — 687 passed, 4,797 assertions.
-- A plain serial full-suite attempt first encountered Docker/Podman access failure. After permission was granted, the
-  retry encountered PostgreSQL migration deadlocks and stale-schema/duplicate-seeder failures. The prescribed recreated
-  parallel run passed; those failures were test-environment/database-isolation issues, not step-7 failures.
+- `vendor/bin/sail artisan migrate --no-interaction`: passed; the canonical data/schema migration completed.
+- `vendor/bin/sail artisan orders:domain-status-report --no-interaction`: reported zero orders requiring canonical
+  status review and two payment records with unknown actors, which remain unchanged.
+- Focused and full backend verification passed after the final fixture correction: `vendor/bin/sail artisan test
+--compact` — 650 tests, 4,617 assertions.
+- `vendor/bin/sail yarn run test:unit`: passed; 57 tests across 15 files.
+- `vendor/bin/sail yarn vue-tsc --noEmit`: passed.
+- `vendor/bin/sail yarn run build`: passed with only the existing large order-detail chunk warning.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
 
-The step must not be marked done until the 18 unresolved records have explicit decisions. The needed decisions are the
-ones already recorded in Step 1: whether `Open`, `In Progress`, and `On Hold` remain lifecycle states; whether
-`Completed` remains valid; whether `Not Paid` is renamed to `Unpaid`; whether Returned/Cancelled can resume; and the
-exact lifecycle status for each legacy order whose status history is absent or contradictory. The current report is the
-handoff artifact for those decisions.
+The step is marked done because every legacy order has an explicit canonical outcome, the old mixed structure has been
+removed, the unknown payment actors were preserved without invention, and all required verification gates passed.
 
 ### Step 8 — Final verification and completion tracking
+
+**Step 8 status: complete.**
 
 Run focused checks after each implementation step. Do not mark a step complete until its requirements and focused tests
 are complete and passing.
@@ -710,6 +719,30 @@ Verification rules:
 - If parallel PostgreSQL tests have migration/database-isolation failures, retry with the project's documented database
   recreation option and use the serial full suite before judging product behavior.
 - Report documentation checks separately from application-test results.
+
+Verification completed:
+
+- `vendor/bin/sail artisan list`: passed.
+- Focused state-machine controller coverage passed: `OrderLifecycleControllerTest.php` — 20 tests, 77 assertions;
+  `OrderAdvancedControllerTest.php` — 26 tests, 122 assertions.
+- `vendor/bin/sail artisan test --compact`: 650 tests passed, 4,617 assertions.
+- `vendor/bin/sail yarn run test:unit`: 57 tests passed across 15 test files.
+- `vendor/bin/sail yarn vue-tsc --noEmit`: passed.
+- `vendor/bin/sail yarn run build`: passed. Vite reported the existing large order-detail chunk warning only.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
+- `vendor/bin/sail yarn run format:check`: reports the known pre-existing formatting issue in
+  `resources/views/vendor/mail/html/themes/default.css`; that unrelated file was not changed.
+- The final verification also covered the canonical history-factory fixture updated during this step; no unrelated
+  application behavior was changed.
+
+Environment note: Sail verification depends on Docker or Podman. If a future run reports that Docker, Podman, or an
+external API client such as Postman is unavailable or not working in the sandbox, treat that as an environment-access
+failure, request permission to access or start the dependency, confirm with `vendor/bin/sail artisan list`, and retry
+the same command before judging the implementation.
+
+The step is marked done because all runtime verification gates passed, the known formatting baseline is isolated and
+unchanged, and the remaining Step 7 data decisions are explicitly outside this step.
 
 ## Explicit non-goals
 

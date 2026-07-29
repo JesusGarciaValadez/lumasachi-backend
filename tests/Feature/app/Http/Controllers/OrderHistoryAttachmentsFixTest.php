@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\OrderStatus;
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
@@ -24,12 +24,12 @@ it('shows attachments only for attachment related history entries', function () 
         'customer_id' => User::factory()->create(['role' => UserRole::CUSTOMER->value])->id,
         'created_by' => $admin->id,
         'assigned_to' => $admin->id,
-        'status' => OrderStatus::Open->value,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     // 1. Make a non-attachment change (status change)
     $resp1 = $this->putJson("/api/v1/orders/{$order->uuid}", [
-        'status' => OrderStatus::InProgress->value,
+        'lifecycle_status' => OrderLifecycleStatus::AwaitingReview->value,
     ]);
     $resp1->assertOk();
 

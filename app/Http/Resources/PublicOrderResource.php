@@ -20,8 +20,6 @@ final class PublicOrderResource extends JsonResource
             'uuid' => $this->uuid,
             'title' => $this->title,
             'description' => $this->description,
-            'status' => $this->status?->value,
-            'status_label' => $this->status?->getLabel(),
             'lifecycle_status' => $this->lifecycleStatus()?->value,
             'lifecycle_status_label' => $this->lifecycleStatus()?->getLabel(),
             'disposition_status' => $this->dispositionStatus()?->value,
