@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Notifications\OrderAuditNotification;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderDeliveredNotification;
+use App\Notifications\OrderReadyForDeliveryNotification;
 use App\Notifications\OrderReadyForWorkNotification;
 use App\Notifications\OrderReviewedNotification;
 use Illuminate\Support\Facades\Notification;
@@ -624,6 +625,26 @@ test('delivery requires the remaining balance to be paid', function () {
         ->assertOk()
         ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
 });
+test('ready for delivery records its lifecycle contract and notifies the customer once', function () {
+    $order = createOrder(OrderStatus::ReadyForWork);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
+        ->assertOk()
+        ->assertJsonPath('code', 'orders.ready_for_delivery')
+        ->assertJsonPath('message', __('orders.messages.ready_for_delivery'))
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForDelivery->value)
+        ->assertJsonStructure(['order' => ['actual_completion']]);
+
+    Notification::assertSentToTimes($this->customer, OrderReadyForDeliveryNotification::class, 1);
+
+    $history = $order->orderHistories()
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+        ->firstOrFail();
+
+    expect($history->event_type->value)->toBe('lifecycle')
+        ->and($history->old_value)->toBe(OrderLifecycleStatus::ReadyForWork)
+        ->and($history->new_value)->toBe(OrderLifecycleStatus::ReadyForDelivery);
+});
 test('delivery accepts exact payment overpayment and zero total orders', function () {
     foreach ([
                  ['total' => 100.00, 'paid' => 100.00],
@@ -677,18 +698,116 @@ test('delivery notifies the customer and every active audit role', function () {
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertOk()
-        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
+        ->assertJsonPath('code', 'orders.delivered')
+        ->assertJsonPath('message', __('orders.messages.delivered'))
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value)
+        ->assertJsonStructure(['order' => ['actual_completion']]);
 
-    Notification::assertSentTo($this->customer, OrderDeliveredNotification::class);
-    Notification::assertSentTo(
-        $this->administrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered'
-    );
-    Notification::assertSentTo(
-        $this->superAdministrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered'
-    );
+    Notification::assertSentToTimes($this->customer, OrderDeliveredNotification::class, 1);
+    expect(Notification::sent($this->administrator, OrderAuditNotification::class)
+        ->filter(fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered')
+        ->count())->toBe(1);
+    expect(Notification::sent($this->superAdministrator, OrderAuditNotification::class)
+        ->filter(fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered')
+        ->count())->toBe(1);
     Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
+
+    $history = $order->orderHistories()
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+        ->firstOrFail();
+
+    expect($history->event_type->value)->toBe('lifecycle')
+        ->and($history->old_value)->toBe(OrderLifecycleStatus::ReadyForDelivery)
+        ->and($history->new_value)->toBe(OrderLifecycleStatus::Delivered);
+});
+test('payment records remain separate and chronological from lifecycle history', function () {
+    $order = createOrder(OrderStatus::ReadyForDelivery);
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 100.00,
+    ]);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/payments", ['amount' => '40.00'])
+        ->assertCreated()
+        ->assertJsonPath('order.financials.remaining_balance', '60.00');
+    $this->postJson("/api/v1/orders/{$order->uuid}/payments", ['amount' => '60.00'])
+        ->assertCreated()
+        ->assertJsonPath('order.financials.remaining_balance', '0.00');
+    $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
+        ->assertOk()
+        ->assertJsonPath('order.payment_status', 'Paid')
+        ->assertJsonPath('order.financials.remaining_balance', '0.00');
+
+    $history = $order->orderHistories()->oldest('id')->get();
+
+    expect($history->pluck('field_changed')->all())->toBe([
+        OrderHistory::FIELD_PAYMENT_RECORD,
+        OrderHistory::FIELD_PAYMENT_RECORD,
+        OrderHistory::FIELD_LIFECYCLE_STATUS,
+    ])
+        ->and($history->pluck('event_type')->map(fn($event): string => $event->value)->all())->toBe([
+            'payment_record',
+            'payment_record',
+            'lifecycle',
+        ])
+        ->and($history->pluck('created_at')->map(fn($date): int => $date->getTimestamp())->values()->all())
+        ->toBe($history->pluck('created_at')->map(fn($date): int => $date->getTimestamp())->sort()->values()->all());
+});
+test('unrelated employees and customers cannot perform staff delivery transitions', function () {
+    $unrelatedEmployee = User::factory()->create([
+        'role' => UserRole::EMPLOYEE->value,
+        'company_id' => $this->administrator->company_id,
+        'is_active' => true,
+    ]);
+    $readyToWork = createOrder(OrderStatus::ReadyForWork);
+
+    $this->actingAs($unrelatedEmployee)
+        ->postJson("/api/v1/orders/{$readyToWork->uuid}/ready-for-delivery")
+        ->assertForbidden();
+
+    expect($readyToWork->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
+
+    $readyForDelivery = createOrder(OrderStatus::ReadyForDelivery);
+
+    $this->actingAs($this->customer)
+        ->postJson("/api/v1/orders/{$readyForDelivery->uuid}/deliver")
+        ->assertForbidden();
+
+    $this->actingAs($unrelatedEmployee)
+        ->postJson("/api/v1/orders/{$readyForDelivery->uuid}/deliver")
+        ->assertForbidden();
+
+    expect($readyForDelivery->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForDelivery);
+});
+test('invalid skipped backward and repeated transitions do not add history or notifications', function () {
+    $skipped = createOrder(OrderStatus::Received);
+    $this->postJson("/api/v1/orders/{$skipped->uuid}/status", [
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
+    ])->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
+
+    expect($skipped->orderHistories()->count())->toBe(0);
+
+    $backward = createOrder(OrderStatus::ReadyForDelivery);
+    $this->postJson("/api/v1/orders/{$backward->uuid}/status", [
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForWork->value,
+    ])->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
+
+    expect($backward->orderHistories()->count())->toBe(0);
+    expect(Notification::sent($this->customer, OrderDeliveredNotification::class))->toBeEmpty();
+
+    $repeated = createOrder(OrderStatus::ReadyForDelivery);
+    $this->postJson("/api/v1/orders/{$repeated->uuid}/deliver")
+        ->assertOk();
+    $historyCountAfterDelivery = $repeated->orderHistories()->count();
+
+    $this->postJson("/api/v1/orders/{$repeated->uuid}/deliver")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['lifecycle_status']);
+
+    expect($repeated->orderHistories()->count())->toBe($historyCountAfterDelivery);
+    Notification::assertSentToTimes($this->customer, OrderDeliveredNotification::class, 1);
 });
 /**
  * @return array<string, mixed>
