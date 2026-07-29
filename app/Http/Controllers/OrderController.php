@@ -11,23 +11,28 @@ use App\Http\Requests\DeliverOrderRequest;
 use App\Http\Requests\MarkReadyForDeliveryRequest;
 use App\Http\Requests\MarkWorkCompletedRequest;
 use App\Http\Requests\StoreOrderPaymentRequest;
+use App\Http\Requests\StoreOrderRefundRequest;
 use App\Http\Requests\StoreOrderWithItemsRequest;
 use App\Http\Requests\SubmitBudgetRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderHistoryResource;
 use App\Http\Resources\OrderPaymentResource;
+use App\Http\Resources\OrderRefundResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\OrderRefund;
 use App\Models\User;
 use App\Services\LocaleResolver;
 use App\Services\OrderLifecycleService;
 use App\Services\OrderPaymentService;
+use App\Services\OrderRefundService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
+use InvalidArgumentException;
 
 final class OrderController extends Controller
 {
@@ -35,7 +40,8 @@ final class OrderController extends Controller
 
     public function __construct(
         private OrderLifecycleService $lifecycleService,
-        private OrderPaymentService   $paymentService,
+        private OrderPaymentService $paymentService,
+        private OrderRefundService  $refundService,
     )
     {
     }
@@ -194,6 +200,88 @@ final class OrderController extends Controller
     }
 
     /**
+     * Request a refund without changing the order lifecycle or payment ledger.
+     */
+    public function requestRefund(StoreOrderRefundRequest $request, Order $order): JsonResponse
+    {
+        $sourcePayment = $request->validated('source_payment_uuid')
+            ? $order->payments()->where('uuid', $request->validated('source_payment_uuid'))->first()
+            : null;
+
+        try {
+            $refund = $this->refundService->requestRefund(
+                $order,
+                $request->validated('amount'),
+                $request->validated('reason'),
+                $sourcePayment,
+                $this->authenticatedUser($request),
+            );
+        } catch (InvalidArgumentException $exception) {
+            return $this->refundError($exception);
+        }
+
+        return response()->json([
+            'code' => 'orders.refund_requested',
+            'message' => __('orders.messages.refund_requested'),
+            'refund' => new OrderRefundResource($refund->load(['sourcePayment', 'requestedBy'])),
+        ], 201);
+    }
+
+    /**
+     * Approve a requested refund.
+     */
+    public function approveRefund(Request $request, Order $order, OrderRefund $refund): JsonResponse
+    {
+        try {
+            $refund = $this->refundService->approveRefund($refund, $this->authenticatedUser($request));
+        } catch (InvalidArgumentException $exception) {
+            return $this->refundError($exception);
+        }
+
+        return response()->json([
+            'code' => 'orders.refund_approved',
+            'message' => __('orders.messages.refund_approved'),
+            'refund' => new OrderRefundResource($refund->load(['requestedBy', 'approvedBy'])),
+        ]);
+    }
+
+    /**
+     * Reject a requested refund.
+     */
+    public function rejectRefund(Request $request, Order $order, OrderRefund $refund): JsonResponse
+    {
+        try {
+            $refund = $this->refundService->rejectRefund($refund, $this->authenticatedUser($request));
+        } catch (InvalidArgumentException $exception) {
+            return $this->refundError($exception);
+        }
+
+        return response()->json([
+            'code' => 'orders.refund_rejected',
+            'message' => __('orders.messages.refund_rejected'),
+            'refund' => new OrderRefundResource($refund->load(['requestedBy', 'rejectedBy'])),
+        ]);
+    }
+
+    /**
+     * Process an approved refund while keeping the payment ledger unchanged.
+     */
+    public function processRefund(Request $request, Order $order, OrderRefund $refund): JsonResponse
+    {
+        try {
+            $refund = $this->refundService->processRefund($refund, $this->authenticatedUser($request));
+        } catch (InvalidArgumentException $exception) {
+            return $this->refundError($exception);
+        }
+
+        return response()->json([
+            'code' => 'orders.refund_processed',
+            'message' => __('orders.messages.refund_processed'),
+            'refund' => new OrderRefundResource($refund->load(['requestedBy', 'approvedBy', 'processedBy'])),
+        ]);
+    }
+
+    /**
      * Display the specified order.
      */
     public function show(Request $request, Order $order): JsonResponse
@@ -323,5 +411,13 @@ final class OrderController extends Controller
         abort_unless($user instanceof User, 401);
 
         return $user;
+    }
+
+    private function refundError(InvalidArgumentException $exception): JsonResponse
+    {
+        return response()->json([
+            'code' => 'orders.refund_invalid',
+            'message' => $exception->getMessage(),
+        ], 422);
     }
 }

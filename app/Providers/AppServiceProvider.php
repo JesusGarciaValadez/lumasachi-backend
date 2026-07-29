@@ -7,9 +7,11 @@ namespace App\Providers;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Models\OrderRefund;
 use App\Models\User;
 use App\Policies\OrderHistoryPolicy;
 use App\Policies\OrderPolicy;
+use App\Policies\OrderRefundPolicy;
 use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
@@ -31,6 +33,7 @@ final class AppServiceProvider extends ServiceProvider
     protected $policies = [
         Order::class => OrderPolicy::class,
         OrderHistory::class => OrderHistoryPolicy::class,
+        OrderRefund::class => OrderRefundPolicy::class,
         User::class => UserPolicy::class,
     ];
 

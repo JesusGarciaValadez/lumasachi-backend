@@ -31,6 +31,10 @@ return [
         'deleted' => 'Orden eliminada correctamente.',
         'status_updated' => 'Estatus de la orden actualizado correctamente.',
         'payment_recorded' => 'El pago se registró correctamente.',
+        'refund_requested' => 'El reembolso se solicitó correctamente.',
+        'refund_approved' => 'El reembolso se aprobó correctamente.',
+        'refund_rejected' => 'El reembolso se rechazó correctamente.',
+        'refund_processed' => 'El reembolso se procesó correctamente.',
         'assigned' => 'Orden asignada correctamente.',
     ],
     'history_messages' => [

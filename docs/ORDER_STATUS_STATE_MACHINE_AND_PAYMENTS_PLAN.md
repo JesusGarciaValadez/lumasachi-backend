@@ -454,6 +454,40 @@ Completion gate:
 
 - Refund state changes are authorized, auditable, and independent from lifecycle/payment state.
 
+**Step 4 status: complete.**
+
+Implementation completed:
+
+- Added the append-only `order_refunds` record with optional source-payment linkage, amount, reason, requester,
+  approver/rejector, processor, workflow timestamps, and `Requested`, `Approved`, `Processed`, and `Rejected` values.
+- Added the refund service and authenticated API endpoints for requesting, approving, rejecting, and processing refunds.
+  Refund requests are accepted only for `Returned` or `Cancelled` orders and do not change order status or payment
+  records.
+- Applied the existing order `update` policy to refund requests and processing, as previously specified for the
+  unresolved requester-role decision. This allows administrators and super administrators, plus employees who may update
+  the order; customers remain denied.
+- Added backend policy/service enforcement for the approval matrix: another Admin or any Super Admin may review an Admin
+  request; a Super Admin may review their own or another Super Admin's request; employees and customers cannot approve
+  or reject; Admin self-approval is denied.
+- Processing requires `Approved` state and uses a locked order transaction so processed refunds cannot exceed the
+  successfully received payment total, including multiple partial refunds. Processed and rejected rows remain auditable,
+  and no deletion or correction path was added.
+- No payment-provider or bank integration was introduced, and no public tracking resource was changed.
+
+Verification completed:
+
+- `vendor/bin/sail artisan list`: passed.
+- Focused refund PHPUnit coverage: 10 tests, 52 assertions passed. Coverage includes disposition validation, requester
+  authorization, all approval-role rules, approval-before-processing, partial/multiple refunds, excessive totals,
+  rejected audit state, and lifecycle/payment independence.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed after formatting the changed PHP files.
+- `git diff --check`: passed.
+- Sail commands require Docker or Podman access. If the sandbox reports that Docker/Podman or an external API client
+  such as Postman is unavailable, treat that as an environment-access failure, request permission to access/start the
+  required service, and retry the same Sail verification command before judging the implementation.
+
+The step is marked done because its requirements and focused verification are complete.
+
 ### Step 5 — Update persistence, resources, and history
 
 Scope:

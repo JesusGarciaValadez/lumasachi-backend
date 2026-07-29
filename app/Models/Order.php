@@ -138,6 +138,12 @@ final class Order extends Model
         return $this->hasMany(OrderPayment::class, 'order_id');
     }
 
+    /** @return HasMany<OrderRefund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class, 'order_id');
+    }
+
     /** @return HasOne<OrderMotorInfo, $this> */
     public function motorInfo(): HasOne
     {
