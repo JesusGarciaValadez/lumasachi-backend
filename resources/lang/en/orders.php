@@ -31,6 +31,10 @@ return [
         'deleted' => 'Order deleted successfully.',
         'status_updated' => 'Order status updated successfully.',
         'payment_recorded' => 'Payment recorded successfully.',
+        'refund_requested' => 'Refund requested successfully.',
+        'refund_approved' => 'Refund approved successfully.',
+        'refund_rejected' => 'Refund rejected successfully.',
+        'refund_processed' => 'Refund processed successfully.',
         'assigned' => 'Order assigned successfully.',
     ],
     'history_messages' => [

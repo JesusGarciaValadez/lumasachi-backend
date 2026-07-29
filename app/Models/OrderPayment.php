@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class OrderPayment extends Model
 {
@@ -31,12 +32,6 @@ final class OrderPayment extends Model
         'received_at' => 'datetime',
     ];
 
-    /** @return Factory<static> */
-    protected static function newFactory(): Factory
-    {
-        return OrderPaymentFactory::new();
-    }
-
     /** @return list<string> */
     public function uniqueIds(): array
     {
@@ -53,5 +48,17 @@ final class OrderPayment extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** @return HasMany<OrderRefund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class, 'source_payment_id');
+    }
+
+    /** @return Factory<static> */
+    protected static function newFactory(): Factory
+    {
+        return OrderPaymentFactory::new();
     }
 }
