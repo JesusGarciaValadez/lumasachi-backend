@@ -54,7 +54,8 @@ final class OrderStatusStateMachine
      */
     public function canTransition(OrderStatus $currentStatus, OrderStatus $newStatus): bool
     {
-        return in_array($newStatus, $this->nextStatuses($currentStatus), true);
+        return $currentStatus === $newStatus
+            || in_array($newStatus, $this->nextStatuses($currentStatus), true);
     }
 
     /**
@@ -78,10 +79,10 @@ final class OrderStatusStateMachine
      * @throws InvalidArgumentException
      */
     public function transition(
-        Order       $order,
+        Order $order,
         OrderStatus $newStatus,
-        User        $actor,
-        array       $additionalAttributes = [],
+        User  $actor,
+        array $additionalAttributes = [],
     ): Order
     {
         $this->assertCanTransition($order->status, $newStatus);
@@ -92,20 +93,6 @@ final class OrderStatusStateMachine
         ]));
 
         return $order;
-    }
-
-    /**
-     * @throws InvalidArgumentException
-     */
-    private function assertCanTransition(OrderStatus $currentStatus, OrderStatus $newStatus): void
-    {
-        if ($this->canTransition($currentStatus, $newStatus)) {
-            return;
-        }
-
-        throw new InvalidArgumentException(
-            "Invalid status transition from [{$currentStatus->value}] to [{$newStatus->value}]."
-        );
     }
 
     /**
@@ -122,5 +109,19 @@ final class OrderStatusStateMachine
         $this->assertCanTransition($order->status, $newStatus);
 
         $order->updateQuietly(['status' => $newStatus->value]);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function assertCanTransition(OrderStatus $currentStatus, OrderStatus $newStatus): void
+    {
+        if ($this->canTransition($currentStatus, $newStatus)) {
+            return;
+        }
+
+        throw new InvalidArgumentException(
+            "Invalid status transition from [{$currentStatus->value}] to [{$newStatus->value}]."
+        );
     }
 }

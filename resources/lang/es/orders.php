@@ -30,6 +30,7 @@ return [
         'updated' => 'Orden actualizada correctamente.',
         'deleted' => 'Orden eliminada correctamente.',
         'status_updated' => 'Estatus de la orden actualizado correctamente.',
+        'payment_recorded' => 'El pago se registró correctamente.',
         'assigned' => 'Orden asignada correctamente.',
     ],
     'history_messages' => [

@@ -103,6 +103,7 @@ Route::group(['prefix' => 'v1'], function () {
         Route::delete('/{order:uuid}', [OrderController::class, 'destroy'])->middleware('can:delete,order')->name('api.orders.destroy');
 
         Route::post('/{order:uuid}/status', [OrderController::class, 'updateStatus'])->middleware('can:update,order')->name('api.orders.status.update');
+        Route::post('/{order:uuid}/payments', [OrderController::class, 'recordPayment'])->middleware('can:update,order')->name('api.orders.payments.store');
         Route::post('/{order:uuid}/assign', [OrderController::class, 'assign'])->middleware('can:assign,order')->name('api.orders.assign');
         Route::get('/{order:uuid}/history', [OrderController::class, 'history'])->middleware('can:view,order')->name('api.orders.history');
         Route::get('/{order:uuid}/attachments', [AttachmentController::class, 'index'])->middleware('can:view,order')->name('api.orders.attachments.index');

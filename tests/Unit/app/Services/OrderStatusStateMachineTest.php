@@ -30,17 +30,6 @@ final class OrderStatusStateMachineTest extends TestCase
         yield from self::transitionsFrom(OrderStatus::Returned, [OrderStatus::Cancelled]);
     }
 
-    /**
-     * @param list<OrderStatus> $newStatuses
-     * @return iterable<string, array{OrderStatus, OrderStatus}>
-     */
-    private static function transitionsFrom(OrderStatus $current, array $newStatuses): iterable
-    {
-        foreach ($newStatuses as $new) {
-            yield $current->value . ' -> ' . $new->value => [$current, $new];
-        }
-    }
-
     #[DataProvider('permittedTransitions')]
     public function test_permitted_status_transition_is_allowed(OrderStatus $current, OrderStatus $new): void
     {
@@ -66,5 +55,16 @@ final class OrderStatusStateMachineTest extends TestCase
 
         $this->assertFalse($stateMachine->canTransitionValues('Unknown', OrderStatus::Received->value));
         $this->assertFalse($stateMachine->canTransitionValues(OrderStatus::Received->value, 'Unknown'));
+    }
+
+    /**
+     * @param list<OrderStatus> $newStatuses
+     * @return iterable<string, array{OrderStatus, OrderStatus}>
+     */
+    private static function transitionsFrom(OrderStatus $current, array $newStatuses): iterable
+    {
+        foreach ($newStatuses as $new) {
+            yield $current->value . ' -> ' . $new->value => [$current, $new];
+        }
     }
 }

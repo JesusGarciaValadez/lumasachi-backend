@@ -15,7 +15,10 @@ use InvalidArgumentException;
 
 final class OrderLifecycleService
 {
-    public function __construct(private OrderStatusStateMachine $statusStateMachine)
+    public function __construct(
+        private OrderStatusStateMachine $statusStateMachine,
+        private OrderPaymentService     $paymentService,
+    )
     {
     }
 
@@ -40,15 +43,19 @@ final class OrderLifecycleService
                 'updated_by' => $creator->id,
             ]));
 
-            // Create motor info
+            $initialPayment = $motorInfo['down_payment'] ?? 0;
+            unset($motorInfo['down_payment']);
+
+            // Create motor info. The payment ledger is the source of truth for received amounts.
             $order->motorInfo()->create(array_merge(
                 array_filter($motorInfo, fn ($v) => $v !== null && $v !== ''),
                 [
-                    'down_payment' => $motorInfo['down_payment'] ?? 0,
-                    'total_cost' => 0,
-                    'is_fully_paid' => false,
                 ]
             ));
+
+            if (bccomp((string)$initialPayment, '0.00', 2) === 1) {
+                $this->paymentService->recordPayment($order, $initialPayment, $creator);
+            }
 
             // Create items and their components
             foreach ($items as $itemData) {
@@ -106,8 +113,6 @@ final class OrderLifecycleService
             }
         });
 
-        $order->recalculateTotals();
-
         // Transition to REVIEWED → observer auto-transitions to AWAITING_CUSTOMER_APPROVAL
         $this->statusStateMachine->transition($order, OrderStatus::Reviewed, $reviewer);
 
@@ -125,15 +130,13 @@ final class OrderLifecycleService
         $this->assertStatus($order, [OrderStatus::AwaitingCustomerApproval]);
         $this->assertBudgetedServicesBelongToOrder($order, $authorizedServiceIds);
 
-        DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment) {
+        DB::transaction(function () use ($order, $authorizedServiceIds, $downPayment, $approver) {
             $order->services()->whereIn('order_services.id', $authorizedServiceIds)->update(['is_authorized' => true]);
 
             if ($downPayment !== null) {
-                $order->motorInfo()->firstOrFail()->update(['down_payment' => $downPayment]);
+                $this->paymentService->recordCumulativeDownPayment($order, $downPayment, $approver);
             }
         });
-
-        $order->recalculateTotals();
 
         $this->statusStateMachine->transition($order, OrderStatus::ReadyForWork, $approver);
 
@@ -171,8 +174,6 @@ final class OrderLifecycleService
     {
         $this->assertStatus($order, [OrderStatus::ReadyForWork, OrderStatus::InProgress]);
 
-        $order->recalculateTotals();
-
         $this->statusStateMachine->transition($order, OrderStatus::ReadyForDelivery, $technician);
 
         return $order;
@@ -198,10 +199,10 @@ final class OrderLifecycleService
      * @param array<string, mixed> $additionalAttributes
      */
     public function transition(
-        Order       $order,
+        Order $order,
         OrderStatus $newStatus,
-        User        $actor,
-        array       $additionalAttributes = [],
+        User  $actor,
+        array $additionalAttributes = [],
     ): Order
     {
         return $this->statusStateMachine->transition($order, $newStatus, $actor, $additionalAttributes);
@@ -230,7 +231,7 @@ final class OrderLifecycleService
      */
     private function assertNoPendingPayment(Order $order): void
     {
-        if ($order->motorInfo()->first()?->hasPendingPayment()) {
+        if ($order->hasPendingPayment()) {
             throw new InvalidArgumentException('Order must be fully paid before delivery.');
         }
     }

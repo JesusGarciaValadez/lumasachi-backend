@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -173,7 +174,8 @@ it('approves services and sets down payment', function () {
     expect($svc->is_authorized)->toBeTrue();
 
     $result->refresh();
-    expect((float)$result->motorInfo->down_payment)->toBe(200.00);
+    expect($result->totalPaid())->toBe('200.00');
+    expect(OrderPayment::where('order_id', $order->id)->count())->toBe(1);
     expect($result->status)->toBe(OrderStatus::ReadyForWork);
 });
 it('rejects approval for wrong status', function () {
@@ -328,10 +330,13 @@ it('delivers order', function () {
 });
 it('delivers order with an overpayment', function () {
     $order = createOrderInStatus(OrderStatus::ReadyForDelivery, $this->customer, $this->employee);
-    $order->motorInfo->update([
-        'down_payment' => 150.00,
-        'total_cost' => 100.00,
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 100.00,
     ]);
+    OrderPayment::factory()->create(['order_id' => $order->id, 'amount' => 150.00, 'created_by' => $this->employee->id]);
 
     $result = $this->service->deliverOrder($order, $this->employee);
 
@@ -347,10 +352,13 @@ it('rejects deliver from wrong status', function () {
 });
 it('rejects delivery with a remaining balance', function () {
     $order = createOrderInStatus(OrderStatus::ReadyForDelivery, $this->customer, $this->employee);
-    $order->motorInfo->update([
-        'down_payment' => 100.00,
-        'total_cost' => 100.01,
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 100.01,
     ]);
+    OrderPayment::factory()->create(['order_id' => $order->id, 'amount' => 100.00, 'created_by' => $this->employee->id]);
 
     $this->expectException(InvalidArgumentException::class);
 
@@ -404,9 +412,6 @@ function createOrderInStatus(OrderStatus $status, User $customer, User $employee
     // Ensure motor info exists for totals calculation
     OrderMotorInfo::create([
         'order_id' => $order->id,
-        'down_payment' => 0,
-        'total_cost' => 0,
-        'is_fully_paid' => false,
     ]);
 
     return $order;

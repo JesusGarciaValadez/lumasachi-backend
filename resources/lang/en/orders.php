@@ -30,6 +30,7 @@ return [
         'updated' => 'Order updated successfully.',
         'deleted' => 'Order deleted successfully.',
         'status_updated' => 'Order status updated successfully.',
+        'payment_recorded' => 'Payment recorded successfully.',
         'assigned' => 'Order assigned successfully.',
     ],
     'history_messages' => [

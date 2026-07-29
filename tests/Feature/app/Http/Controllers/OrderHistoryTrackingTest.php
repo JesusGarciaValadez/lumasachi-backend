@@ -75,7 +75,7 @@ it('checks if tracks multiple field changes in single update', function () {
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
-        'status' => OrderStatus::Open->value,
+        'status' => OrderStatus::ReadyForDelivery->value,
         'priority' => OrderPriority::LOW->value,
         'title' => 'Original Title',
     ]);
@@ -102,7 +102,7 @@ it('checks if tracks multiple field changes in single update', function () {
     // Verify each field change
     $statusHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_STATUS);
     expect($statusHistory)->not->toBeNull();
-    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::Open->value);
+    expect($statusHistory->getRawOriginal('old_value'))->toEqual(OrderStatus::ReadyForDelivery->value);
     expect($statusHistory->getRawOriginal('new_value'))->toEqual(OrderStatus::Delivered->value);
 
     $priorityHistory = $histories->firstWhere('field_changed', OrderHistory::FIELD_PRIORITY);
@@ -326,7 +326,7 @@ it('checks if order history shows human readable descriptions', function () {
     Sanctum::actingAs($user);
 
     $order = Order::factory()->createQuietly([
-        'status' => OrderStatus::Open->value,
+        'status' => OrderStatus::ReadyForDelivery->value,
     ]);
 
     // Create a status change
@@ -341,7 +341,7 @@ it('checks if order history shows human readable descriptions', function () {
     $history = $response->json('data.0');
     expect($history['description'])->not->toBeNull();
     $this->assertStringContainsString('Status changed from', $history['description']);
-    $this->assertStringContainsString('Open', $history['description']);
+    $this->assertStringContainsString('Ready for Delivery', $history['description']);
     $this->assertStringContainsString('Delivered', $history['description']);
 });
 it('returns history only for the requested order', function () {
