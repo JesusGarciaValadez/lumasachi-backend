@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
 use App\Http\Requests\AssignOrderRequest;
 use App\Http\Requests\CustomerApprovalRequest;
 use App\Http\Requests\DeliverOrderRequest;
@@ -190,9 +191,21 @@ final class OrderController extends Controller
     public function update(UpdateOrderRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
-        $order->update(array_merge($validated, [
-            'updated_by' => $this->authenticatedUser($request)->id,
-        ]));
+        $actor = $this->authenticatedUser($request);
+        $newStatus = isset($validated['status'])
+            ? OrderStatus::from($validated['status'])
+            : null;
+
+        unset($validated['status']);
+
+        if ($newStatus) {
+            $order = $this->lifecycleService->transition($order, $newStatus, $actor, $validated);
+        } elseif ($validated !== []) {
+            $order->update([
+                ...$validated,
+                'updated_by' => $actor->id,
+            ]);
+        }
 
         return response()->json([
             'code' => 'orders.updated',
@@ -221,11 +234,11 @@ final class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        // Update order status (observer will handle history tracking)
-        $order->update([
-            'status' => $validated['status'],
-            'updated_by' => $this->authenticatedUser($request)->id,
-        ]);
+        $order = $this->lifecycleService->transition(
+            $order,
+            OrderStatus::from($validated['status']),
+            $this->authenticatedUser($request),
+        );
 
         return response()->json([
             'code' => 'orders.status_updated',
