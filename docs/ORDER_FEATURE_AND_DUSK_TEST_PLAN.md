@@ -316,30 +316,40 @@ Primary files to inspect and preferably extend:
 
 Happy paths:
 
-- [ ] Preserve the existing creation test with motor brand, liters, year, model, and cylinder count.
-- [ ] Cover one selected piece with no optional components, if Q1 confirms that interpretation.
-- [ ] Cover multiple received pieces with selected components belonging to each piece.
-- [ ] Assert a positive creation-time advance produces one immutable payment ledger row.
-- [ ] Assert the final persisted lifecycle is `Awaiting Review`.
-- [ ] Assert creation and transition history records remain attributable to the acting user.
-- [ ] Assert the customer and every active Administrator/Super Administrator receives the required notification.
-- [ ] Assert the customer-facing notification/mailable uses the mail channel and contains the approved order
+- [x] Preserve the existing creation test with motor brand, liters, year, model, and cylinder count.
+- [x] Cover one selected piece with no optional components, if Q1 confirms that interpretation.
+- [x] Cover multiple received pieces with selected components belonging to each piece.
+- [x] Assert a positive creation-time advance produces one immutable payment ledger row.
+- [x] Assert the final persisted lifecycle is `Awaiting Review`.
+- [x] Assert creation and transition history records remain attributable to the acting user.
+- [x] Assert the customer and every active Administrator/Super Administrator receives the required notification.
+- [x] Assert the customer-facing notification/mailable uses the mail channel and contains the approved order
   information/link; do not test email delivery through Dusk.
 
 Rule-backed edges:
 
-- [ ] Missing top-level piece follows the Q1 decision.
-- [ ] A component belonging to another piece type is rejected with the nested field path.
-- [ ] Negative advance payment is rejected without creating an order or payment.
-- [ ] A customer cannot open or submit the staff order-creation flow.
-- [ ] Invalid customer/assignee IDs cannot produce a partially created order.
-- [ ] Inactive audit users are not notified; do not invent additional role rules.
+- [x] Missing top-level piece follows the Q1 decision.
+- [x] A component belonging to another piece type is rejected with the nested field path.
+- [x] Negative advance payment is rejected without creating an order or payment.
+- [x] A customer cannot open or submit the staff order-creation flow.
+- [x] Invalid customer/assignee IDs cannot produce a partially created order.
+- [x] Inactive audit users are not notified; do not invent additional role rules.
 
 Completion gate:
 
-- [ ] Every intake rule has a focused assertion or an explicit trace to existing coverage.
-- [ ] Failed requests leave no partial order, motor, item, component, payment, or history data.
-- [ ] Run the singular changed test files and record their results.
+- [x] Every intake rule has a focused assertion or an explicit trace to existing coverage.
+- [x] Failed requests leave no partial order, motor, item, component, payment, or history data.
+- [x] Run the singular changed test files and record their results.
+
+Stage 3 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php`: 23
+  passed (105 assertions).
+- Related order Feature files (`OrderLifecycleControllerTest.php`, `OrderBusinessRulesEdgeCasesTest.php`,
+  `OrderRouteTest.php`, and `OrderCreatedMailTest.php`): 61 passed (412 assertions).
+- `vendor/bin/sail artisan dusk --without-tty`: 5 passed (12 assertions), confirming the existing Stage 2 browser
+  harness remains green.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed; only ordered imports were adjusted.
 
 ## Stage 4 — Complete review and budget Feature coverage
 
