@@ -5,8 +5,7 @@
 Create a business-rule-driven suite of Laravel Feature tests and Laravel Dusk browser tests for the order lifecycle
 described in [`Business_Rules.md`](Business_Rules.md).
 
-This file is a plan only. No Feature tests, Dusk tests, dependencies, application behavior, or browser selectors were
-added while preparing it.
+This file is the implementation plan and verification record for the order Feature and Dusk test suite.
 
 ## Rules for using this plan
 
@@ -458,27 +457,41 @@ Primary files to inspect and preferably extend:
 
 Happy paths:
 
-- [ ] Staff moves the order from `Ready for Work` to `Ready for Delivery`.
-- [ ] The customer receives the ready-for-delivery notification.
-- [ ] Record the remaining balance through the payment ledger.
-- [ ] Staff delivers the fully paid order.
-- [ ] Assert actual completion/delivery data required by the current contract.
-- [ ] Assert the customer plus active Administrator/Super Administrator users receive the delivered notification.
-- [ ] Assert lifecycle and payment history stay distinct and chronological.
+- [x] Staff moves the order from `Ready for Work` to `Ready for Delivery`.
+- [x] The customer receives the ready-for-delivery notification.
+- [x] Record the remaining balance through the payment ledger.
+- [x] Staff delivers the fully paid order.
+- [x] Assert actual completion/delivery data required by the current contract.
+- [x] Assert the customer plus active Administrator/Super Administrator users receive the delivered notification.
+- [x] Assert lifecycle and payment history stay distinct and chronological.
 
 Rule-backed edges:
 
-- [ ] Delivery with a positive remaining balance is rejected without changing lifecycle.
-- [ ] Unauthorized customers and unrelated employees cannot perform staff transitions.
-- [ ] Skipped, backward, or repeated invalid transitions do not add false history or notifications.
-- [ ] Preserve current exact-payment behavior. Treat overpayment and zero-total behavior as implementation regressions,
+- [x] Delivery with a positive remaining balance is rejected without changing lifecycle.
+- [x] Unauthorized customers and unrelated employees cannot perform staff transitions.
+- [x] Skipped, backward, or repeated invalid transitions do not add false history or notifications.
+- [x] Preserve current exact-payment behavior. Treat overpayment and zero-total behavior as implementation regressions,
   not new business requirements.
 
 Completion gate:
 
-- [ ] The order cannot be delivered before the balance is satisfied.
-- [ ] Required recipients and history entries are asserted exactly once.
-- [ ] Run the singular changed test files and record their results.
+- [x] The order cannot be delivered before the balance is satisfied.
+- [x] Required recipients and history entries are asserted exactly once.
+- [x] Run the singular changed test files and record their results.
+
+Stage 6 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php`: 34
+  passed (233 assertions).
+- `vendor/bin/sail bin pint --dirty --format agent`: passed and formatted the changed Feature test.
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+  tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php
+  tests/Feature/app/Http/Controllers/OrderPaymentControllerTest.php
+  tests/Feature/app/Observers/OrderObserverAdvancedTest.php
+  tests/Feature/app/Http/Controllers/OrderHistoryTrackingTest.php`: 77 passed (631 assertions).
+- Existing browser smoke coverage remained green: `vendor/bin/sail artisan dusk --filter=OrderIntakeTest`: 2 passed;
+  `vendor/bin/sail artisan dusk --filter=PublicOrderTrackingTest`: 3 passed.
+- No Docker/Selenium/Postman environment blocker occurred. Postman is not required for this automated suite.
 
 ## Stage 7 — Complete public-tracking Feature coverage
 
