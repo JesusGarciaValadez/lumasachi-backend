@@ -132,6 +132,12 @@ final class Order extends Model
         return $this->hasMany(OrderHistory::class);
     }
 
+    /** @return HasMany<OrderPayment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(OrderPayment::class, 'order_id');
+    }
+
     /** @return HasOne<OrderMotorInfo, $this> */
     public function motorInfo(): HasOne
     {
@@ -150,41 +156,60 @@ final class Order extends Model
         return $this->hasManyThrough(OrderService::class, OrderItem::class, 'order_id', 'order_item_id');
     }
 
-    /**
-     * Recalculate liquidation totals based on completed services.
-     * - total_cost = sum of net_price for completed services
-     * - is_fully_paid = total_cost <= down_payment
-     */
-    public function recalculateTotals(): void
+    public function completedTotal(): string
     {
         $services = $this->relationLoaded('services')
             ? $this->services
             : $this->services()->get(['net_price', 'is_completed']);
 
-        $total = (float) $services
+        return $services
             ->where('is_completed', true)
-            ->sum(fn ($service) => (float) $service->net_price);
+            ->reduce(
+                fn(string $total, OrderService $service): string => bcadd($total, (string)$service->net_price, 2),
+                '0.00'
+            );
+    }
 
-        $info = $this->motorInfo()->firstOrNew();
+    public function totalPaid(): string
+    {
+        $payments = $this->relationLoaded('payments')
+            ? $this->payments
+            : $this->payments()->get(['amount']);
 
-        if (! $info->exists && $info->down_payment === null) {
-            $info->down_payment = 0;
+        if ($payments->isNotEmpty()) {
+            return $payments->reduce(
+                fn(string $total, OrderPayment $payment): string => bcadd($total, (string)$payment->amount, 2),
+                '0.00'
+            );
         }
 
-        $info->total_cost = $total;
-        $info->is_fully_paid = bccomp((string) ($info->down_payment ?? 0), (string) $total, 2) >= 0;
-        $info->save();
+        return '0.00';
+    }
+
+    public function paymentStatus(): string
+    {
+        $paid = $this->totalPaid();
+        $completed = $this->completedTotal();
+
+        if (bccomp($paid, '0.00', 2) <= 0) {
+            return 'Unpaid';
+        }
+
+        return bccomp($paid, $completed, 2) >= 0 ? 'Paid' : 'Partially Paid';
+    }
+
+    public function hasPendingPayment(): bool
+    {
+        return bccomp($this->completedTotal(), $this->totalPaid(), 2) === 1;
     }
 
     /**
      * Calculate lifecycle totals from persisted services and payment state.
      *
-     * @return array{budgeted: string, budgeted_base: string, budgeted_net: string, authorized: string, completed: string, advance_payment: string, remaining_balance: string}
+     * @return array{budgeted: string, budgeted_base: string, budgeted_net: string, authorized: string, completed: string, advance_payment: string, paid: string, payment_status: string, remaining_balance: string}
      */
     public function financialTotals(): array
     {
-        $motorInfo = $this->motorInfo()->first();
-
         $sum = function (string $field, string $priceField = 'net_price'): string {
             return number_format(
                 (float)$this->services()->where("order_services.{$field}", true)->sum("order_services.{$priceField}"),
@@ -194,10 +219,8 @@ final class Order extends Model
             );
         };
 
-        $completed = $sum('is_completed');
-        $advancePayment = $motorInfo === null
-            ? '0.00'
-            : number_format((float)$motorInfo->down_payment, 2, '.', '');
+        $completed = $this->completedTotal();
+        $paid = $this->totalPaid();
 
         return [
             'budgeted' => $sum('is_budgeted'),
@@ -205,9 +228,11 @@ final class Order extends Model
             'budgeted_net' => $sum('is_budgeted', 'net_price'),
             'authorized' => $sum('is_authorized'),
             'completed' => $completed,
-            'advance_payment' => $advancePayment,
-            'remaining_balance' => bccomp($completed, $advancePayment, 2) === 1
-                ? bcsub($completed, $advancePayment, 2)
+            'advance_payment' => $paid,
+            'paid' => $paid,
+            'payment_status' => $this->paymentStatus(),
+            'remaining_balance' => bccomp($completed, $paid, 2) === 1
+                ? bcsub($completed, $paid, 2)
                 : '0.00',
         ];
     }

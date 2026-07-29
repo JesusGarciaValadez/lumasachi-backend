@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -72,6 +73,12 @@ it('creates order with motor info and items via api', function () {
 
     $response->assertCreated()
         ->assertJsonPath('order.status', OrderStatus::AwaitingReview->value);
+
+    $this->assertDatabaseHas('order_payments', [
+        'order_id' => Order::query()->latest('id')->value('id'),
+        'amount' => '1500.00',
+        'created_by' => $this->employee->id,
+    ]);
 
     // Verify DB state
     $this->assertDatabaseHas('orders', [
@@ -219,7 +226,8 @@ it('approves services via api', function () {
 
     $order->refresh();
     expect($order->status)->toEqual(OrderStatus::ReadyForWork);
-    expect((float)$order->motorInfo->down_payment)->toEqual(300.00);
+    expect($order->totalPaid())->toBe('300.00');
+    expect(OrderPayment::where('order_id', $order->id)->count())->toBe(1);
 });
 it('rejects approval for wrong status', function () {
     $this->actingAs($this->customer);
@@ -452,9 +460,6 @@ function createLifecycleOrderInStatus(OrderStatus $status): Order
 
     OrderMotorInfo::create([
         'order_id' => $order->id,
-        'down_payment' => 0,
-        'total_cost' => 0,
-        'is_fully_paid' => false,
     ]);
 
     return $order;

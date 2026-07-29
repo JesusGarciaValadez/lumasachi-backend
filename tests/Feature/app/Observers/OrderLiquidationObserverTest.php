@@ -6,18 +6,14 @@ use App\Enums\OrderItemType;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-it('recalculates total cost on service completion and sets full payment', function () {
+it('keeps service completion and payment totals available from the order', function () {
     $order = Order::factory()->createQuietly();
-    $info = OrderMotorInfo::create([
-        'order_id' => $order->id,
-        'down_payment' => 1500.00,
-        'total_cost' => 0,
-        'is_fully_paid' => false,
-    ]);
+    OrderMotorInfo::create(['order_id' => $order->id]);
 
     $item = OrderItem::factory()->create([
         'order_id' => $order->id,
@@ -40,22 +36,19 @@ it('recalculates total cost on service completion and sets full payment', functi
     $s1->update(['is_completed' => true]);
     $s2->update(['is_completed' => true]);
 
-    $info->refresh();
-    expect((float)$info->total_cost)->toBe(1252.8);
-    expect($info->is_fully_paid)->toBeTrue();
-    // 1500 >= 1252.8
-});
-it('updates is fully paid when down payment changes', function () {
-    $order = Order::factory()->createQuietly();
-    $info = OrderMotorInfo::create([
+    $employee = App\Models\User::factory()->create();
+    OrderPayment::factory()->create([
         'order_id' => $order->id,
-        'down_payment' => 100.00,
-        'total_cost' => 200.00,
-        'is_fully_paid' => false,
+        'amount' => 1500.00,
+        'created_by' => $employee->id,
     ]);
 
-    // Increase down payment so it covers total cost
-    $info->update(['down_payment' => 250.00]);
+    expect($order->fresh()->completedTotal())->toBe('1252.80')
+        ->and($order->fresh()->paymentStatus())->toBe('Paid');
+});
+it('does not store payment state on motor information', function () {
+    $order = Order::factory()->createQuietly();
+    $info = OrderMotorInfo::create(['order_id' => $order->id]);
 
-    expect($info->fresh()->is_fully_paid)->toBeTrue();
+    expect($info->fresh()->getAttributes())->not->toHaveKeys(['down_payment', 'total_cost', 'is_fully_paid']);
 });

@@ -5,7 +5,10 @@ declare(strict_types=1);
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
+use App\Models\OrderService;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as InertiaAssert;
 
@@ -33,8 +36,6 @@ it('shows the typed order contract to an authorized user', function () {
 
     OrderMotorInfo::factory()->createQuietly([
         'order_id' => $order->id,
-        'down_payment' => 0,
-        'total_cost' => 0,
     ]);
 
     $response = $this->get(route('web.orders.show', [$order->uuid]));
@@ -150,10 +151,17 @@ test('delivery capability requires a paid order', function () {
         'assigned_to' => $employee->id,
         'status' => OrderStatus::ReadyForDelivery->value,
     ]);
-    $motorInfo = OrderMotorInfo::factory()->createQuietly([
+    OrderMotorInfo::factory()->createQuietly(['order_id' => $order->id]);
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 100.00,
+    ]);
+    OrderPayment::factory()->create([
         'order_id' => $order->id,
-        'total_cost' => 100.00,
-        'down_payment' => 50.00,
+        'amount' => 50.00,
+        'created_by' => $employee->id,
     ]);
 
     $this->actingAs($employee)
@@ -166,7 +174,11 @@ test('delivery capability requires a paid order', function () {
             )
         );
 
-    $motorInfo->update(['down_payment' => 100.00]);
+    OrderPayment::factory()->create([
+        'order_id' => $order->id,
+        'amount' => 50.00,
+        'created_by' => $employee->id,
+    ]);
 
     $this->get(route('web.orders.show', [$order->uuid]))
         ->assertOk()

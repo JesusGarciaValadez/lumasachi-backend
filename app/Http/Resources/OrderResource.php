@@ -35,6 +35,7 @@ final class OrderResource extends JsonResource
             'updated_by' => new UserResource($this->whenLoaded('updatedBy')),
             'assigned_to' => new UserResource($this->whenLoaded('assignedTo')),
             'motor_info' => $this->whenLoaded('motorInfo'),
+            'payments' => OrderPaymentResource::collection($this->whenLoaded('payments')),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'services' => OrderServiceResource::collection($this->whenLoaded('services')),
             'history' => OrderHistoryResource::collection($this->whenLoaded('orderHistories')),

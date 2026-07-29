@@ -10,6 +10,7 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -70,9 +71,6 @@ final class CatalogOrderSeeder extends Seeder
             'liters' => '1.6',
             'year' => '2018',
             'cylinder_count' => 4,
-            'down_payment' => 0,
-            'total_cost' => 0,
-            'is_fully_paid' => false,
             'center_torque' => '74',
             'rod_torque' => '30+90',
             'center_clearance' => '0.0006/0.003',
@@ -160,9 +158,12 @@ final class CatalogOrderSeeder extends Seeder
             'liters' => '1.6',
             'year' => '2003',
             'cylinder_count' => 4,
-            'down_payment' => 1500.00,
-            'total_cost' => 0,
-            'is_fully_paid' => false,
+        ]);
+
+        OrderPayment::factory()->create([
+            'order_id' => $order->id,
+            'amount' => 1500.00,
+            'created_by' => $admin->id,
         ]);
 
         // ── Others (VW) item with services ──
@@ -206,16 +207,19 @@ final class CatalogOrderSeeder extends Seeder
             'assigned_to' => $employee->id,
         ]);
 
-        OrderMotorInfo::factory()->withMeasurements()->fullyPaid()->create([
+        OrderMotorInfo::factory()->withMeasurements()->create([
             'order_id' => $order->id,
             'brand' => 'Nissan',
             'model' => 'Altima',
             'liters' => '2.5',
             'year' => '2020',
             'cylinder_count' => 4,
-            'down_payment' => 5000.00,
-            'total_cost' => 4280.00,
-            'is_fully_paid' => true,
+        ]);
+
+        OrderPayment::factory()->create([
+            'order_id' => $order->id,
+            'amount' => 5000.00,
+            'created_by' => $admin->id,
         ]);
 
         // ── Cylinder Head item ──

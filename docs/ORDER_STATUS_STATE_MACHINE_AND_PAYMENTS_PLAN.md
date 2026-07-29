@@ -355,6 +355,49 @@ Completion gate:
 - Delivery and capabilities use the same payment calculation.
 - Existing financial totals and business-rule tests remain valid.
 
+**Step 3 status: complete.**
+
+Implementation completed:
+
+- Added the append-only `order_payments` ledger with order reference, two-decimal amount, received timestamp, and
+  creating user. Payment methods, processor fields, and external references were not added because the business rules do
+  not require them.
+- Added `OrderPaymentService` and the authenticated `POST /api/v1/orders/{order:uuid}/payments` endpoint. The endpoint
+  uses the existing `can:update,order` authorization because no separate payment role was defined.
+- Added multiple/partial payment support, exact BCMath totals, derived `Unpaid`, `Partially Paid`, and `Paid` values,
+  overpayment handling, and a non-negative remaining balance.
+- Updated delivery validation and order capabilities to use the same order-level payment calculation.
+- Updated authenticated order resources to include payment records and their creator. Public tracking does not expose
+  payment records or payment creators.
+- Removed the redundant persisted `down_payment`, `total_cost`, and `is_fully_paid` motor-information fields. The
+  existing `down_payment` request input remains as the initial/cumulative amount used to create ledger records, but it
+  is no longer persisted as a second payment source.
+
+Migration decisions and assumptions:
+
+- Existing positive `down_payment` values are copied into one initial payment per motor-information row before the
+  legacy columns are removed. The legacy `order_motor_info.created_at` is used as `received_at` because it is the only
+  retained timestamp; `created_by` is left `NULL` because the legacy record did not store an actor. No actor or payment
+  metadata is invented.
+- Customer approval's existing cumulative `down_payment` input is treated as the desired total received amount. Only the
+  positive difference from the ledger total creates a new payment; lowering an already received cumulative amount is
+  rejected.
+- The migration backfill is intentionally irreversible. The application is not production yet, so removing the redundant
+  motor-information columns avoids maintaining two sources of payment state.
+
+Verification completed:
+
+- Focused payment/controller and related lifecycle tests passed, including zero, partial, multiple, exact, overpayment,
+  changed completed totals, validation, delivery blocking, and capability behavior.
+- Laravel Pint passed on changed PHP files.
+- Focused payment/controller coverage passed: 15 tests, 190 assertions. The related lifecycle, history, and state
+  machine checks also passed.
+- The full backend suite passed through Sail: 671 tests, 4,717 assertions. If Docker/Postman or another local dependency
+  is unavailable in the sandbox, the test suite may fail for environment reasons; request permission to access/start
+  Docker and retry the same Sail command before treating that as a product failure.
+
+Mark this step as done only after all requirements and verification checks above remain complete.
+
 ### Step 4 — Implement the separate refund workflow
 
 Scope:

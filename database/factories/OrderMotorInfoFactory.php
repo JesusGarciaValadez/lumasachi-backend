@@ -44,9 +44,6 @@ final class OrderMotorInfoFactory extends Factory
             'liters' => $engine['liters'],
             'year' => (string) $this->faker->numberBetween(2000, 2025),
             'cylinder_count' => $engine['cylinder_count'],
-            'down_payment' => $this->faker->randomFloat(2, 0, 5000),
-            'total_cost' => 0,
-            'is_fully_paid' => false,
             'center_torque' => null,
             'rod_torque' => null,
             'first_gap' => null,
@@ -67,13 +64,6 @@ final class OrderMotorInfoFactory extends Factory
             'third_gap' => (string) $this->faker->randomFloat(3, 0.015, 0.040),
             'center_clearance' => (string) $this->faker->randomFloat(4, 0.0005, 0.003),
             'rod_clearance' => (string) $this->faker->randomFloat(4, 0.0005, 0.004),
-        ]);
-    }
-
-    public function fullyPaid(): self
-    {
-        return $this->state(fn () => [
-            'is_fully_paid' => true,
         ]);
     }
 }

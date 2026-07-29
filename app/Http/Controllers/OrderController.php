@@ -10,16 +10,19 @@ use App\Http\Requests\CustomerApprovalRequest;
 use App\Http\Requests\DeliverOrderRequest;
 use App\Http\Requests\MarkReadyForDeliveryRequest;
 use App\Http\Requests\MarkWorkCompletedRequest;
+use App\Http\Requests\StoreOrderPaymentRequest;
 use App\Http\Requests\StoreOrderWithItemsRequest;
 use App\Http\Requests\SubmitBudgetRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderHistoryResource;
+use App\Http\Resources\OrderPaymentResource;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\LocaleResolver;
 use App\Services\OrderLifecycleService;
+use App\Services\OrderPaymentService;
 use App\Traits\CachesOrders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +33,12 @@ final class OrderController extends Controller
 {
     use CachesOrders;
 
-    public function __construct(private OrderLifecycleService $lifecycleService) {}
+    public function __construct(
+        private OrderLifecycleService $lifecycleService,
+        private OrderPaymentService   $paymentService,
+    )
+    {
+    }
 
     /**
      * Display a listing of all orders.
@@ -77,7 +85,7 @@ final class OrderController extends Controller
         return response()->json([
             'code' => 'orders.created',
             'message' => __('orders.messages.created'),
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'motorInfo', 'items.components'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'motorInfo', 'payments.createdBy', 'items.components'])),
         ], 201);
     }
 
@@ -95,7 +103,7 @@ final class OrderController extends Controller
         return response()->json([
             'code' => 'orders.budget_submitted',
             'message' => __('orders.messages.budget_submitted'),
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'items.components', 'services.catalogItem'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'payments.createdBy', 'items.components', 'services.catalogItem'])),
         ]);
     }
 
@@ -116,7 +124,7 @@ final class OrderController extends Controller
         return response()->json([
             'code' => 'orders.services_approved',
             'message' => __('orders.messages.services_approved'),
-            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'services.catalogItem'])),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'payments.createdBy', 'services.catalogItem'])),
         ]);
     }
 
@@ -167,6 +175,25 @@ final class OrderController extends Controller
     }
 
     /**
+     * Record a received payment without modifying existing ledger entries.
+     */
+    public function recordPayment(StoreOrderPaymentRequest $request, Order $order): JsonResponse
+    {
+        $payment = $this->paymentService->recordPayment(
+            $order,
+            $request->validated('amount'),
+            $this->authenticatedUser($request),
+        );
+
+        return response()->json([
+            'code' => 'orders.payment_recorded',
+            'message' => __('orders.messages.payment_recorded'),
+            'payment' => new OrderPaymentResource($payment->load('createdBy')),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'payments.createdBy', 'services.catalogItem'])),
+        ], 201);
+    }
+
+    /**
      * Display the specified order.
      */
     public function show(Request $request, Order $order): JsonResponse
@@ -178,7 +205,7 @@ final class OrderController extends Controller
         $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order, $locale) {
             app()->setLocale($locale);
 
-            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'items.components', 'services.catalogItem'])))->resolve();
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'payments.createdBy', 'items.components', 'services.catalogItem'])))->resolve();
         });
 
         return response()->json($payload)

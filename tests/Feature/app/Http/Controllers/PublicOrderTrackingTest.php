@@ -39,9 +39,6 @@ beforeEach(function () {
         'brand' => 'Honda',
         'model' => 'Civic',
         'year' => '2020',
-        'down_payment' => 0,
-        'total_cost' => 0,
-        'is_fully_paid' => false,
     ]);
 });
 it('returns order when uuid and date match', function () {

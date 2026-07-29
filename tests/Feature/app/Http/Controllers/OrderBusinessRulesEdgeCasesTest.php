@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -458,17 +459,18 @@ test('quotation totals follow budgeted authorized and completed services', funct
         'completed_service_ids' => $completedServiceIds,
     ])->assertOk();
 
-    $order->motorInfo->refresh();
-    expect((float)$order->motorInfo->total_cost)->toBe(1252.80);
+    expect($order->fresh()->completedTotal())->toBe('1252.80');
     expect($services->get('weld_between_cylinders_qr25')->fresh()->is_completed)->toBeFalse();
 });
 test('delivery requires the remaining balance to be paid', function () {
     $order = createOrder(OrderStatus::ReadyForDelivery);
-    $order->motorInfo->update([
-        'down_payment' => 1000.00,
-        'total_cost' => 1252.80,
-        'is_fully_paid' => false,
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 1252.80,
     ]);
+    OrderPayment::factory()->create(['order_id' => $order->id, 'amount' => 1000.00, 'created_by' => $this->employee->id]);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertUnprocessable()
@@ -478,7 +480,7 @@ test('delivery requires the remaining balance to be paid', function () {
     Notification::assertNotSentTo($this->customer, OrderDeliveredNotification::class);
     Notification::assertNotSentTo($this->administrator, OrderAuditNotification::class);
 
-    $order->motorInfo->update(['down_payment' => 1252.80]);
+    OrderPayment::factory()->create(['order_id' => $order->id, 'amount' => 252.80, 'created_by' => $this->employee->id]);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
         ->assertOk()
@@ -486,12 +488,26 @@ test('delivery requires the remaining balance to be paid', function () {
 });
 test('delivery accepts exact payment overpayment and zero total orders', function () {
     foreach ([
-                 ['total_cost' => 100.00, 'down_payment' => 100.00],
-                 ['total_cost' => 100.00, 'down_payment' => 125.00],
-                 ['total_cost' => 0.00, 'down_payment' => 0.00],
+                 ['total' => 100.00, 'paid' => 100.00],
+                 ['total' => 100.00, 'paid' => 125.00],
+                 ['total' => 0.00, 'paid' => 0.00],
              ] as $payment) {
         $order = createOrder(OrderStatus::ReadyForDelivery);
-        $order->motorInfo->update($payment);
+        if ($payment['total'] > 0) {
+            $item = OrderItem::factory()->create(['order_id' => $order->id]);
+            OrderService::factory()->create([
+                'order_item_id' => $item->id,
+                'is_completed' => true,
+                'net_price' => $payment['total'],
+            ]);
+        }
+        if ($payment['paid'] > 0) {
+            OrderPayment::factory()->create([
+                'order_id' => $order->id,
+                'amount' => $payment['paid'],
+                'created_by' => $this->employee->id,
+            ]);
+        }
 
         $this->postJson("/api/v1/orders/{$order->uuid}/deliver")
             ->assertOk()
@@ -576,9 +592,6 @@ function createOrder(OrderStatus $status): Order
 
     OrderMotorInfo::create([
         'order_id' => $order->id,
-        'down_payment' => 0,
-        'total_cost' => 0,
-        'is_fully_paid' => true,
     ]);
 
     return $order;

@@ -3,43 +3,51 @@
 declare(strict_types=1);
 
 use App\Models\Order;
-use App\Models\OrderMotorInfo;
+use App\Models\OrderItem;
+use App\Models\OrderPayment;
+use App\Models\OrderService;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-it('checks casts and remaining balance', function () {
+it('calculates payment totals from the append-only ledger', function () {
     $order = Order::factory()->createQuietly();
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
 
-    $info = OrderMotorInfo::create([
-        'order_id' => $order->id,
-        'brand' => 'Nissan',
-        'liters' => '2.5',
-        'year' => '2018',
-        'model' => 'Altima',
-        'cylinder_count' => '4',
-        'down_payment' => 1500.00,
-        'total_cost' => 1252.80,
-        'is_fully_paid' => false,
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 1252.80,
     ]);
 
-    expect((float)$info->down_payment)->toBe(1500.00);
-    expect((float)$info->total_cost)->toBe(1252.80);
-    expect($info->is_fully_paid)->toBeFalse();
+    $employee = App\Models\User::factory()->create();
+    OrderPayment::factory()->create([
+        'order_id' => $order->id,
+        'amount' => 1500.00,
+        'created_by' => $employee->id,
+    ]);
 
-    // remaining_balance = max(0, total_cost - down_payment) => 0
-    expect($info->remaining_balance)->toBe(0.0);
-    expect($info->hasPendingPayment())->toBeFalse();
+    expect($order->fresh()->totalPaid())->toBe('1500.00')
+        ->and($order->fresh()->paymentStatus())->toBe('Paid')
+        ->and($order->fresh()->financialTotals()['remaining_balance'])->toBe('0.00');
 });
+
 it('compares payment amounts at currency precision', function () {
     $order = Order::factory()->createQuietly();
+    $item = OrderItem::factory()->create(['order_id' => $order->id]);
 
-    $info = OrderMotorInfo::create([
-        'order_id' => $order->id,
-        'down_payment' => 0.10,
-        'total_cost' => 0.30,
-        'is_fully_paid' => false,
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => 0.30,
     ]);
 
-    expect($info->hasPendingPayment())->toBeTrue();
-    expect($info->remaining_balance)->toBe(0.20);
+    $employee = App\Models\User::factory()->create();
+    OrderPayment::factory()->create([
+        'order_id' => $order->id,
+        'amount' => 0.10,
+        'created_by' => $employee->id,
+    ]);
+
+    expect($order->fresh()->paymentStatus())->toBe('Partially Paid')
+        ->and($order->fresh()->financialTotals()['remaining_balance'])->toBe('0.20');
 });

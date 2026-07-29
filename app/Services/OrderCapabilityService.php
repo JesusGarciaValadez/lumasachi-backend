@@ -41,7 +41,7 @@ final class OrderCapabilityService
                 ], true),
             'deliver_order' => $canUpdate
                 && $order->status === OrderStatus::ReadyForDelivery
-                && !$order->motorInfo?->hasPendingPayment(),
+                && !$order->hasPendingPayment(),
         ];
     }
 }

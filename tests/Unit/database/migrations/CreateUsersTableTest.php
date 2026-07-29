@@ -213,6 +213,7 @@ it('checks if migration can be rolled back and rerun', function () {
     Schema::dropIfExists('order_histories');
 
     // New dependent tables introduced by motor items architecture
+    Schema::dropIfExists('order_payments');
     Schema::dropIfExists('order_services');
     Schema::dropIfExists('order_item_components');
     Schema::dropIfExists('order_items');
