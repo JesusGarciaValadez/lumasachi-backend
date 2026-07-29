@@ -44,6 +44,7 @@ const submit = () => {
                     <Label for="email">{{ t('auth.email') }}</Label>
                     <Input
                         id="email"
+                        dusk="login-email"
                         type="email"
                         required
                         autofocus
@@ -64,6 +65,7 @@ const submit = () => {
                     </div>
                     <Input
                         id="password"
+                        dusk="login-password"
                         type="password"
                         required
                         :tabindex="2"
@@ -81,7 +83,7 @@ const submit = () => {
                     </Label>
                 </div>
 
-                <Button type="submit" class="mt-4 w-full" :tabindex="4" :disabled="form.processing">
+                <Button :disabled="form.processing" :tabindex="4" class="mt-4 w-full" dusk="login-submit" type="submit">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     {{ t('auth.login') }}
                 </Button>

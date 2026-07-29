@@ -99,7 +99,9 @@ final class AppServiceProvider extends ServiceProvider
      */
     private function configureUrls(): void
     {
-        URL::forceScheme('https');
+        if (!$this->app->environment('dusk', 'dusk.local', 'dusk.ci')) {
+            URL::forceScheme('https');
+        }
     }
 
     /**

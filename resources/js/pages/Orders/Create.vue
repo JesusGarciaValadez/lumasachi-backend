@@ -180,8 +180,13 @@ onMounted(async () => {
             >
                 {{ t('common.loading') }}
             </div>
-            <form v-else class="flex flex-col gap-4" @submit.prevent="submit">
-                <div v-if="error" class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+            <form v-else class="flex flex-col gap-4" dusk="order-create-form" @submit.prevent="submit">
+                <div
+                    v-if="error"
+                    class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+                    dusk="order-create-error"
+                    role="alert"
+                >
                     {{ error.message }}
                     <div v-if="Object.keys(error.validationErrors).length" class="mt-2 flex flex-col gap-1">
                         <span v-for="(messages, key) in error.validationErrors" :key="key">{{ key }}: {{ messages[0] }}</span>
@@ -197,6 +202,7 @@ onMounted(async () => {
                                     <Label for="title">{{ t('orders.title') }}</Label
                                     ><Input
                                         id="title"
+                                        dusk="order-title"
                                         v-model="form.title"
                                         :aria-describedby="fieldError('title') ? 'title-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('title'))"
@@ -208,6 +214,7 @@ onMounted(async () => {
                                     <Label for="description">{{ t('orders.description') }}</Label
                                     ><textarea
                                         id="description"
+                                        dusk="order-description"
                                         v-model="form.description"
                                         :aria-describedby="fieldError('description') ? 'description-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('description'))"
@@ -223,6 +230,7 @@ onMounted(async () => {
                                     <Label for="priority">{{ t('orders.priority') }}</Label
                                     ><select
                                         id="priority"
+                                        dusk="order-priority"
                                         v-model="form.priority"
                                         class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                     >
@@ -240,6 +248,7 @@ onMounted(async () => {
                                     <Label for="customer_id">{{ t('orders.customer') }}</Label
                                     ><select
                                         id="customer_id"
+                                        dusk="order-customer"
                                         v-model.number="form.customer_id"
                                         :aria-describedby="fieldError('customer_id') ? 'customer-id-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('customer_id'))"
@@ -259,6 +268,7 @@ onMounted(async () => {
                                     <Label for="assigned_to">{{ t('orders.assigned_to') }}</Label
                                     ><select
                                         id="assigned_to"
+                                        dusk="order-assignee"
                                         v-model.number="form.assigned_to"
                                         :aria-describedby="fieldError('assigned_to') ? 'assigned-to-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('assigned_to'))"
@@ -293,28 +303,29 @@ onMounted(async () => {
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div class="flex flex-col gap-1">
                                     <Label for="brand">{{ t('orders.brand') }}</Label
-                                    ><Input id="brand" v-model="form.motor_info!.brand" />
+                                    ><Input id="brand" v-model="form.motor_info!.brand" dusk="motor-brand" />
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="liters">{{ t('orders.liters') }}</Label
-                                    ><Input id="liters" v-model="form.motor_info!.liters" />
+                                    ><Input id="liters" v-model="form.motor_info!.liters" dusk="motor-liters" />
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="year">{{ t('orders.year') }}</Label
-                                    ><Input id="year" v-model="form.motor_info!.year" />
+                                    ><Input id="year" v-model="form.motor_info!.year" dusk="motor-year" />
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="model">{{ t('orders.model') }}</Label
-                                    ><Input id="model" v-model="form.motor_info!.model" />
+                                    ><Input id="model" v-model="form.motor_info!.model" dusk="motor-model" />
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="cylinder_count">{{ t('orders.cylinder_count') }}</Label
-                                    ><Input id="cylinder_count" v-model="form.motor_info!.cylinder_count" />
+                                    ><Input id="cylinder_count" v-model="form.motor_info!.cylinder_count" dusk="motor-cylinder-count" />
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <Label for="down_payment">{{ t('orders.advance_payment') }}</Label
                                     ><Input
                                         id="down_payment"
+                                        dusk="motor-down-payment"
                                         v-model="form.motor_info!.down_payment"
                                         :aria-describedby="fieldError('motor_info.down_payment') ? 'down-payment-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('motor_info.down_payment'))"
@@ -349,6 +360,7 @@ onMounted(async () => {
                                     <Label :for="`item-type-${index}`">{{ t('orders.item_type') }}</Label
                                     ><select
                                         :id="`item-type-${index}`"
+                                        :dusk="`order-item-type-${index}`"
                                         v-model="item.item_type"
                                         :aria-describedby="fieldError(`items.${index}.item_type`) ? `item-type-${index}-error` : undefined"
                                         class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -377,6 +389,7 @@ onMounted(async () => {
                                         :checked="item.components?.includes(component.key)"
                                         :aria-describedby="componentErrors(index).length ? `item-components-${index}-error` : undefined"
                                         class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        :dusk="`order-item-component-${index}-${component.key}`"
                                         type="checkbox"
                                         @change="handleComponentChange(item, component.key, $event)"
                                     />{{ component.label }}</label
@@ -397,7 +410,9 @@ onMounted(async () => {
                 </Card>
 
                 <div class="flex justify-end">
-                    <Button :disabled="processing" type="submit">{{ processing ? t('common.loading') : t('orders.create') }}</Button>
+                    <Button :disabled="processing" dusk="order-create-submit" type="submit">{{
+                        processing ? t('common.loading') : t('orders.create')
+                    }}</Button>
                 </div>
             </form>
         </div>

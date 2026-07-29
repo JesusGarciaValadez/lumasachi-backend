@@ -539,19 +539,21 @@ onMounted(async () => {
                             <h1 class="truncate text-xl font-semibold md:text-2xl">{{ order.title }}</h1>
                             <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
                         </div>
-                        <OrderStatusIndicators
-                            :disposition-status="order.disposition_status"
-                            :disposition-status-label="order.disposition_status_label"
-                            :labels="indicatorLabels"
-                            :lifecycle-status="currentLifecycleStatus"
-                            :lifecycle-status-label="order.lifecycle_status_label"
-                            :payment-status="order.payment_status"
-                            :payment-status-label="order.payment_status_label"
-                            :priority="order.priority"
-                            :priority-label="priorityLabel(order.priority)"
-                            :refund-status-labels="refundStatusLabels"
-                            :refund-statuses="refundStatuses"
-                        />
+                        <div dusk="order-status">
+                            <OrderStatusIndicators
+                                :disposition-status="order.disposition_status"
+                                :disposition-status-label="order.disposition_status_label"
+                                :labels="indicatorLabels"
+                                :lifecycle-status="currentLifecycleStatus"
+                                :lifecycle-status-label="order.lifecycle_status_label"
+                                :payment-status="order.payment_status"
+                                :payment-status-label="order.payment_status_label"
+                                :priority="order.priority"
+                                :priority-label="priorityLabel(order.priority)"
+                                :refund-status-labels="refundStatusLabels"
+                                :refund-statuses="refundStatuses"
+                            />
+                        </div>
                     </div>
                     <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
                     <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">

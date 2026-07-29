@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Attachment;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -44,7 +45,16 @@ final class PublicOrderResource extends JsonResource
                 fn(): array => $this->financialTotals(),
             ),
             'history' => PublicOrderHistoryResource::collection($this->whenLoaded('orderHistories')),
-            'attachments' => PublicAttachmentResource::collection($this->whenLoaded('attachments')),
+            'attachments' => $this->whenLoaded('attachments', function () use ($request): array {
+                /** @var Order $order */
+                $order = $this->resource;
+
+                return $this->attachments->map(
+                    fn(Attachment $attachment): array => (new PublicAttachmentResource($attachment))
+                        ->forOrder($order)
+                        ->resolve($request),
+                )->all();
+            }),
             'created_at' => $this->created_at,
         ];
     }
