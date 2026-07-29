@@ -34,6 +34,7 @@
         "friendsofphp/php-cs-fixer": "*",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.1",
+        "laravel/dusk": "^8.6",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
         "laravel/sail": "^1.44",

@@ -367,6 +367,7 @@ export interface PublicOrderHistoryPayload {
 }
 
 export interface PublicOrderAttachmentPayload {
+    uuid: string;
     file_name: string;
     mime_type?: string | null;
     file_size?: number | null;
@@ -376,6 +377,8 @@ export interface PublicOrderAttachmentPayload {
     is_pdf?: boolean;
     extension?: string;
     created_at?: string;
+    preview_url?: string | null;
+    download_url: string;
 }
 
 export interface PublicOrderPayload {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PublicAttachmentRequest;
 use App\Http\Requests\UploadAttachmentRequest;
 use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
@@ -223,6 +224,58 @@ final class AttachmentController extends Controller
     }
 
     /**
+     * Download an attachment through the public order-tracking contract.
+     */
+    public function publicDownload(PublicAttachmentRequest $request, Order $order, Attachment $attachment): JsonResponse|BinaryFileResponse
+    {
+        if (!$this->publicAttachmentMatchesOrder($request, $order, $attachment)) {
+            return $this->publicAttachmentNotFound();
+        }
+
+        if (!Storage::disk('public')->exists($attachment->file_path)) {
+            return $this->publicAttachmentNotFound();
+        }
+
+        return response()->download(
+            Storage::disk('public')->path($attachment->file_path),
+            $attachment->file_name,
+            [
+                'Content-Type' => $attachment->mime_type,
+                'Content-Disposition' => 'attachment; filename="' . $attachment->file_name . '"',
+            ],
+        );
+    }
+
+    /**
+     * Preview an image or PDF through the public order-tracking contract.
+     */
+    public function publicPreview(PublicAttachmentRequest $request, Order $order, Attachment $attachment): JsonResponse|BinaryFileResponse
+    {
+        if (!$this->publicAttachmentMatchesOrder($request, $order, $attachment)) {
+            return $this->publicAttachmentNotFound();
+        }
+
+        if (!$attachment->isImage() && !$attachment->isPdf()) {
+            return response()->json([
+                'code' => 'attachments.not_previewable',
+                'message' => __('attachments.not_previewable'),
+            ], 400);
+        }
+
+        if (!Storage::disk('public')->exists($attachment->file_path)) {
+            return $this->publicAttachmentNotFound();
+        }
+
+        return response()->file(
+            Storage::disk('public')->path($attachment->file_path),
+            [
+                'Content-Type' => $attachment->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"',
+            ],
+        );
+    }
+
+    /**
      * Delete an attachment.
      */
     public function destroy(Attachment $attachment): JsonResponse
@@ -313,6 +366,21 @@ final class AttachmentController extends Controller
 
         // Use the order policy to check if user can view the order
         return $user->can('view', $order);
+    }
+
+    private function publicAttachmentMatchesOrder(PublicAttachmentRequest $request, Order $order, Attachment $attachment): bool
+    {
+        return $order->created_at?->toDateString() === $request->validated('created_date')
+            && $attachment->attachable_type === (new Order)->getMorphClass()
+            && $attachment->attachable_id === $order->getKey();
+    }
+
+    private function publicAttachmentNotFound(): JsonResponse
+    {
+        return response()->json([
+            'code' => 'orders.track_not_found',
+            'message' => __('orders.track_not_found'),
+        ], 404);
     }
 
     private function authenticatedUser(): User

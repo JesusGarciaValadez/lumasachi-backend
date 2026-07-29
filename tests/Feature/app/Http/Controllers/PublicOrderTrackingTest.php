@@ -11,12 +11,15 @@ use App\Models\OrderMotorInfo;
 use App\Models\ServiceCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as InertiaAssert;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
     Notification::fake();
+    Storage::fake('public');
 
     $company = Company::factory()->create();
     $employee = User::factory()->create([
@@ -135,12 +138,14 @@ it('returns the order history and attachments', function () {
         'created_by' => $this->order->created_by,
     ]);
     $attachment = $this->order->attachments()->create([
+        'uuid' => (string)Str::uuid7(),
         'file_name' => 'work-order.pdf',
         'file_path' => 'attachments/work-order.pdf',
         'file_size' => 1024,
         'mime_type' => 'application/pdf',
         'uploaded_by' => $this->order->created_by,
     ]);
+    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 public attachment');
 
     $response = $this->postJson('/api/v1/orders/track', [
         'uuid' => $this->order->uuid,
@@ -161,6 +166,9 @@ it('returns the order history and attachments', function () {
                         'file_name',
                         'mime_type',
                         'file_size',
+                        'uuid',
+                        'preview_url',
+                        'download_url',
                     ],
                 ],
             ],
@@ -180,7 +188,17 @@ it('returns the order history and attachments', function () {
         ->assertJsonMissingPath('order.history.0.old_value')
         ->assertJsonMissingPath('order.history.0.new_value')
         ->assertJsonMissingPath('order.history.0.created_by')
-        ->assertJsonMissingPath('order.attachments.0.uuid')
+        ->assertJsonPath('order.attachments.0.uuid', $attachment->uuid)
+        ->assertJsonPath('order.attachments.0.preview_url', route('api.orders.public.attachments.preview', [
+            'order' => $this->order->uuid,
+            'attachment' => $attachment->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]))
+        ->assertJsonPath('order.attachments.0.download_url', route('api.orders.public.attachments.download', [
+            'order' => $this->order->uuid,
+            'attachment' => $attachment->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]))
         ->assertJsonMissingPath('order.attachments.0.file_path')
         ->assertJsonMissingPath('order.attachments.0.url')
         ->assertJsonMissingPath('order.attachments.0.uploaded_by');
@@ -293,4 +311,88 @@ test('guests can open the public tracking page without order props', function ()
             ->missing('order')
             ->missing('capabilities')
         );
+});
+
+it('allows anonymous download and preview of an attachment with a matching order date', function () {
+    $attachment = $this->order->attachments()->create([
+        'uuid' => (string)Str::uuid7(),
+        'file_name' => 'inspection.pdf',
+        'file_path' => 'attachments/inspection.pdf',
+        'file_size' => 24,
+        'mime_type' => 'application/pdf',
+        'uploaded_by' => $this->order->created_by,
+    ]);
+    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 inspection');
+
+    $download = $this->get(route('api.orders.public.attachments.download', [
+        'order' => $this->order->uuid,
+        'attachment' => $attachment->uuid,
+        'created_date' => $this->order->created_at->toDateString(),
+    ]));
+
+    $download->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('Content-Disposition', 'attachment; filename=inspection.pdf');
+
+    $preview = $this->get(route('api.orders.public.attachments.preview', [
+        'order' => $this->order->uuid,
+        'attachment' => $attachment->uuid,
+        'created_date' => $this->order->created_at->toDateString(),
+    ]));
+
+    $preview->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('Content-Disposition', 'inline; filename="inspection.pdf"');
+});
+
+it('does not expose an attachment when the order date does not match', function () {
+    $attachment = $this->order->attachments()->create([
+        'uuid' => (string)Str::uuid7(),
+        'file_name' => 'inspection.pdf',
+        'file_path' => 'attachments/inspection.pdf',
+        'file_size' => 24,
+        'mime_type' => 'application/pdf',
+        'uploaded_by' => $this->order->created_by,
+    ]);
+    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 inspection');
+
+    $response = $this->get(route('api.orders.public.attachments.download', [
+        'order' => $this->order->uuid,
+        'attachment' => $attachment->uuid,
+        'created_date' => '1999-01-01',
+    ]));
+
+    $response->assertNotFound()
+        ->assertExactJson(['code' => 'orders.track_not_found', 'message' => 'Order not found.']);
+});
+
+it('does not offer a preview URL for non-previewable attachments', function () {
+    $attachment = $this->order->attachments()->create([
+        'uuid' => (string)Str::uuid7(),
+        'file_name' => 'notes.txt',
+        'file_path' => 'attachments/notes.txt',
+        'file_size' => 12,
+        'mime_type' => 'text/plain',
+        'uploaded_by' => $this->order->created_by,
+    ]);
+    Storage::disk('public')->put($attachment->file_path, 'plain notes');
+
+    $tracking = $this->postJson('/api/v1/orders/track', [
+        'uuid' => $this->order->uuid,
+        'created_date' => $this->order->created_at->toDateString(),
+    ]);
+
+    $tracking->assertOk()
+        ->assertJsonPath('order.attachments.0.preview_url', null)
+        ->assertJsonPath('order.attachments.0.download_url', route('api.orders.public.attachments.download', [
+            'order' => $this->order->uuid,
+            'attachment' => $attachment->uuid,
+            'created_date' => $this->order->created_at->toDateString(),
+        ]));
+
+    $this->get(route('api.orders.public.attachments.preview', [
+        'order' => $this->order->uuid,
+        'attachment' => $attachment->uuid,
+        'created_date' => $this->order->created_at->toDateString(),
+    ]))->assertStatus(400);
 });

@@ -109,7 +109,7 @@ async function lookup(): Promise<void> {
 
 <template>
     <Head :title="t('orders.track')" />
-    <div class="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8" dusk="public-order-tracking-page">
         <div class="mx-auto flex max-w-6xl flex-col gap-6">
             <LocaleSwitcher class="self-end" />
             <header class="flex flex-col gap-2">
@@ -123,6 +123,7 @@ async function lookup(): Promise<void> {
                         <Label for="track-uuid">{{ t('orders.uuid') }}</Label
                         ><Input
                             id="track-uuid"
+                            dusk="track-uuid"
                             v-model="uuid"
                             :aria-describedby="fieldErrors.uuid ? 'track-uuid-error' : undefined"
                             :aria-invalid="Boolean(fieldErrors.uuid)"
@@ -135,6 +136,7 @@ async function lookup(): Promise<void> {
                         <Label for="track-date">{{ t('orders.creation_date') }}</Label
                         ><Input
                             id="track-date"
+                            dusk="track-date"
                             v-model="createdDate"
                             :aria-describedby="fieldErrors.created_date ? 'track-date-error' : undefined"
                             :aria-invalid="Boolean(fieldErrors.created_date)"
@@ -145,13 +147,14 @@ async function lookup(): Promise<void> {
                             {{ fieldErrors.created_date[0] }}
                         </p>
                     </div>
-                    <Button :disabled="loading" type="submit">{{ loading ? t('common.loading') : t('orders.lookup') }}</Button>
+                    <Button :disabled="loading" dusk="track-submit" type="submit">{{ loading ? t('common.loading') : t('orders.lookup') }}</Button>
                 </form>
             </Card>
 
             <div
                 v-if="error"
                 aria-live="assertive"
+                dusk="track-error"
                 class="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
                 role="alert"
             >
@@ -162,149 +165,165 @@ async function lookup(): Promise<void> {
             </div>
 
             <template v-if="order && !loading">
-                <Card>
-                    <div class="flex flex-col gap-4 p-6">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <h2 class="text-xl font-semibold">{{ order.title }}</h2>
-                                <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
-                            </div>
-                            <OrderStatusIndicators
-                                :disposition-status="order.disposition_status"
-                                :disposition-status-label="order.disposition_status_label"
-                                :labels="indicatorLabels"
-                                :lifecycle-status="currentLifecycleStatus"
-                                :lifecycle-status-label="order.lifecycle_status_label"
-                                :priority="order.priority"
-                                :priority-label="order.priority_label ?? order.priority"
-                            />
-                        </div>
-                        <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
-                        <dl class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-                            <div>
-                                <dt class="text-muted-foreground">{{ t('orders.priority') }}</dt>
-                                <dd>{{ order.priority_label ?? order.priority }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-muted-foreground">{{ t('orders.created_at') }}</dt>
-                                <dd>{{ formatDateTime(order.created_at) }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-muted-foreground">{{ t('orders.estimated_completion') }}</dt>
-                                <dd>{{ formatDateTime(order.estimated_completion) }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-muted-foreground">{{ t('orders.actual_completion') }}</dt>
-                                <dd>{{ formatDateTime(order.actual_completion) }}</dd>
-                            </div>
-                        </dl>
-                    </div>
-                </Card>
-
-                <OrderStatusProgress :status="currentLifecycleStatus" :statuses="statusSteps" :title="t('orders.progress')" />
-
-                <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <Card
-                        ><div class="flex flex-col gap-4 p-6">
-                            <h2 class="font-semibold">{{ t('orders.motor_information') }}</h2>
-                            <dl class="grid grid-cols-2 gap-4 text-sm">
+                <div dusk="track-result">
+                    <Card>
+                        <div class="flex flex-col gap-4 p-6">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
-                                    <dt class="text-muted-foreground">{{ t('orders.brand') }}</dt>
-                                    <dd>{{ order.motor_info?.brand ?? '—' }}</dd>
+                                    <h2 class="text-xl font-semibold">{{ order.title }}</h2>
+                                    <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
+                                </div>
+                                <OrderStatusIndicators
+                                    :disposition-status="order.disposition_status"
+                                    :disposition-status-label="order.disposition_status_label"
+                                    :labels="indicatorLabels"
+                                    :lifecycle-status="currentLifecycleStatus"
+                                    :lifecycle-status-label="order.lifecycle_status_label"
+                                    :priority="order.priority"
+                                    :priority-label="order.priority_label ?? order.priority"
+                                />
+                            </div>
+                            <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
+                            <dl class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+                                <div>
+                                    <dt class="text-muted-foreground">{{ t('orders.priority') }}</dt>
+                                    <dd>{{ order.priority_label ?? order.priority }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-muted-foreground">{{ t('orders.liters') }}</dt>
-                                    <dd>{{ order.motor_info?.liters ?? '—' }}</dd>
+                                    <dt class="text-muted-foreground">{{ t('orders.created_at') }}</dt>
+                                    <dd>{{ formatDateTime(order.created_at) }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-muted-foreground">{{ t('orders.year') }}</dt>
-                                    <dd>{{ order.motor_info?.year ?? '—' }}</dd>
+                                    <dt class="text-muted-foreground">{{ t('orders.estimated_completion') }}</dt>
+                                    <dd>{{ formatDateTime(order.estimated_completion) }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-muted-foreground">{{ t('orders.model') }}</dt>
-                                    <dd>{{ order.motor_info?.model ?? '—' }}</dd>
-                                </div>
-                                <div>
-                                    <dt class="text-muted-foreground">{{ t('orders.cylinder_count') }}</dt>
-                                    <dd>{{ order.motor_info?.cylinder_count ?? '—' }}</dd>
+                                    <dt class="text-muted-foreground">{{ t('orders.actual_completion') }}</dt>
+                                    <dd>{{ formatDateTime(order.actual_completion) }}</dd>
                                 </div>
                             </dl>
-                        </div></Card
-                    >
-                    <Card
-                        ><div class="flex flex-col gap-4 p-6">
-                            <h2 class="font-semibold">{{ t('orders.received_items') }}</h2>
-                            <div v-if="order.items.length" class="flex flex-col gap-3">
-                                <div v-for="(item, index) in order.items" :key="index" class="rounded-md border p-3 text-sm">
-                                    <div class="font-medium">{{ item.item_type_label ?? t('orders.item_type') }}</div>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        <span
-                                            v-for="(component, componentIndex) in item.components"
-                                            :key="componentIndex"
-                                            class="rounded-full bg-muted px-2 py-1 text-xs"
-                                            >{{ component.component_label ?? t('orders.components') }}</span
-                                        ><span v-if="!item.components.length" class="text-muted-foreground">{{ t('orders.no_components') }}</span>
+                        </div>
+                    </Card>
+
+                    <OrderStatusProgress :status="currentLifecycleStatus" :statuses="statusSteps" :title="t('orders.progress')" />
+
+                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <Card
+                            ><div class="flex flex-col gap-4 p-6">
+                                <h2 class="font-semibold">{{ t('orders.motor_information') }}</h2>
+                                <dl class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <dt class="text-muted-foreground">{{ t('orders.brand') }}</dt>
+                                        <dd>{{ order.motor_info?.brand ?? '—' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-muted-foreground">{{ t('orders.liters') }}</dt>
+                                        <dd>{{ order.motor_info?.liters ?? '—' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-muted-foreground">{{ t('orders.year') }}</dt>
+                                        <dd>{{ order.motor_info?.year ?? '—' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-muted-foreground">{{ t('orders.model') }}</dt>
+                                        <dd>{{ order.motor_info?.model ?? '—' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-muted-foreground">{{ t('orders.cylinder_count') }}</dt>
+                                        <dd>{{ order.motor_info?.cylinder_count ?? '—' }}</dd>
+                                    </div>
+                                </dl>
+                            </div></Card
+                        >
+                        <Card
+                            ><div class="flex flex-col gap-4 p-6">
+                                <h2 class="font-semibold">{{ t('orders.received_items') }}</h2>
+                                <div v-if="order.items.length" class="flex flex-col gap-3">
+                                    <div v-for="(item, index) in order.items" :key="index" class="rounded-md border p-3 text-sm">
+                                        <div class="font-medium">{{ item.item_type_label ?? t('orders.item_type') }}</div>
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            <span
+                                                v-for="(component, componentIndex) in item.components"
+                                                :key="componentIndex"
+                                                class="rounded-full bg-muted px-2 py-1 text-xs"
+                                                >{{ component.component_label ?? t('orders.components') }}</span
+                                            ><span v-if="!item.components.length" class="text-muted-foreground">{{ t('orders.no_components') }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_items') }}</p>
-                        </div></Card
-                    >
-                </div>
+                                <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_items') }}</p>
+                            </div></Card
+                        >
+                    </div>
 
-                <OrderFinancialSummary
-                    v-if="order.financials"
-                    :financials="financials"
-                    :labels="financialLabels"
-                    :title="t('orders.financial_summary')"
-                />
+                    <OrderFinancialSummary
+                        v-if="order.financials"
+                        :financials="financials"
+                        :labels="financialLabels"
+                        :title="t('orders.financial_summary')"
+                    />
 
-                <Card
-                    ><div class="flex flex-col gap-4 p-6">
-                        <h2 class="font-semibold">{{ t('orders.services') }}</h2>
-                        <div v-if="order.services.length" class="flex flex-col gap-3">
-                            <div
-                                v-for="(service, index) in order.services"
-                                :key="index"
-                                class="grid gap-2 rounded-md border p-3 text-sm sm:grid-cols-[1fr_auto_auto]"
-                            >
-                                <div>
-                                    <div class="font-medium">{{ service.service_name ?? t('orders.service') }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ service.measurement ?? '—' }}</div>
-                                </div>
-                                <div>{{ formatMoney(service.net_price) }}</div>
-                                <div class="text-muted-foreground">{{ serviceState(service) }}</div>
-                            </div>
-                        </div>
-                        <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_services') }}</p>
-                    </div></Card
-                >
-
-                <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <Card
-                        ><div class="flex flex-col gap-3 p-6">
-                            <h2 class="font-semibold">{{ t('orders.attachments') }}</h2>
-                            <div v-if="order.attachments.length" class="flex flex-col gap-2">
-                                <div v-for="(attachment, index) in order.attachments" :key="index" class="rounded-md border p-3 text-sm">
-                                    <div class="font-medium">{{ attachment.file_name }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ attachment.human_file_size }}</div>
+                        ><div class="flex flex-col gap-4 p-6">
+                            <h2 class="font-semibold">{{ t('orders.services') }}</h2>
+                            <div v-if="order.services.length" class="flex flex-col gap-3">
+                                <div
+                                    v-for="(service, index) in order.services"
+                                    :key="index"
+                                    class="grid gap-2 rounded-md border p-3 text-sm sm:grid-cols-[1fr_auto_auto]"
+                                >
+                                    <div>
+                                        <div class="font-medium">{{ service.service_name ?? t('orders.service') }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ service.measurement ?? '—' }}</div>
+                                    </div>
+                                    <div>{{ formatMoney(service.net_price) }}</div>
+                                    <div class="text-muted-foreground">{{ serviceState(service) }}</div>
                                 </div>
                             </div>
-                            <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_attachments') }}</p>
+                            <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_services') }}</p>
                         </div></Card
                     >
-                    <Card
-                        ><div class="flex flex-col gap-3 p-6">
-                            <h2 class="font-semibold">{{ t('orders.history') }}</h2>
-                            <div v-if="order.history.length" class="flex flex-col gap-3">
-                                <div v-for="(entry, index) in order.history" :key="index" class="rounded-md border p-3 text-sm">
-                                    <div class="text-xs text-muted-foreground">{{ formatDateTime(entry.created_at) }}</div>
-                                    <div class="mt-1">{{ entry.description ?? entry.comment }}</div>
+
+                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <Card
+                            ><div class="flex flex-col gap-3 p-6">
+                                <h2 class="font-semibold">{{ t('orders.attachments') }}</h2>
+                                <div v-if="order.attachments.length" class="flex flex-col gap-2">
+                                    <div v-for="(attachment, index) in order.attachments" :key="index" class="rounded-md border p-3 text-sm">
+                                        <div class="font-medium">{{ attachment.file_name }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ attachment.human_file_size }}</div>
+                                        <div class="mt-2 flex gap-3">
+                                            <a
+                                                v-if="attachment.preview_url"
+                                                :dusk="`attachment-preview-${index}`"
+                                                :href="attachment.preview_url"
+                                                class="text-sm underline"
+                                                rel="noreferrer"
+                                                target="_blank"
+                                                >{{ t('orders.preview') }}</a
+                                            >
+                                            <a :dusk="`attachment-download-${index}`" :href="attachment.download_url" class="text-sm underline">{{
+                                                t('orders.download')
+                                            }}</a>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_history') }}</p>
-                        </div></Card
-                    >
+                                <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_attachments') }}</p>
+                            </div></Card
+                        >
+                        <Card
+                            ><div class="flex flex-col gap-3 p-6">
+                                <h2 class="font-semibold">{{ t('orders.history') }}</h2>
+                                <div v-if="order.history.length" class="flex flex-col gap-3">
+                                    <div v-for="(entry, index) in order.history" :key="index" class="rounded-md border p-3 text-sm">
+                                        <div class="text-xs text-muted-foreground">{{ formatDateTime(entry.created_at) }}</div>
+                                        <div class="mt-1">{{ entry.description ?? entry.comment }}</div>
+                                    </div>
+                                </div>
+                                <p v-else class="text-sm text-muted-foreground">{{ t('orders.no_history') }}</p>
+                            </div></Card
+                        >
+                    </div>
                 </div>
             </template>
         </div>

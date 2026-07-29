@@ -126,6 +126,13 @@ Route::group(['prefix' => 'v1'], function () {
         ->middleware('throttle:10,1')
         ->name('api.orders.track');
 
+    Route::scopeBindings()->prefix('orders/{order:uuid}/attachments')->group(function () {
+        Route::get('/{attachment:uuid}/download', [AttachmentController::class, 'publicDownload'])
+            ->name('api.orders.public.attachments.download');
+        Route::get('/{attachment:uuid}/preview', [AttachmentController::class, 'publicPreview'])
+            ->name('api.orders.public.attachments.preview');
+    });
+
     // Attachment Routes (outside of orders prefix)
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('attachments')->group(function () {
         Route::get('/{attachment:uuid}/download', [AttachmentController::class, 'download'])
