@@ -22,6 +22,10 @@ final class PublicOrderResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status?->value,
             'status_label' => $this->status?->getLabel(),
+            'lifecycle_status' => $this->lifecycleStatus()?->value,
+            'lifecycle_status_label' => $this->lifecycleStatus()?->getLabel(),
+            'disposition_status' => $this->dispositionStatus()?->value,
+            'disposition_status_label' => $this->dispositionStatus()?->getLabel(),
             'priority' => $this->priority?->value,
             'priority_label' => $this->priority
                 ? __('orders.priority_labels.' . $this->priority->value)

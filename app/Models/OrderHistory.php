@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\OrderHistoryEventType;
+use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
+use App\Enums\RefundStatus;
 use App\Observers\OrderHistoryObserver;
 use App\Traits\HasAttachments;
 use BackedEnum;
@@ -30,6 +33,12 @@ final class OrderHistory extends Model
      * Available fields that can be tracked
      */
     public const FIELD_STATUS = 'status';
+
+    public const FIELD_PAYMENT_STATUS = 'payment_status';
+
+    public const FIELD_PAYMENT_RECORD = 'payment_record';
+
+    public const FIELD_REFUND = 'refund';
 
     public const FIELD_PRIORITY = 'priority';
 
@@ -91,6 +100,7 @@ final class OrderHistory extends Model
         'uuid',
         'order_id',
         'field_changed',
+        'event_type',
         'old_value',
         'new_value',
         'comment',
@@ -104,8 +114,20 @@ final class OrderHistory extends Model
      */
     protected $casts = [
         'uuid' => 'string',
+        'event_type' => OrderHistoryEventType::class,
         // Dynamic casting will be handled by accessors/mutators
     ];
+
+    public static function eventTypeFor(string $field, mixed $newValue = null): OrderHistoryEventType
+    {
+        return match ($field) {
+            self::FIELD_PAYMENT_STATUS => OrderHistoryEventType::Payment,
+            self::FIELD_PAYMENT_RECORD => OrderHistoryEventType::PaymentRecord,
+            self::FIELD_REFUND => OrderHistoryEventType::Refund,
+            self::FIELD_STATUS => self::statusEventType($newValue),
+            default => OrderHistoryEventType::Attribute,
+        };
+    }
 
     /**
      * Get the columns that should receive a unique identifier.
@@ -206,6 +228,21 @@ final class OrderHistory extends Model
         return OrderHistoryFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        self::creating(function (OrderHistory $history): void {
+            if ($history->event_type !== null) {
+                return;
+            }
+
+            if ($history->field_changed === null) {
+                return;
+            }
+
+            $history->event_type = self::eventTypeFor($history->field_changed, $history->new_value);
+        });
+    }
+
     /**
      * Cast field value based on field type
      */
@@ -213,6 +250,20 @@ final class OrderHistory extends Model
     {
         if (is_null($value)) {
             return null;
+        }
+
+        $eventType = OrderHistoryEventType::tryFrom((string)$this->getRawOriginal('event_type'));
+
+        if ($eventType === OrderHistoryEventType::Payment) {
+            return $value instanceof OrderPaymentStatus
+                ? $value
+                : OrderPaymentStatus::tryFrom((string)$value) ?? $value;
+        }
+
+        if ($eventType === OrderHistoryEventType::Refund) {
+            return $value instanceof RefundStatus
+                ? $value
+                : RefundStatus::tryFrom((string)$value) ?? $value;
         }
 
         switch ($field) {
@@ -252,6 +303,12 @@ final class OrderHistory extends Model
                 }
 
                 return (bool) $value;
+            case self::FIELD_PAYMENT_STATUS:
+                return $value instanceof OrderPaymentStatus
+                    ? $value
+                    : OrderPaymentStatus::tryFrom((string)$value) ?? $value;
+            case self::FIELD_PAYMENT_RECORD:
+                return (string)$value;
             default:
                 return $value;
         }
@@ -305,5 +362,19 @@ final class OrderHistory extends Model
         }
 
         return (string) $castedValue;
+    }
+
+    private static function statusEventType(mixed $value): OrderHistoryEventType
+    {
+        $status = $value instanceof OrderStatus
+            ? $value
+            : OrderStatus::tryFrom((string)$value);
+
+        return match (true) {
+            $status?->lifecycleStatus() !== null => OrderHistoryEventType::Lifecycle,
+            $status?->dispositionStatus() !== null => OrderHistoryEventType::Disposition,
+            $status?->paymentStatus() !== null => OrderHistoryEventType::Payment,
+            default => OrderHistoryEventType::Attribute,
+        };
     }
 }

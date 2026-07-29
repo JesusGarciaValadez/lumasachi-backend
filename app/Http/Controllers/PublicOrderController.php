@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderHistoryEventType;
 use App\Http\Requests\TrackOrderRequest;
 use App\Http\Resources\PublicOrderResource;
 use App\Models\Order;
@@ -24,7 +25,13 @@ final class PublicOrderController extends Controller
                 'motorInfo',
                 'items.components',
                 'services.catalogItem',
-                'orderHistories',
+                'orderHistories' => fn($query) => $query
+                    ->whereNotIn('event_type', [
+                        OrderHistoryEventType::Payment->value,
+                        OrderHistoryEventType::PaymentRecord->value,
+                        OrderHistoryEventType::Refund->value,
+                    ])
+                    ->orderBy('created_at'),
                 'attachments',
             ])
             ->first();

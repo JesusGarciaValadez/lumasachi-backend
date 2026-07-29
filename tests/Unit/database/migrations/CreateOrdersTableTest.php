@@ -23,6 +23,8 @@ it('checks if orders table has all required columns', function () {
         'title',
         'description',
         'status',
+        'lifecycle_status',
+        'disposition_status',
         'priority',
         'estimated_completion',
         'actual_completion',
@@ -118,6 +120,7 @@ it('checks if migration can be rolled back and rerun', function () {
     Schema::dropIfExists('order_histories');
 
     // New dependent tables introduced by motor items architecture
+    Schema::dropIfExists('order_refunds');
     Schema::dropIfExists('order_payments');
     Schema::dropIfExists('order_services');
     Schema::dropIfExists('order_item_components');

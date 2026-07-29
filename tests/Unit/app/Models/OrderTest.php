@@ -35,6 +35,8 @@ it('checks if fillable attributes are set correctly', function () {
         'title',
         'description',
         'status',
+        'lifecycle_status',
+        'disposition_status',
         'priority',
         'estimated_completion',
         'actual_completion',

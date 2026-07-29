@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\OrderHistoryEventType;
 use App\Enums\OrderStatus;
 use App\Enums\RefundStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderPayment;
 use App\Models\OrderRefund;
 use App\Models\User;
@@ -17,11 +19,11 @@ use InvalidArgumentException;
 final class OrderRefundService
 {
     public function requestRefund(
-        Order            $order,
+        Order         $order,
         string|int|float $amount,
-        string           $reason,
-        ?OrderPayment    $sourcePayment,
-        User             $requester,
+        string        $reason,
+        ?OrderPayment $sourcePayment,
+        User          $requester,
     ): OrderRefund
     {
         if (!in_array($order->status, [OrderStatus::Returned, OrderStatus::Cancelled], true)) {
@@ -32,7 +34,7 @@ final class OrderRefundService
             throw new InvalidArgumentException('The source payment must belong to the order.');
         }
 
-        return $order->refunds()->create([
+        $refund = $order->refunds()->create([
             'source_payment_id' => $sourcePayment?->id,
             'amount' => $this->normalizeAmount($amount),
             'status' => RefundStatus::Requested->value,
@@ -40,21 +42,10 @@ final class OrderRefundService
             'requested_by' => $requester->id,
             'requested_at' => now(),
         ]);
-    }
 
-    private function normalizeAmount(string|int|float $amount): string
-    {
-        if (!is_numeric((string)$amount)) {
-            throw new InvalidArgumentException('Refund amount must be numeric.');
-        }
+        $this->recordHistory($refund, null, RefundStatus::Requested, $requester);
 
-        $normalizedAmount = bcadd((string)$amount, '0.00', 2);
-
-        if (bccomp($normalizedAmount, '0.00', 2) !== 1) {
-            throw new InvalidArgumentException('Refund amount must be greater than zero.');
-        }
-
-        return $normalizedAmount;
+        return $refund;
     }
 
     public function approveRefund(OrderRefund $refund, User $approver): OrderRefund
@@ -63,11 +54,14 @@ final class OrderRefundService
             throw new InvalidArgumentException('This user cannot approve the refund request.');
         }
 
+        $oldStatus = $refund->status;
         $refund->update([
             'status' => RefundStatus::Approved->value,
             'approved_by' => $approver->id,
             'approved_at' => now(),
         ]);
+
+        $this->recordHistory($refund, $oldStatus, RefundStatus::Approved, $approver);
 
         return $refund->refresh();
     }
@@ -91,11 +85,14 @@ final class OrderRefundService
             throw new InvalidArgumentException('This user cannot reject the refund request.');
         }
 
+        $oldStatus = $refund->status;
         $refund->update([
             'status' => RefundStatus::Rejected->value,
             'rejected_by' => $approver->id,
             'rejected_at' => now(),
         ]);
+
+        $this->recordHistory($refund, $oldStatus, RefundStatus::Rejected, $approver);
 
         return $refund->refresh();
     }
@@ -122,13 +119,49 @@ final class OrderRefundService
                 throw new InvalidArgumentException('Processed refunds cannot exceed successfully received payments.');
             }
 
+            $oldStatus = $lockedRefund->status;
             $lockedRefund->update([
                 'status' => RefundStatus::Processed->value,
                 'processed_by' => $processor->id,
                 'processed_at' => now(),
             ]);
 
+            $this->recordHistory($lockedRefund, $oldStatus, RefundStatus::Processed, $processor);
+
             return $lockedRefund->refresh();
         });
+    }
+
+    private function normalizeAmount(string|int|float $amount): string
+    {
+        if (!is_numeric((string)$amount)) {
+            throw new InvalidArgumentException('Refund amount must be numeric.');
+        }
+
+        $normalizedAmount = bcadd((string)$amount, '0.00', 2);
+
+        if (bccomp($normalizedAmount, '0.00', 2) !== 1) {
+            throw new InvalidArgumentException('Refund amount must be greater than zero.');
+        }
+
+        return $normalizedAmount;
+    }
+
+    private function recordHistory(
+        OrderRefund   $refund,
+        ?RefundStatus $oldStatus,
+        RefundStatus  $newStatus,
+        User          $actor,
+    ): void
+    {
+        OrderHistory::create([
+            'order_id' => $refund->order_id,
+            'field_changed' => OrderHistory::FIELD_REFUND,
+            'event_type' => OrderHistoryEventType::Refund,
+            'old_value' => $oldStatus,
+            'new_value' => $newStatus,
+            'comment' => $refund->reason,
+            'created_by' => $actor->id,
+        ]);
     }
 }

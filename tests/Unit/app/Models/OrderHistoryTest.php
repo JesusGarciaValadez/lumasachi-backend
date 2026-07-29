@@ -28,6 +28,7 @@ it('checks if order history has correct fillable attributes', function () {
         'uuid',
         'order_id',
         'field_changed',
+        'event_type',
         'old_value',
         'new_value',
         'comment',

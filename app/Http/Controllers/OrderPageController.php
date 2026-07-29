@@ -47,6 +47,11 @@ final class OrderPageController extends Controller
             'items.components',
             'services.catalogItem',
             'orderHistories.createdBy',
+            'payments.createdBy',
+            'refunds.requestedBy',
+            'refunds.approvedBy',
+            'refunds.rejectedBy',
+            'refunds.processedBy',
             'attachments.uploadedBy',
         ]);
 

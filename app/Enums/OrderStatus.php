@@ -37,4 +37,19 @@ enum OrderStatus: string
     {
         return __('orders.status_labels.'.$this->value);
     }
+
+    public function lifecycleStatus(): ?OrderLifecycleStatus
+    {
+        return OrderLifecycleStatus::tryFrom($this->value);
+    }
+
+    public function dispositionStatus(): ?OrderDispositionStatus
+    {
+        return OrderDispositionStatus::tryFrom($this->value);
+    }
+
+    public function paymentStatus(): ?OrderPaymentStatus
+    {
+        return OrderPaymentStatus::tryFrom($this->value);
+    }
 }
