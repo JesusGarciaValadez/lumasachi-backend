@@ -78,7 +78,7 @@ jobs:
           exit 1
 
       - name: Run Dusk
-        run: ./vendor/bin/sail artisan dusk --without-tty
+        run: ./vendor/bin/sail artisan dusk --without-tty --no-tia
 
       - name: Upload Dusk artifacts
         if: failure()
