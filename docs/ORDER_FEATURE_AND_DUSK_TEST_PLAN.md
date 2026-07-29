@@ -649,34 +649,45 @@ Suggested file: `tests/Browser/PublicOrderTrackingTest.php`.
 
 Happy path:
 
-- [ ] Visit the public tracking page without authentication.
-- [ ] Enter a known UUID and matching creation date.
-- [ ] Assert the order, status, motor, pieces, services, public history, and approved attachment representation are
+- [x] Visit the public tracking page without authentication.
+- [x] Enter a known UUID and matching creation date.
+- [x] Assert the order, status, motor, pieces, services, public history, and approved attachment representation are
   visible.
 
 Failure paths:
 
-- [ ] Submit malformed fields and assert accessible field errors.
-- [ ] Submit a well-formed nonmatching pair and assert the generic not-found message.
-- [ ] Assert a later lookup replaces the previous result and error.
-- [ ] Keep concurrency/race details in Vitest unless a reproducible browser regression specifically requires Dusk.
+- [x] Submit malformed fields and assert accessible field errors.
+- [x] Submit a well-formed nonmatching pair and assert the generic not-found message.
+- [x] Assert a later lookup replaces the previous result and error.
+- [x] Keep concurrency/race details in Vitest unless a reproducible browser regression specifically requires Dusk.
 
 Completion gate:
 
-- [ ] The test never authenticates and never exposes private order fields.
-- [ ] Loading and error states settle through explicit waits rather than sleeps.
-- [ ] Browser console logs contain no new errors.
+- [x] The test never authenticates and never exposes private order fields.
+- [x] Loading and error states settle through explicit waits rather than sleeps.
+- [x] Browser console logs contain no new errors.
+
+Stage 11 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan dusk --without-tty --filter=PublicOrderTrackingTest`: 4 passed (26 assertions).
+- `vendor/bin/sail artisan dusk --without-tty`: 10 passed (68 assertions).
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/PublicOrderTrackingTest.php`: 16 passed
+  (160 assertions).
+- `vendor/bin/sail yarn run test:unit -- tests/Frontend/Track.spec.ts`: 6 passed.
+- The initial Dusk attempts were blocked by the generated `public/hot` URL pointing to an unavailable or container-local
+  Vite server. After the temporary Vite process was stopped and the disposable `dusk` service was restarted, the focused
+  and full Dusk suites passed. No new browser console errors were reported in the passing run.
 
 ## Stage 12 — Verification and completion
 
 ### Changed-file checks
 
-- [ ] Run every changed Feature test file individually.
-- [ ] Run every new Dusk file individually.
-- [ ] Run affected Vitest files for changed Vue components.
-- [ ] If PHP files changed, run Pint on dirty files.
-- [ ] Run relevant ESLint, type-check, and frontend build checks for changed frontend files.
-- [ ] Inspect `git diff --check` and the final feature-scoped diff.
+- [x] Run every changed Feature test file individually.
+- [x] Run every new Dusk file individually.
+- [x] Run affected Vitest files for changed Vue components.
+- [x] If PHP files changed, run Pint on dirty files.
+- [x] Run relevant ESLint, type-check, and frontend build checks for changed frontend files.
+- [x] Inspect `git diff --check` and the final feature-scoped diff.
 
 ### Related-suite checks
 
@@ -693,21 +704,39 @@ vendor/bin/sail yarn run build
 git diff --check
 ```
 
-- [ ] Run the whole PHP suite only after the focused suite is green, or ask the user whether they want the full suite
+- [x] Run the whole PHP suite only after the focused suite is green, or ask the user whether they want the full suite
   when repository instructions require that choice.
-- [ ] Run the full Dusk suite serially.
-- [ ] If CI execution is in scope, confirm both Feature and Dusk jobs pass there.
-- [ ] Re-run failed tests before classifying a failure as application, test, or environment related.
+- [x] Run the full Dusk suite serially.
+- [x] If CI execution is in scope, confirm both Feature and Dusk jobs pass there.
+- [x] Re-run failed tests before classifying a failure as application, test, or environment related.
+
+Stage 12 verification record — 2026-07-29:
+
+- Changed/related Feature files passed individually: OrderLifecycleControllerTest (23 tests, 105 assertions),
+  OrderRouteTest (11 tests, 161 assertions), PublicOrderTrackingTest (16 tests, 160 assertions),
+  OrderBusinessRulesEdgeCasesTest (34 tests, 236 assertions), and OrderPaymentControllerTest (5 tests, 30 assertions).
+- Related Unit files passed: OrderLifecycleServiceTest (24 tests, 45 assertions) and OrderStatusStateMachineTest (8
+  tests, 17 assertions). The full PHP suite also covered the remaining Unit and Feature tests.
+- `vendor/bin/sail yarn run test:unit`: 15 files, 57 tests passed.
+- `vendor/bin/sail yarn vue-tsc --noEmit`: passed.
+- Relevant ESLint and Prettier checks: passed.
+- `vendor/bin/sail yarn run build`: passed, with the existing large-chunk warning only.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `vendor/bin/sail artisan dusk --without-tty`: 10 passed (68 assertions).
+- `vendor/bin/sail artisan test --compact`: 665 passed (4771 assertions).
+- `git diff --check`: passed.
+- CI execution was not in scope for this local completion pass; the environment protocol and Postman note remain
+  documented below.
 
 Final completion gate:
 
-- [ ] Every business rule is traced to a passing test or a documented unresolved decision.
-- [ ] Happy paths and rule-backed edges pass.
-- [ ] No unrelated file changed.
-- [ ] No private data is exposed by public tracking.
-- [ ] Dusk uses a disposable database and stable selectors.
-- [ ] All relevant browser console errors are resolved.
-- [ ] Update this plan’s checkboxes and verification notes only after the requirements above are actually complete.
+- [x] Every business rule is traced to a passing test or a documented unresolved decision.
+- [x] Happy paths and rule-backed edges pass.
+- [x] No unrelated file changed.
+- [x] No private data is exposed by public tracking.
+- [x] Dusk uses a disposable database and stable selectors.
+- [x] All relevant browser console errors are resolved.
+- [x] Update this plan’s checkboxes and verification notes only after the requirements above are actually complete.
 
 ## Environment and sandbox failure protocol
 
