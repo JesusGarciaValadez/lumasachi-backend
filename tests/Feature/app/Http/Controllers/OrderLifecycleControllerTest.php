@@ -8,6 +8,7 @@ use App\Enums\OrderPriority;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
 use App\Models\OrderPayment;
@@ -74,12 +75,6 @@ it('creates order with motor info and items via api', function () {
     $response->assertCreated()
         ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
 
-    $this->assertDatabaseHas('order_payments', [
-        'order_id' => Order::query()->latest('id')->value('id'),
-        'amount' => '1500.00',
-        'created_by' => $this->employee->id,
-    ]);
-
     // Verify DB state
     $this->assertDatabaseHas('orders', [
         'customer_id' => $this->customer->id,
@@ -88,12 +83,35 @@ it('creates order with motor info and items via api', function () {
 
     $order = Order::with('items.components')->firstWhere('title', 'Motor Rebuild #1');
     expect($order)->not->toBeNull();
+    expect($order->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 
     // Motor info
-    $this->assertDatabaseHas('order_motor_info', [
-        'order_id' => $order->id,
+    $motorInfo = OrderMotorInfo::query()->where('order_id', $order->id)->first();
+    expect($motorInfo)->not->toBeNull();
+    expect($motorInfo->only(['brand', 'liters', 'year', 'model', 'cylinder_count']))->toBe([
         'brand' => 'Toyota',
+        'liters' => '3.5',
+        'year' => '2019',
+        'model' => 'Camry',
+        'cylinder_count' => '6',
     ]);
+
+    // The advance is an append-only ledger entry attributable to the creator.
+    expect($order->payments()->count())->toBe(1);
+    $this->assertDatabaseHas('order_payments', [
+        'order_id' => $order->id,
+        'amount' => '1500.00',
+        'created_by' => $this->employee->id,
+    ]);
+
+    $statusHistory = OrderHistory::query()
+        ->where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+        ->first();
+    expect($statusHistory)->not->toBeNull();
+    expect($statusHistory->old_value)->toBe(OrderLifecycleStatus::Received);
+    expect($statusHistory->new_value)->toBe(OrderLifecycleStatus::AwaitingReview);
+    expect($statusHistory->created_by)->toBe($this->employee->id);
 
     // Items
     expect($order->items)->toHaveCount(2);
@@ -101,6 +119,32 @@ it('creates order with motor info and items via api', function () {
     // Components
     $cylinderHead = $order->items->firstWhere('item_type', OrderItemType::CylinderHead);
     expect($cylinderHead->components)->toHaveCount(2);
+});
+it('creates a received piece without optional components', function () {
+    $this->actingAs($this->employee);
+
+    $payload = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Head without components',
+        'description' => 'Only the top-level piece was received',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => OrderItemType::CylinderHead->value],
+        ],
+    ];
+
+    $response = $this->postJson('/api/v1/orders', $payload);
+
+    $response->assertCreated()
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
+
+    $order = Order::query()->where('title', 'Head without components')->firstOrFail();
+    $item = $order->items()->with('components')->firstOrFail();
+
+    expect($item->item_type)->toBe(OrderItemType::CylinderHead);
+    expect($item->is_received)->toBeTrue();
+    expect($item->components)->toBeEmpty();
 });
 it('validates required fields for order creation', function () {
     $this->actingAs($this->employee);
@@ -163,6 +207,52 @@ it('validates item types', function () {
 it('requires authentication to create order', function () {
     $response = $this->postJson('/api/v1/orders', []);
     $response->assertUnauthorized();
+});
+it('rejects an unknown customer without creating partial order data', function () {
+    $this->actingAs($this->employee);
+
+    $payload = [
+        'customer_id' => 999999,
+        'title' => 'Invalid customer',
+        'description' => 'The order must not be created',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => ['down_payment' => 100.00],
+        'items' => [['item_type' => OrderItemType::EngineBlock->value, 'components' => ['camshaft']]],
+    ];
+
+    $this->postJson('/api/v1/orders', $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['customer_id']);
+
+    $this->assertDatabaseEmpty('orders');
+    $this->assertDatabaseEmpty('order_motor_info');
+    $this->assertDatabaseEmpty('order_items');
+    $this->assertDatabaseEmpty('order_payments');
+    $this->assertDatabaseEmpty('order_histories');
+});
+it('rejects an unknown assignee without creating partial order data', function () {
+    $this->actingAs($this->employee);
+
+    $payload = [
+        'customer_id' => $this->customer->id,
+        'title' => 'Invalid assignee',
+        'description' => 'The order must not be created',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => 999999,
+        'motor_info' => ['down_payment' => 100.00],
+        'items' => [['item_type' => OrderItemType::EngineBlock->value, 'components' => ['camshaft']]],
+    ];
+
+    $this->postJson('/api/v1/orders', $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['assigned_to']);
+
+    $this->assertDatabaseEmpty('orders');
+    $this->assertDatabaseEmpty('order_motor_info');
+    $this->assertDatabaseEmpty('order_items');
+    $this->assertDatabaseEmpty('order_payments');
+    $this->assertDatabaseEmpty('order_histories');
 });
 it('submits budget for order', function () {
     $this->actingAs($this->employee);
