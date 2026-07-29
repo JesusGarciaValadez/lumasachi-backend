@@ -31,13 +31,20 @@ const remainingBalance = computed(() => Number(props.financials.remaining_balanc
             <div>
                 <h2 class="text-base font-semibold">{{ labels.title }}</h2>
                 <p class="text-sm text-muted-foreground">
-                    {{ labels.remaining_balance }}: <span data-delivery-remaining>{{ formatMoney(financials.remaining_balance) }}</span>
+                    {{ labels.remaining_balance }}:
+                    <span data-delivery-remaining dusk="order-delivery-remaining">{{ formatMoney(financials.remaining_balance) }}</span>
                 </p>
             </div>
             <div v-if="remainingBalance > 0" class="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm" role="alert">
                 {{ labels.payment_required }}
             </div>
-            <Button :disabled="!canDeliver || remainingBalance > 0 || busy" class="self-start" data-delivery-action @click="emit('deliver')">
+            <Button
+                :disabled="!canDeliver || remainingBalance > 0 || busy"
+                class="self-start"
+                data-delivery-action
+                dusk="order-delivery-action"
+                @click="emit('deliver')"
+            >
                 {{ busy ? labels.loading : labels.deliver }}
             </Button>
         </div>

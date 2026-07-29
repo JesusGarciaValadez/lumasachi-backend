@@ -306,7 +306,7 @@ it('approves services via api', function () {
 
     $response = $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
         'authorized_service_ids' => [$svc->id],
-        'down_payment' => 300.00,
+        'down_payment' => '300.00',
     ]);
 
     $response->assertOk()
