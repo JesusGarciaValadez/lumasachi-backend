@@ -7,6 +7,7 @@ namespace Tests\Browser;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\User;
+use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
@@ -19,6 +20,31 @@ final class OrderIntakeTest extends DuskTestCase
     private User $employee;
 
     private User $customer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $company = Company::factory()->create();
+        $password = Hash::make('password');
+
+        $this->employee = User::factory()->create([
+            'company_id' => $company->id,
+            'email' => 'dusk-employee@example.com',
+            'is_active' => true,
+            'password' => $password,
+            'role' => UserRole::EMPLOYEE->value,
+        ]);
+        $this->customer = User::factory()->create([
+            'company_id' => null,
+            'email' => 'dusk-customer@example.com',
+            'is_active' => true,
+            'password' => $password,
+            'role' => UserRole::CUSTOMER->value,
+        ]);
+    }
 
     public function test_staff_can_create_an_order_with_a_received_top_level_piece(): void
     {
@@ -46,15 +72,6 @@ final class OrderIntakeTest extends DuskTestCase
         });
     }
 
-    private function login(Browser $browser): void
-    {
-        $browser->visit('/login')
-            ->type('@login-email', $this->employee->email)
-            ->type('@login-password', 'password')
-            ->click('@login-submit')
-            ->waitForLocation('/dashboard');
-    }
-
     public function test_staff_sees_the_negative_advance_payment_validation_error(): void
     {
         $this->browse(function (Browser $browser): void {
@@ -73,26 +90,12 @@ final class OrderIntakeTest extends DuskTestCase
         });
     }
 
-    protected function setUp(): void
+    private function login(Browser $browser): void
     {
-        parent::setUp();
-
-        $company = Company::factory()->create();
-        $password = Hash::make('password');
-
-        $this->employee = User::factory()->create([
-            'company_id' => $company->id,
-            'email' => 'dusk-employee@example.com',
-            'is_active' => true,
-            'password' => $password,
-            'role' => UserRole::EMPLOYEE->value,
-        ]);
-        $this->customer = User::factory()->create([
-            'company_id' => null,
-            'email' => 'dusk-customer@example.com',
-            'is_active' => true,
-            'password' => $password,
-            'role' => UserRole::CUSTOMER->value,
-        ]);
+        $browser->visit('/login')
+            ->type('@login-email', $this->employee->email)
+            ->type('@login-password', 'password')
+            ->click('@login-submit')
+            ->waitForLocation('/dashboard');
     }
 }

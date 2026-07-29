@@ -582,7 +582,12 @@ onMounted(async () => {
                             <dd class="whitespace-pre-wrap">{{ order.notes ?? t('orders.no_notes') }}</dd>
                         </div>
                     </dl>
-                    <div v-if="lastError" class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+                    <div
+                        v-if="lastError"
+                        class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+                        dusk="order-action-error"
+                        role="alert"
+                    >
                         {{ lastError.message }}
                         <div v-if="Object.keys(lastError.validationErrors).length" class="mt-2 flex flex-col gap-1">
                             <span v-for="(messages, key) in lastError.validationErrors" :key="key">{{ key }}: {{ messages[0] }}</span>
@@ -604,7 +609,7 @@ onMounted(async () => {
             <OrderStatusProgress :status="currentLifecycleStatus" :statuses="statusSteps" :title="t('orders.progress')" />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Card>
+                <Card dusk="order-motor-information">
                     <div class="flex flex-col gap-4 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.motor_information') }}</h2>
                         <dl class="grid grid-cols-2 gap-4 text-sm">
@@ -631,7 +636,7 @@ onMounted(async () => {
                         </dl>
                     </div>
                 </Card>
-                <Card>
+                <Card dusk="order-received-items">
                     <div class="flex flex-col gap-4 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.received_items') }}</h2>
                         <div v-if="order.items.length" class="flex flex-col gap-3">
@@ -651,6 +656,7 @@ onMounted(async () => {
             </div>
 
             <OrderFinancialSummary
+                dusk="order-financial-summary"
                 v-if="order.financials"
                 :financials="financials"
                 :labels="financialLabels"
@@ -658,6 +664,7 @@ onMounted(async () => {
             />
 
             <OrderReviewBudgetPanel
+                dusk="order-review-panel"
                 v-if="canReview"
                 :busy="busyAction !== null"
                 :catalog="catalog"
@@ -791,6 +798,7 @@ onMounted(async () => {
                     <div class="flex flex-col gap-3 px-6">
                         <h2 class="text-base font-semibold">{{ t('orders.history') }}</h2>
                         <OrderHistoryFeed
+                            dusk="order-history-feed"
                             :entries="history.data"
                             :error-message="historyError?.message"
                             :labels="historyLabels"
@@ -845,7 +853,9 @@ onMounted(async () => {
                 <DialogClose as-child
                     ><Button variant="outline">{{ t('common.cancel') }}</Button></DialogClose
                 >
-                <Button :disabled="busyAction !== null" data-confirm-action @click="confirmAction">{{ t('common.confirm') }}</Button>
+                <Button :disabled="busyAction !== null" data-confirm-action dusk="order-confirm-action" @click="confirmAction">
+                    {{ t('common.confirm') }}
+                </Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

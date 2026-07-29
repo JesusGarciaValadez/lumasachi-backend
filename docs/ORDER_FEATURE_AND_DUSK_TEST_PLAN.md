@@ -553,28 +553,46 @@ Suggested file: `tests/Browser/OrderIntakeAndReviewTest.php`.
 
 Main happy path:
 
-- [ ] Sign in as authorized staff.
-- [ ] Open order creation from the authenticated UI.
-- [ ] Select the customer and assignee and enter the required order fields.
-- [ ] Enter the business-rule motor information.
-- [ ] Select Block and its Árbol, Tapas de cojinete, and Tornillos de tapas components.
-- [ ] Submit the form.
-- [ ] Assert redirect to the new order page and visible `Awaiting Review` status.
-- [ ] Assert the received piece/components and initial financial summary are visible.
-- [ ] Select the five services from the business example, enter measurement `20` where required, preview the totals,
-  confirm submission, and assert `Awaiting Customer Approval`.
-- [ ] Assert visible budgeted base `3760.00`, net `4361.60`, and the relevant history entries.
+- [x] Sign in as authorized staff.
+- [x] Open order creation from the authenticated UI.
+- [x] Select the customer and assignee and enter the required order fields.
+- [x] Enter the business-rule motor information.
+- [x] Select Block and its Árbol, Tapas de cojinete, and Tornillos de tapas components.
+- [x] Submit the form.
+- [x] Assert redirect to the new order page and visible `Awaiting Review` status.
+- [x] Assert the received piece/components and initial financial summary are visible.
+- [x] Select the five services from the business example, preview the totals, confirm submission, and assert `Awaiting
+  Customer Approval`. The current catalog contract marks the exact `deck_assembled_4cyl` service as not requiring a
+  measurement, so no unsupported measurement field was invented for that service.
+- [x] Assert visible budgeted base `3760.00`, net `4361.60`, and the relevant history entries.
 
 One representative browser edge:
 
-- [ ] Submit an invalid intake field or required measurement and assert the visible, accessible error while the browser
-  remains on the correct workflow state.
+- [x] Submit a missing required measurement and assert the visible, accessible error while the browser remains in
+  `Awaiting Review`.
 
 Completion gate:
 
-- [ ] The journey passes without arbitrary sleeps; use Dusk wait assertions for async Inertia/API updates.
-- [ ] Browser console logs contain no new errors.
-- [ ] The corresponding Feature tests separately prove persistence, notifications, and atomicity.
+- [x] The journey passes without arbitrary sleeps; it uses Dusk wait assertions for async Inertia/API updates.
+- [x] Browser console logs contain no unexpected errors. The validation edge produces the expected HTTP 422 network
+  entry; no JavaScript exception or unexpected browser error was recorded.
+- [x] The corresponding Feature tests separately prove persistence, notifications, and atomicity.
+
+Stage 9 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan dusk --without-tty --filter=OrderIntakeAndReviewTest`: 2 passed (19 assertions).
+- `vendor/bin/sail artisan dusk --without-tty`: 7 passed (31 assertions).
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+  tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php
+  tests/Feature/app/Http/Controllers/OrderRouteTest.php`: 67 passed (501 assertions).
+- `vendor/bin/sail yarn eslint resources/js/components/orders/OrderHistoryFeed.vue
+  resources/js/components/orders/OrderReviewBudgetPanel.vue resources/js/pages/Orders/Show.vue`: passed.
+- `vendor/bin/sail yarn prettier --write resources/js/components/orders/OrderHistoryFeed.vue
+  resources/js/components/orders/OrderReviewBudgetPanel.vue resources/js/pages/Orders/Show.vue`: passed.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- The first focused Dusk attempt was blocked by stale Octane/Vite assets after the frontend rebuild. Restarting only the
+  disposable Dusk service reloaded the current manifest; the rerun and full serial suite passed. Docker/Sail access was
+  restored through the requested elevated permission. Postman is not required for this automated suite.
 
 ## Stage 10 — Dusk customer approval and staff completion journey
 

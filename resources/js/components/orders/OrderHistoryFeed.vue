@@ -75,7 +75,7 @@ function iconName(kind: EventKind): string {
     <div v-else-if="errorMessage" class="text-sm text-destructive" data-history-state="error" role="alert">{{ errorMessage }}</div>
     <p v-else-if="!entries.length" class="text-sm text-muted-foreground" data-history-state="empty">{{ labels.noHistory }}</p>
     <template v-else>
-        <ol class="relative flex flex-col gap-4 border-s ps-6" data-history-feed>
+        <ol class="relative flex flex-col gap-4 border-s ps-6" data-history-feed dusk="order-history-feed">
             <li v-for="{ entry, kind } in eventKinds" :key="entry.uuid" :data-event-field="entry.field_changed" class="relative">
                 <span
                     :data-icon-name="iconName(kind)"

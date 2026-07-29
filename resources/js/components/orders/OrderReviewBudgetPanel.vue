@@ -142,7 +142,7 @@ function submit(): void {
                     <h2 class="text-base font-semibold">{{ labels.title }}</h2>
                     <p class="text-sm text-muted-foreground">{{ labels.help }}</p>
                 </div>
-                <Button :disabled="!selectedRows.length || busy" type="button" @click="submit">{{ labels.submit }}</Button>
+                <Button :disabled="!selectedRows.length || busy" dusk="order-review-submit" type="button" @click="submit">{{ labels.submit }}</Button>
             </div>
 
             <div v-if="loading" aria-busy="true" aria-live="polite" class="relative min-h-32 rounded-md border"><PlaceholderPattern /></div>
@@ -180,6 +180,7 @@ function submit(): void {
                                             :aria-label="`${labels.budgeted}: ${row.service.service_name}`"
                                             :checked="row.selected"
                                             :disabled="busy"
+                                            :dusk="`order-review-service-${row.service.service_key}`"
                                             class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(row)"
@@ -210,6 +211,7 @@ function submit(): void {
                                             "
                                             :aria-invalid="Boolean(errorFor(row, 'measurement'))"
                                             :data-review-measurement="row.service.service_key"
+                                            :dusk="`order-review-measurement-${row.service.service_key}`"
                                             :required="row.service.requires_measurement"
                                         />
                                         <span v-else>—</span>
