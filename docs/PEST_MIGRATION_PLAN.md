@@ -916,14 +916,14 @@ adding `--tia` to a script.
 ```bash
 vendor/bin/sail php -m
 vendor/bin/sail php vendor/bin/pest --compact
-TIA_VITE_PAGES_DIR=resources/js/pages vendor/bin/sail php vendor/bin/pest --parallel --tia --fresh
-TIA_VITE_PAGES_DIR=resources/js/pages vendor/bin/sail php vendor/bin/pest --parallel --tia
+vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia --fresh
+vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia
 vendor/bin/sail php vendor/bin/pest --parallel --coverage --min=90
 ```
 
 In this Sail bind-mount environment, `TIA_VITE_PAGES_DIR=resources/js/pages` is required for Pest's JavaScript
-module-graph scan. The installed Pest 4.7.5 exposes `--fresh` for rebuilding the graph; the older `--baseline`
-example is not an available option in this installation.
+module-graph scan. The installed Pest 4.7.5 exposes both `--fresh` for rebuilding the graph and `--baseline` for
+resolving the project's TIA storage directory.
 
 When invoking Pest through Sail in CI, pass the override into the container as the `sail` user:
 
@@ -1038,8 +1038,8 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
 - [x] Pint, Larastan, Composer validation, Vitest, and diff checks pass.
 - [x] TIA fresh baseline, replay, and affected-subset behavior are verified by the Step 11 execution record; the current
   macOS bind mount reproduces its documented JavaScript graph finalization caveat.
-- [ ] Local Sail persistence and CI artifact behavior are documented from actual runs. Local persistence is recorded in
-  Step 11; the new GitHub Actions workflows require their first real Actions run to verify artifact upload/download.
+- [x] Local Sail persistence and CI artifact behavior are documented from actual runs. Local persistence is recorded in
+  Step 11; CI run `30408820249` successfully uploaded and the subsequent test run downloaded the baseline artifact.
 - [x] Full-suite and TIA timing improvements are recorded without fabricated estimates.
 
 ### Step 12 execution record — 2026-07-28
@@ -1048,10 +1048,10 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
   successful base-branch `pest-tia-baseline` artifact with the runner's GitHub CLI, inject the TIA page-directory
   override into the Sail container as the `sail` user, run the TIA suite, and retain a complete non-TIA Pest suite as
   the required gate.
-- Added `.github/workflows/pest-tia-baseline.yml` for base-branch pushes, a daily schedule, and manual dispatch. It
+- Added `.github/workflows/tia-baseline.yml` for base-branch pushes, a daily schedule, and manual dispatch. It
   creates a fresh parallel TIA graph inside Sail, copies `/home/sail/.pest/tia` to the host runner, and uploads the
-  hidden-file-inclusive `pest-tia-baseline` artifact. Pest 4.7.5 in this application does not expose the older
-  `--baseline` option, so the workflow uses its supported `--fresh` option to rebuild the graph.
+  hidden-file-inclusive `pest-tia-baseline` artifact. The workflow filename follows Pest's shared-baseline lookup
+  contract; its display name remains `pest-tia-baseline`.
 - Both workflow files parsed successfully with Ruby YAML parsing, and `git diff --check` passed.
 - Static inventory confirmed 75 PHP files under `tests/Unit` and `tests/Feature` with zero PHPUnit test classes,
   `#[Test]`/data-provider attributes, or PHPUnit `TestCase` references.
@@ -1074,32 +1074,38 @@ The frontend Vitest command remains a separate regression gate. Pest TIA does no
   `APP_LOCALE=es` from `.env.example`, while the migrated tests assert the English status labels. Both CI workflows now
   set `APP_LOCALE=en` and `APP_FALLBACK_LOCALE=en` for deterministic test execution. The affected tests passed locally
   with those container variables, and the full parallel Pest suite completed without reported assertion failures.
-- The baseline lookup logged `HTTP 404` because `pest-tia-baseline.yml` was not yet present on the repository default
-  branch; the command already falls back to a fresh local graph. This should resolve after the workflow is merged to the
-  default branch and has produced its first successful artifact.
+- The baseline lookup initially logged `HTTP 404` because the workflow was not yet present on the repository default
+  branch. After it was merged, run `30408820249` produced the artifact and the test workflow consumed it successfully.
+- Added `scripts/download-pest-tia-baseline.sh` for newcomers. It resolves the latest successful `tia-baseline.yml` run,
+  downloads its `pest-tia-baseline` artifact, and copies it into the active Sail container. The workflow ID shown by
+  `gh workflow list` is not a run ID and must not be passed to `gh run download`.
+- The downloaded baseline is usable on macOS only when the repository is mounted from a case-sensitive filesystem. The
+  default macOS Docker bind mount exposes the repository's `Pages`/`pages` aliases through a case-insensitive path;
+  Pest's TIA scan still fails there even after the baseline is installed. Use a case-sensitive APFS volume or a Linux
+  Docker/remote checkout for local TIA. The ordinary Docker-mounted macOS suite remains available with `--no-tia`.
 - `tests/Pest.php` now ignores an invalid `TIA_VITE_PAGES_DIR` override and disables automatic local TIA only when the
   macOS Docker bind mount exposes `resources/js/Pages` and `resources/js/pages` as the same inode. This prevents the
   IDE's ordinary Docker Compose check from entering the known recursive graph failure; Linux CI and explicit TIA runs
   are unaffected. The IDE-style targeted run passed, and the full local parallel Pest suite passed with `--no-tia`.
 
-**Step 12 implementation is complete locally; final CI artifact upload/download verification remains pending the first
-GitHub Actions run.**
+**Step 12 implementation and CI artifact upload/download verification are complete. Local TIA on the default macOS bind
+mount remains environment-limited; use a case-sensitive checkout for local TIA replay.**
 
 ## Progress log
 
 Add one entry per completed step. Do not pre-fill results.
 
-| Step | Date       | Agent/chat | Focused result                    | Full Pest result                                     | Coverage/TIA result                           | Notes                                                                                                                                                                              |
-|------|------------|------------|-----------------------------------|------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1    |            |            |                                   | Not installed yet                                    |                                               |                                                                                                                                                                                    |
-| 2    |            |            |                                   |                                                      |                                               |                                                                                                                                                                                    |
-| 3    |            |            |                                   |                                                      |                                               |                                                                                                                                                                                    |
-| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions         | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope                                  | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases.                                                                                         |
-| 5    | 2026-07-28 | Codex      | 126 passed, 686 assertions        | 612 passed, 4,618 serial; 612 passed, 4,620 parallel | Not in scope                                  | All 27 Unit files are Pest-only; Unit gate 257 passed, 1,302 assertions. Parallel run used 8 recreated databases.                                                                  |
-| 6    | 2026-07-28 | Codex      | 42 passed, 1,047 assertions       | 612 passed, 4,629 serial; 612 passed, 4,615 parallel | Not in scope                                  | All 12 foundational Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12.                                                  |
-| 7    | 2026-07-28 | Codex      | 127 passed, 725 assertions        | 612 passed, 4,620 serial; 612 passed, 4,618 parallel | Not in scope                                  | All 18 domain-supporting Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12.                                             |
-| 8    | 2026-07-28 | Codex      | 186 passed, 1,548 assertions      | 612 passed, 4,623 serial; 612 passed, 4,626 parallel | 90.1% coverage; TIA not in scope              | All 18 controller Feature files are Pest-only; six focused groups passed. Parallel and coverage runs used 8 processes with recreated databases where applicable.                   |
-| 9    | 2026-07-28 | Codex      | 612 passed: 257 Unit, 355 Feature | 612 passed, 4,624 serial; 612 passed, 4,616 parallel | Not in scope                                  | All 75 Unit/Feature PHP files are Pest-only; Drift removed; Composer test scripts invoke Pest. Parallel run used 8 recreated databases.                                            |
-| 10   |            |            |                                   |                                                      |                                               |                                                                                                                                                                                    |
-| 11   |            |            |                                   |                                                      |                                               |                                                                                                                                                                                    |
-| 12   | 2026-07-28 | Codex      | 635 passed; Unit 280, Feature 355 | 635 passed, 4,620 serial; 635 passed, 4,618 parallel | 90.1% coverage; TIA Step 11 evidence retained | CI Pest/TIA workflows added and validated syntactically. First GitHub Actions artifact upload/download run remains pending; local macOS TIA graph-finalization caveat is recorded. |
+| Step | Date       | Agent/chat | Focused result                    | Full Pest result                                     | Coverage/TIA result                           | Notes                                                                                                                                                            |
+|------|------------|------------|-----------------------------------|------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1    |            |            |                                   | Not installed yet                                    |                                               |                                                                                                                                                                  |
+| 2    |            |            |                                   |                                                      |                                               |                                                                                                                                                                  |
+| 3    |            |            |                                   |                                                      |                                               |                                                                                                                                                                  |
+| 4    | 2026-07-28 | Codex      | 89 passed, 286 assertions         | 612 passed, 4,623 serial; 612 passed, 4,618 parallel | Not in scope                                  | Pest conversion and both full-suite gates passed; parallel run used 8 recreated databases.                                                                       |
+| 5    | 2026-07-28 | Codex      | 126 passed, 686 assertions        | 612 passed, 4,618 serial; 612 passed, 4,620 parallel | Not in scope                                  | All 27 Unit files are Pest-only; Unit gate 257 passed, 1,302 assertions. Parallel run used 8 recreated databases.                                                |
+| 6    | 2026-07-28 | Codex      | 42 passed, 1,047 assertions       | 612 passed, 4,629 serial; 612 passed, 4,615 parallel | Not in scope                                  | All 12 foundational Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12.                                |
+| 7    | 2026-07-28 | Codex      | 127 passed, 725 assertions        | 612 passed, 4,620 serial; 612 passed, 4,618 parallel | Not in scope                                  | All 18 domain-supporting Feature files are Pest-only; parallel run used 8 recreated databases. TIA and coverage remain in Steps 11–12.                           |
+| 8    | 2026-07-28 | Codex      | 186 passed, 1,548 assertions      | 612 passed, 4,623 serial; 612 passed, 4,626 parallel | 90.1% coverage; TIA not in scope              | All 18 controller Feature files are Pest-only; six focused groups passed. Parallel and coverage runs used 8 processes with recreated databases where applicable. |
+| 9    | 2026-07-28 | Codex      | 612 passed: 257 Unit, 355 Feature | 612 passed, 4,624 serial; 612 passed, 4,616 parallel | Not in scope                                  | All 75 Unit/Feature PHP files are Pest-only; Drift removed; Composer test scripts invoke Pest. Parallel run used 8 recreated databases.                          |
+| 10   |            |            |                                   |                                                      |                                               |                                                                                                                                                                  |
+| 11   |            |            |                                   |                                                      |                                               |                                                                                                                                                                  |
+| 12   | 2026-07-28 | Codex      | 635 passed; Unit 280, Feature 355 | 635 passed, 4,620 serial; 635 passed, 4,618 parallel | 90.1% coverage; TIA Step 11 evidence retained | CI artifact upload/download verified with run `30408820249`; newcomer download helper added. Local macOS TIA graph-finalization caveat remains recorded.         |
