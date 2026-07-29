@@ -405,31 +405,46 @@ Primary files to inspect and preferably extend:
 
 Happy paths:
 
-- [ ] The owning customer approves the three services from the business example.
-- [ ] Assert authorized base `1880.00` and net `2180.80`.
-- [ ] A positive approval-time advance appends a payment rather than editing an earlier row.
-- [ ] Assert the lifecycle moves to `Ready for Work` and the customer/audit notification contract is preserved.
-- [ ] Staff marks only Lavado and Cambio de metales de árbol complete.
-- [ ] Assert completed base `1080.00` and net `1252.80`.
-- [ ] Assert the authorized but damaged/not-chargeable service remains incomplete and is excluded from the completed
+- [x] The owning customer approves the three services from the business example.
+- [x] Assert authorized base `1880.00` and net `2180.80`.
+- [x] A positive approval-time advance appends a payment rather than editing an earlier row.
+- [x] Assert the lifecycle moves to `Ready for Work` and the customer/audit notification contract is preserved.
+- [x] Staff marks only Lavado and Cambio de metales de árbol complete.
+- [x] Assert completed base `1080.00` and net `1252.80`.
+- [x] Assert the authorized but damaged/not-chargeable service remains incomplete and is excluded from the completed
   total.
 
 Rule-backed edges:
 
-- [ ] A different customer cannot approve the order.
-- [ ] Foreign, unbudgeted, malformed, duplicate, or mixed invalid service selections are rejected atomically.
-- [ ] Negative advance payment is rejected without changing authorizations, payments, lifecycle, or history.
-- [ ] Staff cannot complete a service that is foreign, unauthorized, or already completed.
+- [x] A different customer cannot approve the order.
+- [x] Foreign, unbudgeted, malformed, duplicate, or mixed invalid service selections are rejected atomically.
+- [x] Negative advance payment is rejected without changing authorizations, payments, lifecycle, or history.
+- [x] Staff cannot complete a service that is foreign, unauthorized, or already completed.
 - [ ] The reject-all case follows Q2; do not assume an outcome.
-- [ ] Marking ready may leave an authorized service incomplete when it represents work that will not be charged, as in
+- [x] Marking ready may leave an authorized service incomplete when it represents work that will not be charged, as in
   the business example.
 
 Completion gate:
 
-- [ ] The authorized and completed totals exactly match the business example.
-- [ ] Payment rows are append-only.
+- [x] The authorized and completed totals exactly match the business example.
+- [x] Payment rows are append-only.
 - [ ] All rejection paths prove no partial mutation.
-- [ ] Run the singular changed test files and record their results.
+- [x] Run the singular changed test files and record their results.
+
+Stage 5 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php
+  tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php
+  tests/Feature/app/Http/Controllers/OrderPaymentControllerTest.php
+  tests/Feature/app/Observers/OrderObserversPhase3Test.php`: 61 passed (331 assertions).
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php` after
+  formatting: 30 passed (189 assertions).
+- `vendor/bin/sail bin pint --dirty --format agent`: passed and formatted the changed Feature test.
+- `git diff --check`: passed.
+- The reject-all requirement remains open. The plan records Q2 as cancellation, but the current
+  `CustomerApprovalRequest` requires at least one service and `OrderLifecycleService::customerApproval()` has no
+  cancellation path. No test expectation or application behavior was invented for this mismatch, so Stage 5 is not
+  marked complete.
 
 ## Stage 6 — Complete ready, delivery, notifications, and history Feature coverage
 

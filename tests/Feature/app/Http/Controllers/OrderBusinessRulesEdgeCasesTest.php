@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Notifications\OrderAuditNotification;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderDeliveredNotification;
+use App\Notifications\OrderReadyForWorkNotification;
 use App\Notifications\OrderReviewedNotification;
 use Illuminate\Support\Facades\Notification;
 
@@ -105,6 +106,8 @@ test('customer approval rejects a negative down payment', function () {
 
     expect($service->fresh()->is_authorized)->toBeFalse();
     expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
+    expect($order->payments()->count())->toBe(0);
+    expect($order->orderHistories()->where('field_changed', OrderHistory::FIELD_PAYMENT_RECORD)->count())->toBe(0);
 });
 test('budget rejects an item that belongs to another order', function () {
     $order = createOrder(OrderStatus::AwaitingReview);
@@ -496,13 +499,29 @@ test('quotation totals follow budgeted authorized and completed services', funct
     $this->actingAs($this->customer);
     $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
         'authorized_service_ids' => $authorizedServiceIds,
-    ])->assertOk();
+        'down_payment' => 300.00,
+    ])->assertOk()
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForWork->value)
+        ->assertJsonPath('order.financials.authorized', '2180.80')
+        ->assertJsonPath('order.financials.advance_payment', '300.00');
 
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
     $authorizedServices = $order->services()->where('is_authorized', true);
     expect((float)$authorizedServices->sum('base_price'))->toBe(1880.00);
     expect((float)$authorizedServices->sum('net_price'))->toBe(2180.80);
     expect($services->get('deck_assembled_4cyl')->fresh()->is_authorized)->toBeFalse();
     expect($services->get('polish_camshaft_bars')->fresh()->is_authorized)->toBeFalse();
+
+    Notification::assertSentToTimes($this->customer, OrderReadyForWorkNotification::class, 1);
+    Notification::assertSentTo(
+        $this->administrator,
+        fn(OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
+    );
+    Notification::assertSentTo(
+        $this->superAdministrator,
+        fn(OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
+    );
+    Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
 
     $this->actingAs($this->employee);
     $completedServiceIds = collect([
@@ -512,10 +531,74 @@ test('quotation totals follow budgeted authorized and completed services', funct
 
     $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
         'completed_service_ids' => $completedServiceIds,
-    ])->assertOk();
+    ])->assertOk()
+        ->assertJsonPath('order.financials.completed', '1252.80');
 
     expect($order->fresh()->completedTotal())->toBe('1252.80');
+    expect((float)$order->services()->where('is_completed', true)->sum('base_price'))->toBe(1080.00);
+    expect($services->get('weld_between_cylinders_qr25')->fresh()->is_authorized)->toBeTrue();
     expect($services->get('weld_between_cylinders_qr25')->fresh()->is_completed)->toBeFalse();
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/ready-for-delivery")
+        ->assertOk()
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForDelivery->value);
+
+    expect($services->get('weld_between_cylinders_qr25')->fresh()->is_completed)->toBeFalse();
+});
+test('approval appends the payment difference without editing the earlier ledger row', function () {
+    $order = createOrder(OrderStatus::AwaitingCustomerApproval);
+    $service = createOrderService($order, 'wash_block', isAuthorized: false);
+
+    $this->actingAs($this->employee)
+        ->postJson("/api/v1/orders/{$order->uuid}/payments", ['amount' => '100.00'])
+        ->assertCreated();
+
+    $initialPayment = $order->payments()->firstOrFail();
+
+    $this->actingAs($this->customer)
+        ->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+            'authorized_service_ids' => [$service->id],
+            'down_payment' => 300.00,
+        ])
+        ->assertOk()
+        ->assertJsonPath('order.financials.advance_payment', '300.00');
+
+    $payments = $order->payments()->oldest('id')->get();
+
+    expect($payments)->toHaveCount(2)
+        ->and($payments->first()->id)->toBe($initialPayment->id)
+        ->and($payments->pluck('amount')->all())->toBe(['100.00', '200.00']);
+});
+test('customer approval rejects mixed valid and foreign services atomically', function () {
+    $this->actingAs($this->customer);
+    $order = createOrder(OrderStatus::AwaitingCustomerApproval);
+    $otherOrder = createOrder(OrderStatus::AwaitingCustomerApproval);
+    $validService = createOrderService($order, 'wash_block', isAuthorized: false);
+    $foreignService = createOrderService($otherOrder, 'wash_block', isAuthorized: false);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+        'authorized_service_ids' => [$validService->id, $foreignService->id],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['authorized_service_ids.1']);
+
+    expect($validService->fresh()->is_authorized)->toBeFalse()
+        ->and($foreignService->fresh()->is_authorized)->toBeFalse()
+        ->and($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval)
+        ->and($order->payments()->count())->toBe(0);
+});
+test('customer approval rejects duplicate services atomically', function () {
+    $this->actingAs($this->customer);
+    $order = createOrder(OrderStatus::AwaitingCustomerApproval);
+    $service = createOrderService($order, 'wash_block', isAuthorized: false);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
+        'authorized_service_ids' => [$service->id, $service->id],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['authorized_service_ids.1']);
+
+    expect($service->fresh()->is_authorized)->toBeFalse()
+        ->and($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval)
+        ->and($order->payments()->count())->toBe(0);
 });
 test('delivery requires the remaining balance to be paid', function () {
     $order = createOrder(OrderStatus::ReadyForDelivery);
