@@ -115,12 +115,12 @@ jobs:
         run: ./vendor/bin/sail artisan migrate --force
 
       - name: Create fresh Pest TIA baseline
-        run: ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia --fresh
+        run: ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --configuration=phpunit.tia.xml --parallel --tia --fresh
 
       - name: Copy TIA baseline out of Sail
         run: |
           mkdir -p "$RUNNER_TEMP/pest-tia"
-          baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --baseline)"
+          baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --configuration=phpunit.tia.xml --baseline)"
           container_id="$(docker compose ps -q laravel.test)"
           docker exec "$container_id" test -s "$baseline_path/graph.json"
           docker cp "$container_id:$baseline_path/." "$RUNNER_TEMP/pest-tia/"

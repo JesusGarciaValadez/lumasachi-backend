@@ -130,7 +130,7 @@ jobs:
           if [ -n "$run_id" ]; then
             gh run download "$run_id" --name pest-tia-baseline --dir "$RUNNER_TEMP/pest-tia"
             container_id="$(docker compose ps -q laravel.test)"
-            baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --baseline)"
+            baseline_path="$(./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --configuration=phpunit.tia.xml --baseline)"
             docker exec "$container_id" mkdir -p "$baseline_path"
             docker cp "$RUNNER_TEMP/pest-tia/." "$container_id:$baseline_path/"
             docker exec "$container_id" chown -R sail:sail "$baseline_path"
@@ -141,7 +141,7 @@ jobs:
 
       - name: Pest TIA suite
         run: |
-          ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --parallel --tia
+          ./vendor/bin/sail exec -u sail -e TIA_VITE_PAGES_DIR=resources/js/pages laravel.test php vendor/bin/pest --configuration=phpunit.tia.xml --parallel --tia
 
       - name: Pest full suite
         run: |

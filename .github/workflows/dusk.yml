@@ -26,16 +26,17 @@ jobs:
 
       - name: Configure Dusk runner environment
         run: |
-          sed -i 's/^APP_ENV=.*/APP_ENV=ci/' .env
-          sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
-          sed -i 's/^APP_LOCALE=.*/APP_LOCALE=en/' .env
-          sed -i 's/^APP_FALLBACK_LOCALE=.*/APP_FALLBACK_LOCALE=en/' .env
-          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
-          sed -i 's/^DB_HOST=.*/DB_HOST=pgsql/' .env
-          sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
-          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=laravel/' .env
-          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=sail/' .env
-          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=password/' .env
+          kv() { key="$1"; val="$2"; if grep -qE "^[#\s]*${key}=" .env; then sed -i "s|^[#\s]*${key}=.*|${key}=${val}|" .env; else echo "${key}=${val}" >> .env; fi; }
+          kv APP_ENV ci
+          kv APP_DEBUG false
+          kv APP_LOCALE en
+          kv APP_FALLBACK_LOCALE en
+          kv DB_CONNECTION pgsql
+          kv DB_HOST pgsql
+          kv DB_PORT 5432
+          kv DB_DATABASE laravel
+          kv DB_USERNAME sail
+          kv DB_PASSWORD password
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
