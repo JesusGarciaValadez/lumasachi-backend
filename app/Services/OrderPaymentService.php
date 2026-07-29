@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\OrderHistoryEventType;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderPayment;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -13,9 +15,9 @@ use InvalidArgumentException;
 final class OrderPaymentService
 {
     public function recordCumulativeDownPayment(
-        Order            $order,
+        Order $order,
         string|int|float $targetAmount,
-        User             $actor,
+        User  $actor,
     ): ?OrderPayment
     {
         $normalizedTarget = $this->normalizeNonnegativeAmount($targetAmount);
@@ -33,6 +35,34 @@ final class OrderPaymentService
             : $this->recordPayment($order, $difference, $actor);
     }
 
+    public function recordPayment(
+        Order $order,
+        string|int|float $amount,
+        User  $actor,
+        ?CarbonInterface $receivedAt = null,
+    ): OrderPayment
+    {
+        $normalizedAmount = $this->normalizeAmount($amount);
+
+        $payment = $order->payments()->create([
+            'amount' => $normalizedAmount,
+            'received_at' => $receivedAt ?? now(),
+            'created_by' => $actor->id,
+        ]);
+        $order->unsetRelation('payments');
+
+        OrderHistory::create([
+            'order_id' => $order->id,
+            'field_changed' => OrderHistory::FIELD_PAYMENT_RECORD,
+            'event_type' => OrderHistoryEventType::PaymentRecord,
+            'old_value' => null,
+            'new_value' => $normalizedAmount,
+            'created_by' => $actor->id,
+        ]);
+
+        return $payment;
+    }
+
     private function normalizeNonnegativeAmount(string|int|float $amount): string
     {
         if (!is_numeric((string)$amount)) {
@@ -46,25 +76,6 @@ final class OrderPaymentService
         }
 
         return $normalizedAmount;
-    }
-
-    public function recordPayment(
-        Order            $order,
-        string|int|float $amount,
-        User             $actor,
-        ?CarbonInterface $receivedAt = null,
-    ): OrderPayment
-    {
-        $normalizedAmount = $this->normalizeAmount($amount);
-
-        $payment = $order->payments()->create([
-            'amount' => $normalizedAmount,
-            'received_at' => $receivedAt ?? now(),
-            'created_by' => $actor->id,
-        ]);
-        $order->unsetRelation('payments');
-
-        return $payment;
     }
 
     private function normalizeAmount(string|int|float $amount): string

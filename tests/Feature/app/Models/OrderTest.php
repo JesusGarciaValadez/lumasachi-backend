@@ -220,6 +220,8 @@ it('checks mass assignment protection', function () {
         'title',
         'description',
         'status',
+        'lifecycle_status',
+        'disposition_status',
         'priority',
         'estimated_completion',
         'actual_completion',

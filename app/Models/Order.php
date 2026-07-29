@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\OrderDispositionStatus;
+use App\Enums\OrderLifecycleStatus;
+use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\UserRole;
@@ -67,6 +70,8 @@ final class Order extends Model
         'title',
         'description',
         'status',
+        'lifecycle_status',
+        'disposition_status',
         'priority',
         'estimated_completion',
         'actual_completion',
@@ -87,7 +92,20 @@ final class Order extends Model
         'actual_completion' => 'datetime',
         'priority' => OrderPriority::class,
         'status' => OrderStatus::class,
+        'lifecycle_status' => OrderLifecycleStatus::class,
+        'disposition_status' => OrderDispositionStatus::class,
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function domainStatusAttributes(OrderStatus $status): array
+    {
+        return array_filter([
+            'lifecycle_status' => $status->lifecycleStatus()?->value,
+            'disposition_status' => $status->dispositionStatus()?->value,
+        ]);
+    }
 
     /**
      * Get the columns that should receive a unique identifier.
@@ -202,6 +220,21 @@ final class Order extends Model
         }
 
         return bccomp($paid, $completed, 2) >= 0 ? 'Paid' : 'Partially Paid';
+    }
+
+    public function paymentStatusEnum(): OrderPaymentStatus
+    {
+        return OrderPaymentStatus::from($this->paymentStatus());
+    }
+
+    public function lifecycleStatus(): ?OrderLifecycleStatus
+    {
+        return $this->lifecycle_status ?? $this->status?->lifecycleStatus();
+    }
+
+    public function dispositionStatus(): ?OrderDispositionStatus
+    {
+        return $this->disposition_status ?? $this->status?->dispositionStatus();
     }
 
     public function hasPendingPayment(): bool

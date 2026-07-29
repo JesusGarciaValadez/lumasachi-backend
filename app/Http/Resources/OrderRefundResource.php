@@ -19,6 +19,7 @@ final class OrderRefundResource extends JsonResource
             'source_payment_id' => $this->source_payment_id,
             'amount' => $this->amount,
             'status' => $this->status?->value,
+            'status_label' => $this->status?->getLabel(),
             'reason' => $this->reason,
             'requested_by' => new UserResource($this->whenLoaded('requestedBy')),
             'requested_at' => $this->requested_at,

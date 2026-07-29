@@ -41,7 +41,7 @@ final class OrderController extends Controller
     public function __construct(
         private OrderLifecycleService $lifecycleService,
         private OrderPaymentService $paymentService,
-        private OrderRefundService  $refundService,
+        private OrderRefundService $refundService,
     )
     {
     }
@@ -293,7 +293,7 @@ final class OrderController extends Controller
         $payload = Cache::remember($key, now()->addSeconds(self::ttlShow()), function () use ($order, $locale) {
             app()->setLocale($locale);
 
-            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'payments.createdBy', 'items.components', 'services.catalogItem'])))->resolve();
+            return (new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy', 'motorInfo', 'payments.createdBy', 'refunds.requestedBy', 'refunds.approvedBy', 'refunds.rejectedBy', 'refunds.processedBy', 'items.components', 'services.catalogItem'])))->resolve();
         });
 
         return response()->json($payload)

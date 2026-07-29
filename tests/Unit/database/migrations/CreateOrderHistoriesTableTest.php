@@ -19,6 +19,7 @@ it('checks if order histories table is created with all columns', function () {
         'id',
         'order_id',
         'field_changed',
+        'event_type',
         'old_value',
         'new_value',
         'comment',

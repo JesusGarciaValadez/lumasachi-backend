@@ -81,13 +81,13 @@ final class OrderStatusStateMachine
     public function transition(
         Order $order,
         OrderStatus $newStatus,
-        User  $actor,
+        User $actor,
         array $additionalAttributes = [],
     ): Order
     {
         $this->assertCanTransition($order->status, $newStatus);
 
-        $order->update(array_merge($additionalAttributes, [
+        $order->update(array_merge($additionalAttributes, Order::domainStatusAttributes($newStatus), [
             'status' => $newStatus->value,
             'updated_by' => $actor->id,
         ]));
@@ -108,7 +108,10 @@ final class OrderStatusStateMachine
     {
         $this->assertCanTransition($order->status, $newStatus);
 
-        $order->updateQuietly(['status' => $newStatus->value]);
+        $order->updateQuietly(array_merge(
+            ['status' => $newStatus->value],
+            Order::domainStatusAttributes($newStatus),
+        ));
     }
 
     /**

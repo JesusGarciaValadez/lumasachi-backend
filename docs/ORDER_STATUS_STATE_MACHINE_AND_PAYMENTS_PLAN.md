@@ -488,7 +488,7 @@ Verification completed:
 
 The step is marked done because its requirements and focused verification are complete.
 
-### Step 5 — Update persistence, resources, and history
+### Step 5 — Update persistence, resources, and history — DONE
 
 Scope:
 
@@ -514,6 +514,35 @@ Completion gate:
 
 - API consumers no longer need to interpret one mixed status value.
 - Existing history is preserved and new events are unambiguous.
+
+**Step 5 status: complete.**
+
+Implementation completed:
+
+- Added nullable `lifecycle_status` and `disposition_status` columns with indexes. The existing mixed `status` column
+  remains as a compatibility value; unresolved legacy records were not silently mapped.
+- Added stable `OrderLifecycleStatus`, `OrderDispositionStatus`, and `OrderPaymentStatus` enums with localized labels.
+  Authenticated and public resources now expose lifecycle and disposition fields separately; authenticated resources
+  also expose derived payment status and refund records. Existing public tracking restrictions remain in place.
+- Added `OrderHistoryEventType` and persisted `event_type` values for lifecycle, disposition, payment status,
+  payment-record, refund, and general attribute events. Payment and refund services now append typed history entries,
+  including amounts, workflow status, actor, and timestamps through the existing history model.
+- Kept existing history rows intact. New history rows use explicit event types, while the migration default preserves
+  old rows without guessing whether ambiguous legacy status values were lifecycle, payment, or disposition events.
+- Public tracking excludes payment and refund history events and does not expose payment/refund records or internal
+  users.
+
+Verification completed:
+
+- `vendor/bin/sail artisan test --compact`: **684 passed, 4,791 assertions**.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
+- If a future verification run reports that Docker/Podman or an external API client such as Postman is missing or not
+  working, treat that as a sandbox/environment access issue. Request permission to access or start the dependency,
+  confirm with `vendor/bin/sail artisan list`, and retry the same Sail command before judging the code.
+
+The step is marked done because its persistence, resource, history, and focused/full verification requirements are
+complete. The unresolved legacy-status migration decisions remain explicitly deferred to Step 7.
 
 ### Step 6 — Update the UI presentation
 

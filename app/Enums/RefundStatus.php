@@ -10,4 +10,9 @@ enum RefundStatus: string
     case Approved = 'Approved';
     case Processed = 'Processed';
     case Rejected = 'Rejected';
+
+    public function getLabel(): string
+    {
+        return __('orders.refund_status_labels.' . $this->value);
+    }
 }
