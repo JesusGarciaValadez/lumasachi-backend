@@ -9,6 +9,7 @@ use App\Enums\OrderPriority;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
 use App\Models\OrderPayment;
@@ -232,6 +233,34 @@ test('budget rejects a non array services payload', function () {
 
     expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
 });
+test('budget rejects a mixed valid and invalid payload atomically', function () {
+    $order = createOrder(OrderStatus::AwaitingReview);
+    $item = OrderItem::factory()->received()->create([
+        'order_id' => $order->id,
+        'item_type' => OrderItemType::EngineBlock->value,
+    ]);
+    $catalog = createEdgeCaseCatalogService('wash_block', 600.00);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
+        'services' => [
+            [
+                'order_item_id' => $item->id,
+                'service_key' => $catalog->service_key,
+            ],
+            [
+                'order_item_id' => $item->id,
+                'service_key' => 'not_in_catalog',
+            ],
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['services.1.service_key']);
+
+    $this->assertDatabaseMissing('order_services', [
+        'order_item_id' => $item->id,
+        'service_key' => $catalog->service_key,
+    ]);
+    expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingReview);
+});
 test('customer approval rejects a service that belongs to another order', function () {
     $this->actingAs($this->customer);
     $order = createOrder(OrderStatus::AwaitingCustomerApproval);
@@ -412,6 +441,8 @@ test('quotation totals follow budgeted authorized and completed services', funct
                 'order_item_id' => $item->id,
                 'service_key' => $serviceKey,
                 'measurement' => $serviceKey === 'deck_assembled_4cyl' ? '20' : null,
+                'base_price' => 0,
+                'net_price' => 0,
             ])
             ->values()
             ->all(),
@@ -422,17 +453,40 @@ test('quotation totals follow budgeted authorized and completed services', funct
     expect((float)$order->services()->sum('base_price'))->toBe(3760.00);
     expect((float)$order->services()->sum('net_price'))->toBe(4361.60);
 
-    Notification::assertSentTo($this->customer, OrderReviewedNotification::class);
+    $services = $order->services()->get()->keyBy('service_key');
+    foreach ($catalog as $serviceKey => $catalogService) {
+        expect($services->get($serviceKey)->base_price)->toBe(number_format((float)$catalogService->base_price, 2, '.', ''));
+        expect($services->get($serviceKey)->net_price)->toBe(number_format((float)$catalogService->net_price, 2, '.', ''));
+    }
+
+    $statusChanges = OrderHistory::query()
+        ->where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+        ->oldest('id')
+        ->get();
+
+    expect($statusChanges)->toHaveCount(2);
+    expect($statusChanges->map(fn(OrderHistory $history): array => [
+        $history->getRawOriginal('old_value'),
+        $history->getRawOriginal('new_value'),
+    ])->all())->toBe([
+        [OrderLifecycleStatus::AwaitingReview->value, OrderLifecycleStatus::Reviewed->value],
+        [OrderLifecycleStatus::Reviewed->value, OrderLifecycleStatus::AwaitingCustomerApproval->value],
+    ]);
+
+    Notification::assertSentToTimes($this->customer, OrderReviewedNotification::class, 1);
     Notification::assertSentTo(
         $this->administrator,
         fn(OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
     );
+    Notification::assertSentToTimes($this->administrator, OrderAuditNotification::class, 1);
     Notification::assertSentTo(
         $this->superAdministrator,
         fn(OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
     );
+    Notification::assertSentToTimes($this->superAdministrator, OrderAuditNotification::class, 1);
+    Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
 
-    $services = $order->services()->get()->keyBy('service_key');
     $authorizedServiceIds = collect([
         'wash_block',
         'weld_between_cylinders_qr25',

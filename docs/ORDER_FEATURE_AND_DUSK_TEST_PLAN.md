@@ -362,28 +362,37 @@ Primary files to inspect and preferably extend:
 
 Happy paths:
 
-- [ ] Use the exact Block example from the business rules.
-- [ ] Assert catalog prices are copied to the order services instead of accepted from client input.
-- [ ] Assert budgeted base `3760.00` and net `4361.60`.
-- [ ] Assert the lifecycle records `Reviewed` followed by `Awaiting Customer Approval`.
-- [ ] Assert both status history entries are present exactly once and in order.
-- [ ] Assert the customer plus active audit roles receive the reviewed notification.
+- [x] Use the exact Block example from the business rules.
+- [x] Assert catalog prices are copied to the order services instead of accepted from client input.
+- [x] Assert budgeted base `3760.00` and net `4361.60`.
+- [x] Assert the lifecycle records `Reviewed` followed by `Awaiting Customer Approval`.
+- [x] Assert both status history entries are present exactly once and in order.
+- [x] Assert the customer plus active audit roles receive the reviewed notification.
 
 Rule-backed edges:
 
-- [ ] A non-staff user cannot submit a budget.
-- [ ] Budgeting is rejected outside `Awaiting Review`.
-- [ ] Foreign/unreceived pieces, wrong-piece services, unknown/inactive catalog services, and missing required
+- [x] A non-staff user cannot submit a budget.
+- [x] Budgeting is rejected outside `Awaiting Review`.
+- [x] Foreign/unreceived pieces, wrong-piece services, unknown/inactive catalog services, and missing required
   measurements remain rejected atomically.
-- [ ] A repeated or mixed invalid payload cannot partially budget services.
-- [ ] Do not add arbitrary maximums, duplicate-service semantics, or price rules not found in the business rules or
+- [x] A repeated or mixed invalid payload cannot partially budget services.
+- [x] Do not add arbitrary maximums, duplicate-service semantics, or price rules not found in the business rules or
   current approved catalog contract.
 
 Completion gate:
 
-- [ ] The exact quoted totals and both status history events are proven.
-- [ ] Notification assertions identify recipient roles and exclude inactive audit users.
-- [ ] Run the singular changed test files and record their results.
+- [x] The exact quoted totals and both status history events are proven.
+- [x] Notification assertions identify recipient roles and exclude inactive audit users.
+- [x] Run the singular changed test files and record their results.
+
+Stage 4 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderBusinessRulesEdgeCasesTest.php
+  tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php`: 50 passed (259 assertions).
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
+- The first test attempt was blocked because Docker or Podman was not running. After elevated Sail execution permission
+  was granted, the same focused tests passed. Postman is not required for this automated Feature/Dusk suite.
 
 ## Stage 5 — Complete approval, payment, and work Feature coverage
 
