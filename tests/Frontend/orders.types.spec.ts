@@ -1,24 +1,21 @@
-import { normalizePublicOrder, ORDER_STATUS_SEQUENCE } from '@/types/orders';
+import { normalizePublicOrder, ORDER_STATUS_SEQUENCE, resolveLifecycleStatus } from '@/types/orders';
 
 describe('public order normalization', () => {
-    it('defines progress steps for every supported status', () => {
+    it('defines progress steps for lifecycle statuses only', () => {
         expect(ORDER_STATUS_SEQUENCE).toEqual([
             'Received',
             'Awaiting Review',
             'Reviewed',
             'Awaiting Customer Approval',
             'Ready for Work',
-            'Open',
-            'In Progress',
             'Ready for Delivery',
-            'Completed',
             'Delivered',
-            'Paid',
-            'Returned',
-            'Not Paid',
-            'On Hold',
-            'Cancelled',
         ]);
+    });
+
+    it('uses the server lifecycle status and does not infer one from a special legacy status', () => {
+        expect(resolveLifecycleStatus('Ready for Work', 'Paid')).toBe('Ready for Work');
+        expect(resolveLifecycleStatus(null, 'Paid')).toBeNull();
     });
 
     it('unwraps nested public collections and keeps empty collections stable', () => {

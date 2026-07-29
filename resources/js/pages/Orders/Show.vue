@@ -6,6 +6,7 @@ import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue
 import OrderHistoryFeed from '@/components/orders/OrderHistoryFeed.vue';
 import OrderReviewBudgetPanel from '@/components/orders/OrderReviewBudgetPanel.vue';
 import OrderServiceMatrix from '@/components/orders/OrderServiceMatrix.vue';
+import OrderStatusIndicators from '@/components/orders/OrderStatusIndicators.vue';
 import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,11 +23,13 @@ import type {
     OrderAttachment,
     OrderCapabilities,
     OrderHistoryPage,
+    OrderLifecycleStatus,
     OrderPayload,
+    RefundStatus,
     ResourcePayload,
     SubmitBudgetPayload,
 } from '@/types/orders';
-import { normalizeOrder, ORDER_STATUS_SEQUENCE } from '@/types/orders';
+import { normalizeOrder, ORDER_STATUS_SEQUENCE, resolveLifecycleStatus } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -98,6 +101,16 @@ const canViewDelivery = computed(() => isStaff.value && order.value.status === '
 const canDeliver = computed(() => capabilities.deliver_order && remainingBalance.value <= 0);
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
+const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() => resolveLifecycleStatus(order.value.lifecycle_status, order.value.status));
+const indicatorLabels = computed(() => ({
+    lifecycle: t('orders.lifecycle_status'),
+    priority: t('orders.priority'),
+    payment: t('orders.payment_status'),
+    disposition: t('orders.disposition_status'),
+    refund: t('orders.refund_status'),
+}));
+const refundStatusLabels = computed(() => tm('orders.refund_status_labels') as Record<string, string>);
+const refundStatuses = computed<RefundStatus[]>(() => (order.value.refunds ?? []).map((refund) => refund.status));
 
 const itemLabels = computed<Record<number, string>>(() =>
     Object.fromEntries(order.value.items.map((item) => [item.id, item.item_type_label ?? t('orders.item_type')])),
@@ -376,7 +389,7 @@ async function refreshOrder(): Promise<void> {
             return;
         }
 
-        currentOrder.value = refreshed;
+        currentOrder.value = normalizeOrder(refreshed);
         lastError.value = null;
         staleState.value = false;
         await Promise.all([loadAttachments(), loadHistory()]);
@@ -526,18 +539,19 @@ onMounted(async () => {
                             <h1 class="truncate text-xl font-semibold md:text-2xl">{{ order.title }}</h1>
                             <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span
-                                class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
-                            >
-                                {{ statusLabel(order.status) }}
-                            </span>
-                            <span
-                                class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                            >
-                                {{ priorityLabel(order.priority) }}
-                            </span>
-                        </div>
+                        <OrderStatusIndicators
+                            :disposition-status="order.disposition_status"
+                            :disposition-status-label="order.disposition_status_label"
+                            :labels="indicatorLabels"
+                            :lifecycle-status="currentLifecycleStatus"
+                            :lifecycle-status-label="order.lifecycle_status_label"
+                            :payment-status="order.payment_status"
+                            :payment-status-label="order.payment_status_label"
+                            :priority="order.priority"
+                            :priority-label="priorityLabel(order.priority)"
+                            :refund-status-labels="refundStatusLabels"
+                            :refund-statuses="refundStatuses"
+                        />
                     </div>
                     <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
                     <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -585,7 +599,7 @@ onMounted(async () => {
                 </div>
             </Card>
 
-            <OrderStatusProgress :status="order.status" :statuses="statusSteps" :title="t('orders.progress')" />
+            <OrderStatusProgress :status="currentLifecycleStatus" :statuses="statusSteps" :title="t('orders.progress')" />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card>

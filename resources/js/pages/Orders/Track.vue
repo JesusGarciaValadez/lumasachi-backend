@@ -2,6 +2,7 @@
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import OrderFinancialSummary from '@/components/orders/OrderFinancialSummary.vue';
+import OrderStatusIndicators from '@/components/orders/OrderStatusIndicators.vue';
 import OrderStatusProgress from '@/components/orders/OrderStatusProgress.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,8 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import { formatDateTime, formatMoney } from '@/lib/i18n';
-import type { FinancialTotals, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
-import { ORDER_STATUS_SEQUENCE } from '@/types/orders';
+import type { FinancialTotals, OrderLifecycleStatus, PublicOrder, PublicOrderServicePayload } from '@/types/orders';
+import { ORDER_STATUS_SEQUENCE, resolveLifecycleStatus } from '@/types/orders';
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -27,6 +28,16 @@ const controller = ref<AbortController | null>(null);
 const fieldErrors = computed(() => error.value?.validationErrors ?? {});
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
+const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() =>
+    order.value ? resolveLifecycleStatus(order.value.lifecycle_status, order.value.status) : null,
+);
+const indicatorLabels = computed(() => ({
+    lifecycle: t('orders.lifecycle_status'),
+    priority: t('orders.priority'),
+    payment: t('orders.payment_status'),
+    disposition: t('orders.disposition_status'),
+    refund: t('orders.refund_status'),
+}));
 
 const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),
@@ -158,11 +169,15 @@ async function lookup(): Promise<void> {
                                 <h2 class="text-xl font-semibold">{{ order.title }}</h2>
                                 <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
                             </div>
-                            <div
-                                class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
-                            >
-                                {{ order.status_label ?? statusLabel(order.status) }}
-                            </div>
+                            <OrderStatusIndicators
+                                :disposition-status="order.disposition_status"
+                                :disposition-status-label="order.disposition_status_label"
+                                :labels="indicatorLabels"
+                                :lifecycle-status="currentLifecycleStatus"
+                                :lifecycle-status-label="order.lifecycle_status_label"
+                                :priority="order.priority"
+                                :priority-label="order.priority_label ?? order.priority"
+                            />
                         </div>
                         <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
                         <dl class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
@@ -186,7 +201,7 @@ async function lookup(): Promise<void> {
                     </div>
                 </Card>
 
-                <OrderStatusProgress :status="order.status" :statuses="statusSteps" :title="t('orders.progress')" />
+                <OrderStatusProgress :status="currentLifecycleStatus" :statuses="statusSteps" :title="t('orders.progress')" />
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <Card
