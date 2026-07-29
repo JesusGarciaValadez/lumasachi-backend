@@ -648,6 +648,39 @@ Completion gate:
 - Migration report contains zero unresolved records, or the remaining records have explicit business decisions.
 - Existing orders retain their financial and history meaning.
 
+**Step 7 status: in progress; data decisions remain blocked.**
+
+Implementation completed so far:
+
+- Added a post-schema backfill migration for domain fields. It copies only the lifecycle values explicitly defined by
+  `Business_Rules.md` and maps `Returned`/`Cancelled` to disposition. It does not infer a lifecycle value for `Paid`,
+  `Not Paid`, `Open`, `In Progress`, `On Hold`, or any other unresolved record.
+- Retained the mixed `orders.status` column as a compatibility value because removing it would break unresolved legacy
+  records and existing consumers before their replacement values are decided.
+- Added the read-only `orders:domain-status-report` Artisan command. It lists unresolved orders and counts payment
+  records whose actor is unknown; it never mutates records or invents metadata.
+- The existing payment-ledger backfill was run before the legacy motor-information payment columns were removed. It
+  preserved the legacy motor-information creation timestamp as `received_at` and left the actor `NULL`, as required by
+  the available data.
+
+Verification completed:
+
+- `vendor/bin/sail artisan migrate --no-interaction`: passed; all pending payment, refund, domain-status, history, and
+  step-7 backfill migrations completed.
+- `vendor/bin/sail artisan orders:domain-status-report --no-interaction`: reported 36 safely mapped orders, 18
+  unresolved orders, and 2 payments with an unknown actor in the current database.
+- Focused tests: 55 passed, 159 assertions. Full recreated parallel suite:
+  `vendor/bin/sail artisan test --compact --parallel --processes=8 --recreate-databases` — 687 passed, 4,797 assertions.
+- A plain serial full-suite attempt first encountered Docker/Podman access failure. After permission was granted, the
+  retry encountered PostgreSQL migration deadlocks and stale-schema/duplicate-seeder failures. The prescribed recreated
+  parallel run passed; those failures were test-environment/database-isolation issues, not step-7 failures.
+
+The step must not be marked done until the 18 unresolved records have explicit decisions. The needed decisions are the
+ones already recorded in Step 1: whether `Open`, `In Progress`, and `On Hold` remain lifecycle states; whether
+`Completed` remains valid; whether `Not Paid` is renamed to `Unpaid`; whether Returned/Cancelled can resume; and the
+exact lifecycle status for each legacy order whose status history is absent or contradictory. The current report is the
+handoff artifact for those decisions.
+
 ### Step 8 — Final verification and completion tracking
 
 Run focused checks after each implementation step. Do not mark a step complete until its requirements and focused tests
