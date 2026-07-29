@@ -598,27 +598,50 @@ Stage 9 verification record — 2026-07-29:
 
 Suggested file: `tests/Browser/OrderApprovalAndDeliveryTest.php`.
 
-- [ ] Start from a factory/setup state already at `Awaiting Customer Approval`; do not replay Stage 9 in every test.
-- [ ] Sign in as the owning customer and open the order.
-- [ ] Approve Lavado, Soldadura entre cilindros QR25, and Cambio de metales de árbol.
-- [ ] Enter the approved advance amount, confirm, and assert `Ready for Work`.
-- [ ] Assert authorized base `1880.00` and net `2180.80`.
-- [ ] Sign in as authorized staff and mark Lavado plus Cambio de metales de árbol completed.
-- [ ] Assert completed net `1252.80` and the incomplete damaged service remains uncompleted.
-- [ ] Mark the order ready for delivery and assert the visible delivery notification state represented in the UI.
-- [ ] Assert delivery is disabled while a positive balance remains.
-- [ ] Follow Q3 to record the final payment through an approved UI or explicit backend setup.
-- [ ] Deliver the order and assert visible `Delivered` status and history.
+- [x] Start from a factory/setup state already at `Awaiting Customer Approval`; do not replay Stage 9 in every test.
+- [x] Sign in as the owning customer and open the order.
+- [x] Approve Lavado, Soldadura entre cilindros QR25, and Cambio de metales de árbol.
+- [x] Enter the approved advance amount, confirm, and assert `Ready for Work`.
+- [x] Assert authorized base `1880.00` and net `2180.80`.
+- [x] Sign in as authorized staff and mark Lavado plus Cambio de metales de árbol completed.
+- [x] Assert completed net `1252.80` and the incomplete damaged service remains uncompleted.
+- [x] Mark the order ready for delivery and assert the visible delivery notification state represented in the UI.
+- [x] Assert delivery is disabled while a positive balance remains.
+- [x] Follow Q3 to record the final payment through an explicit backend setup; browser payment entry remains out of
+  scope.
+- [x] Deliver the order and assert visible `Delivered` status and history.
 
 Representative browser authorization edge:
 
-- [ ] An unrelated customer cannot see or submit the approval action.
+- [x] An unrelated customer cannot see or submit the approval action.
 
 Completion gate:
 
-- [ ] The test does not pretend to cover browser payment entry if backend setup was used.
-- [ ] The full approved journey reaches `Delivered`.
-- [ ] Browser console logs contain no new errors.
+- [x] The test does not pretend to cover browser payment entry; final payment uses the approved backend payment
+  operation.
+- [x] The full approved journey reaches `Delivered`.
+- [x] Browser console logs contain no JavaScript exceptions or unexpected errors; the authorization edge records only
+  its expected HTTP 403.
+
+Stage 10 verification record — 2026-07-29:
+
+- `vendor/bin/sail artisan dusk --without-tty --filter=OrderApprovalAndDeliveryTest`: 2 passed (19 assertions).
+- `vendor/bin/sail artisan dusk --without-tty`: 9 passed (49 assertions).
+-
+`vendor/bin/sail artisan test --compact tests/Feature/app/Http/Controllers/OrderLifecycleControllerTest.php tests/Feature/app/Http/Controllers/OrderRouteTest.php`:
+34 passed (266 assertions).
+- `vendor/bin/sail yarn run build`: passed.
+-
+`vendor/bin/sail yarn prettier --write resources/js/components/orders/OrderCustomerApprovalPanel.vue resources/js/components/orders/OrderDeliveryPanel.vue resources/js/components/orders/OrderServiceMatrix.vue resources/js/pages/Orders/Show.vue`:
+passed.
+-
+`vendor/bin/sail yarn eslint resources/js/components/orders/OrderCustomerApprovalPanel.vue resources/js/components/orders/OrderDeliveryPanel.vue resources/js/components/orders/OrderServiceMatrix.vue resources/js/pages/Orders/Show.vue`:
+passed.
+- `vendor/bin/sail bin pint --dirty --format agent`: passed.
+- `git diff --check`: passed.
+- Dusk initially received 404s for stale compiled assets after the frontend rebuild; restarting only the disposable
+  `dusk` service reloaded the manifest. The browser path also exposed and fixed the numeric-string `down_payment`
+  boundary error before the passing rerun.
 
 ## Stage 11 — Dusk public-tracking journey
 

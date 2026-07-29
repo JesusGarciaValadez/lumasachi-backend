@@ -676,6 +676,7 @@ onMounted(async () => {
             />
 
             <OrderCustomerApprovalPanel
+                dusk="order-approval-panel"
                 v-if="canApprove"
                 :busy="busyAction !== null"
                 :errors="lastError?.validationErrors ?? {}"
@@ -686,6 +687,7 @@ onMounted(async () => {
             />
 
             <OrderServiceMatrix
+                dusk="order-completion-panel"
                 v-if="canComplete"
                 :busy="busyAction !== null"
                 :item-labels="itemLabels"
@@ -708,13 +710,17 @@ onMounted(async () => {
             <Card v-if="canComplete">
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6">
                     <p class="text-sm text-muted-foreground">{{ t('orders.work_completion_help') }}</p>
-                    <Button :disabled="!completionSelection.length || busyAction !== null" @click="openConfirmation('completion')">
+                    <Button
+                        :disabled="!completionSelection.length || busyAction !== null"
+                        dusk="order-completion-submit"
+                        @click="openConfirmation('completion')"
+                    >
                         {{ busyAction === 'completion' ? t('common.loading') : t('orders.mark_completed') }}
                     </Button>
                 </div>
             </Card>
 
-            <Card v-if="canMarkReady">
+            <Card v-if="canMarkReady" dusk="order-ready-for-delivery">
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6">
                     <div>
                         <h2 class="text-base font-semibold">{{ t('orders.ready_for_delivery') }}</h2>
@@ -727,13 +733,14 @@ onMounted(async () => {
                             {{ uncompletedAuthorizedServices.map((service) => service.service_name ?? t('orders.service')).join(', ') }}
                         </p>
                     </div>
-                    <Button :disabled="busyAction !== null" @click="openConfirmation('ready')">{{
+                    <Button :disabled="busyAction !== null" dusk="order-ready-submit" @click="openConfirmation('ready')">{{
                         busyAction === 'ready' ? t('common.loading') : t('orders.mark_ready')
                     }}</Button>
                 </div>
             </Card>
 
             <OrderDeliveryPanel
+                dusk="order-delivery-panel"
                 v-if="canViewDelivery"
                 :busy="busyAction !== null"
                 :can-deliver="canDeliver"

@@ -160,6 +160,7 @@ function submit(): void {
                                             :aria-label="`${labels.select}: ${service.service_name ?? labels.service}`"
                                             :checked="isSelected(service.id)"
                                             :disabled="busy"
+                                            :dusk="`order-approval-service-${service.service_key}`"
                                             class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(service.id)"
@@ -220,6 +221,7 @@ function submit(): void {
                 <div class="flex flex-col gap-2 sm:max-w-sm">
                     <Label for="approval-down-payment">{{ labels.advancePayment }}</Label>
                     <Input
+                        dusk="order-approval-down-payment"
                         id="approval-down-payment"
                         v-model="downPayment"
                         :aria-describedby="errorFor('down_payment') ? 'approval-down-payment-error' : undefined"
@@ -236,7 +238,9 @@ function submit(): void {
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="text-sm text-muted-foreground">{{ labels.selected(selectedIds.length) }}</p>
-                    <Button :disabled="!selectedIds.length || busy" type="button" @click="submit">{{ labels.submit }}</Button>
+                    <Button :disabled="!selectedIds.length || busy" dusk="order-approval-submit" type="button" @click="submit">{{
+                        labels.submit
+                    }}</Button>
                 </div>
             </div>
         </div>

@@ -99,6 +99,18 @@ test('the owning customer receives the approval capability', function () {
             )
         );
 });
+test('forbids an unrelated customer from viewing an order awaiting approval', function () {
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $otherCustomer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'status' => OrderStatus::AwaitingCustomerApproval->value,
+    ]);
+
+    $this->actingAs($otherCustomer)
+        ->get(route('web.orders.show', [$order->uuid]))
+        ->assertForbidden();
+});
 test('authorized staff receives the review capability for an order awaiting review', function () {
     $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);

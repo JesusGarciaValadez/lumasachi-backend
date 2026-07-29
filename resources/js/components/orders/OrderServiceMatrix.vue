@@ -108,13 +108,14 @@ function toggle(service: OrderServicePayload): void {
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                <tr v-for="service in itemServices" :key="service.id">
+                                <tr v-for="service in itemServices" :key="service.id" :dusk="`order-service-row-${service.service_key}`">
                                     <td class="px-3 py-2 align-top">
                                         <input
                                             v-if="mode !== 'readonly'"
                                             :aria-label="service.service_name ?? labels.service"
                                             :checked="isSelected(service.id)"
                                             :disabled="!canSelect(service)"
+                                            :dusk="mode === 'completion' ? `order-completion-service-${service.service_key}` : undefined"
                                             class="size-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             type="checkbox"
                                             @change="toggle(service)"

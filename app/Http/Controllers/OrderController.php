@@ -120,11 +120,14 @@ final class OrderController extends Controller
     public function customerApproval(CustomerApprovalRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
+        $downPayment = ($validated['down_payment'] ?? null) === null
+            ? null
+            : (float)$validated['down_payment'];
 
         $order = $this->lifecycleService->customerApproval(
             $order,
             $validated['authorized_service_ids'],
-            $validated['down_payment'] ?? null,
+            $downPayment,
             $this->authenticatedUser($request)
         );
 
