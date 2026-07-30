@@ -154,6 +154,41 @@ it('creates an order after an imported order sequence is synchronized', function
     $response->assertCreated()
         ->assertJsonPath('order.id', 16);
 });
+it('repairs an imported order sequence without ownership metadata', function () {
+    Notification::fake();
+
+    Order::factory()->createQuietly([
+        'id' => 15,
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->employee->id,
+        'updated_by' => $this->employee->id,
+    ]);
+
+    DB::statement('ALTER SEQUENCE public.orders_id_seq OWNED BY NONE');
+    DB::statement("SELECT setval('public.orders_id_seq'::regclass, 1, false)");
+
+    $migration = include base_path('database/migrations/2026_07_30_031503_repair_orders_primary_key_sequence_ownership.php');
+    $migration->up();
+
+    $sequence = DB::selectOne("SELECT pg_get_serial_sequence('public.orders', 'id') AS sequence_name");
+
+    expect($sequence->sequence_name)->toBe('public.orders_id_seq');
+
+    $response = $this->actingAs($this->employee)->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Imported Order Ownership Follow-up',
+        'description' => 'Created after the imported sequence ownership was repaired.',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => OrderItemType::CylinderHead->value],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('order.id', 16);
+});
 it('checks if store validation fails with invalid data', function () {
     $this->actingAs($this->employee);
 
