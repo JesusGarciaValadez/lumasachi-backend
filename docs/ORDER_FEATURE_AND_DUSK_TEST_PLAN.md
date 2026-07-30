@@ -708,7 +708,7 @@ git diff --check
   when repository instructions require that choice.
 - [x] Run the full Dusk suite serially.
 - [x] If CI execution is in scope, confirm both Feature and Dusk jobs pass there.
-- [x] Re-run failed tests before classifying a failure as application, test, or environment related.
+- [x] Re-run failed tests before classifying a failure as application, test, or environment-related.
 
 Stage 12 verification record — 2026-07-29:
 

@@ -55,6 +55,8 @@ jobs:
           kv DB_DATABASE laravel
           kv DB_USERNAME sail
           kv DB_PASSWORD password
+          kv WWWUSER "$(id -u)"
+          kv WWWGROUP "$(id -g)"
 
       - name: Configure .env.testing
         run: |
