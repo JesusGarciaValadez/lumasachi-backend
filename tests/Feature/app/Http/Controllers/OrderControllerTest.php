@@ -13,6 +13,7 @@ use App\Models\ServiceCatalog;
 use App\Models\User;
 use App\Notifications\OrderCreatedNotification;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -122,6 +123,36 @@ it('checks if store creates order with valid data', function () {
         $this->employee,
         OrderCreatedNotification::class
     );
+});
+it('creates an order after an imported order sequence is synchronized', function () {
+    Notification::fake();
+
+    Order::factory()->createQuietly([
+        'id' => 15,
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->employee->id,
+        'updated_by' => $this->employee->id,
+    ]);
+
+    DB::statement("SELECT setval(pg_get_serial_sequence('orders', 'id'), 1, false)");
+
+    $migration = include base_path('database/migrations/2026_07_30_024320_synchronize_orders_primary_key_sequence.php');
+    $migration->up();
+
+    $response = $this->actingAs($this->employee)->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Imported Order Follow-up',
+        'description' => 'Created after the imported sequence was repaired.',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => OrderItemType::CylinderHead->value],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('order.id', 16);
 });
 it('checks if store validation fails with invalid data', function () {
     $this->actingAs($this->employee);
