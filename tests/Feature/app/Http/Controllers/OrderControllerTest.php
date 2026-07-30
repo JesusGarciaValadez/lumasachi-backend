@@ -8,6 +8,7 @@ use App\Enums\OrderPriority;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\OrderMotorInfo;
 use App\Models\OrderRefund;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -188,6 +189,53 @@ it('repairs an imported order sequence without ownership metadata', function () 
 
     $response->assertCreated()
         ->assertJsonPath('order.id', 16);
+});
+it('repairs imported sequences for related order records', function () {
+    Notification::fake();
+
+    $order = Order::factory()->createQuietly([
+        'id' => 55,
+        'customer_id' => $this->customer->id,
+        'assigned_to' => $this->employee->id,
+        'created_by' => $this->employee->id,
+        'updated_by' => $this->employee->id,
+    ]);
+
+    OrderMotorInfo::factory()->createQuietly([
+        'id' => 1,
+        'order_id' => $order->id,
+    ]);
+
+    DB::statement('ALTER SEQUENCE public.order_motor_info_id_seq OWNED BY NONE');
+    DB::statement("SELECT setval('public.order_motor_info_id_seq'::regclass, 1, false)");
+
+    $migration = include base_path('database/migrations/2026_07_30_032452_synchronize_all_serial_primary_key_sequences.php');
+    $migration->up();
+
+    $response = $this->actingAs($this->employee)->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Imported Related Sequence Follow-up',
+        'description' => 'Created after all imported sequences were repaired.',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'motor_info' => [
+            'brand' => 'Chevrolet',
+            'liters' => '8',
+            'year' => '2026',
+            'model' => 'Blazer',
+            'cylinder_count' => '8',
+        ],
+        'items' => [
+            ['item_type' => OrderItemType::CylinderHead->value],
+        ],
+    ]);
+
+    $response->assertCreated();
+
+    $this->assertDatabaseHas('order_motor_info', [
+        'brand' => 'Chevrolet',
+        'model' => 'Blazer',
+    ]);
 });
 it('checks if store validation fails with invalid data', function () {
     $this->actingAs($this->employee);
