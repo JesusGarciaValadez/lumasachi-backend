@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\App\Http\Controllers;
+namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\OrderHistoryEventType;
 use App\Enums\OrderStatus;

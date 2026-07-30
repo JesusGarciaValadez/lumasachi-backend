@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @mixin IdeHelperOrderRefund
+ */
 final class OrderRefund extends Model
 {
     /** @use HasFactory<OrderRefundFactory> */
@@ -44,12 +47,6 @@ final class OrderRefund extends Model
         'rejected_at' => 'datetime',
         'processed_at' => 'datetime',
     ];
-
-    /** @return Factory<static> */
-    protected static function newFactory(): Factory
-    {
-        return OrderRefundFactory::new();
-    }
 
     /** @return list<string> */
     public function uniqueIds(): array
@@ -91,5 +88,11 @@ final class OrderRefund extends Model
     public function processedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    /** @return Factory<static> */
+    protected static function newFactory(): Factory
+    {
+        return OrderRefundFactory::new();
     }
 }
