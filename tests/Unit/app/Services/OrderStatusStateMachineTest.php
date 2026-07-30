@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\App\Services;
+namespace Tests\Unit\app\Services;
 
 use App\Enums\OrderLifecycleStatus;
 use App\Services\OrderStatusStateMachine;
