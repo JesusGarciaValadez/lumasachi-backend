@@ -14,7 +14,6 @@ it('renders public and guest pages with the selected locale', function () {
     $pages = [
         ['/', 'Welcome'],
         ['/login', 'auth/Login'],
-        ['/register', 'auth/Register'],
         ['/forgot-password', 'auth/ForgotPassword'],
         ['/reset-password/audit-token?email=audit@example.com', 'auth/ResetPassword'],
         [route('web.orders.track'), 'Orders/Track'],

@@ -36,7 +36,8 @@ final class UserFactory extends Factory
             'password' => self::$password ??= Hash::make('password'),
             'role' => fake()->randomElement(UserRole::cases()),
             'phone_number' => fake()->phoneNumber(),
-            'is_active' => fake()->boolean(),
+            'is_active' => true,
+            'activated_at' => now(),
             'notes' => fake()->text(),
             'type' => fake()->randomElement(UserType::cases()),
             'preferences' => fake()->text(),
@@ -51,6 +52,28 @@ final class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is active.
+     */
+    public function active(): static
+    {
+        return $this->state(fn(array $attributes): array => [
+            'is_active' => true,
+            'activated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the user is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn(array $attributes): array => [
+            'is_active' => false,
+            'activated_at' => null,
         ]);
     }
 }

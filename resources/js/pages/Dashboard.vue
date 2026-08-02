@@ -6,12 +6,20 @@ import { formatDateTime } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import type { OrderLifecycleStatus, OrderSummary, RefundStatus } from '@/types/orders';
 import { resolveLifecycleStatus } from '@/types/orders';
+import type { UserAdministrationListUser } from '@/types/users';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 
 const { t, tm } = useI18n();
+
+const props = defineProps<{
+    can_create_user?: boolean;
+    can_view_users?: boolean;
+    is_customer?: boolean;
+    recent_users?: UserAdministrationListUser[];
+}>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     {
@@ -22,6 +30,10 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 
 const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
+const recentUsers = computed(() => props.recent_users ?? []);
+const canViewUsers = computed(() => props.can_view_users === true);
+const canCreateUser = computed(() => props.can_create_user === true);
+const isCustomer = computed(() => props.is_customer === true);
 
 const recentFive = computed(() => {
     const list = [...orders.value];
@@ -69,8 +81,26 @@ onMounted(async () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <div v-if="!isCustomer" class="grid auto-rows-min gap-4 md:grid-cols-3" data-dashboard-summary dusk="dashboard-summary">
+                <Card v-if="canViewUsers" :data-can-create-user="canCreateUser" class="aspect-video overflow-hidden" data-user-card>
+                    <div class="flex h-full flex-col p-5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h2 class="font-semibold">{{ t('users.recent') }}</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">{{ t('users.recent_description') }}</p>
+                            </div>
+                            <Link :href="route('users.index')" class="text-sm underline" data-user-card-link>{{ t('common.view_more') }}</Link>
+                        </div>
+                        <div v-if="recentUsers.length" class="mt-4 space-y-2 overflow-y-auto text-sm">
+                            <div v-for="user in recentUsers" :key="user.uuid" class="flex items-center justify-between gap-3">
+                                <span class="truncate font-medium">{{ user.first_name }} {{ user.last_name }}</span>
+                                <span class="shrink-0 text-xs text-muted-foreground">{{ t(`users.roles.${user.role}`) }}</span>
+                            </div>
+                        </div>
+                        <p v-else class="mt-4 text-sm text-muted-foreground">{{ t('common.empty') }}</p>
+                    </div>
+                </Card>
+                <div v-else class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <PlaceholderPattern />
                 </div>
                 <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
@@ -80,7 +110,7 @@ onMounted(async () => {
                     <PlaceholderPattern />
                 </div>
             </div>
-            <Card>
+            <Card data-recent-orders dusk="recent-orders">
                 <div class="px-6 py-2">
                     <div class="mb-2 flex items-center justify-between">
                         <h2 class="text-base font-semibold">{{ t('common.recent_orders') }}</h2>

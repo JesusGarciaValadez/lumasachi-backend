@@ -88,11 +88,6 @@ const submit = () => {
                     {{ t('auth.login') }}
                 </Button>
             </div>
-
-            <div class="text-center text-sm text-muted-foreground">
-                {{ t('auth.no_account') }}
-                <TextLink :href="route('register')" :tabindex="5">{{ t('auth.sign_up') }}</TextLink>
-            </div>
         </form>
     </AuthBase>
 </template>

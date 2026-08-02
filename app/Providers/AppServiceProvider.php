@@ -134,7 +134,7 @@ final class AppServiceProvider extends ServiceProvider
         // Gates for general permissions
         Gate::define(
             'users.create',
-            fn (User $user) => in_array($user->role, [UserRole::SUPER_ADMINISTRATOR, UserRole::ADMINISTRATOR])
+            fn(User $user) => $user->role === UserRole::SUPER_ADMINISTRATOR
         );
 
         Gate::define(

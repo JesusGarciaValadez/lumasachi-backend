@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -41,6 +42,11 @@ final class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $user = $request->user();
+        $canViewUsers = $user instanceof User && $user->can('viewAny', User::class);
+        $canViewSidebar = $user instanceof User
+            && $user->is_active
+            && ($user->isSuperAdministrator() || $user->isAdministrator() || $user->isEmployee());
 
         return [
             ...parent::share($request),
@@ -53,7 +59,15 @@ final class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->routeIs('web.orders.track') ? null : $request->user(),
             ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
             'can_create_order' => $request->user()?->can('create', Order::class) ?? false,
+            'can_view_sidebar' => $canViewSidebar,
+            'is_customer' => $user instanceof User && $user->isCustomer(),
+            'can_view_users' => $canViewUsers,
+            'can_create_user' => $user?->can('create', User::class) ?? false,
             'ziggy' => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

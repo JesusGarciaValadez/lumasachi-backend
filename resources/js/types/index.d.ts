@@ -20,6 +20,7 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    dusk?: string;
 }
 
 export type AppPageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
@@ -29,6 +30,15 @@ export type AppPageProps<T extends Record<string, unknown> = Record<string, unkn
     i18n: I18nPageProps;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    can_view_sidebar?: boolean;
+    is_customer?: boolean;
+    can_view_users?: boolean;
+    can_create_user?: boolean;
+    can_create_order?: boolean;
+    flash?: {
+        success?: string | null;
+        error?: string | null;
+    };
 };
 
 export interface User {
