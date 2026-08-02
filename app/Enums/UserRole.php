@@ -38,7 +38,6 @@ enum UserRole: string
                 'system.logs',
             ],
             self::ADMINISTRATOR => [
-                'users.create',
                 'users.read',
                 'users.update',
                 'customers.create',
@@ -72,6 +71,22 @@ enum UserRole: string
             self::ADMINISTRATOR => 'Administrator',
             self::EMPLOYEE => 'Employee',
             self::CUSTOMER => 'Customer'
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function administrationValues(UserRole $actor): array
+    {
+        return match ($actor) {
+            self::SUPER_ADMINISTRATOR => array_column(self::cases(), 'value'),
+            self::ADMINISTRATOR => [
+                self::ADMINISTRATOR->value,
+                self::EMPLOYEE->value,
+                self::CUSTOMER->value,
+            ],
+            default => [],
         };
     }
 }

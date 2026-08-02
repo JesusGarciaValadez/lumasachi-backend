@@ -46,7 +46,6 @@ function mountSidebar() {
                     ({
                         dashboard: '/dashboard',
                         'web.orders.index': '/orders',
-                        'web.orders.create': '/orders/create',
                     })[name],
             },
             stubs: {
@@ -76,7 +75,6 @@ describe('AppSidebar', () => {
                 ({
                     dashboard: '/dashboard',
                     'web.orders.index': '/orders',
-                    'web.orders.create': '/orders/create',
                 })[name],
         );
     });
@@ -85,13 +83,12 @@ describe('AppSidebar', () => {
         const wrapper = mountSidebar();
         const links = wrapper.findAll('[data-main-nav] a');
 
-        expect(links.map((link) => link.attributes('href'))).toEqual(['/dashboard', '/orders', '/orders/create']);
+        expect(links.map((link) => link.attributes('href'))).toEqual(['/dashboard', '/orders']);
         expect(links[1].attributes('data-active')).toBe('true');
-        expect(links[2].attributes('data-active')).toBe('false');
     });
 
-    it('does not render order creation navigation without the server capability', () => {
-        page.props.can_create_order = false;
+    it('does not render resource creation navigation even when capabilities are granted', () => {
+        page.props.can_create_order = true;
 
         const wrapper = mountSidebar();
 

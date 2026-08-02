@@ -9,14 +9,12 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
 use App\Http\Controllers\PublicOrderController;
-use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,14 +26,8 @@ Route::group(['prefix' => 'v1'], function () {
         ->middleware('auth:sanctum')
         ->name('logout');
 
-    Route::get('/user/{user:email}', function (Request $request, User $user) {
-        return UserResource::make($user->load('company'));
-    })->middleware('auth:sanctum');
-
     // Auth Routes
     Route::group(['middleware' => ['throttle:5,1']], function () {
-        Route::post('register', [RegisteredUserController::class, 'store']);
-
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
         Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
@@ -67,7 +59,7 @@ Route::group(['prefix' => 'v1'], function () {
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !$user->is_active || !Hash::check($request->password, $user->password)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'code' => 'auth.invalid_credentials',

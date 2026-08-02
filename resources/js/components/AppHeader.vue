@@ -19,10 +19,12 @@ import { useI18n } from 'vue-i18n';
 
 interface Props {
     breadcrumbs?: BreadcrumbItem[];
+    showMobileNavigation?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
+    showMobileNavigation: true,
 });
 
 const i18n = useI18n();
@@ -30,6 +32,7 @@ const { t } = i18n;
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
+const isCustomer = computed(() => page.props.is_customer === true);
 
 const isCurrentRoute = computed(() => (url: string) => page.url === url);
 
@@ -44,7 +47,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: LayoutGrid,
     },
     {
-        title: t('orders.orders'),
+        title: isCustomer.value ? t('orders.my_orders') : t('orders.orders'),
         href: '/orders',
         icon: Folder,
     },
@@ -58,7 +61,7 @@ const rightNavItems: NavItem[] = [];
         <div class="border-b border-sidebar-border/80">
             <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                 <!-- Mobile Menu -->
-                <div class="lg:hidden">
+                <div v-if="props.showMobileNavigation" class="lg:hidden">
                     <Sheet>
                         <SheetTrigger :as-child="true">
                             <Button variant="ghost" size="icon" class="mr-2 h-9 w-9">
@@ -130,6 +133,8 @@ const rightNavItems: NavItem[] = [];
                     <LocaleSwitcher />
                     <div class="relative flex items-center space-x-1">
                         <Button
+                            v-if="!isCustomer"
+                            dusk="header-search"
                             :aria-label="t('common.search')"
                             :title="t('common.search')"
                             class="group h-9 w-9 cursor-pointer"

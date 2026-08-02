@@ -25,16 +25,19 @@ final class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        // Users can see their own profile
         if ($user->id === $model->id) {
             return true;
         }
 
-        // Only admins can view other users
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR,
-        ]);
+        return $this->canManageTarget($user, $model);
+    }
+
+    /**
+     * Determine whether the user can view a profile through administration.
+     */
+    public function viewAdministration(User $user, User $model): bool
+    {
+        return $this->canManageTarget($user, $model);
     }
 
     /**
@@ -42,10 +45,7 @@ final class UserPolicy
      */
     public function create(User $user): bool
     {
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR,
-        ]);
+        return $user->role === UserRole::SUPER_ADMINISTRATOR;
     }
 
     /**
@@ -53,16 +53,36 @@ final class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        // Users can edit their own profile
         if ($user->id === $model->id) {
             return true;
         }
 
-        // Only admins can update other users
-        return in_array($user->role, [
-            UserRole::SUPER_ADMINISTRATOR,
-            UserRole::ADMINISTRATOR,
-        ]);
+        return $this->canManageTarget($user, $model);
+    }
+
+    /**
+     * Determine whether the user can update a profile through administration.
+     */
+    public function updateAdministration(User $user, User $model): bool
+    {
+        return $this->canManageTarget($user, $model);
+    }
+
+    /**
+     * Determine whether an actor may assign a role to an administration target.
+     */
+    public function assignRole(User $user, User $model, UserRole $role): bool
+    {
+        if (!$this->canManageTarget($user, $model)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SUPER_ADMINISTRATOR) {
+            return true;
+        }
+
+        return $user->id !== $model->id
+            && $role !== UserRole::SUPER_ADMINISTRATOR;
     }
 
     /**
@@ -70,12 +90,16 @@ final class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        // A user can't delete themselves
-        if ($user->id === $model->id) {
+        if ($user->id === $model->id || $user->role !== UserRole::SUPER_ADMINISTRATOR) {
             return false;
         }
 
-        return $user->role === UserRole::SUPER_ADMINISTRATOR;
+        return !($model->role === UserRole::SUPER_ADMINISTRATOR
+            && $model->is_active
+            && User::query()
+                ->where('role', UserRole::SUPER_ADMINISTRATOR->value)
+                ->where('is_active', true)
+                ->count() <= 1);
     }
 
     /**
@@ -110,5 +134,17 @@ final class UserPolicy
             UserRole::SUPER_ADMINISTRATOR,
             UserRole::ADMINISTRATOR,
         ]);
+    }
+
+    private function canManageTarget(User $user, User $model): bool
+    {
+        if ($user->role === UserRole::SUPER_ADMINISTRATOR) {
+            return true;
+        }
+
+        return $user->role === UserRole::ADMINISTRATOR
+            && $user->company_id !== null
+            && $model->company_id === $user->company_id
+            && $model->is_active;
     }
 }

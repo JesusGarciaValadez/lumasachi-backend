@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use App\Models\Company;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 
@@ -12,6 +13,9 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function () {
     $this->artisan('migrate:fresh');
     $this->seed(DatabaseSeeder::class);
+
+    $company = Company::factory()->create();
+    User::query()->update(['company_id' => $company->id]);
 });
 it('can view any users permissions', function () {
     $superAdmin = User::where('role', UserRole::SUPER_ADMINISTRATOR)->first();
@@ -69,9 +73,9 @@ it('can create user permissions', function () {
     $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
     $customer = User::where('role', UserRole::CUSTOMER)->first();
 
-    // Only Super Admin and Admin can create users
+    // Only Super Admin can create users
     expect($superAdmin->can('create', User::class))->toBeTrue();
-    expect($admin->can('create', User::class))->toBeTrue();
+    expect($admin->can('create', User::class))->toBeFalse();
 
     // Employees and Customers cannot create users
     expect($employee->can('create', User::class))->toBeFalse();
@@ -82,7 +86,11 @@ it('can update user permissions', function () {
     $admin = User::where('role', UserRole::ADMINISTRATOR)->first();
     $employee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
     $customer = User::where('role', UserRole::CUSTOMER)->first();
-    $anotherAdmin = User::factory()->create(['role' => UserRole::ADMINISTRATOR]);
+    $anotherAdmin = User::factory()->create([
+        'company_id' => $admin->company_id,
+        'is_active' => true,
+        'role' => UserRole::ADMINISTRATOR,
+    ]);
 
     // Super Admin can update any user including themselves
     expect($superAdmin->can('update', $superAdmin))->toBeTrue();
@@ -91,7 +99,7 @@ it('can update user permissions', function () {
     expect($superAdmin->can('update', $employee))->toBeTrue();
     expect($superAdmin->can('update', $customer))->toBeTrue();
 
-    // Admin can update any user including themselves
+    // Admin can update active users in their company
     expect($admin->can('update', $admin))->toBeTrue();
     // own profile
     expect($admin->can('update', $anotherAdmin))->toBeTrue();
@@ -151,9 +159,9 @@ it('can permissions with inactive users', function () {
     $activeEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', true)->first();
     $inactiveEmployee = User::where('role', UserRole::EMPLOYEE)->where('is_active', false)->first();
 
-    // Admin can view and update inactive users
-    expect($admin->can('view', $inactiveEmployee))->toBeTrue();
-    expect($admin->can('update', $inactiveEmployee))->toBeTrue();
+    // Admin cannot view or update inactive users
+    expect($admin->can('view', $inactiveEmployee))->toBeFalse();
+    expect($admin->can('update', $inactiveEmployee))->toBeFalse();
 
     // Inactive user can still view and update their own profile
     expect($inactiveEmployee->can('view', $inactiveEmployee))->toBeTrue();

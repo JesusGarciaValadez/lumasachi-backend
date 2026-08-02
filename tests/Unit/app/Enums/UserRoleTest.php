@@ -66,9 +66,9 @@ it('checks if default role is employee', function () {
 });
 it('checks the :dataset user role permission mapping', function (
     UserRole $role,
-    int      $expectedPermissionsCount,
-    array    $mustHavePermissions,
-    array    $mustNotHavePermissions,
+    int   $expectedPermissionsCount,
+    array $mustHavePermissions,
+    array $mustNotHavePermissions,
 ): void {
     $permissions = UserRole::getPermissions($role);
 
@@ -90,9 +90,9 @@ it('checks the :dataset user role permission mapping', function (
     ],
     'administrator' => [
         'role' => UserRole::ADMINISTRATOR,
-        'expectedPermissionsCount' => 13,
-        'mustHavePermissions' => ['users.create', 'reports.export'],
-        'mustNotHavePermissions' => ['users.delete', 'system.settings', 'system.logs'],
+        'expectedPermissionsCount' => 12,
+        'mustHavePermissions' => ['reports.export'],
+        'mustNotHavePermissions' => ['users.create', 'users.delete', 'system.settings', 'system.logs'],
     ],
     'employee' => [
         'role' => UserRole::EMPLOYEE,

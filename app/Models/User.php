@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -24,7 +25,7 @@ use Laravel\Sanctum\HasApiTokens;
 final class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The primary key associated with the table.
@@ -69,6 +70,7 @@ final class User extends Authenticatable implements HasLocalePreference
         'phone_number',
         'company_id',
         'is_active',
+        'activated_at',
         'notes',
         'type',
         'preferences',
@@ -83,6 +85,7 @@ final class User extends Authenticatable implements HasLocalePreference
     protected $attributes = [
         'role' => UserRole::EMPLOYEE->value,
         'is_active' => false,
+        'activated_at' => null,
         'type' => UserType::INDIVIDUAL->value,
         'company_id' => null,
     ];
@@ -201,6 +204,7 @@ final class User extends Authenticatable implements HasLocalePreference
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'activated_at' => 'datetime',
             'role' => UserRole::class,
             'type' => UserType::class,
         ];

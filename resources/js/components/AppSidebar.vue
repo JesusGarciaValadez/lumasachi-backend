@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Folder, LayoutGrid, Plus } from 'lucide-vue-next';
+import { Folder, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppLogo from './AppLogo.vue';
@@ -15,8 +15,8 @@ const { t } = i18n;
 const page = usePage();
 const dashboardHref = route('dashboard');
 const ordersHref = route('web.orders.index');
-const createOrderHref = route('web.orders.create');
-const canCreateOrder = computed(() => page.props.can_create_order === true);
+const usersHref = route('users.index');
+const canViewUsers = computed(() => page.props.can_view_users === true);
 
 const mainNavItems = computed<NavItem[]>(() => [
     {
@@ -29,9 +29,19 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('orders.orders'),
         href: ordersHref,
         icon: Folder,
-        isActive: page.url === ordersHref || (page.url.startsWith(`${ordersHref}/`) && page.url !== createOrderHref),
+        isActive: page.url === ordersHref || page.url.startsWith(`${ordersHref}/`),
     },
-    ...(canCreateOrder.value ? [{ title: t('orders.create'), href: createOrderHref, icon: Plus, isActive: page.url === createOrderHref }] : []),
+    ...(canViewUsers.value
+        ? [
+              {
+                  title: t('users.users'),
+                  href: usersHref,
+                  icon: Users,
+                  isActive: page.url === usersHref || page.url.startsWith(`${usersHref}/`),
+                  dusk: 'users-nav',
+              },
+          ]
+        : []),
 ]);
 
 const footerNavItems: NavItem[] = [];
