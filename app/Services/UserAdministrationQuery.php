@@ -87,6 +87,7 @@ final class UserAdministrationQuery
             ->with('company:id,uuid,name')
             ->where('is_active', true)
             ->latest('created_at')
+            ->latest('id')
             ->limit($limit)
             ->get();
     }
