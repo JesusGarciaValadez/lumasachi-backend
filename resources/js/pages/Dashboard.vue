@@ -30,7 +30,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 
 const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
-const recentUsers = computed(() => props.recent_users ?? []);
+const recentUsers = computed(() => (props.recent_users ?? []).slice(0, 5));
 const canViewUsers = computed(() => props.can_view_users === true);
 const canCreateUser = computed(() => props.can_create_user === true);
 const isCustomer = computed(() => props.is_customer === true);
@@ -82,7 +82,13 @@ onMounted(async () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <div v-if="!isCustomer" class="grid auto-rows-min gap-4 md:grid-cols-3" data-dashboard-summary dusk="dashboard-summary">
-                <Card v-if="canViewUsers" :data-can-create-user="canCreateUser" class="aspect-video overflow-hidden" data-user-card>
+                <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                </div>
+                <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                </div>
+                <Card v-if="canViewUsers" :data-can-create-user="canCreateUser" class="min-h-52" data-user-card>
                     <div class="flex h-full flex-col p-5">
                         <div class="flex items-start justify-between gap-4">
                             <div>
@@ -91,22 +97,23 @@ onMounted(async () => {
                             </div>
                             <Link :href="route('users.index')" class="text-sm underline" data-user-card-link>{{ t('common.view_more') }}</Link>
                         </div>
-                        <div v-if="recentUsers.length" class="mt-4 space-y-2 overflow-y-auto text-sm">
-                            <div v-for="user in recentUsers" :key="user.uuid" class="flex items-center justify-between gap-3">
+                        <div v-if="recentUsers.length" class="mt-4 space-y-1 text-sm" data-user-card-users>
+                            <Link
+                                v-for="user in recentUsers"
+                                :key="user.uuid"
+                                :data-user-card-user="user.uuid"
+                                :dusk="`dashboard-user-${user.uuid}`"
+                                :href="route('user.show', user.uuid)"
+                                class="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-muted/50"
+                            >
                                 <span class="truncate font-medium">{{ user.first_name }} {{ user.last_name }}</span>
                                 <span class="shrink-0 text-xs text-muted-foreground">{{ t(`users.roles.${user.role}`) }}</span>
-                            </div>
+                            </Link>
                         </div>
                         <p v-else class="mt-4 text-sm text-muted-foreground">{{ t('common.empty') }}</p>
                     </div>
                 </Card>
                 <div v-else class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <PlaceholderPattern />
-                </div>
-                <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <PlaceholderPattern />
-                </div>
-                <div class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <PlaceholderPattern />
                 </div>
             </div>

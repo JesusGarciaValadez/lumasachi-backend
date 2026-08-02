@@ -30,6 +30,33 @@ test('administrator dashboard uses the same company scope for recent users', fun
             ->has('recent_users', 2));
 });
 
+test('dashboard returns only the five latest active users in creation order', function (): void {
+    $administrator = User::factory()->active()->create([
+        'company_id' => Company::factory()->active()->create()->id,
+        'created_at' => now()->subDays(2),
+        'role' => UserRole::ADMINISTRATOR->value,
+    ]);
+
+    $createdAt = now();
+
+    for ($index = 1; $index <= 6; $index++) {
+        User::factory()->active()->create([
+            'company_id' => $administrator->company_id,
+            'created_at' => $createdAt,
+            'first_name' => 'Recent ' . $index,
+        ]);
+    }
+
+    $this->actingAs($administrator)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertInertia(fn(InertiaAssert $page) => $page
+            ->component('Dashboard')
+            ->has('recent_users', 5)
+            ->where('recent_users.0.first_name', 'Recent 6')
+            ->where('recent_users.4.first_name', 'Recent 2'));
+});
+
 test('employee dashboard can use the sidebar without user administration data', function (): void {
     $employee = User::factory()->active()->create([
         'role' => UserRole::EMPLOYEE->value,

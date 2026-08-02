@@ -150,6 +150,45 @@ test('user pagination uses readable navigation labels', function (): void {
     });
 });
 
+test('super administrator can open a recent user from the dashboard card', function (): void {
+    $target = User::factory()->active()->create([
+        'first_name' => 'Dashboard',
+        'last_name' => 'User',
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
+
+    $this->browse(function (Browser $browser) use ($target): void {
+        $browser->loginAs($this->superAdministrator)
+            ->visit('/dashboard')
+            ->waitFor('@dashboard-summary')
+            ->click('@dashboard-user-' . $target->uuid)
+            ->waitForLocation('/user/' . $target->uuid)
+            ->waitFor('@user-form')
+            ->assertInputValue('@user-first-name', 'Dashboard')
+            ->assertInputValue('@user-last-name', 'User');
+    });
+});
+
+test('administrator can open a same-company recent user from the dashboard card', function (): void {
+    $target = User::factory()->active()->create([
+        'company_id' => $this->administratorCompany->id,
+        'first_name' => 'Dashboard',
+        'last_name' => 'Administrator',
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
+
+    $this->browse(function (Browser $browser) use ($target): void {
+        $browser->loginAs($this->administrator)
+            ->visit('/dashboard')
+            ->waitFor('@dashboard-summary')
+            ->click('@dashboard-user-' . $target->uuid)
+            ->waitForLocation('/user/' . $target->uuid)
+            ->waitFor('@user-form')
+            ->assertInputValue('@user-first-name', 'Dashboard')
+            ->assertInputValue('@user-last-name', 'Administrator');
+    });
+});
+
 test('super administrator can find accented names without accents', function (): void {
     $target = User::factory()->active()->create([
         'first_name' => 'Jesús',

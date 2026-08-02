@@ -83,12 +83,13 @@ const navMainStub = {
         '<nav data-main-nav><a v-for="item in items" :key="item.title" :data-active="item.isActive" :href="item.href">{{ item.title }}</a></nav>',
 };
 
-function route(name: string): string {
+function route(name: string, parameter?: string): string {
     return (
         {
             dashboard: '/dashboard',
             'user.create': '/user/create',
             'users.index': '/users',
+            'user.show': `/user/${parameter ?? ''}`,
             'web.orders.create': '/orders/create',
             'web.orders.index': '/orders',
         }[name] ?? `/${name}`
@@ -206,7 +207,13 @@ describe('user administration navigation and dashboard contract', () => {
         const wrapper = mountDashboard({
             can_create_user: true,
             can_view_users: true,
-            recent_users: visibleUsers,
+            recent_users: [
+                ...visibleUsers,
+                { uuid: 'user-3', first_name: 'Marta', last_name: 'Third', role: 'Employee', type: 'Employee', is_active: true },
+                { uuid: 'user-4', first_name: 'Noah', last_name: 'Fourth', role: 'Employee', type: 'Employee', is_active: true },
+                { uuid: 'user-5', first_name: 'Sara', last_name: 'Fifth', role: 'Employee', type: 'Employee', is_active: true },
+                { uuid: 'user-6', first_name: 'Omar', last_name: 'Sixth', role: 'Employee', type: 'Employee', is_active: true },
+            ],
         });
 
         await flushPromises();
@@ -217,6 +224,10 @@ describe('user administration navigation and dashboard contract', () => {
         expect(wrapper.find('[data-dashboard-summary]').exists()).toBe(true);
         expect(userCard.attributes('data-can-create-user')).toBe('true');
         expect(userCard.find('[data-user-card-link]').attributes('href')).toBe('/users');
+        expect(wrapper.findAll('[data-user-card-user]')).toHaveLength(5);
+        expect(wrapper.find('[data-user-card-user="user-1"]').attributes('href')).toBe('/user/user-1');
+        expect(userCard.find('[data-user-card-users]').classes()).not.toContain('overflow-y-auto');
+        expect(Array.from(wrapper.find('[data-dashboard-summary]').element.children).indexOf(userCard.element)).toBe(2);
         expect(userCard.text()).toContain('Ana Admin');
         expect(userCard.text()).toContain('Luis Employee');
     });
