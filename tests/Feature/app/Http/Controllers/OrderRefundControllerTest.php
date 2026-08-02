@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\app\Http\Controllers;
-
 use App\Enums\OrderHistoryEventType;
 use App\Enums\OrderStatus;
 use App\Enums\RefundStatus;
@@ -16,276 +14,270 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-final class OrderRefundControllerTest extends TestCase
+uses(RefreshDatabase::class);
+
+test('refund request requires returned or cancelled order', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Delivered, $actors['customer'], $actors['employee']);
+
+    $this->actingAs($actors['employee'])
+        ->postJson(orderRefundsUrl($order), ['amount' => '10.00', 'reason' => 'Customer request'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['status']);
+
+    $this->assertDatabaseCount('order_refunds', 0);
+});
+
+test('employee can request a refund for an order they can update', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['employee']);
+    $payment = OrderPayment::factory()->create([
+        'order_id' => $order->id,
+        'amount' => '100.00',
+        'created_by' => $actors['employee']->id,
+    ]);
+
+    $response = $this->actingAs($actors['employee'])->postJson(orderRefundsUrl($order), [
+        'amount' => '40.00',
+        'reason' => 'Customer requested a partial refund.',
+        'source_payment_uuid' => $payment->uuid,
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('refund.status', RefundStatus::Requested->value)
+        ->assertJsonPath('refund.amount', '40.00')
+        ->assertJsonPath('refund.source_payment_id', $payment->id);
+
+    $this->assertDatabaseHas('order_refunds', [
+        'order_id' => $order->id,
+        'source_payment_id' => $payment->id,
+        'amount' => '40.00',
+        'status' => RefundStatus::Requested->value,
+        'requested_by' => $actors['employee']->id,
+    ]);
+
+    $this->assertSame(OrderStatus::Returned, $order->fresh()->status);
+    $this->assertSame('100.00', $order->fresh()->totalPaid());
+});
+
+test('customer cannot request a refund', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Cancelled, $actors['customer'], $actors['employee']);
+
+    $this->actingAs($actors['customer'])
+        ->postJson(orderRefundsUrl($order), ['amount' => '10.00', 'reason' => 'Customer request'])
+        ->assertForbidden();
+});
+
+test('admin cannot approve their own request but super admin can', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Cancelled, $actors['customer'], $actors['admin']);
+    $refund = orderRefundRequest($this, $order, $actors['admin'], '25.00');
+
+    $this->actingAs($actors['admin'])
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertForbidden();
+
+    $this->actingAs($actors['superAdmin'])
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertOk()
+        ->assertJsonPath('refund.status', RefundStatus::Approved->value)
+        ->assertJsonPath('refund.approved_by.id', $actors['superAdmin']->id);
+});
+
+test('admin request can be approved by another admin', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['admin']);
+    $refund = orderRefundRequest($this, $order, $actors['admin'], '25.00');
+
+    $this->actingAs($actors['otherAdmin'])
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertOk()
+        ->assertJsonPath('refund.status', RefundStatus::Approved->value)
+        ->assertJsonPath('refund.approved_by.id', $actors['otherAdmin']->id);
+});
+
+test('employee cannot approve a refund', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['employee']);
+    $refund = orderRefundRequest($this, $order, $actors['employee'], '25.00');
+
+    $this->actingAs($actors['employee'])
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertForbidden();
+});
+
+test('refund must be approved before processing', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['employee']);
+    $refund = orderRefundRequest($this, $order, $actors['employee'], '25.00');
+
+    $this->actingAs($actors['employee'])
+        ->postJson(orderRefundProcessUrl($order, $refund))
+        ->assertUnprocessable()
+        ->assertJsonPath('code', 'orders.refund_invalid');
+
+    $this->assertSame(RefundStatus::Requested, $refund->fresh()->status);
+});
+
+test('multiple processed refunds cannot exceed received payments', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['employee']);
+    OrderPayment::factory()->create([
+        'order_id' => $order->id,
+        'amount' => '100.00',
+        'created_by' => $actors['employee']->id,
+    ]);
+
+    $first = orderRefundRequest($this, $order, $actors['employee'], '60.00');
+    orderRefundApproveAndProcess($this, $order, $first, $actors['admin'], $actors['employee']);
+
+    $second = orderRefundRequest($this, $order, $actors['employee'], '40.00');
+    orderRefundApproveAndProcess($this, $order, $second, $actors['admin'], $actors['employee']);
+
+    $excessive = orderRefundRequest($this, $order, $actors['employee'], '1.00');
+    $this->actingAs($actors['admin'])
+        ->postJson(orderRefundApproveUrl($order, $excessive))
+        ->assertOk();
+
+    $this->actingAs($actors['employee'])
+        ->postJson(orderRefundProcessUrl($order, $excessive))
+        ->assertUnprocessable()
+        ->assertJsonPath('code', 'orders.refund_invalid');
+
+    $this->assertSame(RefundStatus::Approved, $excessive->fresh()->status);
+    $this->assertSame(OrderStatus::Returned, $order->fresh()->status);
+    $this->assertSame('100.00', $order->fresh()->totalPaid());
+    $this->assertSame(2, OrderRefund::query()->where('status', RefundStatus::Processed->value)->count());
+});
+
+test('rejected refund remains auditable', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Cancelled, $actors['customer'], $actors['employee']);
+    $refund = orderRefundRequest($this, $order, $actors['employee'], '25.00');
+
+    $this->actingAs($actors['admin'])
+        ->postJson(orderRefundRejectUrl($order, $refund))
+        ->assertOk()
+        ->assertJsonPath('refund.status', RefundStatus::Rejected->value)
+        ->assertJsonPath('refund.rejected_by.id', $actors['admin']->id);
+
+    $this->assertModelExists($refund->fresh());
+    $this->assertNotNull($refund->fresh()->rejected_at);
+
+    $history = OrderHistory::query()
+        ->where('order_id', $order->id)
+        ->where('field_changed', OrderHistory::FIELD_REFUND)
+        ->oldest('id')
+        ->get();
+
+    $this->assertCount(2, $history);
+    $this->assertSame([
+        RefundStatus::Requested,
+        RefundStatus::Rejected,
+    ], $history->pluck('new_value')->all());
+    $this->assertTrue($history->every(
+        fn(OrderHistory $entry): bool => $entry->event_type === OrderHistoryEventType::Refund
+    ));
+});
+
+test('super admin can approve their own request', function (): void {
+    $actors = orderRefundActors();
+    $order = orderRefundCreateOrder(OrderStatus::Returned, $actors['customer'], $actors['superAdmin']);
+    $refund = orderRefundRequest($this, $order, $actors['superAdmin'], '25.00');
+
+    $this->actingAs($actors['superAdmin'])
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertOk()
+        ->assertJsonPath('refund.status', RefundStatus::Approved->value);
+});
+
+/**
+ * @return array{employee: User, admin: User, otherAdmin: User, superAdmin: User, customer: User}
+ */
+function orderRefundActors(): array
 {
-    use RefreshDatabase;
-
-    private User $employee;
-
-    private User $admin;
-
-    private User $otherAdmin;
-
-    private User $superAdmin;
-
-    private User $customer;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->employee = User::factory()->create([
+    return [
+        'employee' => User::factory()->create([
             'role' => UserRole::EMPLOYEE->value,
             'is_active' => true,
-        ]);
-        $this->admin = User::factory()->create([
+        ]),
+        'admin' => User::factory()->create([
             'role' => UserRole::ADMINISTRATOR->value,
             'is_active' => true,
-        ]);
-        $this->otherAdmin = User::factory()->create([
+        ]),
+        'otherAdmin' => User::factory()->create([
             'role' => UserRole::ADMINISTRATOR->value,
             'is_active' => true,
-        ]);
-        $this->superAdmin = User::factory()->create([
+        ]),
+        'superAdmin' => User::factory()->create([
             'role' => UserRole::SUPER_ADMINISTRATOR->value,
             'is_active' => true,
-        ]);
-        $this->customer = User::factory()->create([
+        ]),
+        'customer' => User::factory()->create([
             'role' => UserRole::CUSTOMER->value,
             'is_active' => true,
-        ]);
-    }
+        ]),
+    ];
+}
 
-    public function test_refund_request_requires_returned_or_cancelled_order(): void
-    {
-        $order = $this->createOrder(OrderStatus::Delivered);
+function orderRefundCreateOrder(OrderStatus $status, User $customer, User $actor): Order
+{
+    return Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'assigned_to' => $actor->id,
+        'created_by' => $actor->id,
+        'updated_by' => $actor->id,
+        'status' => $status->value,
+    ]);
+}
 
-        $this->actingAs($this->employee)
-            ->postJson($this->refundsUrl($order), ['amount' => '10.00', 'reason' => 'Customer request'])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
+function orderRefundsUrl(Order $order): string
+{
+    return "/api/v1/orders/{$order->uuid}/refunds";
+}
 
-        $this->assertDatabaseCount('order_refunds', 0);
-    }
+function orderRefundRequest(TestCase $test, Order $order, User $requester, string $amount): OrderRefund
+{
+    $response = $test->actingAs($requester)->postJson(orderRefundsUrl($order), [
+        'amount' => $amount,
+        'reason' => 'Refund test reason',
+    ]);
 
-    public function test_employee_can_request_a_refund_for_an_order_they_can_update(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned);
-        $payment = OrderPayment::factory()->create([
-            'order_id' => $order->id,
-            'amount' => '100.00',
-            'created_by' => $this->employee->id,
-        ]);
+    $response->assertCreated();
 
-        $response = $this->actingAs($this->employee)->postJson($this->refundsUrl($order), [
-            'amount' => '40.00',
-            'reason' => 'Customer requested a partial refund.',
-            'source_payment_uuid' => $payment->uuid,
-        ]);
+    return OrderRefund::query()->where('order_id', $order->id)->latest('id')->firstOrFail();
+}
 
-        $response->assertCreated()
-            ->assertJsonPath('refund.status', RefundStatus::Requested->value)
-            ->assertJsonPath('refund.amount', '40.00')
-            ->assertJsonPath('refund.source_payment_id', $payment->id);
+function orderRefundApproveUrl(Order $order, OrderRefund $refund): string
+{
+    return orderRefundsUrl($order) . "/{$refund->uuid}/approve";
+}
 
-        $this->assertDatabaseHas('order_refunds', [
-            'order_id' => $order->id,
-            'source_payment_id' => $payment->id,
-            'amount' => '40.00',
-            'status' => RefundStatus::Requested->value,
-            'requested_by' => $this->employee->id,
-        ]);
+function orderRefundProcessUrl(Order $order, OrderRefund $refund): string
+{
+    return orderRefundsUrl($order) . "/{$refund->uuid}/process";
+}
 
-        $this->assertSame(OrderStatus::Returned, $order->fresh()->status);
-        $this->assertSame('100.00', $order->fresh()->totalPaid());
-    }
+function orderRefundApproveAndProcess(
+    TestCase    $test,
+    Order       $order,
+    OrderRefund $refund,
+    User        $approver,
+    User        $processor,
+): void
+{
+    $test->actingAs($approver)
+        ->postJson(orderRefundApproveUrl($order, $refund))
+        ->assertOk();
 
-    public function test_customer_cannot_request_a_refund(): void
-    {
-        $order = $this->createOrder(OrderStatus::Cancelled);
+    $test->actingAs($processor)
+        ->postJson(orderRefundProcessUrl($order, $refund))
+        ->assertOk()
+        ->assertJsonPath('refund.status', RefundStatus::Processed->value);
+}
 
-        $this->actingAs($this->customer)
-            ->postJson($this->refundsUrl($order), ['amount' => '10.00', 'reason' => 'Customer request'])
-            ->assertForbidden();
-    }
-
-    public function test_admin_cannot_approve_their_own_request_but_super_admin_can(): void
-    {
-        $order = $this->createOrder(OrderStatus::Cancelled, $this->admin);
-        $refund = $this->requestRefund($order, $this->admin, '25.00');
-
-        $this->actingAs($this->admin)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertForbidden();
-
-        $this->actingAs($this->superAdmin)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertOk()
-            ->assertJsonPath('refund.status', RefundStatus::Approved->value)
-            ->assertJsonPath('refund.approved_by.id', $this->superAdmin->id);
-    }
-
-    public function test_admin_request_can_be_approved_by_another_admin(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned, $this->admin);
-        $refund = $this->requestRefund($order, $this->admin, '25.00');
-
-        $this->actingAs($this->otherAdmin)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertOk()
-            ->assertJsonPath('refund.status', RefundStatus::Approved->value)
-            ->assertJsonPath('refund.approved_by.id', $this->otherAdmin->id);
-    }
-
-    public function test_employee_cannot_approve_a_refund(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned);
-        $refund = $this->requestRefund($order, $this->employee, '25.00');
-
-        $this->actingAs($this->employee)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertForbidden();
-    }
-
-    public function test_refund_must_be_approved_before_processing(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned);
-        $refund = $this->requestRefund($order, $this->employee, '25.00');
-
-        $this->actingAs($this->employee)
-            ->postJson($this->processUrl($order, $refund))
-            ->assertUnprocessable()
-            ->assertJsonPath('code', 'orders.refund_invalid');
-
-        $this->assertSame(RefundStatus::Requested, $refund->fresh()->status);
-    }
-
-    public function test_multiple_processed_refunds_cannot_exceed_received_payments(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned);
-        OrderPayment::factory()->create([
-            'order_id' => $order->id,
-            'amount' => '100.00',
-            'created_by' => $this->employee->id,
-        ]);
-
-        $first = $this->requestRefund($order, $this->employee, '60.00');
-        $this->approveAndProcess($order, $first);
-
-        $second = $this->requestRefund($order, $this->employee, '40.00');
-        $this->approveAndProcess($order, $second);
-
-        $excessive = $this->requestRefund($order, $this->employee, '1.00');
-        $this->actingAs($this->admin)
-            ->postJson($this->approveUrl($order, $excessive))
-            ->assertOk();
-
-        $this->actingAs($this->employee)
-            ->postJson($this->processUrl($order, $excessive))
-            ->assertUnprocessable()
-            ->assertJsonPath('code', 'orders.refund_invalid');
-
-        $this->assertSame(RefundStatus::Approved, $excessive->fresh()->status);
-        $this->assertSame(OrderStatus::Returned, $order->fresh()->status);
-        $this->assertSame('100.00', $order->fresh()->totalPaid());
-        $this->assertSame(2, OrderRefund::query()->where('status', RefundStatus::Processed->value)->count());
-    }
-
-    public function test_rejected_refund_remains_auditable(): void
-    {
-        $order = $this->createOrder(OrderStatus::Cancelled);
-        $refund = $this->requestRefund($order, $this->employee, '25.00');
-
-        $this->actingAs($this->admin)
-            ->postJson($this->rejectUrl($order, $refund))
-            ->assertOk()
-            ->assertJsonPath('refund.status', RefundStatus::Rejected->value)
-            ->assertJsonPath('refund.rejected_by.id', $this->admin->id);
-
-        $this->assertModelExists($refund->fresh());
-        $this->assertNotNull($refund->fresh()->rejected_at);
-
-        $history = OrderHistory::query()
-            ->where('order_id', $order->id)
-            ->where('field_changed', OrderHistory::FIELD_REFUND)
-            ->oldest('id')
-            ->get();
-
-        $this->assertCount(2, $history);
-        $this->assertSame([
-            RefundStatus::Requested,
-            RefundStatus::Rejected,
-        ], $history->pluck('new_value')->all());
-        $this->assertTrue($history->every(
-            fn(OrderHistory $entry): bool => $entry->event_type === OrderHistoryEventType::Refund
-        ));
-    }
-
-    public function test_super_admin_can_approve_their_own_request(): void
-    {
-        $order = $this->createOrder(OrderStatus::Returned, $this->superAdmin);
-        $refund = $this->requestRefund($order, $this->superAdmin, '25.00');
-
-        $this->actingAs($this->superAdmin)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertOk()
-            ->assertJsonPath('refund.status', RefundStatus::Approved->value);
-    }
-
-    private function createOrder(OrderStatus $status, ?User $actor = null): Order
-    {
-        $actor ??= $this->employee;
-
-        return Order::factory()->createQuietly([
-            'customer_id' => $this->customer->id,
-            'assigned_to' => $actor->id,
-            'created_by' => $actor->id,
-            'updated_by' => $actor->id,
-            'status' => $status->value,
-        ]);
-    }
-
-    private function refundsUrl(Order $order): string
-    {
-        return "/api/v1/orders/{$order->uuid}/refunds";
-    }
-
-    private function requestRefund(Order $order, User $requester, string $amount): OrderRefund
-    {
-        $response = $this->actingAs($requester)->postJson($this->refundsUrl($order), [
-            'amount' => $amount,
-            'reason' => 'Refund test reason',
-        ]);
-
-        $response->assertCreated();
-
-        return OrderRefund::query()->where('order_id', $order->id)->latest('id')->firstOrFail();
-    }
-
-    private function approveUrl(Order $order, OrderRefund $refund): string
-    {
-        return "{$this->refundsUrl($order)}/{$refund->uuid}/approve";
-    }
-
-    private function processUrl(Order $order, OrderRefund $refund): string
-    {
-        return "{$this->refundsUrl($order)}/{$refund->uuid}/process";
-    }
-
-    private function approveAndProcess(Order $order, OrderRefund $refund): void
-    {
-        $this->actingAs($this->admin)
-            ->postJson($this->approveUrl($order, $refund))
-            ->assertOk();
-
-        $this->actingAs($this->employee)
-            ->postJson($this->processUrl($order, $refund))
-            ->assertOk()
-            ->assertJsonPath('refund.status', RefundStatus::Processed->value);
-    }
-
-    private function rejectUrl(Order $order, OrderRefund $refund): string
-    {
-        return "{$this->refundsUrl($order)}/{$refund->uuid}/reject";
-    }
+function orderRefundRejectUrl(Order $order, OrderRefund $refund): string
+{
+    return orderRefundsUrl($order) . "/{$refund->uuid}/reject";
 }

@@ -8,10 +8,6 @@
         <testsuite name="Pest">
             <directory>tests/Unit</directory>
             <directory>tests/Feature</directory>
-            <exclude>tests/Feature/Console/ReportOrderDomainStatusMigrationTest.php</exclude>
-            <exclude>tests/Feature/app/Http/Controllers/OrderDomainContractTest.php</exclude>
-            <exclude>tests/Feature/app/Http/Controllers/OrderRefundControllerTest.php</exclude>
-            <exclude>tests/Unit/app/Services/OrderStatusStateMachineTest.php</exclude>
         </testsuite>
     </testsuites>
     <php>
