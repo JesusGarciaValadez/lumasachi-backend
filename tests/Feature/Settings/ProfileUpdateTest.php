@@ -68,7 +68,8 @@ test('user can delete their account', function () {
         ->assertRedirect('/');
 
     $this->assertGuest();
-    expect($user->fresh())->toBeNull();
+    $this->assertSoftDeleted($user);
+    expect(User::query()->find($user->id))->toBeNull();
 });
 test('correct password must be provided to delete account', function () {
     $user = User::factory()->create();

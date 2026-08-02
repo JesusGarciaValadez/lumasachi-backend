@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 final class UserAdministrationQuery
 {
@@ -122,7 +123,13 @@ final class UserAdministrationQuery
             $value = mb_trim((string)($filters[$field] ?? ''));
 
             if ($value !== '') {
-                $query->whereRaw('LOWER(' . $field . ') LIKE ?', ['%' . mb_strtolower($value) . '%']);
+                $column = $query->getQuery()->getGrammar()->wrap($field);
+                $normalizedValue = Str::transliterate(mb_strtolower($value));
+                $expression = $query->getConnection()->getDriverName() === 'pgsql'
+                    ? "unaccent(lower({$column}))"
+                    : "lower({$column})";
+
+                $query->whereRaw("{$expression} LIKE ?", ["%{$normalizedValue}%"]);
             }
         }
 
