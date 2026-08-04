@@ -30,6 +30,7 @@ const form = useForm({
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
+    phone_number: user.phone_number ?? '',
 });
 
 const submit = () => {
@@ -47,7 +48,7 @@ const submit = () => {
             <div class="flex flex-col space-y-6">
                 <HeadingSmall :description="t('settings.profile_description')" :title="t('settings.profile_information')" />
 
-                <form @submit.prevent="submit" class="space-y-6">
+                <form class="space-y-6" dusk="customer-profile-form" @submit.prevent="submit">
                     <div class="grid gap-2">
                         <Label for="first_name">{{ t('settings.first_name') }}</Label>
                         <Input
@@ -56,6 +57,7 @@ const submit = () => {
                             autocomplete="given-name"
                             class="mt-1 block w-full"
                             :placeholder="t('settings.first_name')"
+                            dusk="profile-first-name"
                             required
                         />
                         <InputError :message="form.errors.first_name" class="mt-2" />
@@ -69,6 +71,7 @@ const submit = () => {
                             autocomplete="family-name"
                             class="mt-1 block w-full"
                             :placeholder="t('settings.last_name')"
+                            dusk="profile-last-name"
                             required
                         />
                         <InputError :message="form.errors.last_name" class="mt-2" />
@@ -84,8 +87,22 @@ const submit = () => {
                             required
                             autocomplete="username"
                             :placeholder="t('settings.email')"
+                            dusk="profile-email"
                         />
                         <InputError class="mt-2" :message="form.errors.email" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="phone_number">{{ t('settings.phone_number') }}</Label>
+                        <Input
+                            id="phone_number"
+                            v-model="form.phone_number"
+                            :placeholder="t('settings.phone_number')"
+                            autocomplete="tel"
+                            class="mt-1 block w-full"
+                            dusk="profile-phone"
+                        />
+                        <InputError :message="form.errors.phone_number" class="mt-2" />
                     </div>
 
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
@@ -107,7 +124,7 @@ const submit = () => {
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button :disabled="form.processing">{{ t('settings.save') }}</Button>
+                        <Button :disabled="form.processing" dusk="profile-form-submit">{{ t('settings.save') }}</Button>
 
                         <Transition
                             enter-active-class="transition ease-in-out"
@@ -115,7 +132,7 @@ const submit = () => {
                             leave-active-class="transition ease-in-out"
                             leave-to-class="opacity-0"
                         >
-                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">{{ t('settings.saved') }}</p>
+                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600" dusk="profile-saved">{{ t('settings.saved') }}</p>
                         </Transition>
                     </div>
                 </form>

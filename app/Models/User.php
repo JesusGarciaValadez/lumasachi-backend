@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Locale;
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use App\Notifications\UserRegistrationVerificationNotification;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,10 +24,10 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * @mixin IdeHelperUser
  */
-final class User extends Authenticatable implements HasLocalePreference
+final class User extends Authenticatable implements HasLocalePreference, MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
 
     /**
      * The primary key associated with the table.
@@ -66,6 +68,7 @@ final class User extends Authenticatable implements HasLocalePreference
         'last_name',
         'email',
         'password',
+        'must_change_password',
         'role',
         'phone_number',
         'company_id',
@@ -166,6 +169,14 @@ final class User extends Authenticatable implements HasLocalePreference
         return $locale !== null ? $locale->value : (string)config('app.locale', Locale::SPANISH->value);
     }
 
+    /**
+     * Send the email verification notification for an administration-created user.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new UserRegistrationVerificationNotification);
+    }
+
     // Relationships
 
     /** @return HasMany<Order, $this> */
@@ -203,6 +214,7 @@ final class User extends Authenticatable implements HasLocalePreference
             'uuid' => 'string',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'is_active' => 'boolean',
             'activated_at' => 'datetime',
             'role' => UserRole::class,

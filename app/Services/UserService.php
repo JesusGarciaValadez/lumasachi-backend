@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ final class UserService
      */
     public function create(array $attributes): User
     {
-        return DB::transaction(function () use ($attributes): User {
+        $user = DB::transaction(function () use ($attributes): User {
             $attributes = Arr::only($attributes, [
                 'first_name',
                 'last_name',
@@ -36,9 +37,17 @@ final class UserService
             ]);
             $attributes['uuid'] ??= Str::uuid7()->toString();
             $attributes['activated_at'] = (bool)($attributes['is_active'] ?? false) ? now() : null;
+            $attributes['email_verified_at'] = null;
+            $attributes['must_change_password'] = true;
 
             return User::query()->create($attributes);
         });
+
+        if ($user->is_active) {
+            event(new Registered($user));
+        }
+
+        return $user;
     }
 
     /**
@@ -50,8 +59,11 @@ final class UserService
      */
     public function update(User $user, array $attributes): User
     {
-        return DB::transaction(function () use ($user, $attributes): User {
+        $sendVerificationNotification = false;
+
+        $updatedUser = DB::transaction(function () use ($user, $attributes, &$sendVerificationNotification): User {
             $user->refresh();
+            $wasActive = $user->is_active;
             $attributes = Arr::only($attributes, [
                 'first_name',
                 'last_name',
@@ -90,10 +102,26 @@ final class UserService
             }
 
             $user->fill($attributes);
+
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+                $sendVerificationNotification = $nextIsActive;
+            }
+
+            if ($nextIsActive && !$wasActive && $user->email_verified_at === null) {
+                $sendVerificationNotification = true;
+            }
+
             $user->save();
 
             return $user->refresh();
         });
+
+        if ($sendVerificationNotification) {
+            $updatedUser->sendEmailVerificationNotification();
+        }
+
+        return $updatedUser;
     }
 
     /**
