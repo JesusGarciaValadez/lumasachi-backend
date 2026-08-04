@@ -6,10 +6,10 @@ import { Card } from '@/components/ui/card';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDateTime } from '@/lib/i18n';
-import { type BreadcrumbItem } from '@/types';
+import type { AppPageProps, BreadcrumbItem } from '@/types';
 import type { OrderLifecycleStatus, OrderSummary, RefundStatus } from '@/types/orders';
 import { resolveLifecycleStatus } from '@/types/orders';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -25,6 +25,8 @@ const loading = ref(true);
 const orders = ref<OrderSummary[]>([]);
 const error = ref<OrderApiError | null>(null);
 const orderApi = useOrderApi();
+const page = usePage<AppPageProps>();
+const flash = computed(() => ({ ...page.props.flash, ...page.flash }));
 
 const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),
@@ -67,6 +69,17 @@ onMounted(async () => {
                         <Button v-if="can_create_order" as-child size="sm"
                             ><Link :href="route('web.orders.create')">{{ t('orders.create') }}</Link></Button
                         >
+                    </div>
+                    <div
+                        v-if="flash.success || flash.error"
+                        :class="
+                            flash.error ? 'border-destructive/50 text-destructive' : 'border-emerald-500/50 text-emerald-700 dark:text-emerald-300'
+                        "
+                        class="mb-4 rounded-md border p-3 text-sm"
+                        dusk="orders-flash"
+                        role="status"
+                    >
+                        {{ flash.error ?? flash.success }}
                     </div>
                     <div
                         v-if="loading"

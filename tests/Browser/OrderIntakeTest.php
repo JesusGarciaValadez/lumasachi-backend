@@ -54,26 +54,44 @@ test('staff can create an order with a received top-level piece', function (): v
             ->check('@order-item-component-0-cap_bolts')
             ->check('@order-item-component-0-camshaft')
             ->click('@order-create-submit')
-            ->waitFor('@order-status', 10)
-            ->assertSee('Dusk engine block')
-            ->assertSee('Awaiting Review');
+            ->waitForLocation('/orders', 10)
+            ->waitFor('@orders-flash', 10)
+            ->assertVisible('@orders-flash')
+            ->assertSeeIn('@orders-flash', 'Order created successfully.')
+            ->waitForText('Dusk engine block', 10)
+            ->assertSee('Dusk engine block');
     });
 });
 
-test('staff sees the negative advance payment validation error', function (): void {
-    $this->browse(function (Browser $browser): void {
+test('staff sees a title validation error and keeps entered intake values', function (): void {
+    $oversizedTitle = str_repeat('x', 256);
+    $description = 'The browser should keep the form visible';
+    $notes = 'Keep these notes after validation fails';
+
+    $this->browse(function (Browser $browser) use ($oversizedTitle, $description, $notes): void {
         orderIntakeLogin($browser, $this->employee);
 
         $browser->visit('/orders/create')
             ->waitFor('@order-create-form')
-            ->type('@order-title', 'Invalid advance payment')
-            ->type('@order-description', 'The browser should keep the form visible')
+            ->type('@order-title', $oversizedTitle)
+            ->type('@order-description', $description)
             ->select('@order-customer', (string)$this->customer->id)
             ->select('@order-assignee', (string)$this->employee->id)
-            ->type('@motor-down-payment', '-1')
+            ->type('#notes', $notes)
+            ->type('@motor-brand', 'Honda')
+            ->check('@order-item-component-0-bearing_caps')
             ->click('@order-create-submit')
+            ->waitFor('@order-create-error', 10)
             ->assertPathIs('/orders/create')
-            ->assertInputValue('@motor-down-payment', '-1');
+            ->assertVisible('@order-create-error')
+            ->assertSeeIn('@order-create-error', 'title:')
+            ->assertInputValue('@order-title', $oversizedTitle)
+            ->assertInputValue('@order-description', $description)
+            ->assertSelected('@order-customer', (string)$this->customer->id)
+            ->assertSelected('@order-assignee', (string)$this->employee->id)
+            ->assertInputValue('#notes', $notes)
+            ->assertInputValue('@motor-brand', 'Honda')
+            ->assertChecked('@order-item-component-0-bearing_caps');
     });
 });
 

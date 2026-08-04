@@ -35,6 +35,7 @@ return [
         'email' => 'The :attribute must be a valid email address.',
         'string' => 'The :attribute must be a string.',
         'array' => 'The :attribute must be an array.',
+        'distinct' => 'The :attribute field has a duplicate value.',
         'integer' => 'The :attribute must be an integer.',
         'file' => 'The :attribute must be a valid file.',
         'mimes' => 'The :attribute has an invalid file type. Allowed types: :values.',
