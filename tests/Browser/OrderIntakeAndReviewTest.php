@@ -42,6 +42,13 @@ test('staff can create and review a block order', function (): void {
         orderIntakeAndReviewFillOrder($browser, $this->customer, $this->employee, 'Dusk block review');
 
         $browser->click('@order-create-submit')
+            ->waitForLocation('/orders', 10)
+            ->waitFor('@orders-flash', 10)
+            ->assertVisible('@orders-flash')
+            ->assertSeeIn('@orders-flash', 'Order created successfully.')
+            ->waitForText('Dusk block review', 10)
+            ->assertSee('Dusk block review')
+            ->clickLink('View')
             ->waitFor('@order-status', 10)
             ->assertSee('Dusk block review')
             ->assertSee('Awaiting Review')
@@ -82,6 +89,9 @@ test('staff sees a required measurement error without leaving review', function 
         orderIntakeAndReviewFillOrder($browser, $this->customer, $this->employee, 'Dusk measurement error');
 
         $browser->click('@order-create-submit')
+            ->waitForLocation('/orders', 10)
+            ->waitFor('@orders-flash', 10)
+            ->clickLink('View')
             ->waitFor('@order-review-panel', 10)
             ->check('@order-review-service-bore_cylinder_pu')
             ->scrollIntoView('@order-review-submit')
@@ -105,9 +115,9 @@ function orderIntakeAndReviewLogin(Browser $browser, User $employee): void
 
 function orderIntakeAndReviewFillOrder(
     Browser $browser,
-    User    $customer,
-    User    $employee,
-    string  $title,
+    User   $customer,
+    User   $employee,
+    string $title,
 ): void
 {
     $browser->visit('/orders/create')

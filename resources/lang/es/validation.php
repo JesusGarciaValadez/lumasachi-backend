@@ -35,6 +35,7 @@ return [
         'email' => 'El campo :attribute debe ser un correo electrónico válido.',
         'string' => 'El campo :attribute debe ser texto.',
         'array' => 'El campo :attribute debe ser un arreglo.',
+        'distinct' => 'El campo :attribute tiene un valor duplicado.',
         'integer' => 'El campo :attribute debe ser un número entero.',
         'file' => 'El campo :attribute debe ser un archivo válido.',
         'mimes' => 'El campo :attribute tiene un tipo de archivo inválido. Tipos permitidos: :values.',

@@ -20,7 +20,6 @@ interface CreateFormState extends Omit<CreateOrderPayload, 'estimated_completion
         year: string;
         model: string;
         cylinder_count: string;
-        down_payment: string;
     };
 }
 
@@ -46,7 +45,6 @@ const form = ref<CreateFormState>({
         year: '',
         model: '',
         cylinder_count: '',
-        down_payment: '',
     },
     items: [{ item_type: 'engine_block', components: [] }],
 });
@@ -133,7 +131,7 @@ async function submit(): Promise<void> {
     error.value = null;
 
     try {
-        const order = await orderApi.create({
+        await orderApi.create({
             ...form.value,
             estimated_completion: form.value.estimated_completion || null,
             notes: form.value.notes || null,
@@ -142,7 +140,9 @@ async function submit(): Promise<void> {
             ) as CreateOrderPayload['motor_info'],
         });
 
-        router.visit(route('web.orders.show', order.uuid));
+        router.visit(route('web.orders.index'), {
+            onSuccess: () => router.flash('success', t('orders.created')),
+        });
     } catch (caughtError: unknown) {
         error.value = caughtError instanceof OrderApiError ? caughtError : null;
     } finally {
@@ -218,7 +218,7 @@ onMounted(async () => {
                                         v-model="form.description"
                                         :aria-describedby="fieldError('description') ? 'description-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('description'))"
-                                        class="border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        class="rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         required
                                         rows="4"
                                     />
@@ -289,7 +289,7 @@ onMounted(async () => {
                                     ><textarea
                                         id="notes"
                                         v-model="form.notes"
-                                        class="border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        class="rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         rows="3"
                                     />
                                 </div>
@@ -320,23 +320,6 @@ onMounted(async () => {
                                 <div class="flex flex-col gap-1">
                                     <Label for="cylinder_count">{{ t('orders.cylinder_count') }}</Label
                                     ><Input id="cylinder_count" v-model="form.motor_info!.cylinder_count" dusk="motor-cylinder-count" />
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <Label for="down_payment">{{ t('orders.advance_payment') }}</Label
-                                    ><Input
-                                        id="down_payment"
-                                        dusk="motor-down-payment"
-                                        v-model="form.motor_info!.down_payment"
-                                        :aria-describedby="fieldError('motor_info.down_payment') ? 'down-payment-error' : undefined"
-                                        :aria-invalid="Boolean(fieldError('motor_info.down_payment'))"
-                                        inputmode="decimal"
-                                        min="0"
-                                        step="0.01"
-                                        type="number"
-                                    />
-                                    <p v-if="fieldError('motor_info.down_payment')" id="down-payment-error" class="text-sm text-destructive">
-                                        {{ fieldError('motor_info.down_payment') }}
-                                    </p>
                                 </div>
                             </div>
                         </div>

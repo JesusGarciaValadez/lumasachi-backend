@@ -263,7 +263,6 @@ export interface CreateOrderMotorInfoPayload {
     year?: string | null;
     model?: string | null;
     cylinder_count?: string | null;
-    down_payment?: MoneyValue;
 }
 
 export interface CreateOrderItemPayload {
@@ -509,9 +508,7 @@ export function normalizeOrder(resource: ResourcePayload<OrderPayload>): Order {
     };
 }
 
-export function resolveLifecycleStatus(
-    lifecycleStatus: OrderLifecycleStatus | null | undefined,
-): OrderLifecycleStatus | null {
+export function resolveLifecycleStatus(lifecycleStatus: OrderLifecycleStatus | null | undefined): OrderLifecycleStatus | null {
     return lifecycleStatus ?? null;
 }
 

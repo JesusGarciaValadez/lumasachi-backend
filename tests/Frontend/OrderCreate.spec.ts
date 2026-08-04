@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
 }));
 
 const router = vi.hoisted(() => ({
+    flash: vi.fn(),
     visit: vi.fn(),
 }));
 
@@ -113,7 +114,97 @@ describe('Orders/Create', () => {
         resolveCreate({ uuid: 'order-uuid' });
         await flushPromises();
 
-        expect(router.visit).toHaveBeenCalledWith('/web.orders.show/order-uuid');
+        expect(router.visit).toHaveBeenCalledWith(route('web.orders.index'), expect.objectContaining({ onSuccess: expect.any(Function) }));
+        expect(router.visit).not.toHaveBeenCalledWith(route('web.orders.show', 'order-uuid'));
+    });
+
+    it('does not render an advance-payment control', async () => {
+        const wrapper = mountPage();
+
+        await flushPromises();
+
+        expect(wrapper.find('#down_payment').exists()).toBe(false);
+        expect(wrapper.find('[dusk="motor-down-payment"]').exists()).toBe(false);
+    });
+
+    it('omits motor_info.down_payment from the submitted payload', async () => {
+        api.create.mockResolvedValueOnce({ uuid: 'order-uuid' });
+        const wrapper = mountPage();
+
+        await flushPromises();
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        const payload = api.create.mock.calls[0][0] as { motor_info?: Record<string, unknown> };
+
+        expect(payload.motor_info).not.toHaveProperty('down_payment');
+    });
+
+    it('uses the regular border and rounded treatment on description and notes', async () => {
+        const wrapper = mountPage();
+
+        await flushPromises();
+
+        for (const field of ['#description', '#notes']) {
+            expect(wrapper.get(field).classes()).toEqual(expect.arrayContaining(['border', 'border-input', 'rounded-md']));
+        }
+    });
+
+    it('flashes after successful creation and navigates to the orders index', async () => {
+        api.create.mockResolvedValueOnce({ uuid: 'order-uuid' });
+        const wrapper = mountPage();
+
+        await flushPromises();
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        const visitOptions = router.visit.mock.calls[0][1] as { onSuccess?: () => void };
+
+        expect(visitOptions.onSuccess).toEqual(expect.any(Function));
+        visitOptions.onSuccess?.();
+
+        expect(router.flash).toHaveBeenCalledWith('success', expect.any(String));
+        expect(router.visit).toHaveBeenCalledWith(route('web.orders.index'), expect.objectContaining({ onSuccess: expect.any(Function) }));
+        expect(router.visit).not.toHaveBeenCalledWith(route('web.orders.show', 'order-uuid'));
+        expect(router.visit.mock.invocationCallOrder[0]).toBeLessThan(router.flash.mock.invocationCallOrder[0]);
+    });
+
+    it('preserves entered values and shows the validation error after failed creation', async () => {
+        api.create.mockRejectedValueOnce(
+            new OrderApiError(422, 'Validation failed', {
+                title: ['A title is required.'],
+            }),
+        );
+        const wrapper = mountPage();
+
+        await flushPromises();
+        await wrapper.get('#title').setValue('Entered title');
+        await wrapper.get('#description').setValue('Entered description');
+        await wrapper.get('#notes').setValue('Entered notes');
+        await wrapper.get('#brand').setValue('Entered brand');
+        await wrapper.get('#liters').setValue('2.0');
+        await wrapper.get('#year').setValue('2020');
+        await wrapper.get('#model').setValue('Entered model');
+        await wrapper.get('#cylinder_count').setValue('4');
+        await wrapper.get('#customer_id').setValue('1');
+        await wrapper.get('#assigned_to').setValue('2');
+        await wrapper.get('[dusk="order-item-component-0-shaft"]').setValue(true);
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        expect((wrapper.get('#title').element as HTMLInputElement).value).toBe('Entered title');
+        expect((wrapper.get('#description').element as HTMLTextAreaElement).value).toBe('Entered description');
+        expect((wrapper.get('#notes').element as HTMLTextAreaElement).value).toBe('Entered notes');
+        expect((wrapper.get('#brand').element as HTMLInputElement).value).toBe('Entered brand');
+        expect((wrapper.get('#liters').element as HTMLInputElement).value).toBe('2.0');
+        expect((wrapper.get('#year').element as HTMLInputElement).value).toBe('2020');
+        expect((wrapper.get('#model').element as HTMLInputElement).value).toBe('Entered model');
+        expect((wrapper.get('#cylinder_count').element as HTMLInputElement).value).toBe('4');
+        expect((wrapper.get('#customer_id').element as HTMLSelectElement).value).toBe('1');
+        expect((wrapper.get('#assigned_to').element as HTMLSelectElement).value).toBe('2');
+        expect((wrapper.get('[dusk="order-item-component-0-shaft"]').element as HTMLInputElement).checked).toBe(true);
+        expect(wrapper.get('[dusk="order-create-error"]').text()).toContain('A title is required.');
+        expect(router.visit).not.toHaveBeenCalled();
     });
 
     it('associates validation messages with their invalid fields', async () => {

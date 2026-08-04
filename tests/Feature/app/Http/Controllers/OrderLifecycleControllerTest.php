@@ -204,6 +204,58 @@ it('validates item types', function () {
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['items.0.item_type']);
 });
+it('rejects duplicate item types before creating order records', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Duplicate item types',
+        'description' => 'The order must not be created',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            ['item_type' => OrderItemType::EngineBlock->value],
+            ['item_type' => OrderItemType::EngineBlock->value],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.item_type', 'items.1.item_type']);
+
+    $this->assertDatabaseEmpty('orders');
+    $this->assertDatabaseEmpty('order_motor_info');
+    $this->assertDatabaseEmpty('order_items');
+    $this->assertDatabaseEmpty('order_item_components');
+    $this->assertDatabaseEmpty('order_payments');
+    $this->assertDatabaseEmpty('order_histories');
+});
+it('rejects duplicate components within an item before creating order records', function () {
+    $this->actingAs($this->employee);
+
+    $response = $this->postJson('/api/v1/orders', [
+        'customer_id' => $this->customer->id,
+        'title' => 'Duplicate components',
+        'description' => 'The order must not be created',
+        'priority' => OrderPriority::NORMAL->value,
+        'assigned_to' => $this->employee->id,
+        'items' => [
+            [
+                'item_type' => OrderItemType::EngineBlock->value,
+                'components' => ['camshaft', 'camshaft'],
+            ],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.components.0', 'items.0.components.1']);
+
+    $this->assertDatabaseEmpty('orders');
+    $this->assertDatabaseEmpty('order_motor_info');
+    $this->assertDatabaseEmpty('order_items');
+    $this->assertDatabaseEmpty('order_item_components');
+    $this->assertDatabaseEmpty('order_payments');
+    $this->assertDatabaseEmpty('order_histories');
+});
 it('requires authentication to create order', function () {
     $response = $this->postJson('/api/v1/orders', []);
     $response->assertUnauthorized();

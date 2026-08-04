@@ -65,6 +65,14 @@ final class StoreOrderWithItemsRequest extends FormRequest
                     return;
                 }
 
+                $itemTypeCounts = array_count_values(array_filter(
+                    array_map(
+                        static fn(mixed $item): mixed => is_array($item) ? ($item['item_type'] ?? null) : null,
+                        $items
+                    ),
+                    static fn(mixed $itemType): bool => is_string($itemType)
+                ));
+
                 foreach ($items as $itemIndex => $item) {
                     if (!is_array($item) || !is_string($item['item_type'] ?? null)) {
                         continue;
@@ -73,12 +81,31 @@ final class StoreOrderWithItemsRequest extends FormRequest
                     $itemType = OrderItemType::tryFrom($item['item_type']);
                     $components = $item['components'] ?? [];
 
+                    if (($itemTypeCounts[$item['item_type']] ?? 0) > 1) {
+                        $validator->errors()->add(
+                            "items.{$itemIndex}.item_type",
+                            __('validation.custom.distinct', ['attribute' => $this->validationAttribute('items.*.item_type')])
+                        );
+                    }
+
                     if ($itemType === null || !is_array($components)) {
                         continue;
                     }
 
+                    $componentCounts = array_count_values(array_filter(
+                        $components,
+                        static fn(mixed $component): bool => is_string($component)
+                    ));
+
                     foreach ($components as $componentIndex => $component) {
                         if (!is_string($component) || in_array($component, $itemType->getComponents(), true)) {
+                            if (is_string($component) && ($componentCounts[$component] ?? 0) > 1) {
+                                $validator->errors()->add(
+                                    "items.{$itemIndex}.components.{$componentIndex}",
+                                    __('validation.custom.distinct', ['attribute' => $this->validationAttribute('items.*.components.*')])
+                                );
+                            }
+
                             continue;
                         }
 
@@ -86,6 +113,13 @@ final class StoreOrderWithItemsRequest extends FormRequest
                             "items.{$itemIndex}.components.{$componentIndex}",
                             'The selected component is not valid for the selected item type.'
                         );
+
+                        if (($componentCounts[$component] ?? 0) > 1) {
+                            $validator->errors()->add(
+                                "items.{$itemIndex}.components.{$componentIndex}",
+                                __('validation.custom.distinct', ['attribute' => $this->validationAttribute('items.*.components.*')])
+                            );
+                        }
                     }
                 }
             },
