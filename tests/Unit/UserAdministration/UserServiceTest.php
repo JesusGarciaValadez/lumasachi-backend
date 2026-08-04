@@ -26,6 +26,7 @@ test('create sets a uuid and activation timestamp only for active users', functi
 test('update preserves an existing password and activation timestamp', function (): void {
     $user = User::factory()->inactive()->create([
         'password' => 'OriginalPassword123!',
+        'role' => UserRole::EMPLOYEE->value,
     ]);
     $originalHash = $user->password;
 
@@ -55,6 +56,7 @@ test('update preserves an existing password and activation timestamp', function 
 test('update changes the password when a new password is supplied', function (): void {
     $user = User::factory()->active()->create([
         'password' => 'OriginalPassword123!',
+        'role' => UserRole::EMPLOYEE->value,
     ]);
 
     $updated = app(UserService::class)->update($user, [

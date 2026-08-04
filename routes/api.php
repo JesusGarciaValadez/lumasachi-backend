@@ -24,28 +24,28 @@ use Illuminate\Validation\ValidationException;
 Route::group(['prefix' => 'v1'], function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->middleware('auth:sanctum')
-        ->name('logout');
+        ->name('api.logout');
 
     // Auth Routes
     Route::group(['middleware' => ['throttle:5,1']], function () {
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
         Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-            ->name('password.email');
+            ->name('api.password.email');
 
         Route::post('reset-password', [NewPasswordController::class, 'store'])
-            ->name('password.store');
+            ->name('api.password.store');
 
         Route::get('verify-email', EmailVerificationPromptController::class)
-            ->name('verification.notice');
+            ->name('api.verification.notice');
 
         Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
             ->middleware(['signed', 'throttle:6,1'])
-            ->name('verification.verify');
+            ->name('api.verification.verify');
 
         Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
             ->middleware('throttle:6,1')
-            ->name('verification.send');
+            ->name('api.verification.send');
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
     });
@@ -70,6 +70,20 @@ Route::group(['prefix' => 'v1'], function () {
             throw ValidationException::withMessages([
                 'email' => [__('auth.failed')],
             ]);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            return response()->json([
+                'code' => 'auth.email_verification_required',
+                'message' => __('auth.email_verification_required'),
+            ], 403);
+        }
+
+        if ($user->must_change_password) {
+            return response()->json([
+                'code' => 'auth.password_change_required',
+                'message' => __('auth.password_change_required'),
+            ], 403);
         }
 
         return $user->createToken($request->device_name)->plainTextToken;

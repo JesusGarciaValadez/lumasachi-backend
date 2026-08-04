@@ -12,6 +12,10 @@ import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
 import { useI18n } from 'vue-i18n';
 
+defineProps<{
+    mustChangePassword: boolean;
+}>();
+
 const { t } = useI18n();
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => [{ title: t('settings.password_title'), href: '/settings/password' }]);
 
@@ -55,8 +59,16 @@ const updatePassword = () => {
             <div class="space-y-6">
                 <HeadingSmall :description="t('settings.password_description')" :title="t('settings.update_password')" />
 
-                <form @submit.prevent="updatePassword" class="space-y-6">
-                    <div class="grid gap-2">
+                <div
+                    v-if="mustChangePassword"
+                    class="rounded-md border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-200"
+                    dusk="password-required"
+                >
+                    {{ t('settings.password_change_required') }}
+                </div>
+
+                <form class="space-y-6" dusk="password-form" @submit.prevent="updatePassword">
+                    <div v-if="!mustChangePassword" class="grid gap-2">
                         <Label for="current_password">{{ t('settings.current_password') }}</Label>
                         <Input
                             id="current_password"
@@ -66,6 +78,7 @@ const updatePassword = () => {
                             class="mt-1 block w-full"
                             autocomplete="current-password"
                             :placeholder="t('settings.current_password')"
+                            dusk="password-current-password"
                         />
                         <InputError :message="form.errors.current_password" />
                     </div>

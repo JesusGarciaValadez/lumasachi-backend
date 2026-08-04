@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -54,4 +55,48 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertRedirect('/');
+});
+
+test('api token issuance requires verified email and a changed password', function (): void {
+    $unverified = User::factory()->create([
+        'email' => 'api-unverified@example.test',
+        'email_verified_at' => null,
+    ]);
+
+    $this->postJson('/api/v1/sanctum/token', [
+        'device_name' => 'test-device',
+        'email' => $unverified->email,
+        'password' => 'password',
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('code', 'auth.email_verification_required');
+
+    $pendingPasswordChange = User::factory()->create([
+        'email' => 'api-pending-password@example.test',
+        'must_change_password' => true,
+    ]);
+
+    $this->postJson('/api/v1/sanctum/token', [
+        'device_name' => 'test-device',
+        'email' => $pendingPasswordChange->email,
+        'password' => 'password',
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('code', 'auth.password_change_required');
+
+    $eligibleUser = User::factory()->create([
+        'email' => 'api-eligible@example.test',
+        'email_verified_at' => now(),
+        'must_change_password' => false,
+    ]);
+
+    $response = $this->postJson('/api/v1/sanctum/token', [
+        'device_name' => 'test-device',
+        'email' => $eligibleUser->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertOk();
+    expect($eligibleUser->tokens()->count())->toBe(1)
+        ->and(Hash::check('password', $eligibleUser->password))->toBeTrue();
 });

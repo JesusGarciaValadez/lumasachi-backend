@@ -29,6 +29,7 @@ it('checks if users table has all required columns', function () {
         'email',
         'email_verified_at',
         'password',
+        'must_change_password',
         'role',
         'phone_number',
         'is_active',
@@ -66,6 +67,8 @@ it('checks if users table column types', function () {
     } else {
         expect(['boolean', 'bool'])->toContain(Schema::getColumnType('users', 'is_active'));
     }
+
+    expect(['boolean', 'bool'])->toContain(Schema::getColumnType('users', 'must_change_password'));
 
     // Test enum column
     expect(['string', 'varchar'])->toContain(Schema::getColumnType('users', 'role'));

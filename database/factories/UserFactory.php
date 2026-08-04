@@ -6,12 +6,13 @@ namespace Database\Factories;
 
 use App\Enums\UserRole;
 use App\Enums\UserType;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 final class UserFactory extends Factory
 {
@@ -34,6 +35,7 @@ final class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => self::$password ??= Hash::make('password'),
+            'must_change_password' => false,
             'role' => fake()->randomElement(UserRole::cases()),
             'phone_number' => fake()->phoneNumber(),
             'is_active' => true,
@@ -74,6 +76,16 @@ final class UserFactory extends Factory
         return $this->state(fn(array $attributes): array => [
             'is_active' => false,
             'activated_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user must change their password.
+     */
+    public function mustChangePassword(): static
+    {
+        return $this->state(fn(array $attributes): array => [
+            'must_change_password' => true,
         ]);
     }
 }
