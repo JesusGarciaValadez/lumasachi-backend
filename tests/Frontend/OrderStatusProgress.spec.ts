@@ -27,6 +27,7 @@ describe('order status presentation', () => {
                     lifecycle: 'Lifecycle',
                     priority: 'Priority',
                     payment: 'Payment',
+                    unpaid: 'Unpaid',
                     disposition: 'Disposition',
                     refund: 'Refund',
                 },
@@ -47,5 +48,27 @@ describe('order status presentation', () => {
         expect(wrapper.find('[data-status-indicator="payment"]').text()).toContain('Payment: Paid');
         expect(wrapper.find('[data-status-indicator="disposition"]').text()).toContain('Disposition: Returned');
         expect(wrapper.findAll('[data-status-indicator="refund"]')).toHaveLength(2);
+    });
+
+    it('renders the localized unpaid label for partially paid orders while preserving the payment status class', () => {
+        const wrapper = mount(OrderStatusIndicators, {
+            props: {
+                labels: {
+                    lifecycle: 'Lifecycle',
+                    priority: 'Priority',
+                    payment: 'Payment',
+                    unpaid: 'Unpaid',
+                    disposition: 'Disposition',
+                    refund: 'Refund',
+                },
+                priority: 'Normal',
+                paymentStatus: 'Partially Paid',
+                paymentStatusLabel: 'Partial payment',
+            },
+        });
+
+        expect(wrapper.find('[data-status-indicator="payment"]').text()).toContain('Payment: Unpaid');
+        expect(wrapper.find('[data-status-indicator="payment"]').text()).not.toContain('Partial payment');
+        expect(wrapper.find('[data-status-indicator="payment"]').classes()).toContain('bg-amber-100');
     });
 });

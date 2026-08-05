@@ -14,7 +14,6 @@ const props = defineProps<{
         select: string;
         service: string;
         measurement: string;
-        base_price: string;
         net_price: string;
         budgeted: string;
         authorized: string;
@@ -100,7 +99,6 @@ function toggle(service: OrderServicePayload): void {
                                     </th>
                                     <th class="px-3 py-2">{{ labels.service }}</th>
                                     <th class="px-3 py-2">{{ labels.measurement }}</th>
-                                    <th class="px-3 py-2">{{ labels.base_price }}</th>
                                     <th class="px-3 py-2">{{ labels.net_price }}</th>
                                     <th class="px-3 py-2">{{ labels.budgeted }}</th>
                                     <th class="px-3 py-2">{{ labels.authorized }}</th>
@@ -123,7 +121,6 @@ function toggle(service: OrderServicePayload): void {
                                     </td>
                                     <td class="px-3 py-2 align-top font-medium">{{ service.service_name ?? labels.service }}</td>
                                     <td class="px-3 py-2 align-top">{{ service.measurement ?? '—' }}</td>
-                                    <td class="px-3 py-2 align-top">{{ service.base_price ?? '0.00' }}</td>
                                     <td class="px-3 py-2 align-top">{{ service.net_price ?? '0.00' }}</td>
                                     <td class="px-3 py-2 align-top">
                                         <span

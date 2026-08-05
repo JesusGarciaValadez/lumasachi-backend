@@ -65,10 +65,16 @@ final class UpdateOrderStatusRequest extends FormRequest
                 $newStatus = is_string($status) ? OrderLifecycleStatus::tryFrom($status) : null;
 
                 if ($order && $newStatus) {
-                    if ($order->dispositionStatus() !== null) {
+                    if ($order->lifecycleStatus() === OrderLifecycleStatus::Delivered) {
+                        $validator->errors()->add('lifecycle_status', __('orders.validation.delivered_notes_only'));
+                    } elseif ($order->dispositionStatus() !== null) {
                         $validator->errors()->add('lifecycle_status', 'A terminal disposition cannot resume the lifecycle.');
                     } elseif (!$order->lifecycleStatus() || !$stateMachine->canTransition($order->lifecycleStatus(), $newStatus)) {
                         $validator->errors()->add('lifecycle_status', 'Invalid lifecycle transition.');
+                    }
+
+                    if ($newStatus === OrderLifecycleStatus::Delivered && $order->hasPendingPayment()) {
+                        $validator->errors()->add('lifecycle_status', 'Order must be fully paid before delivery.');
                     }
                 }
             },

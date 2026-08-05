@@ -97,6 +97,54 @@ it('localizes every lifecycle and audit notification', function () {
         expect($audit['introLines'])->not->toContain('created');
     }
 });
+it('tells customers to visit the store and pay before delivery', function () {
+    $customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
+    ]);
+
+    foreach (['es', 'en'] as $locale) {
+        app()->setLocale($locale);
+
+        $message = (new OrderReadyForDeliveryNotification($order))->toMail($customer)->toArray();
+
+        expect($message['introLines'])
+            ->toContain(__('notifications.order_ready_for_delivery.line'))
+            ->toContain(__('notifications.order_ready_for_delivery.payment_line'));
+    }
+});
+it('tells customers their order was completed and delivered', function () {
+    $customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+    ]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
+    ]);
+
+    foreach (['en', 'es'] as $locale) {
+        app()->setLocale($locale);
+
+        $message = (new OrderDeliveredNotification($order))->toMail($customer)->toArray();
+
+        expect($message['subject'])->toBe(__('notifications.order_delivered.subject'));
+        expect($message['introLines'])
+            ->toContain(__('notifications.order_delivered.line'));
+    }
+
+    app()->setLocale('en');
+    $englishContent = (string)(new OrderDeliveredNotification($order))->toMail($customer)->render();
+    $this->assertStringContainsString('completed', $englishContent);
+    $this->assertStringContainsString('delivered', $englishContent);
+
+    app()->setLocale('es');
+    $spanishContent = (string)(new OrderDeliveredNotification($order))->toMail($customer)->render();
+    $this->assertStringContainsString('completada', $spanishContent);
+    $this->assertStringContainsString('entregada', $spanishContent);
+});
 it('queues mail and notifications after commit', function () {
     $order = Order::factory()->createQuietly();
 

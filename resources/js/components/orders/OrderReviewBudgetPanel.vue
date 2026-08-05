@@ -20,7 +20,6 @@ interface ReviewRow {
 interface BudgetSubmission {
     payload: SubmitBudgetPayload;
     selectedCount: number;
-    baseTotal: string;
     netTotal: string;
 }
 
@@ -37,11 +36,8 @@ const props = defineProps<{
         service: string;
         measurement: string;
         budgeted: string;
-        basePrice: string;
         netPrice: string;
         notes: string;
-        preview: string;
-        baseTotal: string;
         netTotal: string;
         selected: (count: number) => string;
         empty: string;
@@ -67,7 +63,6 @@ const groups = computed(() => {
 });
 
 const selectedRows = computed(() => rows.value.filter((row) => row.selected));
-const baseTotal = computed(() => selectedRows.value.reduce((total, row) => total + Number(row.service.base_price ?? 0), 0).toFixed(2));
 const netTotal = computed(() => selectedRows.value.reduce((total, row) => total + Number(row.service.net_price ?? 0), 0).toFixed(2));
 
 function buildRows(): void {
@@ -128,7 +123,6 @@ function submit(): void {
             })),
         },
         selectedCount: selectedRows.value.length,
-        baseTotal: baseTotal.value,
         netTotal: netTotal.value,
     });
 }
@@ -162,7 +156,6 @@ function submit(): void {
                                     <th class="w-20 px-3 py-2" scope="col">{{ labels.budgeted }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.service }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.measurement }}</th>
-                                    <th class="px-3 py-2" scope="col">{{ labels.basePrice }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.netPrice }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.notes }}</th>
                                 </tr>
@@ -225,10 +218,6 @@ function submit(): void {
                                         </p>
                                     </td>
                                     <td class="block px-3 py-2 align-top md:table-cell">
-                                        <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.basePrice }}</span>
-                                        {{ formatMoney(row.service.base_price) }}
-                                    </td>
-                                    <td class="block px-3 py-2 align-top md:table-cell">
                                         <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.netPrice }}</span>
                                         {{ formatMoney(row.service.net_price) }}
                                     </td>
@@ -244,22 +233,10 @@ function submit(): void {
                                     </td>
                                 </tr>
                             </tbody>
-                            <tfoot class="hidden border-t bg-muted/20 text-sm font-semibold md:table-footer-group">
-                                <tr>
-                                    <td class="px-3 py-2" colspan="3">{{ labels.preview }}</td>
-                                    <td class="px-3 py-2">{{ formatMoney(baseTotal) }}</td>
-                                    <td class="px-3 py-2">{{ formatMoney(netTotal) }}</td>
-                                    <td class="px-3 py-2"></td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
                 </section>
-                <div class="grid gap-2 rounded-md bg-muted/30 p-3 text-sm sm:grid-cols-2">
-                    <div class="flex justify-between gap-3">
-                        <span class="text-muted-foreground">{{ labels.baseTotal }}</span>
-                        <span class="font-semibold" data-review-base-total>{{ formatMoney(baseTotal) }}</span>
-                    </div>
+                <div class="rounded-md bg-muted/30 p-3 text-sm">
                     <div class="flex justify-between gap-3">
                         <span class="text-muted-foreground">{{ labels.netTotal }}</span>
                         <span class="font-semibold" data-review-net-total>{{ formatMoney(netTotal) }}</span>

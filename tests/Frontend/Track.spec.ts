@@ -108,6 +108,8 @@ describe('Orders/Track', () => {
 
         expect(track).toHaveBeenCalledWith({ uuid: 'order-uuid', created_date: '2026-07-26' }, expect.any(AbortSignal));
         expect(wrapper.text()).toContain('Engine service');
+        expect(wrapper.text()).not.toContain('Advance payment');
+        expect(wrapper.text()).not.toContain('Remaining balance');
         expect(wrapper.findAll('button')).toHaveLength(1);
     });
 

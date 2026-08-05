@@ -19,7 +19,8 @@ final class OrderCapabilityService
      *     approve_services: bool,
      *     complete_services: bool,
      *     mark_ready_for_delivery: bool,
-     *     deliver_order: bool
+     *     deliver_order: bool,
+     *     cancel_order: bool
      * }
      */
     public function for(User $user, Order $order): array
@@ -34,8 +35,8 @@ final class OrderCapabilityService
             'complete_services' => $canUpdate && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForWork,
             'mark_ready_for_delivery' => $canUpdate && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForWork,
             'deliver_order' => $canUpdate
-                && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForDelivery
-                && !$order->hasPendingPayment(),
+                && $order->lifecycleStatus() === OrderLifecycleStatus::ReadyForDelivery,
+            'cancel_order' => $user->can('cancel', $order) && $order->dispositionStatus() === null,
         ];
     }
 }

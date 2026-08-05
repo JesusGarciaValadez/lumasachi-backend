@@ -9,11 +9,8 @@ const labels = {
     service: 'Service',
     measurement: 'Measurement',
     budgeted: 'PPTO',
-    basePrice: 'Base price',
     netPrice: 'Net price',
     notes: 'Notes',
-    preview: 'Preview total',
-    baseTotal: 'Base total',
     netTotal: 'Net total',
     selected: (count: number) => `${count} selected`,
     empty: 'No services',
@@ -103,8 +100,14 @@ describe('OrderReviewBudgetPanel', () => {
 
         await wrapper.findAll('input[type="checkbox"]')[0].setValue(true);
 
-        expect(wrapper.find('[data-review-base-total]').text()).toBe('600.00');
+        expect(wrapper.text()).toContain('Net price');
+        expect(wrapper.text()).toContain('696.00');
+        expect(wrapper.text()).not.toContain('Base price');
+        expect(wrapper.text()).not.toContain('600.00');
+        expect(wrapper.text()).toContain('Net total');
+        expect(wrapper.find('[data-review-base-total]').exists()).toBe(false);
         expect(wrapper.find('[data-review-net-total]').text()).toBe('696.00');
+        expect(wrapper.text()).not.toContain('Base total');
     });
 
     it('keeps selected rows and maps validation errors to selected payload indexes', async () => {
@@ -118,7 +121,9 @@ describe('OrderReviewBudgetPanel', () => {
 
         await wrapper.find('button').trigger('click');
 
-        expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+        const submission = wrapper.emitted('submit')?.[0]?.[0];
+
+        expect(submission).toMatchObject({
             selectedCount: 1,
             payload: {
                 services: [
@@ -131,6 +136,7 @@ describe('OrderReviewBudgetPanel', () => {
                 ],
             },
         });
+        expect(submission).not.toHaveProperty('baseTotal');
 
         await wrapper.setProps({ errors: { 'services.0.measurement': ['A measurement is required.'] } });
         expect((checkboxes[1].element as HTMLInputElement).checked).toBe(true);

@@ -1,13 +1,16 @@
 import Show from '@/pages/Orders/Show.vue';
 import type { Order } from '@/types/orders';
+import { router } from '@inertiajs/vue3';
 import { flushPromises, mount } from '@vue/test-utils';
 import { vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
     attachments: vi.fn(),
+    cancel: vi.fn(),
     catalog: vi.fn(),
     deliver: vi.fn(),
     history: vi.fn(),
+    markReadyForDelivery: vi.fn(),
     show: vi.fn(),
 }));
 
@@ -30,6 +33,10 @@ vi.mock('@inertiajs/vue3', () => ({
     Head: {
         template: '<title><slot /></title>',
     },
+    router: {
+        flash: vi.fn(),
+        visit: vi.fn((_url: string, options?: { onSuccess?: () => void }) => options?.onSuccess?.()),
+    },
 }));
 
 vi.mock('vue-i18n', () => ({
@@ -38,7 +45,12 @@ vi.mock('vue-i18n', () => ({
             ({
                 'common.confirm': 'Confirm',
                 'common.loading': 'Loading...',
-                'orders.advance_payment': 'Advance payment',
+                'orders.cancel_order': 'Cancel order',
+                'orders.confirm_cancel': 'The order will be marked cancelled.',
+                'orders.action_failed': 'The action failed.',
+                'orders.payment_amount': 'Payment amount',
+                'orders.payment_amount_help': 'Enter the amount paid.',
+                'orders.record_payment': 'Record payment',
                 'orders.completed_total': 'Completed total',
                 'orders.confirm_delivery': 'The order will be marked delivered.',
                 'orders.deliver': 'Deliver order',
@@ -51,7 +63,7 @@ vi.mock('vue-i18n', () => ({
                 'orders.no_attachments': 'No attachments',
                 'orders.preview': 'Preview',
                 'orders.download': 'Download',
-                'orders.remaining_balance': 'Remaining balance',
+                'orders.ready_for_delivery_success': 'Order marked ready.',
                 'orders.uuid': 'Order UUID',
             })[key] ?? key,
         tm: (key: string) =>
@@ -104,23 +116,38 @@ const order = {
         authorized: '100.00',
         completed: '100.00',
         advance_payment: '100.00',
+        paid: '100.00',
         remaining_balance: '0.00',
+        remaining_change: '0.00',
     },
 } as Order;
 
 const deliveredOrder = { ...order, lifecycle_status: 'Delivered' } as Order;
+const readyForWorkOrder = { ...order, lifecycle_status: 'Ready for Work' } as Order;
+const cancelledOrder = { ...order, disposition_status: 'Cancelled', disposition_status_label: 'Cancelled' } as Order;
 
-function mountPage() {
+function mountPage({
+    cancel_order = true,
+    lifecycleStatus = order.lifecycle_status,
+    mark_ready_for_delivery = false,
+}: {
+    cancel_order?: boolean;
+    lifecycleStatus?: Order['lifecycle_status'];
+    mark_ready_for_delivery?: boolean;
+} = {}) {
+    const pageOrder = lifecycleStatus === 'Ready for Work' ? readyForWorkOrder : order;
+
     return mount(Show, {
         props: {
-            order,
+            order: pageOrder,
             capabilities: {
                 create_order: true,
                 submit_budget: false,
                 approve_services: false,
                 complete_services: false,
-                mark_ready_for_delivery: false,
+                mark_ready_for_delivery,
                 deliver_order: true,
+                cancel_order,
             },
         },
         global: {
@@ -153,10 +180,36 @@ describe('Orders/Show delivery workflow', () => {
         vi.clearAllMocks();
         vi.stubGlobal('route', (name: string, parameter?: string) => `/${name}/${parameter ?? ''}`);
         api.attachments.mockResolvedValue({ attachments: [] });
+        api.cancel.mockResolvedValue(cancelledOrder);
         api.catalog.mockResolvedValue({ item_types: [] });
         api.deliver.mockResolvedValue(deliveredOrder);
         api.history.mockResolvedValue({ data: [], meta: null });
         api.show.mockResolvedValue(deliveredOrder);
+    });
+
+    it('allows an administrator to cancel the order and removes the button after success', async () => {
+        api.show.mockResolvedValueOnce(cancelledOrder);
+        const wrapper = mountPage();
+
+        await flushPromises();
+
+        await wrapper.get('[data-order-cancel-button]').trigger('click');
+        expect(wrapper.get('[data-cancel-confirmation]').text()).toContain('marked cancelled');
+
+        await wrapper.get('[data-confirm-action]').trigger('click');
+        await flushPromises();
+
+        expect(api.cancel).toHaveBeenCalledWith('order-uuid');
+        expect(wrapper.find('[data-order-cancel-button]').exists()).toBe(false);
+        expect(wrapper.text()).toContain('Cancelled');
+    });
+
+    it('does not render cancellation controls when the server capability is false', async () => {
+        const wrapper = mountPage({ cancel_order: false });
+
+        await flushPromises();
+
+        expect(wrapper.find('[data-order-cancel-button]').exists()).toBe(false);
     });
 
     it('confirms with the displayed financial values and removes delivery actions after success', async () => {
@@ -164,17 +217,20 @@ describe('Orders/Show delivery workflow', () => {
 
         await flushPromises();
 
+        await wrapper.get('[data-delivery-payment]').setValue('100.00');
         await wrapper.get('[data-delivery-action]').trigger('click');
 
         expect(wrapper.get('[data-delivery-confirmation]').text()).toContain('order-uuid');
         expect(wrapper.get('[data-delivery-confirmation]').text()).toContain('100.00');
+        expect(wrapper.get('[data-delivery-confirmation]').text()).not.toContain('Remaining balance');
 
         await wrapper.get('[data-confirm-action]').trigger('click');
         await flushPromises();
 
-        expect(api.deliver).toHaveBeenCalledWith('order-uuid');
+        expect(api.deliver).toHaveBeenCalledWith('order-uuid', '100.00');
         expect(api.show).toHaveBeenCalledWith('order-uuid');
-        expect(wrapper.find('[data-delivery-panel]').exists()).toBe(false);
+        expect(wrapper.find('[data-delivery-panel]').exists()).toBe(true);
+        expect(wrapper.find('[data-delivery-payment]').exists()).toBe(false);
         expect(wrapper.text()).toContain('Delivered');
     });
 
@@ -226,6 +282,7 @@ describe('Orders/Show delivery workflow', () => {
         const wrapper = mountPage();
 
         await flushPromises();
+        await wrapper.get('[data-delivery-payment]').setValue('100.00');
         await wrapper.get('[data-delivery-action]').trigger('click');
         await wrapper.get('[data-confirm-action]').trigger('click');
         await flushPromises();
@@ -238,5 +295,32 @@ describe('Orders/Show delivery workflow', () => {
 
         expect(wrapper.get('[role="alert"]').text()).toContain('Reload failed.');
         expect(wrapper.get('[role="alert"] button').text()).toContain('orders.reload');
+    });
+
+    it('redirects with a success flash after marking an order ready for delivery', async () => {
+        api.markReadyForDelivery.mockResolvedValueOnce(readyForWorkOrder);
+        const wrapper = mountPage({ lifecycleStatus: 'Ready for Work', mark_ready_for_delivery: true });
+
+        await flushPromises();
+        await wrapper.get('[dusk="order-ready-submit"]').trigger('click');
+        await wrapper.get('[data-confirm-action]').trigger('click');
+        await flushPromises();
+
+        expect(api.markReadyForDelivery).toHaveBeenCalledWith('order-uuid');
+        expect(router.visit).toHaveBeenCalled();
+        expect(router.flash).toHaveBeenCalledWith('success', 'Order marked ready.');
+    });
+
+    it('keeps the ready-for-delivery form visible after a save error', async () => {
+        api.markReadyForDelivery.mockRejectedValueOnce(new OrderApiError(500, 'Could not save the order.'));
+        const wrapper = mountPage({ lifecycleStatus: 'Ready for Work', mark_ready_for_delivery: true });
+
+        await flushPromises();
+        await wrapper.get('[dusk="order-ready-submit"]').trigger('click');
+        await wrapper.get('[data-confirm-action]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.get('[dusk="order-ready-for-delivery"]')).toBeTruthy();
+        expect(wrapper.get('[role="alert"]').text()).toContain('Could not save the order.');
     });
 });

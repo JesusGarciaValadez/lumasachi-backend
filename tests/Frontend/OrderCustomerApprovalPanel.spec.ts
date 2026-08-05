@@ -7,18 +7,14 @@ const labels = {
     help: 'Select services',
     service: 'Service',
     measurement: 'Measurement',
-    basePrice: 'Base price',
     netPrice: 'Net price',
     budgeted: 'Budgeted',
     authorized: 'Authorized',
     select: 'Select',
     preview: 'Preview total',
-    budgetedBaseTotal: 'Budgeted base total',
-    budgetedNetTotal: 'Budgeted net total',
-    authorizedBaseTotal: 'Authorized base total',
-    authorizedNetTotal: 'Authorized net total',
+    budgetedTotal: 'Budgeted total',
+    authorizedTotal: 'Authorized total',
     selected: (count: number) => `${count} selected`,
-    advancePayment: 'Advance payment',
     submit: 'Approve selected',
     empty: 'No budgeted services',
 };
@@ -71,7 +67,6 @@ function mountPanel(props: Record<string, unknown> = {}) {
             services,
             itemLabels: { 10: 'Engine block', 11: 'Cylinder head' },
             busy: false,
-            errors: {},
             labels,
             ...props,
         },
@@ -85,48 +80,64 @@ describe('OrderCustomerApprovalPanel', () => {
         expect(wrapper.text()).toContain('Wash block');
         expect(wrapper.text()).toContain('Deck block');
         expect(wrapper.text()).not.toContain('Not budgeted');
+        expect(wrapper.text()).toContain('Net price');
+        expect(wrapper.text()).not.toContain('Base price');
+        expect(wrapper.text()).not.toContain('600.00');
+        expect(wrapper.text()).not.toContain('800.00');
         expect(wrapper.findAll('tbody tr')).toHaveLength(2);
-        expect(wrapper.find('[data-approval-budgeted-base-total]').text()).toBe('1,400.00');
-        expect(wrapper.find('[data-approval-budgeted-net-total]').text()).toBe('1,624.00');
+        expect(wrapper.text()).toContain('Budgeted total');
+        expect(wrapper.text()).not.toContain('Budgeted base total');
+        expect(wrapper.text()).not.toContain('Budgeted net total');
+        expect(wrapper.findAll('[data-approval-budgeted-total]')).toHaveLength(1);
+        expect(wrapper.find('[data-approval-budgeted-total]').text()).toBe('1,624.00');
         expect(wrapper.text()).toContain('—');
+        expect(wrapper.find('[dusk="order-approval-down-payment"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('Advance payment');
     });
 
-    it('updates authorized preview totals and emits selected IDs with advance payment', async () => {
+    it('updates authorized preview totals and emits selected IDs without advance payment', async () => {
         const wrapper = mountPanel();
         const checkboxes = wrapper.findAll('input[type="checkbox"]');
 
         await checkboxes[1].setValue(true);
-        await wrapper.get('#approval-down-payment').setValue('250.00');
 
-        expect(wrapper.find('[data-approval-authorized-base-total]').text()).toBe('800.00');
-        expect(wrapper.find('[data-approval-authorized-net-total]').text()).toBe('928.00');
+        expect(wrapper.text()).toContain('Authorized total');
+        expect(wrapper.text()).not.toContain('Authorized base total');
+        expect(wrapper.text()).not.toContain('Authorized net total');
+        expect(wrapper.findAll('[data-approval-authorized-total]')).toHaveLength(1);
+        expect(wrapper.find('[data-approval-authorized-total]').text()).toBe('928.00');
+        expect(wrapper.text()).not.toContain('800.00');
 
         await wrapper.find('button').trigger('click');
 
         expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
             selectedCount: 1,
-            budgetedBaseTotal: '1400.00',
-            budgetedNetTotal: '1624.00',
-            authorizedBaseTotal: '800.00',
-            authorizedNetTotal: '928.00',
-            downPayment: '250.00',
+            budgetedTotal: '1624.00',
+            authorizedTotal: '928.00',
             payload: {
                 authorized_service_ids: [2],
-                down_payment: '250.00',
             },
         });
+
+        const submission = wrapper.emitted('submit')?.[0]?.[0] as Record<string, unknown>;
+
+        expect(submission).not.toHaveProperty('budgetedBaseTotal');
+        expect(submission).not.toHaveProperty('budgetedNetTotal');
+        expect(submission).not.toHaveProperty('authorizedBaseTotal');
+        expect(submission).not.toHaveProperty('authorizedNetTotal');
+        expect(submission).not.toHaveProperty('downPayment');
+        expect(submission.payload).not.toHaveProperty('down_payment');
     });
 
-    it('keeps selected services after validation errors', async () => {
-        const wrapper = mountPanel({ errors: { down_payment: ['The down payment cannot be negative.'] } });
+    it('keeps selected services when the panel becomes busy', async () => {
+        const wrapper = mountPanel();
         const checkbox = wrapper.find('input[type="checkbox"]');
 
         await checkbox.setValue(true);
-
-        expect(wrapper.get('[role="alert"]').text()).toContain('The down payment cannot be negative.');
         expect((checkbox.element as HTMLInputElement).checked).toBe(true);
 
-        await wrapper.setProps({ errors: { down_payment: ['The down payment cannot be negative.'] } });
+        await wrapper.setProps({ busy: true });
+
         expect((checkbox.element as HTMLInputElement).checked).toBe(true);
     });
 

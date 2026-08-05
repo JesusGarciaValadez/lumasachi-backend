@@ -45,11 +45,15 @@ return [
         'services_approved' => 'Services approved successfully.',
         'work_completed' => 'Work marked as completed.',
         'ready_for_delivery' => 'Order marked as ready for delivery.',
+        'ready_for_delivery_failed' => 'We could not mark the order as ready for delivery. Please review the order and try again.',
         'delivered' => 'Order delivered successfully.',
+        'delivery_failed' => 'We could not complete the delivery. Please review the payment and try again.',
+        'cancelled' => 'Order cancelled successfully.',
         'updated' => 'Order updated successfully.',
         'deleted' => 'Order deleted successfully.',
         'status_updated' => 'Order status updated successfully.',
         'payment_recorded' => 'Payment recorded successfully.',
+        'payment_failed' => 'We could not record the payment. Please review the amount and try again.',
         'refund_requested' => 'Refund requested successfully.',
         'refund_approved' => 'Refund approved successfully.',
         'refund_rejected' => 'Refund rejected successfully.',
@@ -98,6 +102,7 @@ return [
 
     'validation' => [
         'mark_ready_for_delivery_status' => 'Order must be in Ready for Work status.',
+        'delivered_notes_only' => 'Delivered orders can only have notes updated.',
     ],
 
     'priority_labels' => [

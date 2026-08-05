@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Notification;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-it('records payment without changing lifecycle status', function () {
+it('rejects payments after delivery', function () {
     Notification::fake();
     $users = paymentNotificationUsers();
 
@@ -22,10 +22,11 @@ it('records payment without changing lifecycle status', function () {
         'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
-    app(OrderPaymentService::class)->recordPayment($order, '25.00', $users['employee']);
+    expect(fn(): mixed => app(OrderPaymentService::class)->recordPayment($order, '25.00', $users['employee']))
+        ->toThrow(InvalidArgumentException::class);
 
     expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::Delivered)
-        ->and($order->fresh()->totalPaid())->toBe('25.00');
+        ->and($order->fresh()->totalPaid())->toBe('0.00');
 });
 /**
  * @return array{customer: User, employee: User, admin: User}

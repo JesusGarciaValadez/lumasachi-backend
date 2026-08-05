@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { formatMoney } from '@/lib/i18n';
 import type { CustomerApprovalPayload, OrderServicePayload } from '@/types/orders';
 import { computed, ref } from 'vue';
@@ -10,35 +8,27 @@ import { computed, ref } from 'vue';
 interface ApprovalSubmission {
     payload: CustomerApprovalPayload;
     selectedCount: number;
-    budgetedBaseTotal: string;
-    budgetedNetTotal: string;
-    authorizedBaseTotal: string;
-    authorizedNetTotal: string;
-    downPayment: string;
+    budgetedTotal: string;
+    authorizedTotal: string;
 }
 
 const props = defineProps<{
     services: OrderServicePayload[];
     itemLabels: Record<number, string>;
     busy: boolean;
-    errors: Record<string, string[]>;
     labels: {
         title: string;
         help: string;
         service: string;
         measurement: string;
-        basePrice: string;
         netPrice: string;
         budgeted: string;
         authorized: string;
         select: string;
         preview: string;
-        budgetedBaseTotal: string;
-        budgetedNetTotal: string;
-        authorizedBaseTotal: string;
-        authorizedNetTotal: string;
+        budgetedTotal: string;
+        authorizedTotal: string;
         selected: (count: number) => string;
-        advancePayment: string;
         submit: string;
         empty: string;
     };
@@ -49,7 +39,6 @@ const emit = defineEmits<{
 }>();
 
 const selectedIds = ref<number[]>([]);
-const downPayment = ref('');
 
 const budgetedServices = computed(() => props.services.filter((service) => service.is_budgeted));
 const selectedServices = computed(() => budgetedServices.value.filter((service) => selectedIds.value.includes(service.id)));
@@ -65,17 +54,11 @@ const groups = computed(() => {
     return [...grouped.entries()];
 });
 
-const budgetedBaseTotal = computed(() => totalFor(budgetedServices.value, 'base_price'));
-const budgetedNetTotal = computed(() => totalFor(budgetedServices.value, 'net_price'));
-const authorizedBaseTotal = computed(() => totalFor(selectedServices.value, 'base_price'));
-const authorizedNetTotal = computed(() => totalFor(selectedServices.value, 'net_price'));
+const budgetedTotal = computed(() => totalFor(budgetedServices.value));
+const authorizedTotal = computed(() => totalFor(selectedServices.value));
 
-function totalFor(services: OrderServicePayload[], field: 'base_price' | 'net_price'): string {
-    return services.reduce((total, service) => total + Number(service[field] ?? 0), 0).toFixed(2);
-}
-
-function errorFor(key: string): string | undefined {
-    return props.errors[key]?.[0];
+function totalFor(services: OrderServicePayload[]): string {
+    return services.reduce((total, service) => total + Number(service.net_price ?? 0), 0).toFixed(2);
 }
 
 function isSelected(serviceId: number): boolean {
@@ -90,34 +73,18 @@ function toggle(serviceId: number): void {
     selectedIds.value = isSelected(serviceId) ? selectedIds.value.filter((id) => id !== serviceId) : [...selectedIds.value, serviceId];
 }
 
-function formattedDownPayment(): string | undefined {
-    if (downPayment.value === '') {
-        return undefined;
-    }
-
-    const numericValue = Number(downPayment.value);
-
-    return Number.isFinite(numericValue) ? numericValue.toFixed(2) : String(downPayment.value);
-}
-
 function submit(): void {
     if (!selectedIds.value.length || props.busy) {
         return;
     }
 
-    const submittedDownPayment = formattedDownPayment();
-
     emit('submit', {
         payload: {
             authorized_service_ids: selectedIds.value,
-            down_payment: submittedDownPayment,
         },
         selectedCount: selectedIds.value.length,
-        budgetedBaseTotal: budgetedBaseTotal.value,
-        budgetedNetTotal: budgetedNetTotal.value,
-        authorizedBaseTotal: authorizedBaseTotal.value,
-        authorizedNetTotal: authorizedNetTotal.value,
-        downPayment: submittedDownPayment ?? '',
+        budgetedTotal: budgetedTotal.value,
+        authorizedTotal: authorizedTotal.value,
     });
 }
 </script>
@@ -146,7 +113,6 @@ function submit(): void {
                                     <th class="w-20 px-3 py-2" scope="col">{{ labels.select }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.service }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.measurement }}</th>
-                                    <th class="px-3 py-2" scope="col">{{ labels.basePrice }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.netPrice }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.budgeted }}</th>
                                     <th class="px-3 py-2" scope="col">{{ labels.authorized }}</th>
@@ -175,10 +141,6 @@ function submit(): void {
                                         {{ service.measurement ?? '—' }}
                                     </td>
                                     <td class="block px-3 py-2 align-top md:table-cell">
-                                        <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.basePrice }}</span>
-                                        {{ formatMoney(service.base_price) }}
-                                    </td>
-                                    <td class="block px-3 py-2 align-top md:table-cell">
                                         <span class="mr-2 text-xs text-muted-foreground md:hidden">{{ labels.netPrice }}</span>
                                         {{ formatMoney(service.net_price) }}
                                     </td>
@@ -200,40 +162,14 @@ function submit(): void {
                     <h3 class="font-medium">{{ labels.preview }}</h3>
                     <div class="grid gap-2 sm:grid-cols-2">
                         <div class="flex justify-between gap-3">
-                            <span class="text-muted-foreground">{{ labels.budgetedBaseTotal }}</span>
-                            <span class="font-semibold" data-approval-budgeted-base-total>{{ formatMoney(budgetedBaseTotal) }}</span>
+                            <span class="text-muted-foreground">{{ labels.budgetedTotal }}</span>
+                            <span class="font-semibold" data-approval-budgeted-total>{{ formatMoney(budgetedTotal) }}</span>
                         </div>
                         <div class="flex justify-between gap-3">
-                            <span class="text-muted-foreground">{{ labels.budgetedNetTotal }}</span>
-                            <span class="font-semibold" data-approval-budgeted-net-total>{{ formatMoney(budgetedNetTotal) }}</span>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <span class="text-muted-foreground">{{ labels.authorizedBaseTotal }}</span>
-                            <span class="font-semibold" data-approval-authorized-base-total>{{ formatMoney(authorizedBaseTotal) }}</span>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <span class="text-muted-foreground">{{ labels.authorizedNetTotal }}</span>
-                            <span class="font-semibold" data-approval-authorized-net-total>{{ formatMoney(authorizedNetTotal) }}</span>
+                            <span class="text-muted-foreground">{{ labels.authorizedTotal }}</span>
+                            <span class="font-semibold" data-approval-authorized-total>{{ formatMoney(authorizedTotal) }}</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="flex flex-col gap-2 sm:max-w-sm">
-                    <Label for="approval-down-payment">{{ labels.advancePayment }}</Label>
-                    <Input
-                        dusk="order-approval-down-payment"
-                        id="approval-down-payment"
-                        v-model="downPayment"
-                        :aria-describedby="errorFor('down_payment') ? 'approval-down-payment-error' : undefined"
-                        :aria-invalid="Boolean(errorFor('down_payment'))"
-                        inputmode="decimal"
-                        min="0"
-                        step="0.01"
-                        type="number"
-                    />
-                    <p v-if="errorFor('down_payment')" id="approval-down-payment-error" class="text-sm text-destructive" role="alert">
-                        {{ errorFor('down_payment') }}
-                    </p>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">

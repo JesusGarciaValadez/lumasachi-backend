@@ -35,6 +35,7 @@ const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),
     priority: t('orders.priority'),
     payment: t('orders.payment_status'),
+    unpaid: t('orders.unpaid'),
     disposition: t('orders.disposition_status'),
     refund: t('orders.refund_status'),
 }));
@@ -43,8 +44,6 @@ const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),
     authorized: t('orders.authorized_total'),
     completed: t('orders.completed_total'),
-    advance_payment: t('orders.advance_payment'),
-    remaining_balance: t('orders.remaining_balance'),
 }));
 
 const financials = computed<FinancialTotals>(

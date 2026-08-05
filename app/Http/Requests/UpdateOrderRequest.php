@@ -8,6 +8,7 @@ use App\Enums\OrderDispositionStatus;
 use App\Enums\OrderLifecycleStatus;
 use App\Enums\OrderPriority;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\OrderStatusStateMachine;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,7 +21,15 @@ final class UpdateOrderRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; // Authorization is handled by middleware
+        if ($this->input('disposition_status') !== OrderDispositionStatus::Cancelled->value) {
+            return true;
+        }
+
+        $order = $this->route('order');
+
+        return $order instanceof Order
+            && $this->user() instanceof User
+            && $this->user()->can('cancel', $order);
     }
 
     /**
@@ -79,6 +88,17 @@ final class UpdateOrderRequest extends FormRequest
             function (Validator $validator) use ($stateMachine): void {
                 /** @var Order|null $order */
                 $order = $this->route('order');
+
+                if ($order?->lifecycleStatus() === OrderLifecycleStatus::Delivered) {
+                    $submittedFields = array_diff(array_keys($this->all()), ['notes']);
+
+                    if ($submittedFields !== []) {
+                        $validator->errors()->add('lifecycle_status', __('orders.validation.delivered_notes_only'));
+                    }
+
+                    return;
+                }
+
                 $status = $this->input('lifecycle_status');
                 $newStatus = is_string($status) ? OrderLifecycleStatus::tryFrom($status) : null;
 

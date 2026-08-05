@@ -48,6 +48,7 @@ it('checks if tracks priority changes when updating order', function () {
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
         'priority' => OrderPriority::NORMAL->value,
         'created_by' => $user->id,
     ]);
@@ -125,6 +126,7 @@ it('checks if tracks assignment changes', function () {
         'customer_id' => $customer->id,
         'assigned_to' => $user->id,
         'created_by' => $user->id,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $response = $this->putJson("/api/v1/orders/{$order->uuid}", [
@@ -152,6 +154,7 @@ it('checks if tracks estimated completion date changes', function () {
 
     $order = Order::factory()->createQuietly([
         'customer_id' => $customer->id,
+        'lifecycle_status' => OrderLifecycleStatus::ReadyForDelivery->value,
         'estimated_completion' => $oldDate,
         'created_by' => $user->id,
     ]);

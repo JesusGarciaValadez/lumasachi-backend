@@ -64,7 +64,6 @@
                         <thead class="bg-gray-50 dark:bg-gray-900">
                             <tr class="text-left">
                                 <th class="px-3 py-2">{{ t('catalog.service') }}</th>
-                                <th class="px-3 py-2 text-right">{{ t('catalog.base') }}</th>
                                 <th class="px-3 py-2 text-right">{{ t('catalog.net') }}</th>
                                 <th class="px-3 py-2">{{ t('catalog.measurement') }}</th>
                             </tr>
@@ -76,18 +75,14 @@
                                     <td class="px-3 py-2 text-right">
                                         <div class="ml-auto h-4 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-800"></div>
                                     </td>
-                                    <td class="px-3 py-2 text-right">
-                                        <div class="ml-auto h-4 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-800"></div>
-                                    </td>
                                     <td class="px-3 py-2"><div class="h-4 w-10 animate-pulse rounded bg-gray-200 dark:bg-gray-800"></div></td>
                                 </tr>
                             </template>
                             <tr v-else-if="services.length === 0" class="border-t border-gray-100 dark:border-gray-800">
-                                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400" colspan="4">{{ t('catalog.no_services') }}</td>
+                                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400" colspan="3">{{ t('catalog.no_services') }}</td>
                             </tr>
                             <tr v-for="s in services" v-else :key="s.service_key" class="border-t border-gray-100 dark:border-gray-800">
                                 <td class="px-3 py-2">{{ s.service_name }}</td>
-                                <td class="px-3 py-2 text-right">{{ s.base_price }}</td>
                                 <td class="px-3 py-2 text-right">{{ s.net_price }}</td>
                                 <td class="px-3 py-2">{{ s.requires_measurement ? t('catalog.yes') : t('catalog.no') }}</td>
                             </tr>
@@ -115,7 +110,6 @@ interface ComponentItem {
 interface ServiceItem {
     service_key: string;
     service_name: string;
-    base_price: string;
     net_price: string;
     requires_measurement: boolean;
     display_order: number;

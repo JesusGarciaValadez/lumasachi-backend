@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\OrderLifecycleStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
@@ -58,6 +59,19 @@ final class OrderPolicy
             UserRole::EMPLOYEE->value => $order->assigned_to === $user->id || $order->created_by === $user->id,
             default => false
         };
+    }
+
+    /**
+     * Determine whether the user can cancel the order from any lifecycle step.
+     */
+    public function cancel(User $user, Order $order): bool
+    {
+        return $order->lifecycleStatus() !== OrderLifecycleStatus::Delivered
+            && $order->dispositionStatus() === null
+            && in_array($user->role->value, [
+                UserRole::SUPER_ADMINISTRATOR->value,
+                UserRole::ADMINISTRATOR->value,
+            ], true);
     }
 
     /**

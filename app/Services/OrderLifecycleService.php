@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\OrderDispositionStatus;
 use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\OrderService;
 use App\Models\ServiceCatalog;
 use App\Models\User;
@@ -188,9 +189,55 @@ final class OrderLifecycleService
         $this->assertStatus($order, [OrderLifecycleStatus::ReadyForDelivery]);
         $this->assertNoPendingPayment($order);
 
-        $this->statusStateMachine->transition($order, OrderLifecycleStatus::Delivered, $actor);
+        $this->statusStateMachine->transition(
+            $order,
+            OrderLifecycleStatus::Delivered,
+            $actor,
+            ['actual_completion' => now()],
+        );
 
         return $order;
+    }
+
+    /**
+     * Record a payment received at delivery and deliver the order when fully paid.
+     *
+     * A payment that does not cover the completed total leaves the order in
+     * READY_FOR_DELIVERY so the remaining balance can be collected later.
+     */
+    /**
+     * @return array{order: Order, payment: OrderPayment|null}
+     */
+    public function recordDeliveryPayment(Order $order, string|int|float $amount, User $actor): array
+    {
+        $this->assertStatus($order, [OrderLifecycleStatus::ReadyForDelivery]);
+
+        return DB::transaction(function () use ($order, $amount, $actor): array {
+            if (!is_numeric((string)$amount)) {
+                throw new InvalidArgumentException('Payment amount must be numeric.');
+            }
+
+            $normalizedAmount = bcadd((string)$amount, '0.00', 2);
+
+            if (bccomp($normalizedAmount, '0.00', 2) === -1) {
+                throw new InvalidArgumentException('Payment amount cannot be negative.');
+            }
+
+            $payment = bccomp($normalizedAmount, '0.00', 2) === 1
+                ? $this->paymentService->recordPayment($order, $normalizedAmount, $actor)
+                : null;
+
+            if (!$order->hasPendingPayment()) {
+                $this->statusStateMachine->transition(
+                    $order,
+                    OrderLifecycleStatus::Delivered,
+                    $actor,
+                    ['actual_completion' => now()],
+                );
+            }
+
+            return ['order' => $order, 'payment' => $payment];
+        });
     }
 
     /**
@@ -202,7 +249,7 @@ final class OrderLifecycleService
     public function transition(
         Order $order,
         OrderLifecycleStatus $newStatus,
-        User                 $actor,
+        User $actor,
         array $additionalAttributes = [],
     ): Order
     {
@@ -210,10 +257,10 @@ final class OrderLifecycleService
     }
 
     public function setDisposition(
-        Order                  $order,
+        Order   $order,
         OrderDispositionStatus $disposition,
-        User                   $actor,
-        ?string                $note,
+        User    $actor,
+        ?string $note,
     ): Order
     {
         return $this->statusStateMachine->setDisposition($order, $disposition, $actor, $note);

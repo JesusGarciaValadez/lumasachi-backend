@@ -26,12 +26,13 @@ return [
 
     'order_ready_for_delivery' => [
         'subject' => 'Tu orden está lista para entrega',
-        'line' => 'Tu orden de trabajo está lista para entrega.',
+        'line' => 'El trabajo de tu orden ha sido completado y está lista para entrega.',
+        'payment_line' => 'Visita nuestra tienda para pagar cualquier saldo pendiente y recibir tu orden. Después del pago, un empleado la marcará como entregada.',
     ],
 
     'order_delivered' => [
-        'subject' => 'Tu orden ha sido entregada',
-        'line' => 'Tu orden de trabajo ha sido entregada. ¡Gracias por tu preferencia!',
+        'subject' => 'Tu orden ha sido completada y entregada',
+        'line' => 'Tu orden ha sido completada y entregada. ¡Gracias por tu preferencia!',
     ],
 
     'order_paid' => [

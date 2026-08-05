@@ -53,6 +53,20 @@ export interface UserPayload {
     updated_at?: string;
 }
 
+export interface OrderListUser {
+    id: number;
+    uuid: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+}
+
+export interface OrderListCompany {
+    id: number;
+    uuid: string;
+    name: string;
+}
+
 export interface MotorInfoPayload {
     id?: number;
     uuid?: string;
@@ -179,7 +193,9 @@ export interface FinancialTotals {
     authorized: MoneyValue;
     completed: MoneyValue;
     advance_payment: MoneyValue;
+    paid?: MoneyValue;
     remaining_balance: MoneyValue;
+    remaining_change?: MoneyValue;
 }
 
 export interface OrderBasePayload {
@@ -245,8 +261,45 @@ export type OrderSummary = Pick<
     | 'priority_label'
     | 'created_at'
 > & {
+    customer?: OrderListUser | null;
+    company?: OrderListCompany | null;
+    assigned_to?: OrderListUser | null;
     refunds?: OrderRefundPayload[];
 };
+
+export interface OrderIndexFilters {
+    title: string;
+    company_id: string | number;
+    assigned_to: string | number;
+    priority: string;
+    lifecycle_status: string;
+    payment_status: string;
+    disposition_status: string;
+    created_from: string;
+    created_to: string;
+    per_page: number;
+}
+
+export interface OrderAdministrationOptions {
+    companies: OrderListCompany[];
+    assignees: OrderListUser[];
+    priorities: OrderPriority[];
+    lifecycle_statuses: OrderLifecycleStatus[];
+    payment_statuses: OrderPaymentStatus[];
+    disposition_statuses: OrderDispositionStatus[];
+    per_page: number[];
+}
+
+export interface PaginatedOrders {
+    data: OrderSummary[];
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    per_page: number;
+    to: number | null;
+    total: number;
+    links: Array<{ url: string | null; label: string; page: number | null; active: boolean }>;
+}
 
 export interface OrderCapabilities {
     create_order: boolean;
@@ -255,6 +308,7 @@ export interface OrderCapabilities {
     complete_services: boolean;
     mark_ready_for_delivery: boolean;
     deliver_order: boolean;
+    cancel_order: boolean;
 }
 
 export interface CreateOrderMotorInfoPayload {
@@ -293,7 +347,6 @@ export interface SubmitBudgetPayload {
 
 export interface CustomerApprovalPayload {
     authorized_service_ids: number[];
-    down_payment?: MoneyValue;
 }
 
 export interface WorkCompletedPayload {

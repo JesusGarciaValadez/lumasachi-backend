@@ -22,7 +22,9 @@ final class DeliverOrderRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'amount' => 'sometimes|numeric|decimal:0,2|gte:0',
+        ];
     }
 
     public function withValidator(Validator $validator): void
@@ -35,9 +37,10 @@ final class DeliverOrderRequest extends FormRequest
                 $validator->errors()->add('lifecycle_status', 'Order must be in Ready for Delivery status.');
             }
 
-            if ($order && $order->hasPendingPayment()) {
+            if ($order && !array_key_exists('amount', $this->all()) && $order->hasPendingPayment()) {
                 $validator->errors()->add('payment', 'Order must be fully paid before delivery.');
             }
+
         });
     }
 }

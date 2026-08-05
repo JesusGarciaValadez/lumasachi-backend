@@ -8,6 +8,7 @@ const props = withDefaults(
             lifecycle: string;
             priority: string;
             payment: string;
+            unpaid: string;
             disposition: string;
             refund: string;
         };
@@ -36,6 +37,14 @@ const props = withDefaults(
 );
 
 const uniqueRefundStatuses = computed(() => [...new Set(props.refundStatuses)]);
+
+function paymentLabel(paymentStatus: OrderPaymentStatus): string {
+    if (paymentStatus === 'Partially Paid') {
+        return props.labels.unpaid;
+    }
+
+    return props.paymentStatusLabel ?? paymentStatus;
+}
 
 function priorityClass(priority: OrderPriority): string {
     return {
@@ -100,7 +109,7 @@ function statusClass(kind: 'lifecycle' | 'payment' | 'disposition' | 'refund', s
             class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
             data-status-indicator="payment"
         >
-            {{ labels.payment }}: {{ paymentStatusLabel ?? paymentStatus }}
+            {{ labels.payment }}: {{ paymentLabel(paymentStatus) }}
         </span>
         <span
             v-if="dispositionStatus"

@@ -26,12 +26,13 @@ return [
 
     'order_ready_for_delivery' => [
         'subject' => 'Your order is ready for delivery',
-        'line' => 'Your work order is ready for delivery.',
+        'line' => 'The work on your order has been completed and it is ready for delivery.',
+        'payment_line' => 'Please visit our store to pay any remaining balance and receive your order. After payment, an employee will mark it as delivered.',
     ],
 
     'order_delivered' => [
-        'subject' => 'Your order has been delivered',
-        'line' => 'Your work order has been delivered. Thank you for your business!',
+        'subject' => 'Your order has been completed and delivered',
+        'line' => 'Your order has been completed and delivered. Thank you for your business!',
     ],
 
     'order_paid' => [

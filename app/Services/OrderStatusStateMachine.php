@@ -101,12 +101,16 @@ final class OrderStatusStateMachine
      * @throws InvalidArgumentException
      */
     public function setDisposition(
-        Order                  $order,
+        Order   $order,
         OrderDispositionStatus $disposition,
-        User                   $actor,
-        ?string                $note = null,
+        User    $actor,
+        ?string $note = null,
     ): Order
     {
+        if ($order->lifecycleStatus() === OrderLifecycleStatus::Delivered) {
+            throw new InvalidArgumentException(__('orders.validation.delivered_notes_only'));
+        }
+
         if ($order->dispositionStatus() !== null) {
             throw new InvalidArgumentException('A terminal order disposition cannot be changed.');
         }
