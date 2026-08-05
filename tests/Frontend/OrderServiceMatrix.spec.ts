@@ -5,7 +5,6 @@ const labels = {
     select: 'Select',
     service: 'Service',
     measurement: 'Measurement',
-    base_price: 'Base price',
     net_price: 'Net price',
     budgeted: 'Budgeted',
     authorized: 'Authorized',
@@ -84,6 +83,25 @@ describe('OrderServiceMatrix', () => {
         });
 
         expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(0);
+    });
+
+    it.each(['approval', 'completion', 'readonly'] as const)('omits base prices in %s mode', (mode) => {
+        const wrapper = mount(OrderServiceMatrix, {
+            props: {
+                services,
+                itemLabels: { 10: 'Engine block' },
+                selectedIds: [],
+                busy: false,
+                mode,
+                title: 'Services',
+                labels,
+            },
+        });
+
+        expect(wrapper.findAll('th').map((header) => header.text())).not.toContain('Base price');
+        expect(wrapper.text()).not.toContain('Base price');
+        expect(wrapper.text()).not.toContain('100.00');
+        expect(wrapper.text()).toContain('116.00');
     });
 
     it('shows budgeted services and disables unauthorized or completed completion rows', async () => {

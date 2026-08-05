@@ -453,6 +453,28 @@ it('delivers order via api', function () {
 
     $order->refresh();
     expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::Delivered);
+    expect($order->actual_completion)->not->toBeNull();
+});
+it('rejects direct delivered status updates while payment remains pending', function () {
+    $this->actingAs($this->employee);
+
+    $order = createLifecycleOrderInStatus(OrderLifecycleStatus::ReadyForDelivery);
+    $item = OrderItem::factory()->received()->create(['order_id' => $order->id]);
+    OrderService::factory()->budgeted()->authorized()->completed()->create([
+        'order_item_id' => $item->id,
+        'base_price' => 100.00,
+        'net_price' => 116.00,
+    ]);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/status", [
+        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['lifecycle_status']);
+
+    $order->refresh();
+    expect($order->lifecycle_status)->toEqual(OrderLifecycleStatus::ReadyForDelivery);
+    expect($order->actual_completion)->toBeNull();
 });
 it('rejects deliver for wrong status', function () {
     $this->actingAs($this->employee);

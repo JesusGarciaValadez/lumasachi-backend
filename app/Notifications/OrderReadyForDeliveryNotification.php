@@ -33,6 +33,7 @@ final class OrderReadyForDeliveryNotification extends Notification implements Sh
             ->subject(__('notifications.order_ready_for_delivery.subject'))
             ->greeting(__('notifications.greeting'))
             ->line(__('notifications.order_ready_for_delivery.line'))
+            ->line(__('notifications.order_ready_for_delivery.payment_line'))
             ->line(__('notifications.order_label', ['uuid' => $this->order->uuid]))
             ->line(__('notifications.status_label', ['status' => $this->order->lifecycleStatus()?->getLabel()]))
             ->action(__('notifications.view_order'), route('web.orders.show', $this->order))

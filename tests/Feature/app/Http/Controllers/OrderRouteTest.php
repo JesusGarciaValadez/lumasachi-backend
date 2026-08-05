@@ -63,8 +63,30 @@ it('shows the typed order contract to an authorized user', function () {
             ->where('complete_services', false)
             ->where('mark_ready_for_delivery', false)
             ->where('deliver_order', false)
+            ->where('cancel_order', false)
         )
     );
+});
+test('administrators receive the cancellation capability', function () {
+    $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $order = Order::factory()->createQuietly([
+        'customer_id' => $customer->id,
+        'lifecycle_status' => OrderStatus::ReadyForWork->value,
+    ]);
+
+    foreach ([UserRole::ADMINISTRATOR, UserRole::SUPER_ADMINISTRATOR] as $role) {
+        $administrator = User::factory()->create(['role' => $role->value]);
+
+        $this->actingAs($administrator)
+            ->get(route('web.orders.show', [$order->uuid]))
+            ->assertOk()
+            ->assertInertia(fn(InertiaAssert $page) => $page
+                ->has('capabilities', fn(InertiaAssert $capabilities) => $capabilities
+                    ->where('cancel_order', true)
+                    ->etc()
+                )
+            );
+    }
 });
 it('forbids an authenticated user from viewing an unrelated order', function () {
     $user = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
@@ -154,7 +176,7 @@ test('authorized staff receives work capabilities for an order ready for work', 
             )
         );
 });
-test('delivery capability requires a paid order', function () {
+test('delivery capability is available while a balance is collected at delivery', function () {
     $employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value]);
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
     $order = Order::factory()->createQuietly([
@@ -181,7 +203,7 @@ test('delivery capability requires a paid order', function () {
         ->assertOk()
         ->assertInertia(fn(InertiaAssert $page) => $page
             ->has('capabilities', fn(InertiaAssert $capabilities) => $capabilities
-                ->where('deliver_order', false)
+                ->where('deliver_order', true)
                 ->etc()
             )
         );

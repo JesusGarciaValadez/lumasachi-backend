@@ -66,7 +66,7 @@ test('staff can create and review a block order', function (): void {
             ->check('@order-review-service-deck_assembled_4cyl')
             ->check('@order-review-service-replace_cam_bearings')
             ->check('@order-review-service-polish_camshaft_bars')
-            ->assertSeeIn('@order-review-panel', '3,760.00')
+            ->assertDontSeeIn('@order-review-panel', '3,760.00')
             ->assertSeeIn('@order-review-panel', '4,361.60')
             ->scrollIntoView('@order-review-submit')
             ->click('@order-review-submit')
@@ -115,8 +115,8 @@ function orderIntakeAndReviewLogin(Browser $browser, User $employee): void
 
 function orderIntakeAndReviewFillOrder(
     Browser $browser,
-    User   $customer,
-    User   $employee,
+    User $customer,
+    User $employee,
     string $title,
 ): void
 {

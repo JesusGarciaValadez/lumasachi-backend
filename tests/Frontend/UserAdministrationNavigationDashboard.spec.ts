@@ -256,4 +256,33 @@ describe('user administration navigation and dashboard contract', () => {
         expect(wrapper.find('[data-dashboard-summary]').exists()).toBe(false);
         expect(wrapper.find('[data-recent-orders]').exists()).toBe(true);
     });
+
+    it('orders the recent order tile by creation time and id', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                json: vi.fn().mockResolvedValue({
+                    data: [
+                        { uuid: 'order-1', id: 1, title: 'Older', created_at: '2026-08-03T12:00:00Z' },
+                        { uuid: 'order-2', id: 2, title: 'Same time first', created_at: '2026-08-04T12:00:00Z' },
+                        { uuid: 'order-3', id: 3, title: 'Same time second', created_at: '2026-08-04T12:00:00Z' },
+                    ],
+                }),
+            }),
+        );
+
+        const wrapper = mountDashboard({
+            can_view_users: false,
+            is_customer: true,
+            recent_users: [],
+        });
+
+        await flushPromises();
+
+        expect(wrapper.findAll('[data-dashboard-order]').map((row) => row.attributes('data-dashboard-order'))).toEqual([
+            'order-3',
+            'order-2',
+            'order-1',
+        ]);
+    });
 });

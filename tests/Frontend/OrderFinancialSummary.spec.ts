@@ -4,15 +4,12 @@ import { mount } from '@vue/test-utils';
 
 const labels = {
     budgeted: 'Budgeted total',
-    baseTotal: 'Base total',
     netTotal: 'Net total',
     authorized: 'Authorized total',
     completed: 'Completed total',
-    advance_payment: 'Advance payment',
-    remaining_balance: 'Remaining balance',
     payment_state: 'Payment state',
     zero_total: 'Zero total',
-    partial_payment: 'Partial payment',
+    unpaid: 'Unpaid',
     paid_in_full: 'Paid in full',
     overpaid: 'Overpaid',
 };
@@ -38,8 +35,28 @@ function mountSummary(financials: FinancialTotals = baseFinancials) {
 }
 
 describe('OrderFinancialSummary', () => {
+    it('never renders restricted financial fields', () => {
+        const wrapper = mountSummary();
+
+        expect(wrapper.find('[data-financial-value="budgeted-base"]').exists()).toBe(false);
+        expect(wrapper.find('[data-financial-value="advance-payment"]').exists()).toBe(false);
+        expect(wrapper.find('[data-financial-value="remaining-balance"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('Base total');
+        expect(wrapper.text()).not.toContain('Advance payment');
+        expect(wrapper.text()).not.toContain('Remaining balance');
+    });
+
+    it('retains the allowed financial totals', () => {
+        const wrapper = mountSummary();
+
+        expect(wrapper.find('[data-financial-value="budgeted-net"]').exists()).toBe(true);
+        expect(wrapper.find('[data-financial-value="budgeted"]').exists()).toBe(true);
+        expect(wrapper.find('[data-financial-value="authorized"]').exists()).toBe(true);
+        expect(wrapper.find('[data-financial-value="completed"]').exists()).toBe(true);
+    });
+
     it.each([
-        ['partial payment', { completed: '100.00', advance_payment: '50.00', remaining_balance: '50.00' }, 'Partial payment'],
+        ['partial payment', { completed: '100.00', advance_payment: '50.00', remaining_balance: '50.00' }, 'Unpaid'],
         ['exact payment', { completed: '100.00', advance_payment: '100.00', remaining_balance: '0.00' }, 'Paid in full'],
         ['overpayment', { completed: '100.00', advance_payment: '125.00', remaining_balance: '0.00' }, 'Overpaid'],
         ['zero total', { completed: '0.00', advance_payment: '0.00', remaining_balance: '0.00' }, 'Zero total'],
@@ -49,9 +66,6 @@ describe('OrderFinancialSummary', () => {
         expect(wrapper.find('[data-payment-state]').text()).toBe(expectedState);
         expect(wrapper.find('[data-financial-value="completed"]').text()).toBe(
             Number(values.completed).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        );
-        expect(wrapper.find('[data-financial-value="remaining-balance"]').text()).toBe(
-            Number(values.remaining_balance).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         );
     });
 });

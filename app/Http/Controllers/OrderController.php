@@ -33,7 +33,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 final class OrderController extends Controller
 {
@@ -70,6 +72,8 @@ final class OrderController extends Controller
                 ->when($user->isAdministrator() || $user->isSuperAdministrator(), function ($query) {
                     // No additional query modification needed for administrators
                 })
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get();
 
             return OrderResource::collection($orders)->resolve();
@@ -161,7 +165,33 @@ final class OrderController extends Controller
      */
     public function markReadyForDelivery(MarkReadyForDeliveryRequest $request, Order $order): JsonResponse
     {
-        $order = $this->lifecycleService->markReadyForDelivery($order, $this->authenticatedUser($request));
+        $actor = $this->authenticatedUser($request);
+
+        try {
+            $order = $this->lifecycleService->markReadyForDelivery($order, $actor);
+        } catch (InvalidArgumentException $exception) {
+            Log::warning('Unable to mark order ready for delivery.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.ready_for_delivery_failed',
+                'message' => __('orders.messages.ready_for_delivery_failed'),
+            ], 422);
+        } catch (Throwable $exception) {
+            Log::error('Unexpected error while marking order ready for delivery.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.ready_for_delivery_failed',
+                'message' => __('orders.messages.ready_for_delivery_failed'),
+            ], 500);
+        }
 
         return response()->json([
             'code' => 'orders.ready_for_delivery',
@@ -175,7 +205,48 @@ final class OrderController extends Controller
      */
     public function deliverOrder(DeliverOrderRequest $request, Order $order): JsonResponse
     {
-        $order = $this->lifecycleService->deliverOrder($order, $this->authenticatedUser($request));
+        $actor = $this->authenticatedUser($request);
+        $validated = $request->validated();
+
+        try {
+            if (array_key_exists('amount', $validated)) {
+                $result = $this->lifecycleService->recordDeliveryPayment($order, $validated['amount'], $actor);
+                $order = $result['order'];
+                $payment = $result['payment'];
+                $delivered = $order->lifecycleStatus() === OrderLifecycleStatus::Delivered;
+
+                return response()->json([
+                    'code' => $delivered ? 'orders.delivered' : 'orders.payment_recorded',
+                    'message' => __($delivered ? 'orders.messages.delivered' : 'orders.messages.payment_recorded'),
+                    'payment' => $payment ? new OrderPaymentResource($payment->load('createdBy')) : null,
+                    'order' => new OrderResource($order->load(['customer', 'assignedTo', 'motorInfo', 'payments.createdBy', 'services.catalogItem'])),
+                ]);
+            }
+
+            $order = $this->lifecycleService->deliverOrder($order, $actor);
+        } catch (InvalidArgumentException $exception) {
+            Log::warning('Unable to deliver order.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.delivery_failed',
+                'message' => __('orders.messages.delivery_failed'),
+            ], 422);
+        } catch (Throwable $exception) {
+            Log::error('Unexpected error while delivering order.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.delivery_failed',
+                'message' => __('orders.messages.delivery_failed'),
+            ], 500);
+        }
 
         return response()->json([
             'code' => 'orders.delivered',
@@ -189,11 +260,37 @@ final class OrderController extends Controller
      */
     public function recordPayment(StoreOrderPaymentRequest $request, Order $order): JsonResponse
     {
-        $payment = $this->paymentService->recordPayment(
-            $order,
-            $request->validated('amount'),
-            $this->authenticatedUser($request),
-        );
+        $actor = $this->authenticatedUser($request);
+
+        try {
+            $payment = $this->paymentService->recordPayment(
+                $order,
+                $request->validated('amount'),
+                $actor,
+            );
+        } catch (InvalidArgumentException $exception) {
+            Log::warning('Unable to record payment for order.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.payment_failed',
+                'message' => __('orders.messages.payment_failed'),
+            ], 422);
+        } catch (Throwable $exception) {
+            Log::error('Unexpected error while recording payment for order.', [
+                'order_uuid' => $order->uuid,
+                'user_id' => $actor->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'code' => 'orders.payment_failed',
+                'message' => __('orders.messages.payment_failed'),
+            ], 500);
+        }
 
         return response()->json([
             'code' => 'orders.payment_recorded',
@@ -349,6 +446,25 @@ final class OrderController extends Controller
     }
 
     /**
+     * Cancel an order from its current lifecycle step.
+     */
+    public function cancelOrder(Request $request, Order $order): JsonResponse
+    {
+        $order = $this->lifecycleService->setDisposition(
+            $order,
+            OrderDispositionStatus::Cancelled,
+            $this->authenticatedUser($request),
+            null,
+        );
+
+        return response()->json([
+            'code' => 'orders.cancelled',
+            'message' => __('orders.messages.cancelled'),
+            'order' => new OrderResource($order->load(['customer', 'assignedTo', 'createdBy', 'updatedBy'])),
+        ]);
+    }
+
+    /**
      * Remove the specified order from storage.
      */
     public function destroy(Order $order): JsonResponse
@@ -367,12 +483,12 @@ final class OrderController extends Controller
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
     {
         $validated = $request->validated();
+        $newStatus = OrderLifecycleStatus::from($validated['lifecycle_status']);
+        $actor = $this->authenticatedUser($request);
 
-        $order = $this->lifecycleService->transition(
-            $order,
-            OrderLifecycleStatus::from($validated['lifecycle_status']),
-            $this->authenticatedUser($request),
-        );
+        $order = $newStatus === OrderLifecycleStatus::Delivered
+            ? $this->lifecycleService->deliverOrder($order, $actor)
+            : $this->lifecycleService->transition($order, $newStatus, $actor);
 
         return response()->json([
             'code' => 'orders.status_updated',

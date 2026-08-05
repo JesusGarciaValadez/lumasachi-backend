@@ -282,7 +282,7 @@ final class Order extends Model
     /**
      * Calculate lifecycle totals from persisted services and payment state.
      *
-     * @return array{budgeted: string, budgeted_base: string, budgeted_net: string, authorized: string, completed: string, advance_payment: string, paid: string, payment_status: string, remaining_balance: string}
+     * @return array{budgeted: string, budgeted_base: string, budgeted_net: string, authorized: string, completed: string, advance_payment: string, paid: string, payment_status: string, remaining_balance: string, remaining_change: string}
      */
     public function financialTotals(): array
     {
@@ -297,6 +297,7 @@ final class Order extends Model
 
         $completed = $this->completedTotal();
         $paid = $this->totalPaid();
+        $paymentDifference = bcsub($completed, $paid, 2);
 
         return [
             'budgeted' => $sum('is_budgeted'),
@@ -307,8 +308,11 @@ final class Order extends Model
             'advance_payment' => $paid,
             'paid' => $paid,
             'payment_status' => $this->paymentStatus(),
-            'remaining_balance' => bccomp($completed, $paid, 2) === 1
-                ? bcsub($completed, $paid, 2)
+            'remaining_balance' => bccomp($paymentDifference, '0.00', 2) === 1
+                ? $paymentDifference
+                : '0.00',
+            'remaining_change' => bccomp($paymentDifference, '0.00', 2) === -1
+                ? bcsub('0.00', $paymentDifference, 2)
                 : '0.00',
         ];
     }

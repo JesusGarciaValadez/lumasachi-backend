@@ -131,53 +131,84 @@ it('checks complete valid lifecycle transition flow', function () {
             OrderLifecycleStatus::Delivered->value,
         ]);
 });
-it('checks can cancel order from received lifecycle status', function () {
+it('forbids employees from cancelling orders through either order endpoint', function () {
     $this->actingAs($this->employee);
 
-    $response = $this->putJson("/api/v1/orders/{$this->order->uuid}", [
+    $this->postJson("/api/v1/orders/{$this->order->uuid}/cancel")
+        ->assertForbidden();
+
+    $this->putJson("/api/v1/orders/{$this->order->uuid}", [
         'disposition_status' => OrderDispositionStatus::Cancelled->value,
         'notes' => 'Customer cancelled the order',
-    ]);
+    ])->assertForbidden();
 
-    $response->assertOk()
-        ->assertJson([
-            'message' => 'Order updated successfully.',
-            'order' => ['disposition_status' => OrderDispositionStatus::Cancelled->value],
-        ]);
-
-    $this->assertDatabaseHas('orders', [
-        'id' => $this->order->id,
-        'lifecycle_status' => OrderLifecycleStatus::Received->value,
-        'disposition_status' => OrderDispositionStatus::Cancelled->value,
-    ]);
+    expect($this->order->fresh()->disposition_status)->toBeNull();
 });
-it('checks returned and cancelled are terminal dispositions', function () {
-    // Setup order in DELIVERED status
+it('allows administrators to cancel an order from any non-delivered lifecycle step', function () {
+    $this->actingAs($this->admin);
+
+    foreach (array_filter(OrderLifecycleStatus::cases(), fn(OrderLifecycleStatus $status): bool => $status !== OrderLifecycleStatus::Delivered) as $status) {
+        $order = $status === OrderLifecycleStatus::Received
+            ? $this->order
+            : Order::factory()->createQuietly([
+                'customer_id' => $this->customer->id,
+                'created_by' => $this->employee->id,
+                'assigned_to' => $this->employee->id,
+                'lifecycle_status' => $status->value,
+            ]);
+
+        $response = $this->postJson("/api/v1/orders/{$order->uuid}/cancel");
+
+        $response->assertOk()
+            ->assertJson([
+                'message' => 'Order cancelled successfully.',
+                'order' => ['disposition_status' => OrderDispositionStatus::Cancelled->value],
+            ]);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'lifecycle_status' => $status->value,
+            'disposition_status' => OrderDispositionStatus::Cancelled->value,
+        ]);
+    }
+});
+it('forbids customers from cancelling orders', function () {
+    $this->actingAs($this->customer)
+        ->postJson("/api/v1/orders/{$this->order->uuid}/cancel")
+        ->assertForbidden();
+});
+it('allows super administrators to cancel orders', function () {
+    $this->actingAs($this->superAdmin)
+        ->postJson("/api/v1/orders/{$this->order->uuid}/cancel")
+        ->assertOk()
+        ->assertJsonPath('order.disposition_status', OrderDispositionStatus::Cancelled->value);
+});
+it('allows only notes updates after delivery', function () {
     $this->order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
     $this->actingAs($this->employee);
 
-    // DELIVERED -> RETURNED
+    $response = $this->putJson("/api/v1/orders/{$this->order->uuid}", [
+        'notes' => 'Customer received the completed order.',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('order.notes', 'Customer received the completed order.');
+
     $response = $this->putJson("/api/v1/orders/{$this->order->uuid}", [
         'disposition_status' => OrderDispositionStatus::Returned->value,
         'notes' => 'Customer returned the order',
     ]);
 
-    $response->assertOk()
-        ->assertJson([
-            'message' => 'Order updated successfully.',
-            'order' => ['disposition_status' => OrderDispositionStatus::Returned->value],
-        ]);
+    $response->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
 
-    // A returned order cannot be changed or resume lifecycle.
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/status", [
         'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
     $response->assertUnprocessable()->assertJsonValidationErrors(['lifecycle_status']);
 });
-it('checks payment status is independent from lifecycle status', function () {
-    // Setup order in DELIVERED status
+it('does not allow payments after delivery', function () {
     $this->order->update(['lifecycle_status' => OrderLifecycleStatus::Delivered->value]);
 
     $this->actingAs($this->employee);
@@ -185,13 +216,11 @@ it('checks payment status is independent from lifecycle status', function () {
     $response = $this->getJson("/api/v1/orders/{$this->order->uuid}");
     $response->assertOk()->assertJsonPath('payment_status', 'Unpaid');
 
-    // Record payment without changing lifecycle.
     $response = $this->postJson("/api/v1/orders/{$this->order->uuid}/payments", [
         'amount' => 100,
     ]);
 
-    $response->assertCreated()->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
-    $response->assertJsonPath('order.payment_status', 'Paid');
+    $response->assertUnprocessable()->assertJsonPath('code', 'orders.payment_failed');
 });
 it('checks cannot transition from paid status', function () {
     $this->actingAs($this->employee);
@@ -208,7 +237,7 @@ it('checks cannot transition from paid status', function () {
         ->assertJson([
             'errors' => [
                 'lifecycle_status' => [
-                    'Invalid lifecycle transition.',
+                    'Delivered orders can only have notes updated.',
                 ],
             ],
         ]);

@@ -9,21 +9,18 @@ const props = defineProps<{
     title: string;
     labels: {
         budgeted: string;
-        baseTotal?: string;
         netTotal?: string;
         authorized: string;
         completed: string;
-        advance_payment: string;
-        remaining_balance: string;
         payment_state?: string;
         zero_total?: string;
-        partial_payment?: string;
+        unpaid?: string;
         paid_in_full?: string;
         overpaid?: string;
     };
 }>();
 
-type PaymentState = 'zero_total' | 'partial_payment' | 'paid_in_full' | 'overpaid';
+type PaymentState = 'zero_total' | 'unpaid' | 'paid_in_full' | 'overpaid';
 
 const paymentState = computed<PaymentState>(() => {
     const completed = Number(props.financials.completed ?? 0);
@@ -35,7 +32,7 @@ const paymentState = computed<PaymentState>(() => {
     }
 
     if (remainingBalance > 0) {
-        return 'partial_payment';
+        return 'unpaid';
     }
 
     return advancePayment > completed ? 'overpaid' : 'paid_in_full';
@@ -46,7 +43,7 @@ const paymentStateLabel = computed(() => props.labels[paymentState.value]);
 function paymentStateClass(state: PaymentState): string {
     return {
         zero_total: 'bg-muted text-muted-foreground',
-        partial_payment: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+        unpaid: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
         paid_in_full: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
         overpaid: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
     }[state];
@@ -57,11 +54,7 @@ function paymentStateClass(state: PaymentState): string {
     <Card>
         <div class="flex flex-col gap-4 px-6">
             <h2 class="text-base font-semibold">{{ title }}</h2>
-            <dl class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4 lg:grid-cols-8">
-                <div v-if="labels.baseTotal && financials.budgeted_base !== undefined">
-                    <dt class="text-muted-foreground">{{ labels.baseTotal }}</dt>
-                    <dd class="font-semibold" data-financial-value="budgeted-base">{{ formatMoney(financials.budgeted_base) }}</dd>
-                </div>
+            <dl class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4 lg:grid-cols-5">
                 <div v-if="labels.netTotal && financials.budgeted_net !== undefined">
                     <dt class="text-muted-foreground">{{ labels.netTotal }}</dt>
                     <dd class="font-semibold" data-financial-value="budgeted-net">{{ formatMoney(financials.budgeted_net) }}</dd>
@@ -77,14 +70,6 @@ function paymentStateClass(state: PaymentState): string {
                 <div>
                     <dt class="text-muted-foreground">{{ labels.completed }}</dt>
                     <dd class="font-semibold" data-financial-value="completed">{{ formatMoney(financials.completed) }}</dd>
-                </div>
-                <div>
-                    <dt class="text-muted-foreground">{{ labels.advance_payment }}</dt>
-                    <dd class="font-semibold" data-financial-value="advance-payment">{{ formatMoney(financials.advance_payment) }}</dd>
-                </div>
-                <div>
-                    <dt class="text-muted-foreground">{{ labels.remaining_balance }}</dt>
-                    <dd class="font-semibold" data-financial-value="remaining-balance">{{ formatMoney(financials.remaining_balance) }}</dd>
                 </div>
                 <div v-if="labels.payment_state && paymentStateLabel">
                     <dt class="text-muted-foreground">{{ labels.payment_state }}</dt>

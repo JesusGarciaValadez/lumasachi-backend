@@ -119,7 +119,7 @@ final class OrderObserver
         $oldStatus = $original['lifecycle_status'] ?? null;
         $newStatus = $order->lifecycleStatus()?->value;
 
-        if ($oldStatus !== $newStatus && $newStatus) {
+        if ($order->wasChanged('lifecycle_status') && $oldStatus !== $newStatus && $newStatus) {
             $this->handleStatusTransition($order, $newStatus);
         }
 

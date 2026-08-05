@@ -30,27 +30,23 @@ import type {
     SubmitBudgetPayload,
 } from '@/types/orders';
 import { normalizeOrder, ORDER_STATUS_SEQUENCE, resolveLifecycleStatus } from '@/types/orders';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-type DialogAction = 'budget' | 'approval' | 'completion' | 'ready' | 'deliver' | null;
+type DialogAction = 'budget' | 'approval' | 'completion' | 'ready' | 'deliver' | 'cancel' | null;
 
 interface BudgetSubmission {
     payload: SubmitBudgetPayload;
     selectedCount: number;
-    baseTotal: string;
     netTotal: string;
 }
 
 interface ApprovalSubmission {
     payload: CustomerApprovalPayload;
     selectedCount: number;
-    budgetedBaseTotal: string;
-    budgetedNetTotal: string;
-    authorizedBaseTotal: string;
-    authorizedNetTotal: string;
-    downPayment: string;
+    budgetedTotal: string;
+    authorizedTotal: string;
 }
 
 const { order: initialOrder, capabilities } = defineProps<{
@@ -74,6 +70,7 @@ const attachmentActionKey = ref<string | null>(null);
 const catalog = ref<CatalogPayload | null>(null);
 const catalogLoading = ref(false);
 const completionSelection = ref<number[]>([]);
+const deliveryPaymentAmount = ref('');
 const pendingBudget = ref<BudgetSubmission | null>(null);
 const pendingApproval = ref<ApprovalSubmission | null>(null);
 const busyAction = ref<DialogAction>(null);
@@ -96,9 +93,9 @@ const canReview = computed(() => capabilities.submit_budget && order.value.lifec
 const canApprove = computed(() => capabilities.approve_services && order.value.lifecycle_status === 'Awaiting Customer Approval');
 const canComplete = computed(() => capabilities.complete_services && order.value.lifecycle_status === 'Ready for Work');
 const canMarkReady = computed(() => capabilities.mark_ready_for_delivery && order.value.lifecycle_status === 'Ready for Work');
-const remainingBalance = computed(() => Number(order.value.financials?.remaining_balance ?? 0));
-const canViewDelivery = computed(() => isStaff.value && order.value.lifecycle_status === 'Ready for Delivery');
-const canDeliver = computed(() => capabilities.deliver_order && remainingBalance.value <= 0);
+const canViewDelivery = computed(() => isStaff.value && ['Ready for Delivery', 'Delivered'].includes(order.value.lifecycle_status));
+const canDeliver = computed(() => capabilities.deliver_order && order.value.lifecycle_status === 'Ready for Delivery');
+const canCancel = computed(() => capabilities.cancel_order && order.value.disposition_status === null);
 
 const statusSteps = computed(() => ORDER_STATUS_SEQUENCE.map((value) => ({ value, label: statusLabel(value) })));
 const currentLifecycleStatus = computed<OrderLifecycleStatus | null>(() => resolveLifecycleStatus(order.value.lifecycle_status));
@@ -106,6 +103,7 @@ const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),
     priority: t('orders.priority'),
     payment: t('orders.payment_status'),
+    unpaid: t('orders.unpaid'),
     disposition: t('orders.disposition_status'),
     refund: t('orders.refund_status'),
 }));
@@ -120,7 +118,6 @@ const serviceLabels = computed(() => ({
     select: t('orders.select'),
     service: t('orders.service'),
     measurement: t('orders.measurement'),
-    base_price: t('orders.base_price'),
     net_price: t('orders.net_price'),
     budgeted: t('orders.budgeted'),
     authorized: t('orders.authorized'),
@@ -133,23 +130,29 @@ const serviceLabels = computed(() => ({
 
 const financialLabels = computed(() => ({
     budgeted: t('orders.budgeted_total'),
-    baseTotal: t('orders.base_total'),
     netTotal: t('orders.net_total'),
     authorized: t('orders.authorized_total'),
     completed: t('orders.completed_total'),
-    advance_payment: t('orders.advance_payment'),
-    remaining_balance: t('orders.remaining_balance'),
     payment_state: t('orders.payment_state'),
     zero_total: t('orders.zero_total'),
-    partial_payment: t('orders.partial_payment'),
+    unpaid: t('orders.unpaid'),
     paid_in_full: t('orders.paid_in_full'),
     overpaid: t('orders.overpaid'),
 }));
 
 const deliveryLabels = computed(() => ({
     title: t('orders.delivery'),
-    remaining_balance: t('orders.remaining_balance'),
-    payment_required: t('orders.payment_required'),
+    payment_amount: t('orders.payment_amount'),
+    payment_amount_help: t('orders.payment_amount_help'),
+    submit: t('orders.record_payment'),
+    record_payment: t('orders.record_payment'),
+    net_total: t('orders.net_total'),
+    budgeted_total: t('orders.budgeted_total'),
+    authorized_total: t('orders.authorized_total'),
+    completed_total: t('orders.completed_total'),
+    total_paid: t('orders.total_paid'),
+    balance_remaining: t('orders.balance_remaining'),
+    remaining_change: t('orders.remaining_change'),
     deliver: t('orders.deliver'),
     loading: t('common.loading'),
 }));
@@ -175,11 +178,8 @@ const reviewLabels = computed(() => ({
     service: t('orders.service'),
     measurement: t('orders.measurement'),
     budgeted: t('orders.budgeted'),
-    basePrice: t('orders.base_price'),
     netPrice: t('orders.net_price'),
     notes: t('orders.notes'),
-    preview: t('orders.preview_total'),
-    baseTotal: t('orders.base_total'),
     netTotal: t('orders.net_total'),
     selected: (count: number) => t('orders.services_selected', count),
     empty: t('orders.no_services'),
@@ -190,18 +190,14 @@ const approvalLabels = computed(() => ({
     help: t('orders.customer_approval_help'),
     service: t('orders.service'),
     measurement: t('orders.measurement'),
-    basePrice: t('orders.base_price'),
     netPrice: t('orders.net_price'),
     budgeted: t('orders.budgeted'),
     authorized: t('orders.authorized'),
     select: t('orders.select'),
     preview: t('orders.preview_total'),
-    budgetedBaseTotal: t('orders.base_total'),
-    budgetedNetTotal: t('orders.net_total'),
-    authorizedBaseTotal: t('orders.authorized_base_total'),
-    authorizedNetTotal: t('orders.authorized_net_total'),
+    budgetedTotal: t('orders.budgeted_total'),
+    authorizedTotal: t('orders.authorized_total'),
     selected: (count: number) => t('orders.services_selected', count),
-    advancePayment: t('orders.advance_payment'),
     submit: t('orders.approve_selected'),
     empty: t('orders.no_budgeted_services'),
 }));
@@ -210,10 +206,13 @@ const financials = computed<FinancialTotals>(
     () =>
         order.value.financials ?? {
             budgeted: '0.00',
+            budgeted_net: '0.00',
             authorized: '0.00',
             completed: '0.00',
             advance_payment: '0.00',
+            paid: '0.00',
             remaining_balance: '0.00',
+            remaining_change: '0.00',
         },
 );
 
@@ -406,8 +405,16 @@ async function refreshOrder(): Promise<void> {
 }
 
 function handleError(error: unknown): void {
-    lastError.value = error instanceof OrderApiError ? error : null;
-    staleState.value = error instanceof OrderApiError && (error.kind === 'conflict' || Object.hasOwn(error.validationErrors, 'status'));
+    if (error instanceof OrderApiError) {
+        lastError.value = error;
+        staleState.value = error.kind === 'conflict' || Object.hasOwn(error.validationErrors, 'status');
+
+        return;
+    }
+
+    console.error('Order action failed.', error);
+    lastError.value = new OrderApiError(0, t('orders.action_failed'));
+    staleState.value = false;
 }
 
 async function submitBudget(payload: SubmitBudgetPayload): Promise<void> {
@@ -474,8 +481,26 @@ async function markReadyForDelivery(): Promise<void> {
     lastError.value = null;
 
     try {
-        const readyOrder = await orderApi.markReadyForDelivery(orderUuid.value);
-        currentOrder.value = readyOrder;
+        await orderApi.markReadyForDelivery(orderUuid.value);
+        router.visit(route('web.orders.index'), {
+            onSuccess: () => router.flash('success', t('orders.ready_for_delivery_success')),
+        });
+    } catch (error: unknown) {
+        handleError(error);
+    } finally {
+        busyAction.value = null;
+    }
+}
+
+async function deliverOrder(amount: string): Promise<void> {
+    busyAction.value = 'deliver';
+    lastError.value = null;
+
+    try {
+        const normalizedAmount = Number(amount).toFixed(2);
+        const updatedOrder = await orderApi.deliver(orderUuid.value, normalizedAmount);
+        currentOrder.value = updatedOrder;
+        deliveryPaymentAmount.value = '';
         await refreshOrder();
     } catch (error: unknown) {
         handleError(error);
@@ -484,13 +509,18 @@ async function markReadyForDelivery(): Promise<void> {
     }
 }
 
-async function deliverOrder(): Promise<void> {
-    busyAction.value = 'deliver';
+function prepareDeliveryPayment(amount: string): void {
+    deliveryPaymentAmount.value = amount;
+    openConfirmation('deliver');
+}
+
+async function cancelOrder(): Promise<void> {
+    busyAction.value = 'cancel';
     lastError.value = null;
 
     try {
-        const deliveredOrder = await orderApi.deliver(orderUuid.value);
-        currentOrder.value = deliveredOrder;
+        const cancelledOrder = await orderApi.cancel(orderUuid.value);
+        currentOrder.value = cancelledOrder;
         await refreshOrder();
     } catch (error: unknown) {
         handleError(error);
@@ -520,7 +550,8 @@ async function confirmAction(): Promise<void> {
     }
     if (action === 'completion') await completeServices();
     if (action === 'ready') await markReadyForDelivery();
-    if (action === 'deliver') await deliverOrder();
+    if (action === 'deliver') await deliverOrder(deliveryPaymentAmount.value);
+    if (action === 'cancel') await cancelOrder();
 }
 
 onMounted(async () => {
@@ -539,20 +570,32 @@ onMounted(async () => {
                             <h1 class="truncate text-xl font-semibold md:text-2xl">{{ order.title }}</h1>
                             <p class="text-sm break-all text-muted-foreground">#{{ order.uuid }}</p>
                         </div>
-                        <div dusk="order-status">
-                            <OrderStatusIndicators
-                                :disposition-status="order.disposition_status"
-                                :disposition-status-label="order.disposition_status_label"
-                                :labels="indicatorLabels"
-                                :lifecycle-status="currentLifecycleStatus"
-                                :lifecycle-status-label="order.lifecycle_status_label"
-                                :payment-status="order.payment_status"
-                                :payment-status-label="order.payment_status_label"
-                                :priority="order.priority"
-                                :priority-label="priorityLabel(order.priority)"
-                                :refund-status-labels="refundStatusLabels"
-                                :refund-statuses="refundStatuses"
-                            />
+                        <div class="flex flex-col items-start gap-2 sm:items-end">
+                            <div dusk="order-status">
+                                <OrderStatusIndicators
+                                    :disposition-status="order.disposition_status"
+                                    :disposition-status-label="order.disposition_status_label"
+                                    :labels="indicatorLabels"
+                                    :lifecycle-status="currentLifecycleStatus"
+                                    :lifecycle-status-label="order.lifecycle_status_label"
+                                    :payment-status="order.payment_status"
+                                    :payment-status-label="order.payment_status_label"
+                                    :priority="order.priority"
+                                    :priority-label="priorityLabel(order.priority)"
+                                    :refund-status-labels="refundStatusLabels"
+                                    :refund-statuses="refundStatuses"
+                                />
+                            </div>
+                            <Button
+                                v-if="canCancel"
+                                :disabled="busyAction !== null"
+                                data-order-cancel-button
+                                dusk="order-cancel-button"
+                                variant="destructive"
+                                @click="openConfirmation('cancel')"
+                            >
+                                {{ busyAction === 'cancel' ? t('common.loading') : t('orders.cancel_order') }}
+                            </Button>
                         </div>
                     </div>
                     <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ order.description }}</p>
@@ -679,7 +722,6 @@ onMounted(async () => {
                 dusk="order-approval-panel"
                 v-if="canApprove"
                 :busy="busyAction !== null"
-                :errors="lastError?.validationErrors ?? {}"
                 :item-labels="itemLabels"
                 :labels="approvalLabels"
                 :services="order.services"
@@ -746,7 +788,9 @@ onMounted(async () => {
                 :can-deliver="canDeliver"
                 :financials="financials"
                 :labels="deliveryLabels"
-                @deliver="openConfirmation('deliver')"
+                :payment-amount="deliveryPaymentAmount"
+                @deliver="prepareDeliveryPayment"
+                @update:payment-amount="deliveryPaymentAmount = $event"
             />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -827,14 +871,12 @@ onMounted(async () => {
             </DialogHeader>
             <div class="rounded-md bg-muted p-3 text-sm">
                 <span v-if="dialogAction === 'budget' && pendingBudget">
-                    {{ t('orders.services_selected', pendingBudget.selectedCount) }} · {{ t('orders.base_total') }}:
-                    {{ formatMoney(pendingBudget.baseTotal) }} · {{ t('orders.net_total') }}: {{ formatMoney(pendingBudget.netTotal) }}
+                    {{ t('orders.services_selected', pendingBudget.selectedCount) }} · {{ t('orders.net_total') }}:
+                    {{ formatMoney(pendingBudget.netTotal) }}
                 </span>
                 <span v-else-if="dialogAction === 'approval' && pendingApproval">
-                    {{ t('orders.services_selected', pendingApproval.selectedCount) }} · {{ t('orders.authorized_base_total') }}:
-                    {{ formatMoney(pendingApproval.authorizedBaseTotal) }} · {{ t('orders.authorized_net_total') }}:
-                    {{ formatMoney(pendingApproval.authorizedNetTotal) }} · {{ t('orders.advance_payment') }}:
-                    {{ pendingApproval.downPayment || '—' }}
+                    {{ t('orders.services_selected', pendingApproval.selectedCount) }} · {{ t('orders.authorized_total') }}:
+                    {{ formatMoney(pendingApproval.authorizedTotal) }}
                 </span>
                 <span v-else-if="dialogAction === 'completion'">{{ t('orders.services_selected', completionSelection.length) }}</span>
                 <span v-else-if="dialogAction === 'ready'">
@@ -848,13 +890,11 @@ onMounted(async () => {
                 <span v-else-if="dialogAction === 'deliver'" class="flex flex-col gap-1" data-delivery-confirmation>
                     <span>{{ t('orders.confirm_delivery') }}</span>
                     <span>{{ t('orders.uuid') }}: #{{ order.uuid }}</span>
-                    <span>
-                        {{ t('orders.completed_total') }}: {{ formatMoney(financials.completed) }} · {{ t('orders.advance_payment') }}:
-                        {{ formatMoney(financials.advance_payment) }} · {{ t('orders.remaining_balance') }}:
-                        {{ formatMoney(financials.remaining_balance) }}
-                    </span>
+                    <span>{{ t('orders.payment_amount') }}: {{ formatMoney(deliveryPaymentAmount) }}</span>
+                    <span>{{ t('orders.completed_total') }}: {{ formatMoney(financials.completed) }}</span>
                 </span>
-                <span v-else>{{ t('orders.confirm_delivery') }}</span>
+                <span v-else-if="dialogAction === 'cancel'" data-cancel-confirmation>{{ t('orders.confirm_cancel') }}</span>
+                <span v-else>{{ t('orders.confirm_action_description') }}</span>
             </div>
             <DialogFooter>
                 <DialogClose as-child

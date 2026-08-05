@@ -53,7 +53,8 @@ export interface OrderApi {
     approveServices(orderUuid: string, payload: CustomerApprovalPayload): Promise<Order>;
     completeServices(orderUuid: string, payload: WorkCompletedPayload): Promise<Order>;
     markReadyForDelivery(orderUuid: string): Promise<Order>;
-    deliver(orderUuid: string): Promise<Order>;
+    deliver(orderUuid: string, amount?: string): Promise<Order>;
+    cancel(orderUuid: string): Promise<Order>;
     history(orderUuid: string, url?: string): Promise<OrderHistoryPage>;
     attachments(orderUuid: string): Promise<OrderAttachmentsResponse>;
     catalog(): Promise<CatalogPayload>;
@@ -235,8 +236,14 @@ export function useOrderApi(): OrderApi {
             return mutationOrder(await request<OrderMutationResponse>(apiUrl('api.orders.ready-for-delivery', orderUuid), 'POST'));
         },
 
-        async deliver(orderUuid) {
-            return mutationOrder(await request<OrderMutationResponse>(apiUrl('api.orders.deliver', orderUuid), 'POST'));
+        async deliver(orderUuid, amount) {
+            return mutationOrder(
+                await request<OrderMutationResponse>(apiUrl('api.orders.deliver', orderUuid), 'POST', amount === undefined ? undefined : { amount }),
+            );
+        },
+
+        async cancel(orderUuid) {
+            return mutationOrder(await request<OrderMutationResponse>(apiUrl('api.orders.cancel', orderUuid), 'POST'));
         },
 
         async history(orderUuid, url) {

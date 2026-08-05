@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OrderHistoryEventType;
+use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderPayment;
@@ -17,9 +18,10 @@ final class OrderPaymentService
     public function recordCumulativeDownPayment(
         Order $order,
         string|int|float $targetAmount,
-        User  $actor,
+        User $actor,
     ): ?OrderPayment
     {
+        $this->assertOrderCanReceivePayment($order);
         $normalizedTarget = $this->normalizeNonnegativeAmount($targetAmount);
         $order->unsetRelation('payments');
         $currentPaid = $order->totalPaid();
@@ -38,10 +40,11 @@ final class OrderPaymentService
     public function recordPayment(
         Order $order,
         string|int|float $amount,
-        User  $actor,
+        User $actor,
         ?CarbonInterface $receivedAt = null,
     ): OrderPayment
     {
+        $this->assertOrderCanReceivePayment($order);
         $normalizedAmount = $this->normalizeAmount($amount);
 
         $payment = $order->payments()->create([
@@ -61,6 +64,13 @@ final class OrderPaymentService
         ]);
 
         return $payment;
+    }
+
+    private function assertOrderCanReceivePayment(Order $order): void
+    {
+        if ($order->lifecycleStatus() === OrderLifecycleStatus::Delivered) {
+            throw new InvalidArgumentException('Delivered orders cannot receive new payments.');
+        }
     }
 
     private function normalizeNonnegativeAmount(string|int|float $amount): string

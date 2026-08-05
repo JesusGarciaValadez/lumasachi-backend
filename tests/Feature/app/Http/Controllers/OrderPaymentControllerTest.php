@@ -121,6 +121,43 @@ it('blocks delivery while the ledger leaves an amount due', function (): void {
         ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value);
 });
 
+it('records payment at delivery and keeps the order ready when a balance remains', function (): void {
+    $order = paymentTestOrder(OrderLifecycleStatus::ReadyForDelivery);
+    paymentTestService($order, 100.00);
+
+    $this->postJson("/api/v1/orders/{$order->uuid}/deliver", ['amount' => '40.00'])
+        ->assertOk()
+        ->assertJsonPath('code', 'orders.payment_recorded')
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::ReadyForDelivery->value)
+        ->assertJsonPath('order.financials.paid', '40.00')
+        ->assertJsonPath('order.financials.remaining_balance', '60.00');
+
+    expect($order->fresh()->actual_completion)->toBeNull();
+});
+
+it('delivers after exact payment and records change for an overpayment', function (): void {
+    $exactOrder = paymentTestOrder(OrderLifecycleStatus::ReadyForDelivery);
+    paymentTestService($exactOrder, 100.00);
+
+    $this->postJson("/api/v1/orders/{$exactOrder->uuid}/deliver", ['amount' => '100.00'])
+        ->assertOk()
+        ->assertJsonPath('code', 'orders.delivered')
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value)
+        ->assertJsonPath('order.financials.remaining_balance', '0.00')
+        ->assertJsonPath('order.financials.remaining_change', '0.00');
+
+    expect($exactOrder->fresh()->actual_completion)->not->toBeNull();
+
+    $overpaidOrder = paymentTestOrder(OrderLifecycleStatus::ReadyForDelivery);
+    paymentTestService($overpaidOrder, 100.00);
+
+    $this->postJson("/api/v1/orders/{$overpaidOrder->uuid}/deliver", ['amount' => '125.00'])
+        ->assertOk()
+        ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::Delivered->value)
+        ->assertJsonPath('order.financials.remaining_balance', '0.00')
+        ->assertJsonPath('order.financials.remaining_change', '25.00');
+});
+
 function paymentTestOrder(OrderLifecycleStatus $status = OrderLifecycleStatus::AwaitingReview): Order
 {
     $order = Order::factory()->createQuietly([

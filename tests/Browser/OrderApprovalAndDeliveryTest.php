@@ -10,7 +10,6 @@ use App\Models\Order;
 use App\Models\OrderMotorInfo;
 use App\Models\ServiceCatalog;
 use App\Models\User;
-use App\Services\OrderPaymentService;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
@@ -101,8 +100,8 @@ test('customer can approve and staff can complete and deliver the order', functi
             ->check('@order-approval-service-wash_block')
             ->check('@order-approval-service-weld_between_cylinders_qr25')
             ->check('@order-approval-service-replace_cam_bearings')
-            ->type('@order-approval-down-payment', '300')
-            ->assertSeeIn('@order-approval-panel', '1,880.00')
+            ->assertMissing('@order-approval-down-payment')
+            ->assertDontSeeIn('@order-approval-panel', '1,880.00')
             ->assertSeeIn('@order-approval-panel', '2,180.80')
             ->click('@order-approval-submit')
             ->waitFor('@order-confirm-action')
@@ -128,18 +127,14 @@ test('customer can approve and staff can complete and deliver the order', functi
             ->click('@order-confirm-action')
             ->waitFor('@order-delivery-panel', 10)
             ->waitForTextIn('@order-status', 'Ready for Delivery', 10)
-            ->assertSeeIn('@order-delivery-panel', '952.80')
+            ->assertPresent('@order-delivery-payment')
+            ->assertSeeIn('@order-delivery-panel', 'Balance remaining')
             ->assertDisabled('@order-delivery-action');
-
-        app(OrderPaymentService::class)->recordPayment(
-            $this->order->fresh(),
-            '1252.80',
-            $this->employee,
-        );
 
         $browser->visit($orderPath)
             ->waitFor('@order-delivery-panel', 10)
-            ->waitForTextIn('@order-delivery-remaining', '0.00', 10)
+            ->type('@order-delivery-payment', '1252.80')
+            ->waitUntilEnabled('@order-delivery-action', 10)
             ->assertEnabled('@order-delivery-action')
             ->click('@order-delivery-action')
             ->waitFor('@order-confirm-action')

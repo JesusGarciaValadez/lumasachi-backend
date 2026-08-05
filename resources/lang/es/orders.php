@@ -45,11 +45,15 @@ return [
         'services_approved' => 'Servicios aprobados correctamente.',
         'work_completed' => 'Trabajo marcado como realizado.',
         'ready_for_delivery' => 'Orden marcada como lista para entrega.',
+        'ready_for_delivery_failed' => 'No pudimos marcar la orden como lista para entrega. Revisa la orden e inténtalo de nuevo.',
         'delivered' => 'Orden entregada correctamente.',
+        'delivery_failed' => 'No pudimos completar la entrega. Revisa el pago e inténtalo de nuevo.',
+        'cancelled' => 'Orden cancelada correctamente.',
         'updated' => 'Orden actualizada correctamente.',
         'deleted' => 'Orden eliminada correctamente.',
         'status_updated' => 'Estatus de la orden actualizado correctamente.',
         'payment_recorded' => 'El pago se registró correctamente.',
+        'payment_failed' => 'No pudimos registrar el pago. Revisa el monto e inténtalo de nuevo.',
         'refund_requested' => 'El reembolso se solicitó correctamente.',
         'refund_approved' => 'El reembolso se aprobó correctamente.',
         'refund_rejected' => 'El reembolso se rechazó correctamente.',
@@ -98,6 +102,7 @@ return [
 
     'validation' => [
         'mark_ready_for_delivery_status' => 'La orden debe estar en estado Lista para trabajo.',
+        'delivered_notes_only' => 'Las órdenes entregadas solo pueden actualizar sus notas.',
     ],
 
     'priority_labels' => [

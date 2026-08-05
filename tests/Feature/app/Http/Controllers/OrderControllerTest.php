@@ -356,6 +356,7 @@ it('checks if update allows partial updates', function () {
         'description' => 'Original Description',
         'created_by' => $this->employee->id,
         'assigned_to' => $this->employee->id,
+        'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
     $response = $this->putJson('/api/v1/orders/' . $order->uuid, [

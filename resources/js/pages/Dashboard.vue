@@ -37,7 +37,11 @@ const isCustomer = computed(() => props.is_customer === true);
 
 const recentFive = computed(() => {
     const list = [...orders.value];
-    list.sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());
+    list.sort((a, b) => {
+        const createdAtDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+
+        return createdAtDifference || b.id - a.id;
+    });
     return list.slice(0, 5);
 });
 
@@ -45,6 +49,7 @@ const indicatorLabels = computed(() => ({
     lifecycle: t('orders.lifecycle_status'),
     priority: t('orders.priority'),
     payment: t('orders.payment_status'),
+    unpaid: t('orders.unpaid'),
     disposition: t('orders.disposition_status'),
     refund: t('orders.refund_status'),
 }));
@@ -128,7 +133,12 @@ onMounted(async () => {
                     </div>
                     <div v-else>
                         <div v-if="recentFive.length" class="divide-y">
-                            <div v-for="o in recentFive" :key="o.uuid" class="flex items-center justify-between gap-4 py-3">
+                            <div
+                                v-for="o in recentFive"
+                                :key="o.uuid"
+                                :data-dashboard-order="o.uuid"
+                                class="flex items-center justify-between gap-4 py-3"
+                            >
                                 <div class="min-w-0">
                                     <div class="truncate font-medium">{{ o.title }}</div>
                                     <div class="mt-2 flex flex-wrap items-center gap-2">
