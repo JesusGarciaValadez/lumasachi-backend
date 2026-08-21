@@ -5,7 +5,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 12.64.0.
+ * Generated for Laravel 12.66.0.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -10354,6 +10354,20 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Http\Client\Factory $instance */
             return $instance->globalOptions($options);
+        }
+
+        /**
+         * Execute a callback while requests are created without global middleware or global options.
+         *
+         * @template TReturn
+         * @param (\Closure(): TReturn) $callback
+         * @return TReturn
+         * @static
+         */
+        public static function withoutGlobalConfiguration($callback)
+        {
+            /** @var \Illuminate\Http\Client\Factory $instance */
+            return $instance->withoutGlobalConfiguration($callback);
         }
 
         /**
@@ -25241,6 +25255,16 @@ namespace Laravel\Octane\Facades {
         }
 
         /**
+         * Register the Octane dev commands.
+         *
+         * @static
+         */
+        public static function registerDevCommands()
+        {
+            return \Laravel\Octane\Octane::registerDevCommands();
+        }
+
+        /**
          * Concurrently resolve the given callbacks via background tasks, returning the results.
          *
          * Results will be keyed by their given keys - if a task did not finish, the tasks value will be "false".
@@ -25377,6 +25401,7 @@ namespace Laravel\Pennant {
      * @method static void flushMacros()
      * @method static mixed macroCall(string $method, array $parameters)
      * @method static \Laravel\Pennant\PendingScopedFeatureInteraction for(mixed $scope)
+     * @method static \Laravel\Pennant\PendingScopedFeatureInteraction globally()
      * @method static array load(\BackedEnum|\UnitEnum|string|array $features)
      * @method static array loadMissing(\BackedEnum|\UnitEnum|string|array $features)
      * @method static array loadAll()
@@ -25394,7 +25419,7 @@ namespace Laravel\Pennant {
      * @method static void activate(\BackedEnum|\UnitEnum|string|array $feature, mixed $value = true)
      * @method static void deactivate(\BackedEnum|\UnitEnum|string|array $feature)
      * @method static void forget(\BackedEnum|\UnitEnum|string|array $features)
-     * @see \Laravel\Pennant\FeatureManager
+     * @see FeatureManager
      */
     class Feature {
         /**

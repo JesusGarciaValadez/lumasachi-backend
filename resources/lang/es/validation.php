@@ -48,6 +48,7 @@ return [
         'authorized_service_ids' => 'servicios autorizados',
         'comment' => 'comentario',
         'completed_service_ids' => 'servicios realizados',
+        'company_id' => 'empresa',
         'created_date' => 'fecha de creación',
         'customer_id' => 'cliente',
         'descriptions' => 'descripciones',

@@ -4,68 +4,61 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
-use App\Http\Resources\UserResource;
+use App\Http\Requests\OrderParticipantLookupRequest;
+use App\Http\Resources\OrderParticipantResource;
+use App\Models\Company;
 use App\Models\User;
+use App\Services\OrderParticipantQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class UsersController extends Controller
 {
     /**
-     * Get employees of the authenticated user's company.
+     * Get active companies available to a Super Administrator.
      */
-    public function employees(Request $request): JsonResponse
+    public function companies(OrderParticipantLookupRequest $request, OrderParticipantQuery $participantQuery): JsonResponse
     {
-        $user = $request->user();
-        abort_unless($user instanceof User, 401);
-        $companyId = $user->company_id;
+        $actor = $this->authenticatedUser($request);
 
-        $query = User::query();
-
-        if (is_null($companyId)) {
-            // Same company means company_id is also null
-            $query->whereNull('company_id');
-        } else {
-            $query->where('company_id', $companyId);
-        }
-
-        // Optional: exclude soft-deleted or inactive if needed; not specified in requirement
-        $users = $query->with('company')
-            ->whereNot('role', UserRole::CUSTOMER->value)
-            ->where('is_active', true)
-            ->get();
-
-        return response()->json(UserResource::collection($users));
+        return response()->json($participantQuery->companiesFor($actor)->map(
+            static fn (Company $company): array => [
+                'id' => $company->id,
+                'uuid' => $company->uuid,
+                'name' => $company->name,
+            ]
+        )->values());
     }
 
     /**
-     * Get customers: users from a different company than the authenticated user's company.
+     * Get employees of the authenticated user's effective order company.
      */
-    public function customers(Request $request): JsonResponse
+    public function employees(OrderParticipantLookupRequest $request, OrderParticipantQuery $participantQuery): JsonResponse
+    {
+        $actor = $this->authenticatedUser($request);
+
+        return response()->json(OrderParticipantResource::collection(
+            $participantQuery->employeesFor($actor, $request->companyId())
+        ));
+    }
+
+    /**
+     * Get customers of the authenticated user's effective order company.
+     */
+    public function customers(OrderParticipantLookupRequest $request, OrderParticipantQuery $participantQuery): JsonResponse
+    {
+        $actor = $this->authenticatedUser($request);
+
+        return response()->json(OrderParticipantResource::collection(
+            $participantQuery->customersFor($actor, $request->companyId())
+        ));
+    }
+
+    private function authenticatedUser(Request $request): User
     {
         $user = $request->user();
         abort_unless($user instanceof User, 401);
-        $companyId = $user->company_id;
 
-        $query = User::query();
-
-        if (is_null($companyId)) {
-            // Different than null => company_id is not null
-            $query->whereNotNull('company_id');
-        } else {
-            // Different company or null
-            $query->where(function ($q) use ($companyId) {
-                $q->where('company_id', '!=', $companyId)
-                    ->orWhereNull('company_id');
-            });
-        }
-
-        $users = $query->with('company')
-            ->where('role', UserRole::CUSTOMER->value)
-            ->where('is_active', true)
-            ->get();
-
-        return response()->json(UserResource::collection($users));
+        return $user;
     }
 }

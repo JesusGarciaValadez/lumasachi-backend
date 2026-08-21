@@ -22,7 +22,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function () {
     Notification::fake();
 
-    $this->company = Company::factory()->create();
+    $this->company = Company::factory()->active()->create();
     $this->admin = User::factory()->create([
         'role' => UserRole::ADMINISTRATOR->value,
         'company_id' => $this->company->id,
@@ -35,6 +35,7 @@ beforeEach(function () {
     ]);
     $this->customer = User::factory()->create([
         'role' => UserRole::CUSTOMER->value,
+        'company_id' => $this->company->id,
         'is_active' => true,
     ]);
 
@@ -112,8 +113,8 @@ it('submits budget for order in awaiting review', function () {
     expect($result->services)->toHaveCount(1);
     $svc = $result->services->first();
     expect($svc->is_budgeted)->toBeTrue();
-    expect((float)$svc->base_price)->toBe(600.00);
-    expect((float)$svc->net_price)->toBe($catalog->net_price);
+    expect((float) $svc->base_price)->toBe(600.00);
+    expect((float) $svc->net_price)->toBe($catalog->net_price);
 });
 it('transitions to reviewed after budget', function () {
     $order = createOrderInStatus(OrderStatus::AwaitingReview, $this->customer, $this->employee);

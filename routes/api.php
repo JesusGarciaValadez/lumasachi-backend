@@ -59,7 +59,7 @@ Route::group(['prefix' => 'v1'], function () {
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !$user->is_active || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! $user->is_active || ! Hash::check($request->password, $user->password)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'code' => 'auth.invalid_credentials',
@@ -72,7 +72,7 @@ Route::group(['prefix' => 'v1'], function () {
             ]);
         }
 
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             return response()->json([
                 'code' => 'auth.email_verification_required',
                 'message' => __('auth.email_verification_required'),
@@ -160,7 +160,8 @@ Route::group(['prefix' => 'v1'], function () {
     Route::get('/health', [HealthController::class, 'health'])->name('health.check');
 
     // Users by company endpoints
-    Route::scopeBindings()->middleware('auth:sanctum')->prefix('users')->group(function () {
+    Route::scopeBindings()->middleware(['auth:sanctum', 'can:create,App\Models\Order'])->prefix('users')->group(function () {
+        Route::get('/companies', [App\Http\Controllers\UsersController::class, 'companies'])->name('api.users.companies');
         Route::get('/employees', [App\Http\Controllers\UsersController::class, 'employees'])->name('api.users.employees');
         Route::get('/customers', [App\Http\Controllers\UsersController::class, 'customers'])->name('api.users.customers');
     });

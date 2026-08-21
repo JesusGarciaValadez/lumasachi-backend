@@ -16,7 +16,7 @@ uses(DuskTestCase::class, DatabaseTruncation::class);
 beforeEach(function (): void {
     $this->seed(ServiceCatalogSeeder::class);
 
-    $company = Company::factory()->create();
+    $company = Company::factory()->active()->create();
     $password = Hash::make('password');
 
     $this->employee = User::factory()->create([
@@ -27,7 +27,7 @@ beforeEach(function (): void {
         'role' => UserRole::EMPLOYEE->value,
     ]);
     $this->customer = User::factory()->create([
-        'company_id' => null,
+        'company_id' => $company->id,
         'email' => 'dusk-review-customer@example.com',
         'is_active' => true,
         'password' => $password,
@@ -118,14 +118,13 @@ function orderIntakeAndReviewFillOrder(
     User $customer,
     User $employee,
     string $title,
-): void
-{
+): void {
     $browser->visit('/orders/create')
         ->waitFor('@order-create-form')
         ->type('@order-title', $title)
         ->type('@order-description', 'Received block for browser review coverage')
-        ->select('@order-customer', (string)$customer->id)
-        ->select('@order-assignee', (string)$employee->id)
+        ->select('@order-customer', (string) $customer->id)
+        ->select('@order-assignee', (string) $employee->id)
         ->type('@motor-brand', 'Honda')
         ->type('@motor-liters', '2.0')
         ->type('@motor-year', '2020')

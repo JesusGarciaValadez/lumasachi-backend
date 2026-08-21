@@ -25,7 +25,7 @@ beforeEach(function () {
     config(['cache.default' => 'array']);
     Cache::flush();
 
-    $this->company = Company::factory()->create();
+    $this->company = Company::factory()->active()->create();
     $this->admin = User::factory()->create([
         'role' => UserRole::ADMINISTRATOR->value,
         'company_id' => $this->company->id,
@@ -37,6 +37,7 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->customer = User::factory()->create([
+        'company_id' => $this->company->id,
         'role' => UserRole::CUSTOMER->value,
         'is_active' => true,
     ]);

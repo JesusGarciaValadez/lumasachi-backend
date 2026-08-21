@@ -20,9 +20,8 @@ final class OrderLifecycleService
     public function __construct(
         private OrderStatusStateMachine $statusStateMachine,
         private OrderPaymentService $paymentService,
-    )
-    {
-    }
+        private OrderParticipantQuery $participantQuery,
+    ) {}
 
     /**
      * Create an order with motor info, items, and components inside a transaction.
@@ -32,10 +31,12 @@ final class OrderLifecycleService
      */
     public function createOrderWithMotorItems(array $validated, User $creator): Order
     {
+        $this->participantQuery->assertOrderParticipants($creator, $validated);
+
         $motorInfo = $validated['motor_info'] ?? [];
         $items = $validated['items'] ?? [];
         // Remove nested data from top-level
-        unset($validated['motor_info'], $validated['items']);
+        unset($validated['company_id'], $validated['motor_info'], $validated['items']);
 
         $order = DB::transaction(function () use ($validated, $creator, $motorInfo, $items) {
             $order = Order::create(array_merge($validated, [
@@ -55,7 +56,7 @@ final class OrderLifecycleService
                 ]
             ));
 
-            if (bccomp((string)$initialPayment, '0.00', 2) === 1) {
+            if (is_numeric($initialPayment) && bccomp((string) $initialPayment, '0.00', 2) === 1) {
                 $this->paymentService->recordPayment($order, $initialPayment, $creator);
             }
 
@@ -213,11 +214,11 @@ final class OrderLifecycleService
         $this->assertStatus($order, [OrderLifecycleStatus::ReadyForDelivery]);
 
         return DB::transaction(function () use ($order, $amount, $actor): array {
-            if (!is_numeric((string)$amount)) {
+            if (! is_numeric((string) $amount)) {
                 throw new InvalidArgumentException('Payment amount must be numeric.');
             }
 
-            $normalizedAmount = bcadd((string)$amount, '0.00', 2);
+            $normalizedAmount = bcadd((string) $amount, '0.00', 2);
 
             if (bccomp($normalizedAmount, '0.00', 2) === -1) {
                 throw new InvalidArgumentException('Payment amount cannot be negative.');
@@ -227,7 +228,7 @@ final class OrderLifecycleService
                 ? $this->paymentService->recordPayment($order, $normalizedAmount, $actor)
                 : null;
 
-            if (!$order->hasPendingPayment()) {
+            if (! $order->hasPendingPayment()) {
                 $this->statusStateMachine->transition(
                     $order,
                     OrderLifecycleStatus::Delivered,
@@ -244,42 +245,40 @@ final class OrderLifecycleService
      * Transition an order through the shared status state machine.
      */
     /**
-     * @param array<string, mixed> $additionalAttributes
+     * @param  array<string, mixed>  $additionalAttributes
      */
     public function transition(
         Order $order,
         OrderLifecycleStatus $newStatus,
         User $actor,
         array $additionalAttributes = [],
-    ): Order
-    {
+    ): Order {
         return $this->statusStateMachine->transition($order, $newStatus, $actor, $additionalAttributes);
     }
 
     public function setDisposition(
-        Order   $order,
+        Order $order,
         OrderDispositionStatus $disposition,
-        User    $actor,
+        User $actor,
         ?string $note,
-    ): Order
-    {
+    ): Order {
         return $this->statusStateMachine->setDisposition($order, $disposition, $actor, $note);
     }
 
     /**
      * Assert the order is in one of the expected statuses.
      *
-     * @param array<OrderLifecycleStatus> $expected
+     * @param  array<OrderLifecycleStatus>  $expected
      *
      * @throws InvalidArgumentException
      */
     private function assertStatus(Order $order, array $expected): void
     {
-        if (!in_array($order->lifecycleStatus(), $expected, true)) {
-            $labels = array_map(fn(OrderLifecycleStatus $expectedStatus) => $expectedStatus->value, $expected);
+        if (! in_array($order->lifecycleStatus(), $expected, true)) {
+            $labels = array_map(fn (OrderLifecycleStatus $expectedStatus) => $expectedStatus->value, $expected);
 
             throw new InvalidArgumentException(
-                'Order must be in lifecycle status [' . implode(', ', $labels) . "] but is in [{$order->lifecycleStatus()?->value}]."
+                'Order must be in lifecycle status ['.implode(', ', $labels)."] but is in [{$order->lifecycleStatus()?->value}]."
             );
         }
     }
@@ -295,7 +294,7 @@ final class OrderLifecycleService
     }
 
     /**
-     * @param array<int, int> $orderItemIds
+     * @param  array<int, int>  $orderItemIds
      *
      * @throws InvalidArgumentException
      */
@@ -313,7 +312,7 @@ final class OrderLifecycleService
     }
 
     /**
-     * @param array<int, int> $serviceIds
+     * @param  array<int, int>  $serviceIds
      *
      * @throws InvalidArgumentException
      */
@@ -332,7 +331,7 @@ final class OrderLifecycleService
     }
 
     /**
-     * @param array<int, int> $serviceIds
+     * @param  array<int, int>  $serviceIds
      *
      * @throws InvalidArgumentException
      */

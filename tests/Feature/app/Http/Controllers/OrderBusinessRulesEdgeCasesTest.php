@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Notification;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    $company = Company::factory()->create();
+    $company = Company::factory()->active()->create();
 
     $this->administrator = User::factory()->create([
         'role' => UserRole::ADMINISTRATOR->value,
@@ -50,6 +50,7 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->customer = User::factory()->create([
+        'company_id' => $company->id,
         'role' => UserRole::CUSTOMER->value,
         'is_active' => true,
     ]);
@@ -66,11 +67,11 @@ test('order creation notifies the customer and every active audit role', functio
     Notification::assertSentTo($this->customer, OrderCreatedNotification::class);
     Notification::assertSentTo(
         $this->administrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'created'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'created'
     );
     Notification::assertSentTo(
         $this->superAdministrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'created'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'created'
     );
     Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
 });
@@ -435,13 +436,13 @@ test('quotation totals follow budgeted authorized and completed services', funct
         'deck_assembled_4cyl' => 1600.00,
         'replace_cam_bearings' => 480.00,
         'polish_camshaft_bars' => 280.00,
-    ])->mapWithKeys(fn(float $price, string $serviceKey): array => [
+    ])->mapWithKeys(fn (float $price, string $serviceKey): array => [
         $serviceKey => createEdgeCaseCatalogService($serviceKey, $price),
     ]);
 
     $this->postJson("/api/v1/orders/{$order->uuid}/budget", [
         'services' => $catalog->keys()
-            ->map(fn(string $serviceKey): array => [
+            ->map(fn (string $serviceKey): array => [
                 'order_item_id' => $item->id,
                 'service_key' => $serviceKey,
                 'measurement' => $serviceKey === 'deck_assembled_4cyl' ? '20' : null,
@@ -454,13 +455,13 @@ test('quotation totals follow budgeted authorized and completed services', funct
 
     $order->refresh();
     expect($order->lifecycleStatus())->toBe(OrderLifecycleStatus::AwaitingCustomerApproval);
-    expect((float)$order->services()->sum('base_price'))->toBe(3760.00);
-    expect((float)$order->services()->sum('net_price'))->toBe(4361.60);
+    expect((float) $order->services()->sum('base_price'))->toBe(3760.00);
+    expect((float) $order->services()->sum('net_price'))->toBe(4361.60);
 
     $services = $order->services()->get()->keyBy('service_key');
     foreach ($catalog as $serviceKey => $catalogService) {
-        expect($services->get($serviceKey)->base_price)->toBe(number_format((float)$catalogService->base_price, 2, '.', ''));
-        expect($services->get($serviceKey)->net_price)->toBe(number_format((float)$catalogService->net_price, 2, '.', ''));
+        expect($services->get($serviceKey)->base_price)->toBe(number_format((float) $catalogService->base_price, 2, '.', ''));
+        expect($services->get($serviceKey)->net_price)->toBe(number_format((float) $catalogService->net_price, 2, '.', ''));
     }
 
     $statusChanges = OrderHistory::query()
@@ -470,7 +471,7 @@ test('quotation totals follow budgeted authorized and completed services', funct
         ->get();
 
     expect($statusChanges)->toHaveCount(2);
-    expect($statusChanges->map(fn(OrderHistory $history): array => [
+    expect($statusChanges->map(fn (OrderHistory $history): array => [
         $history->getRawOriginal('old_value'),
         $history->getRawOriginal('new_value'),
     ])->all())->toBe([
@@ -481,12 +482,12 @@ test('quotation totals follow budgeted authorized and completed services', funct
     Notification::assertSentToTimes($this->customer, OrderReviewedNotification::class, 1);
     Notification::assertSentTo(
         $this->administrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
     );
     Notification::assertSentToTimes($this->administrator, OrderAuditNotification::class, 1);
     Notification::assertSentTo(
         $this->superAdministrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'reviewed'
     );
     Notification::assertSentToTimes($this->superAdministrator, OrderAuditNotification::class, 1);
     Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
@@ -495,7 +496,7 @@ test('quotation totals follow budgeted authorized and completed services', funct
         'wash_block',
         'weld_between_cylinders_qr25',
         'replace_cam_bearings',
-    ])->map(fn(string $serviceKey): int => $services->get($serviceKey)->id)->all();
+    ])->map(fn (string $serviceKey): int => $services->get($serviceKey)->id)->all();
 
     $this->actingAs($this->customer);
     $this->postJson("/api/v1/orders/{$order->uuid}/customer-approval", [
@@ -508,19 +509,19 @@ test('quotation totals follow budgeted authorized and completed services', funct
 
     expect($order->fresh()->lifecycleStatus())->toBe(OrderLifecycleStatus::ReadyForWork);
     $authorizedServices = $order->services()->where('is_authorized', true);
-    expect((float)$authorizedServices->sum('base_price'))->toBe(1880.00);
-    expect((float)$authorizedServices->sum('net_price'))->toBe(2180.80);
+    expect((float) $authorizedServices->sum('base_price'))->toBe(1880.00);
+    expect((float) $authorizedServices->sum('net_price'))->toBe(2180.80);
     expect($services->get('deck_assembled_4cyl')->fresh()->is_authorized)->toBeFalse();
     expect($services->get('polish_camshaft_bars')->fresh()->is_authorized)->toBeFalse();
 
     Notification::assertSentToTimes($this->customer, OrderReadyForWorkNotification::class, 1);
     Notification::assertSentTo(
         $this->administrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
     );
     Notification::assertSentTo(
         $this->superAdministrator,
-        fn(OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
+        fn (OrderAuditNotification $notification): bool => $notification->event === 'ready_for_work'
     );
     Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
 
@@ -528,7 +529,7 @@ test('quotation totals follow budgeted authorized and completed services', funct
     $completedServiceIds = collect([
         'wash_block',
         'replace_cam_bearings',
-    ])->map(fn(string $serviceKey): int => $services->get($serviceKey)->id)->all();
+    ])->map(fn (string $serviceKey): int => $services->get($serviceKey)->id)->all();
 
     $this->postJson("/api/v1/orders/{$order->uuid}/work-completed", [
         'completed_service_ids' => $completedServiceIds,
@@ -536,7 +537,7 @@ test('quotation totals follow budgeted authorized and completed services', funct
         ->assertJsonPath('order.financials.completed', '1252.80');
 
     expect($order->fresh()->completedTotal())->toBe('1252.80');
-    expect((float)$order->services()->where('is_completed', true)->sum('base_price'))->toBe(1080.00);
+    expect((float) $order->services()->where('is_completed', true)->sum('base_price'))->toBe(1080.00);
     expect($services->get('weld_between_cylinders_qr25')->fresh()->is_authorized)->toBeTrue();
     expect($services->get('weld_between_cylinders_qr25')->fresh()->is_completed)->toBeFalse();
 
@@ -647,10 +648,10 @@ test('ready for delivery records its lifecycle contract and notifies the custome
 });
 test('delivery accepts exact payment overpayment and zero total orders', function () {
     foreach ([
-                 ['total' => 100.00, 'paid' => 100.00],
-                 ['total' => 100.00, 'paid' => 125.00],
-                 ['total' => 0.00, 'paid' => 0.00],
-             ] as $payment) {
+        ['total' => 100.00, 'paid' => 100.00],
+        ['total' => 100.00, 'paid' => 125.00],
+        ['total' => 0.00, 'paid' => 0.00],
+    ] as $payment) {
         $order = createOrder(OrderStatus::ReadyForDelivery);
         if ($payment['total'] > 0) {
             $item = OrderItem::factory()->create(['order_id' => $order->id]);
@@ -705,10 +706,10 @@ test('delivery notifies the customer and every active audit role', function () {
 
     Notification::assertSentToTimes($this->customer, OrderDeliveredNotification::class, 1);
     expect(Notification::sent($this->administrator, OrderAuditNotification::class)
-        ->filter(fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered')
+        ->filter(fn (OrderAuditNotification $notification): bool => $notification->event === 'delivered')
         ->count())->toBe(1);
     expect(Notification::sent($this->superAdministrator, OrderAuditNotification::class)
-        ->filter(fn(OrderAuditNotification $notification): bool => $notification->event === 'delivered')
+        ->filter(fn (OrderAuditNotification $notification): bool => $notification->event === 'delivered')
         ->count())->toBe(1);
     Notification::assertNotSentTo($this->inactiveAdministrator, OrderAuditNotification::class);
 
@@ -747,13 +748,13 @@ test('payment records remain separate and chronological from lifecycle history',
         OrderHistory::FIELD_PAYMENT_RECORD,
         OrderHistory::FIELD_LIFECYCLE_STATUS,
     ])
-        ->and($history->pluck('event_type')->map(fn($event): string => $event->value)->all())->toBe([
+        ->and($history->pluck('event_type')->map(fn ($event): string => $event->value)->all())->toBe([
             'payment_record',
             'payment_record',
             'lifecycle',
         ])
-        ->and($history->pluck('created_at')->map(fn($date): int => $date->getTimestamp())->values()->all())
-        ->toBe($history->pluck('created_at')->map(fn($date): int => $date->getTimestamp())->sort()->values()->all());
+        ->and($history->pluck('created_at')->map(fn ($date): int => $date->getTimestamp())->values()->all())
+        ->toBe($history->pluck('created_at')->map(fn ($date): int => $date->getTimestamp())->sort()->values()->all());
 });
 test('unrelated employees and customers cannot perform staff delivery transitions', function () {
     $unrelatedEmployee = User::factory()->create([
