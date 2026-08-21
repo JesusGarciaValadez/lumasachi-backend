@@ -16,9 +16,17 @@ uses(DuskTestCase::class, DatabaseTruncation::class);
 beforeEach(function (): void {
     $this->seed(ServiceCatalogSeeder::class);
 
-    $company = Company::factory()->create();
+    $company = Company::factory()->active()->create();
     $password = Hash::make('password');
 
+    $this->company = $company;
+    $this->administrator = User::factory()->create([
+        'company_id' => $company->id,
+        'email' => 'dusk-administrator@example.com',
+        'is_active' => true,
+        'password' => $password,
+        'role' => UserRole::ADMINISTRATOR->value,
+    ]);
     $this->employee = User::factory()->create([
         'company_id' => $company->id,
         'email' => 'dusk-employee@example.com',
@@ -27,12 +35,106 @@ beforeEach(function (): void {
         'role' => UserRole::EMPLOYEE->value,
     ]);
     $this->customer = User::factory()->create([
-        'company_id' => null,
+        'company_id' => $company->id,
         'email' => 'dusk-customer@example.com',
         'is_active' => true,
         'password' => $password,
         'role' => UserRole::CUSTOMER->value,
     ]);
+});
+
+test('super administrator can switch companies and see only that company participants', function (): void {
+    $company = Company::factory()->active()->create(['name' => 'Dusk Company A']);
+    $otherCompany = Company::factory()->active()->create(['name' => 'Dusk Company B']);
+    $password = Hash::make('password');
+
+    $superAdministrator = User::factory()->create([
+        'company_id' => null,
+        'email' => 'dusk-super-order@example.com',
+        'is_active' => true,
+        'password' => $password,
+        'role' => UserRole::SUPER_ADMINISTRATOR->value,
+    ]);
+    $companyCustomer = User::factory()->create([
+        'company_id' => $company->id,
+        'email' => 'dusk-company-a-customer@example.com',
+        'first_name' => 'Company A',
+        'is_active' => true,
+        'last_name' => 'Customer',
+        'password' => $password,
+        'role' => UserRole::CUSTOMER->value,
+    ]);
+    $companyEmployee = User::factory()->create([
+        'company_id' => $company->id,
+        'email' => 'dusk-company-a-employee@example.com',
+        'first_name' => 'Company A',
+        'is_active' => true,
+        'last_name' => 'Employee',
+        'password' => $password,
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
+    $otherCustomer = User::factory()->create([
+        'company_id' => $otherCompany->id,
+        'email' => 'dusk-company-b-customer@example.com',
+        'first_name' => 'Company B',
+        'is_active' => true,
+        'last_name' => 'Customer',
+        'password' => $password,
+        'role' => UserRole::CUSTOMER->value,
+    ]);
+    $otherEmployee = User::factory()->create([
+        'company_id' => $otherCompany->id,
+        'email' => 'dusk-company-b-employee@example.com',
+        'first_name' => 'Company B',
+        'is_active' => true,
+        'last_name' => 'Employee',
+        'password' => $password,
+        'role' => UserRole::EMPLOYEE->value,
+    ]);
+
+    $this->browse(function (Browser $browser) use (
+        $company,
+        $companyCustomer,
+        $companyEmployee,
+        $otherCompany,
+        $otherCustomer,
+        $otherEmployee,
+        $superAdministrator,
+    ): void {
+        $browser->loginAs($superAdministrator)
+            ->visit('/orders/create')
+            ->waitFor('@order-create-form')
+            ->assertPresent('@order-company')
+            ->assertDisabled('@order-customer')
+            ->assertDisabled('@order-assignee')
+            ->select('@order-company', (string) $company->id)
+            ->waitFor('[dusk="order-customer"] option[value="'.$companyCustomer->id.'"]', 10)
+            ->waitFor('[dusk="order-assignee"] option[value="'.$companyEmployee->id.'"]', 10)
+            ->assertSelectHasOption('@order-customer', (string) $companyCustomer->id)
+            ->assertSelectHasOption('@order-assignee', (string) $companyEmployee->id)
+            ->assertMissing('[dusk="order-customer"] option[value="'.$otherCustomer->id.'"]')
+            ->assertMissing('[dusk="order-assignee"] option[value="'.$otherEmployee->id.'"]')
+            ->select('@order-company', (string) $otherCompany->id)
+            ->waitFor('[dusk="order-customer"] option[value="'.$otherCustomer->id.'"]', 10)
+            ->waitFor('[dusk="order-assignee"] option[value="'.$otherEmployee->id.'"]', 10)
+            ->assertMissing('[dusk="order-customer"] option[value="'.$companyCustomer->id.'"]')
+            ->assertMissing('[dusk="order-assignee"] option[value="'.$companyEmployee->id.'"]');
+    });
+});
+
+test('administrator sees actor-company participants on the first render', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $browser->loginAs($this->administrator)
+            ->visit('/orders/create')
+            ->waitFor('@order-create-form')
+            ->assertMissing('@order-company')
+            ->waitFor('[dusk="order-customer"] option[value="'.$this->customer->id.'"]', 10)
+            ->waitFor('[dusk="order-assignee"] option[value="'.$this->employee->id.'"]', 10)
+            ->assertSelectHasOption('@order-customer', (string) $this->customer->id)
+            ->assertSelectHasOption('@order-assignee', (string) $this->employee->id)
+            ->assertEnabled('@order-customer')
+            ->assertEnabled('@order-assignee');
+    });
 });
 
 test('staff can create an order with a received top-level piece', function (): void {
@@ -43,8 +145,8 @@ test('staff can create an order with a received top-level piece', function (): v
             ->waitFor('@order-create-form')
             ->type('@order-title', 'Dusk engine block')
             ->type('@order-description', 'Received block for browser coverage')
-            ->select('@order-customer', (string)$this->customer->id)
-            ->select('@order-assignee', (string)$this->employee->id)
+            ->select('@order-customer', (string) $this->customer->id)
+            ->select('@order-assignee', (string) $this->employee->id)
             ->type('@motor-brand', 'Honda')
             ->type('@motor-liters', '2.0')
             ->type('@motor-year', '2020')
@@ -75,8 +177,8 @@ test('staff sees a title validation error and keeps entered intake values', func
             ->waitFor('@order-create-form')
             ->type('@order-title', $oversizedTitle)
             ->type('@order-description', $description)
-            ->select('@order-customer', (string)$this->customer->id)
-            ->select('@order-assignee', (string)$this->employee->id)
+            ->select('@order-customer', (string) $this->customer->id)
+            ->select('@order-assignee', (string) $this->employee->id)
             ->type('#notes', $notes)
             ->type('@motor-brand', 'Honda')
             ->check('@order-item-component-0-bearing_caps')
@@ -87,8 +189,8 @@ test('staff sees a title validation error and keeps entered intake values', func
             ->assertSeeIn('@order-create-error', 'title:')
             ->assertInputValue('@order-title', $oversizedTitle)
             ->assertInputValue('@order-description', $description)
-            ->assertSelected('@order-customer', (string)$this->customer->id)
-            ->assertSelected('@order-assignee', (string)$this->employee->id)
+            ->assertSelected('@order-customer', (string) $this->customer->id)
+            ->assertSelected('@order-assignee', (string) $this->employee->id)
             ->assertInputValue('#notes', $notes)
             ->assertInputValue('@motor-brand', 'Honda')
             ->assertChecked('@order-item-component-0-bearing_caps');

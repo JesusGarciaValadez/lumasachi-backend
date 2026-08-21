@@ -52,6 +52,8 @@ export interface User {
     created_at: string;
     updated_at: string;
     locale?: string | null;
+    company_id?: number | null;
+    role?: string;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

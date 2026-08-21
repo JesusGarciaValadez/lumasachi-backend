@@ -10,9 +10,13 @@ import {
     type Order,
     type OrderAttachmentsResponse,
     type OrderAttachmentsResponsePayload,
+    type OrderCreateCompanyCollectionPayload,
+    type OrderCreateCompanyOption,
     type OrderHistoryPage,
     type OrderHistoryPagePayload,
     type OrderMutationResponse,
+    type OrderParticipantCollectionPayload,
+    type OrderParticipantPayload,
     type OrderPayload,
     type OrderSummary,
     type OrderSummaryCollectionPayload,
@@ -22,8 +26,6 @@ import {
     type SubmitBudgetPayload,
     type TrackOrderPayload,
     unwrapCollection,
-    type UserCollectionPayload,
-    type UserPayload,
     type WorkCompletedPayload,
 } from '@/types/orders';
 import { route } from 'ziggy-js';
@@ -58,8 +60,9 @@ export interface OrderApi {
     history(orderUuid: string, url?: string): Promise<OrderHistoryPage>;
     attachments(orderUuid: string): Promise<OrderAttachmentsResponse>;
     catalog(): Promise<CatalogPayload>;
-    employees(): Promise<UserPayload[]>;
-    customers(): Promise<UserPayload[]>;
+    companies(): Promise<OrderCreateCompanyOption[]>;
+    employees(companyId?: number): Promise<OrderParticipantPayload[]>;
+    customers(companyId?: number): Promise<OrderParticipantPayload[]>;
     track(payload: TrackOrderPayload, signal?: AbortSignal): Promise<PublicOrder>;
 }
 
@@ -139,8 +142,16 @@ function errorMessage(payload: unknown, status: number): string {
     return fallbackMessage(status);
 }
 
-function apiUrl(name: string, orderUuid?: string): string {
-    return String(orderUuid ? route(name, { order: orderUuid }) : route(name));
+function apiUrl(name: string, orderUuid?: string, query?: Record<string, string | number>): string {
+    const url = String(orderUuid ? route(name, { order: orderUuid }) : route(name));
+
+    if (!query) {
+        return url;
+    }
+
+    const queryString = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)])).toString();
+
+    return `${url}?${queryString}`;
 }
 
 async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -268,12 +279,26 @@ export function useOrderApi(): OrderApi {
             return request<CatalogPayload>(apiUrl('api.catalog.engine-options'), 'GET');
         },
 
-        async employees() {
-            return unwrapCollection(await request<UserCollectionPayload>(apiUrl('api.users.employees'), 'GET'));
+        async companies() {
+            return unwrapCollection(await request<OrderCreateCompanyCollectionPayload>(apiUrl('api.users.companies'), 'GET'));
         },
 
-        async customers() {
-            return unwrapCollection(await request<UserCollectionPayload>(apiUrl('api.users.customers'), 'GET'));
+        async employees(companyId) {
+            return unwrapCollection(
+                await request<OrderParticipantCollectionPayload>(
+                    apiUrl('api.users.employees', undefined, companyId === undefined ? undefined : { company_id: companyId }),
+                    'GET',
+                ),
+            );
+        },
+
+        async customers(companyId) {
+            return unwrapCollection(
+                await request<OrderParticipantCollectionPayload>(
+                    apiUrl('api.users.customers', undefined, companyId === undefined ? undefined : { company_id: companyId }),
+                    'GET',
+                ),
+            );
         },
 
         async track(payload, signal) {

@@ -48,6 +48,7 @@ return [
         'authorized_service_ids' => 'authorized services',
         'comment' => 'comment',
         'completed_service_ids' => 'completed services',
+        'company_id' => 'company',
         'created_date' => 'creation date',
         'customer_id' => 'customer',
         'descriptions' => 'descriptions',

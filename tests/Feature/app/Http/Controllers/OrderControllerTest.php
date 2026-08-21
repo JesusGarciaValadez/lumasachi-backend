@@ -40,7 +40,10 @@ beforeEach(function () {
     $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value, 'company_id' => $this->company->id]);
     $this->admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value, 'company_id' => $this->company->id]);
     $this->employee = User::factory()->create(['role' => UserRole::EMPLOYEE->value, 'company_id' => $this->company->id]);
-    $this->customer = User::factory()->create(['role' => UserRole::CUSTOMER->value]);
+    $this->customer = User::factory()->create([
+        'role' => UserRole::CUSTOMER->value,
+        'company_id' => $this->company->id,
+    ]);
 });
 it('checks if index returns only active orders for employee', function () {
     $this->actingAs($this->employee);
@@ -100,13 +103,13 @@ it('checks if store creates order with valid data', function () {
         ],
     ];
 
-    $v1 = (int)Cache::get('orders:version', 0);
+    $v1 = (int) Cache::get('orders:version', 0);
 
     $response = $this->postJson('/api/v1/orders', $orderData);
 
     $response->assertCreated();
 
-    $v2 = (int)Cache::get('orders:version', 0);
+    $v2 = (int) Cache::get('orders:version', 0);
     expect($v2)->toBeGreaterThan($v1, 'Orders cache version should bump on create');
 
     $this->assertDatabaseHas('orders', [
@@ -274,7 +277,7 @@ it('checks if show returns order with relationships', function () {
         'updated_by' => $this->admin->id,
     ]);
 
-    $response = $this->getJson('/api/v1/orders/' . $order->uuid);
+    $response = $this->getJson('/api/v1/orders/'.$order->uuid);
 
     $response->assertOk()
         ->assertJsonStructure([
@@ -305,13 +308,13 @@ it('checks if update modifies order successfully', function () {
         'priority' => OrderPriority::URGENT->value,
     ];
 
-    $v1 = (int)Cache::get('orders:version', 0);
+    $v1 = (int) Cache::get('orders:version', 0);
 
-    $response = $this->putJson('/api/v1/orders/' . $order->uuid, $updateData);
+    $response = $this->putJson('/api/v1/orders/'.$order->uuid, $updateData);
 
     $response->assertOk();
 
-    $v2 = (int)Cache::get('orders:version', 0);
+    $v2 = (int) Cache::get('orders:version', 0);
     expect($v2)->toBe($v1 + 1, 'Orders cache version should bump on update');
 
     $response->assertJson([
@@ -340,7 +343,7 @@ it('rejects invalid status transitions on general order updates', function () {
         'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
-    $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
+    $response = $this->putJson('/api/v1/orders/'.$order->uuid, [
         'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
     ]);
 
@@ -359,7 +362,7 @@ it('checks if update allows partial updates', function () {
         'lifecycle_status' => OrderLifecycleStatus::Received->value,
     ]);
 
-    $response = $this->putJson('/api/v1/orders/' . $order->uuid, [
+    $response = $this->putJson('/api/v1/orders/'.$order->uuid, [
         'title' => 'New Title Only',
     ]);
 
@@ -377,13 +380,13 @@ it('checks if destroy deletes order successfully', function () {
 
     $order = Order::factory()->createQuietly();
 
-    $v1 = (int)Cache::get('orders:version', 0);
+    $v1 = (int) Cache::get('orders:version', 0);
 
-    $response = $this->deleteJson('/api/v1/orders/' . $order->uuid);
+    $response = $this->deleteJson('/api/v1/orders/'.$order->uuid);
 
     $response->assertOk();
 
-    $v2 = (int)Cache::get('orders:version', 0);
+    $v2 = (int) Cache::get('orders:version', 0);
     expect($v2)->toBe($v1 + 1, 'Orders cache version should bump on delete');
 
     $response->assertJson([
@@ -484,10 +487,10 @@ it('caches show responses and returns hit on second request', function () {
         'created_by' => $this->admin->id,
     ]);
 
-    $first = $this->getJson('/api/v1/orders/' . $order->uuid);
+    $first = $this->getJson('/api/v1/orders/'.$order->uuid);
     $first->assertOk()->assertHeader('X-Cache', 'MISS');
 
-    $second = $this->getJson('/api/v1/orders/' . $order->uuid);
+    $second = $this->getJson('/api/v1/orders/'.$order->uuid);
     $second->assertOk()->assertHeader('X-Cache', 'HIT');
 });
 it('returns stable motor values and localized resource labels', function () {
@@ -520,7 +523,7 @@ it('returns stable motor values and localized resource labels', function () {
     ]);
 
     $response = $this->withHeaders(['Accept-Language' => 'es'])
-        ->getJson('/api/v1/orders/' . $order->uuid);
+        ->getJson('/api/v1/orders/'.$order->uuid);
 
     $response->assertOk()
         ->assertJsonPath('lifecycle_status', $order->lifecycleStatus()->value)
@@ -535,7 +538,7 @@ it('returns stable motor values and localized resource labels', function () {
         ->assertJsonPath('services.0.service_name', 'Lavado de block');
 
     $english = $this->withHeaders(['Accept-Language' => 'en'])
-        ->getJson('/api/v1/orders/' . $order->uuid);
+        ->getJson('/api/v1/orders/'.$order->uuid);
 
     $english->assertOk()
         ->assertHeader('X-Cache', 'MISS')

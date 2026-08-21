@@ -5,9 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OrderApiError, useOrderApi } from '@/composables/useOrderApi';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
-import type { CatalogComponentOption, CatalogPayload, CreateOrderItemPayload, CreateOrderPayload, OrderItemType, UserPayload } from '@/types/orders';
-import { Head, router } from '@inertiajs/vue3';
+import type { AppPageProps, BreadcrumbItem } from '@/types';
+import type {
+    CatalogComponentOption,
+    CatalogPayload,
+    CreateOrderItemPayload,
+    CreateOrderPayload,
+    OrderCreateCompanyOption,
+    OrderItemType,
+    OrderParticipantPayload,
+} from '@/types/orders';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -25,13 +33,20 @@ interface CreateFormState extends Omit<CreateOrderPayload, 'estimated_completion
 
 const { t } = useI18n();
 const orderApi = useOrderApi();
+const page = usePage<AppPageProps>();
 const catalog = ref<CatalogPayload | null>(null);
-const customers = ref<UserPayload[]>([]);
-const employees = ref<UserPayload[]>([]);
+const companies = ref<OrderCreateCompanyOption[]>([]);
+const customers = ref<OrderParticipantPayload[]>([]);
+const employees = ref<OrderParticipantPayload[]>([]);
 const loading = ref(true);
+const companiesLoading = ref(false);
+const participantsLoading = ref(false);
 const processing = ref(false);
 const error = ref<OrderApiError | null>(null);
+const participantError = ref<OrderApiError | null>(null);
+let participantRequestSequence = 0;
 const form = ref<CreateFormState>({
+    company_id: null,
     customer_id: 0,
     title: '',
     description: '',
@@ -49,6 +64,13 @@ const form = ref<CreateFormState>({
     items: [{ item_type: 'engine_block', components: [] }],
 });
 
+const isSuperAdministrator = computed(() => page.props.auth.user.role === 'Super Administrator');
+const selectedCompanyId = computed<number | undefined>(() => {
+    const companyId = form.value.company_id;
+
+    return typeof companyId === 'number' && companyId > 0 ? companyId : undefined;
+});
+
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: t('common.orders'), href: route('web.orders.index') },
     { title: t('orders.create'), href: route('web.orders.create') },
@@ -61,8 +83,8 @@ const availableItemTypes = computed(() => {
     return itemTypeOptions.value.filter((option) => !selected.has(option.key) || form.value.items.some((item) => item.item_type === option.key));
 });
 
-function displayName(user: UserPayload): string {
-    return user.full_name ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+function displayName(user: OrderParticipantPayload): string {
+    return user.full_name || `${user.first_name} ${user.last_name}`.trim();
 }
 
 function componentsFor(itemType: OrderItemType): CatalogComponentOption[] {
@@ -122,6 +144,81 @@ function handleComponentChange(item: CreateOrderItemPayload, componentKey: strin
     }
 }
 
+function resetParticipants(): void {
+    participantRequestSequence += 1;
+    participantsLoading.value = false;
+    participantError.value = null;
+    customers.value = [];
+    employees.value = [];
+}
+
+function participantLookupError(caughtError: unknown): OrderApiError {
+    return caughtError instanceof OrderApiError ? caughtError : new OrderApiError(0, t('orders.participant_lookup_failed'));
+}
+
+async function loadParticipants(companyId?: number): Promise<void> {
+    const requestSequence = ++participantRequestSequence;
+    const customersRequest = companyId === undefined ? orderApi.customers() : orderApi.customers(companyId);
+    const employeesRequest = companyId === undefined ? orderApi.employees() : orderApi.employees(companyId);
+
+    participantsLoading.value = true;
+    participantError.value = null;
+    customers.value = [];
+    employees.value = [];
+
+    try {
+        const [customersResponse, employeesResponse] = await Promise.all([customersRequest, employeesRequest]);
+
+        if (requestSequence !== participantRequestSequence) {
+            return;
+        }
+
+        customers.value = customersResponse;
+        employees.value = employeesResponse;
+    } catch (caughtError: unknown) {
+        if (requestSequence !== participantRequestSequence) {
+            return;
+        }
+
+        participantError.value = participantLookupError(caughtError);
+    } finally {
+        if (requestSequence === participantRequestSequence) {
+            participantsLoading.value = false;
+        }
+    }
+}
+
+function handleCompanyChange(): void {
+    form.value.customer_id = 0;
+    form.value.assigned_to = 0;
+    error.value = null;
+
+    if (selectedCompanyId.value === undefined) {
+        resetParticipants();
+
+        return;
+    }
+
+    void loadParticipants(selectedCompanyId.value);
+}
+
+function createPayload(): CreateOrderPayload {
+    const payload: CreateOrderPayload = {
+        ...form.value,
+        estimated_completion: form.value.estimated_completion || null,
+        notes: form.value.notes || null,
+        motor_info: Object.fromEntries(
+            Object.entries(form.value.motor_info).map(([key, value]) => [key, value || null]),
+        ) as CreateOrderPayload['motor_info'],
+    };
+
+    if (!isSuperAdministrator.value || form.value.company_id === null || form.value.company_id === undefined) {
+        delete payload.company_id;
+    }
+
+    return payload;
+}
+
 async function submit(): Promise<void> {
     if (processing.value) {
         return;
@@ -131,14 +228,7 @@ async function submit(): Promise<void> {
     error.value = null;
 
     try {
-        await orderApi.create({
-            ...form.value,
-            estimated_completion: form.value.estimated_completion || null,
-            notes: form.value.notes || null,
-            motor_info: Object.fromEntries(
-                Object.entries(form.value.motor_info).map(([key, value]) => [key, value || null]),
-            ) as CreateOrderPayload['motor_info'],
-        });
+        await orderApi.create(createPayload());
 
         router.visit(route('web.orders.index'), {
             onSuccess: () => router.flash('success', t('orders.created')),
@@ -150,23 +240,31 @@ async function submit(): Promise<void> {
     }
 }
 
-onMounted(async () => {
+async function initialize(): Promise<void> {
     try {
-        const [catalogResponse, customersResponse, employeesResponse] = await Promise.all([
-            orderApi.catalog(),
-            orderApi.customers(),
-            orderApi.employees(),
-        ]);
+        const catalogRequest = orderApi.catalog();
 
-        catalog.value = catalogResponse;
-        customers.value = customersResponse;
-        employees.value = employeesResponse;
+        if (isSuperAdministrator.value) {
+            companiesLoading.value = true;
+
+            const [catalogResponse, companiesResponse] = await Promise.all([catalogRequest, orderApi.companies()]);
+
+            catalog.value = catalogResponse;
+            companies.value = companiesResponse;
+        } else {
+            const [catalogResponse] = await Promise.all([catalogRequest, loadParticipants()]);
+
+            catalog.value = catalogResponse;
+        }
     } catch (caughtError: unknown) {
-        error.value = caughtError instanceof OrderApiError ? caughtError : null;
+        error.value = caughtError instanceof OrderApiError ? caughtError : new OrderApiError(0, t('orders.order_form_load_failed'));
     } finally {
+        companiesLoading.value = false;
         loading.value = false;
     }
-});
+}
+
+onMounted(initialize);
 </script>
 
 <template>
@@ -192,6 +290,47 @@ onMounted(async () => {
                         <span v-for="(messages, key) in error.validationErrors" :key="key">{{ key }}: {{ messages[0] }}</span>
                     </div>
                 </div>
+                <div
+                    v-if="participantError"
+                    aria-live="polite"
+                    class="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+                    dusk="order-participant-error"
+                    role="alert"
+                >
+                    {{ participantError.message }}
+                </div>
+
+                <Card v-if="isSuperAdministrator">
+                    <div class="flex flex-col gap-4 px-6">
+                        <div class="flex flex-col gap-1">
+                            <Label for="company_id">{{ t('orders.company') }}</Label>
+                            <select
+                                id="company_id"
+                                v-model.number="form.company_id"
+                                :aria-describedby="fieldError('company_id') ? 'company-id-error' : undefined"
+                                :aria-invalid="Boolean(fieldError('company_id'))"
+                                :disabled="companiesLoading || processing"
+                                class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                dusk="order-company"
+                                required
+                                @change="handleCompanyChange"
+                            >
+                                <option :value="null" disabled>
+                                    {{ companiesLoading ? t('orders.loading_companies') : t('orders.select_company') }}
+                                </option>
+                                <option v-for="company in companies" :key="company.id" :value="company.id">
+                                    {{ company.name }}
+                                </option>
+                            </select>
+                            <p v-if="!companiesLoading && !companies.length && !error" aria-live="polite" class="text-sm text-muted-foreground">
+                                {{ t('orders.no_companies') }}
+                            </p>
+                            <p v-if="fieldError('company_id')" id="company-id-error" class="text-sm text-destructive">
+                                {{ fieldError('company_id') }}
+                            </p>
+                        </div>
+                    </div>
+                </Card>
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <Card>
@@ -253,13 +392,43 @@ onMounted(async () => {
                                         :aria-describedby="fieldError('customer_id') ? 'customer-id-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('customer_id'))"
                                         class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        :disabled="
+                                            participantsLoading || customers.length === 0 || (isSuperAdministrator && selectedCompanyId === undefined)
+                                        "
                                         required
                                     >
-                                        <option :value="0" disabled>{{ t('orders.select_customer') }}</option>
+                                        <option :value="0" disabled>
+                                            {{
+                                                participantsLoading
+                                                    ? t('orders.loading_participants')
+                                                    : isSuperAdministrator && selectedCompanyId === undefined
+                                                      ? t('orders.select_company_first')
+                                                      : customers.length === 0
+                                                        ? t('orders.no_customers')
+                                                        : t('orders.select_customer')
+                                            }}
+                                        </option>
                                         <option v-for="customer in customers" :key="customer.id" :value="customer.id">
                                             {{ displayName(customer) }}
                                         </option>
                                     </select>
+                                    <p v-if="participantsLoading" aria-live="polite" class="text-sm text-muted-foreground">
+                                        {{ t('orders.loading_participants') }}
+                                    </p>
+                                    <p
+                                        v-else-if="isSuperAdministrator && selectedCompanyId === undefined"
+                                        aria-live="polite"
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{ t('orders.select_company_first') }}
+                                    </p>
+                                    <p
+                                        v-else-if="!participantError && customers.length === 0"
+                                        aria-live="polite"
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{ t('orders.no_customers') }}
+                                    </p>
                                     <p v-if="fieldError('customer_id')" id="customer-id-error" class="text-sm text-destructive">
                                         {{ fieldError('customer_id') }}
                                     </p>
@@ -273,13 +442,43 @@ onMounted(async () => {
                                         :aria-describedby="fieldError('assigned_to') ? 'assigned-to-error' : undefined"
                                         :aria-invalid="Boolean(fieldError('assigned_to'))"
                                         class="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        :disabled="
+                                            participantsLoading || employees.length === 0 || (isSuperAdministrator && selectedCompanyId === undefined)
+                                        "
                                         required
                                     >
-                                        <option :value="0" disabled>{{ t('orders.select_employee') }}</option>
+                                        <option :value="0" disabled>
+                                            {{
+                                                participantsLoading
+                                                    ? t('orders.loading_participants')
+                                                    : isSuperAdministrator && selectedCompanyId === undefined
+                                                      ? t('orders.select_company_first')
+                                                      : employees.length === 0
+                                                        ? t('orders.no_employees')
+                                                        : t('orders.select_employee')
+                                            }}
+                                        </option>
                                         <option v-for="employee in employees" :key="employee.id" :value="employee.id">
                                             {{ displayName(employee) }}
                                         </option>
                                     </select>
+                                    <p v-if="participantsLoading" aria-live="polite" class="text-sm text-muted-foreground">
+                                        {{ t('orders.loading_participants') }}
+                                    </p>
+                                    <p
+                                        v-else-if="isSuperAdministrator && selectedCompanyId === undefined"
+                                        aria-live="polite"
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{ t('orders.select_company_first') }}
+                                    </p>
+                                    <p
+                                        v-else-if="!participantError && employees.length === 0"
+                                        aria-live="polite"
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{ t('orders.no_employees') }}
+                                    </p>
                                     <p v-if="fieldError('assigned_to')" id="assigned-to-error" class="text-sm text-destructive">
                                         {{ fieldError('assigned_to') }}
                                     </p>

@@ -2,134 +2,294 @@
 
 declare(strict_types=1);
 
+namespace Tests\Feature\App\Http\Controllers;
+
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
-
-it('returns employees of same company', function () {
-    $companyA = Company::factory()->create();
-    $companyB = Company::factory()->create();
-
-    $me = authUserWithCompany($companyA->id);
-
-    // Same company users
-    $sameCompanyUsers = User::factory()->count(3)->create([
-        'company_id' => $companyA->id,
-        'role' => UserRole::EMPLOYEE->value,
-        'is_active' => true,
-    ]);
-
-    // Different company and null company users
-    $otherCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyB->id, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
-    $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
-
-    $response = $this->getJson('/api/v1/users/employees');
-    $response->assertOk();
-
-    $ids = collect($response->json())->pluck('id');
-
-    // Should contain me and same company users
-    expect($ids->contains($me->id))->toBeTrue();
-    foreach ($sameCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeTrue();
-    }
-
-    // Should not contain different or null company users
-    foreach ($otherCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeFalse();
-    }
-    foreach ($nullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeFalse();
-    }
-});
-it('returns customers of different company', function () {
-    $companyA = Company::factory()->create();
-    $companyB = Company::factory()->create();
-
-    $me = authUserWithCompany($companyA->id);
-
-    // Different company users (including null)
-    $otherCompanyUsers = User::factory()->count(3)->create(['company_id' => $companyB->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-    $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-
-    // Same company users
-    $sameCompanyUsers = User::factory()->count(2)->create(['company_id' => $companyA->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-
-    $response = $this->getJson('/api/v1/users/customers');
-    $response->assertOk();
-
-    $ids = collect($response->json())->pluck('id');
-
-    foreach ($otherCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeTrue();
-    }
-    foreach ($nullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeTrue();
-    }
-    foreach ($sameCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeFalse();
-    }
-
-    // Current user should not be listed (their company is same as me)
-    expect($ids->contains($me->id))->toBeFalse();
-});
-it('handles null company id for employees', function () {
-    $me = authUserWithCompany(null);
-
-    $nullCompanyUsers = User::factory()->count(3)->create(['company_id' => null, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
-    $someCompany = Company::factory()->create();
-    $nonNullCompanyUsers = User::factory()->count(2)->create(['company_id' => $someCompany->id, 'role' => UserRole::EMPLOYEE->value, 'is_active' => true]);
-
-    $response = $this->getJson('/api/v1/users/employees');
-    $response->assertOk();
-
-    $ids = collect($response->json())->pluck('id');
-
-    // Should include me and null-company users
-    expect($ids->contains($me->id))->toBeTrue();
-    foreach ($nullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeTrue();
-    }
-
-    // Should not include non-null company users
-    foreach ($nonNullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeFalse();
-    }
-});
-it('handles null company id for customers', function () {
-    authUserWithCompany(null);
-
-    $nullCompanyUsers = User::factory()->count(2)->create(['company_id' => null, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-    $someCompany = Company::factory()->create();
-    $nonNullCompanyUsers = User::factory()->count(3)->create(['company_id' => $someCompany->id, 'role' => UserRole::CUSTOMER->value, 'is_active' => true]);
-
-    $response = $this->getJson('/api/v1/users/customers');
-    $response->assertOk();
-
-    $ids = collect($response->json())->pluck('id');
-
-    // Should include only non-null company users
-    foreach ($nonNullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeTrue();
-    }
-    foreach ($nullCompanyUsers as $u) {
-        expect($ids->contains($u->id))->toBeFalse();
-    }
-});
-it('requires authentication', function () {
-    $this->getJson('/api/v1/users/employees')->assertUnauthorized();
-    $this->getJson('/api/v1/users/customers')->assertUnauthorized();
-});
-function authUserWithCompany(?int $companyId = null): User
+final class UsersControllerTest extends TestCase
 {
-    $user = User::factory()->create([
-        'role' => UserRole::EMPLOYEE->value,
-        'company_id' => $companyId,
-        'is_active' => true,
-    ]);
-    test()->actingAs($user);
+    use RefreshDatabase;
 
-    return $user;
+    public function test_super_administrator_can_list_only_active_companies(): void
+    {
+        $activeCompany = Company::factory()->active()->create(['name' => 'Active Company']);
+        $secondActiveCompany = Company::factory()->active()->create(['name' => 'Second Active Company']);
+        $inactiveCompany = Company::factory()->inactive()->create(['name' => 'Inactive Company']);
+        $superAdministrator = User::factory()->active()->create([
+            'role' => UserRole::SUPER_ADMINISTRATOR->value,
+            'company_id' => null,
+        ]);
+
+        $response = $this->actingAs($superAdministrator)
+            ->getJson('/api/v1/users/companies');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                ['id', 'uuid', 'name'],
+            ])
+            ->assertJsonMissingPath('0.email')
+            ->assertJsonMissingPath('0.phone');
+
+        $companyIds = collect($response->json())
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+
+        self::assertSame(
+            collect([$activeCompany->id, $secondActiveCompany->id])->sort()->values()->all(),
+            $companyIds
+        );
+        self::assertNotContains($inactiveCompany->id, $companyIds);
+    }
+
+    public function test_super_administrator_gets_only_active_role_correct_participants_for_selected_company(): void
+    {
+        $selectedCompany = Company::factory()->active()->create();
+        $otherCompany = Company::factory()->active()->create();
+        $superAdministrator = User::factory()->active()->create([
+            'role' => UserRole::SUPER_ADMINISTRATOR->value,
+            'company_id' => null,
+        ]);
+
+        $selectedEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $inactiveSelectedEmployee = User::factory()->inactive()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $selectedAdministrator = User::factory()->active()->create([
+            'role' => UserRole::ADMINISTRATOR->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $deletedSelectedEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $deletedSelectedEmployee->delete();
+
+        $selectedCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $inactiveSelectedCustomer = User::factory()->inactive()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $selectedCompany->id,
+        ]);
+        $otherCompanyEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $otherCompany->id,
+        ]);
+        $otherCompanyCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $otherCompany->id,
+        ]);
+
+        $employees = $this->actingAs($superAdministrator)
+            ->getJson("/api/v1/users/employees?company_id={$selectedCompany->id}");
+        $customers = $this->actingAs($superAdministrator)
+            ->getJson("/api/v1/users/customers?company_id={$selectedCompany->id}");
+
+        $this->assertParticipantIds($employees, [$selectedEmployee->id]);
+        $this->assertParticipantIds($customers, [$selectedCustomer->id]);
+
+        $employeeIds = collect($employees->json())->pluck('id')->all();
+        $customerIds = collect($customers->json())->pluck('id')->all();
+
+        self::assertNotContains($inactiveSelectedEmployee->id, $employeeIds);
+        self::assertNotContains($selectedAdministrator->id, $employeeIds);
+        self::assertNotContains($deletedSelectedEmployee->id, $employeeIds);
+        self::assertNotContains($inactiveSelectedCustomer->id, $customerIds);
+        self::assertNotContains($otherCompanyEmployee->id, $employeeIds);
+        self::assertNotContains($otherCompanyCustomer->id, $customerIds);
+    }
+
+    public function test_super_administrator_has_no_participants_before_selecting_a_company(): void
+    {
+        $company = Company::factory()->active()->create();
+        $superAdministrator = User::factory()->active()->create([
+            'role' => UserRole::SUPER_ADMINISTRATOR->value,
+            'company_id' => null,
+        ]);
+        User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => null,
+        ]);
+        User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+
+        $employees = $this->actingAs($superAdministrator)
+            ->getJson('/api/v1/users/employees');
+        $customers = $this->actingAs($superAdministrator)
+            ->getJson('/api/v1/users/customers');
+
+        $employees->assertOk()->assertExactJson([]);
+        $customers->assertOk()->assertExactJson([]);
+    }
+
+    public function test_administrator_gets_only_active_participants_from_their_company(): void
+    {
+        $company = Company::factory()->active()->create();
+        $otherCompany = Company::factory()->active()->create();
+        $administrator = User::factory()->active()->create([
+            'role' => UserRole::ADMINISTRATOR->value,
+            'company_id' => $company->id,
+        ]);
+        $sameCompanyEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $company->id,
+        ]);
+        $sameCompanyCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+        User::factory()->inactive()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $company->id,
+        ]);
+        User::factory()->inactive()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+        $otherCompanyEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $otherCompany->id,
+        ]);
+        $otherCompanyCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $otherCompany->id,
+        ]);
+
+        $employees = $this->actingAs($administrator)
+            ->getJson('/api/v1/users/employees');
+        $customers = $this->actingAs($administrator)
+            ->getJson('/api/v1/users/customers');
+
+        $this->assertParticipantIds($employees, [$sameCompanyEmployee->id]);
+        $this->assertParticipantIds($customers, [$sameCompanyCustomer->id]);
+
+        self::assertNotContains($otherCompanyEmployee->id, collect($employees->json())->pluck('id')->all());
+        self::assertNotContains($otherCompanyCustomer->id, collect($customers->json())->pluck('id')->all());
+    }
+
+    public function test_employee_gets_only_active_participants_from_their_company(): void
+    {
+        $company = Company::factory()->active()->create();
+        $otherCompany = Company::factory()->active()->create();
+        $employee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $company->id,
+        ]);
+        $sameCompanyEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $company->id,
+        ]);
+        $sameCompanyCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+        $otherCompanyEmployee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => $otherCompany->id,
+        ]);
+        $otherCompanyCustomer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $otherCompany->id,
+        ]);
+
+        $employees = $this->actingAs($employee)
+            ->getJson('/api/v1/users/employees');
+        $customers = $this->actingAs($employee)
+            ->getJson('/api/v1/users/customers');
+
+        $this->assertParticipantIds($employees, [$employee->id, $sameCompanyEmployee->id]);
+        $this->assertParticipantIds($customers, [$sameCompanyCustomer->id]);
+
+        self::assertNotContains($otherCompanyEmployee->id, collect($employees->json())->pluck('id')->all());
+        self::assertNotContains($otherCompanyCustomer->id, collect($customers->json())->pluck('id')->all());
+    }
+
+    public function test_administrator_and_employee_without_a_company_have_no_participant_scope(): void
+    {
+        $company = Company::factory()->active()->create();
+        $administrator = User::factory()->active()->create([
+            'role' => UserRole::ADMINISTRATOR->value,
+            'company_id' => null,
+        ]);
+        $employee = User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => null,
+        ]);
+        User::factory()->active()->create([
+            'role' => UserRole::EMPLOYEE->value,
+            'company_id' => null,
+        ]);
+        User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => null,
+        ]);
+        User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+
+        foreach ([$administrator, $employee] as $actor) {
+            $employees = $this->actingAs($actor)->getJson('/api/v1/users/employees');
+            $customers = $this->actingAs($actor)->getJson('/api/v1/users/customers');
+
+            $employees->assertOk()->assertExactJson([]);
+            $customers->assertOk()->assertExactJson([]);
+        }
+    }
+
+    public function test_every_participant_lookup_requires_order_create_authorization(): void
+    {
+        $paths = [
+            '/api/v1/users/companies',
+            '/api/v1/users/employees',
+            '/api/v1/users/customers',
+        ];
+
+        foreach ($paths as $path) {
+            $this->getJson($path)->assertUnauthorized();
+        }
+
+        $company = Company::factory()->active()->create();
+        $customer = User::factory()->active()->create([
+            'role' => UserRole::CUSTOMER->value,
+            'company_id' => $company->id,
+        ]);
+
+        foreach ($paths as $path) {
+            $this->actingAs($customer)->getJson($path)->assertForbidden();
+        }
+    }
+
+    private function assertParticipantIds(TestResponse $response, array $expectedIds): void
+    {
+        $response->assertOk()
+            ->assertJsonMissingPath('0.email')
+            ->assertJsonMissingPath('0.phone_number')
+            ->assertJsonMissingPath('0.notes');
+
+        $actualIds = collect($response->json())
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+        $expectedIds = collect($expectedIds)->sort()->values()->all();
+
+        self::assertSame($expectedIds, $actualIds);
+    }
 }
