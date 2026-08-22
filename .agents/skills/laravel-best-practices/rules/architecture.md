@@ -24,7 +24,6 @@ class CreateOrderAction
 Always use constructor injection. Avoid `app()` or `resolve()` inside classes.
 
 Incorrect:
-
 ```php
 class OrderController extends Controller
 {
@@ -38,7 +37,6 @@ class OrderController extends Controller
 ```
 
 Correct:
-
 ```php
 class OrderController extends Controller
 {
@@ -57,7 +55,6 @@ Depend on contracts at system boundaries (payment gateways, notification channel
 swappability.
 
 Incorrect (concrete dependency):
-
 ```php
 class OrderService
 {
@@ -66,7 +63,6 @@ class OrderService
 ```
 
 Correct (interface dependency):
-
 ```php
 interface PaymentGateway
 {
@@ -91,13 +87,11 @@ When no explicit order is specified, sort by `id` or `created_at` descending. Wi
 is undefined.
 
 Incorrect:
-
 ```php
 $posts = Post::paginate();
 ```
 
 Correct:
-
 ```php
 $posts = Post::latest()->paginate();
 ```
@@ -111,8 +105,12 @@ Cache::lock('order-processing-'.$order->id, 10)->block(5, function () use ($orde
     $order->process();
 });
 
-// Or at query level
-$product = Product::where('id', $id)->lockForUpdate()->first();
+// Or at query level, inside a transaction
+DB::transaction(function () use ($id) {
+    $product = Product::where('id', $id)->lockForUpdate()->first();
+
+    // Read and update the product while the lock is held...
+});
 ```
 
 ## Use `mb_*` String Functions
@@ -121,14 +119,12 @@ When no Laravel helper exists, prefer `mb_strlen`, `mb_strtolower`, etc. for UTF
 count bytes, not characters.
 
 Incorrect:
-
 ```php
 strlen('José');          // 5 (bytes, not characters)
 strtolower('MÜNCHEN');  // 'mÜnchen' — fails on multibyte
 ```
 
 Correct:
-
 ```php
 mb_strlen('José');             // 4 (characters)
 mb_strtolower('MÜNCHEN');     // 'münchen'
@@ -144,13 +140,11 @@ For lightweight tasks that don't need to survive a crash (logging, analytics, cl
 dispatching a job. The callback runs after the HTTP response is sent — no queue overhead.
 
 Incorrect (job overhead for trivial work):
-
 ```php
 dispatch(new LogPageView($page));
 ```
 
 Correct (runs after response, same process):
-
 ```php
 defer(fn () => PageView::create(['page_id' => $page->id, 'user_id' => auth()->id()]));
 ```
@@ -195,7 +189,6 @@ computations that would otherwise run sequentially.
 Follow Laravel conventions. Don't override defaults unnecessarily.
 
 Incorrect:
-
 ```php
 class Customer extends Model
 {
@@ -210,7 +203,6 @@ class Customer extends Model
 ```
 
 Correct:
-
 ```php
 class Customer extends Model
 {

@@ -93,7 +93,12 @@ it('checks view order attachments', function () {
     $filters = ['order_id' => $this->order->id];
     ksort($filters);
     $signature = md5(json_encode($filters));
-    expect(Cache::has("attachments:index:v{$v}:f:{$signature}"))->toBeTrue();
+    $cacheKey = "attachments:index:v{$v}:f:{$signature}";
+    $cachedPayload = Cache::get($cacheKey);
+
+    expect(Cache::has($cacheKey))->toBeTrue()
+        ->and($cachedPayload)->toBeArray()
+        ->and($cachedPayload['attachments'])->toBeArray();
 
     $second = $this->getJson("/api/v1/orders/{$this->order->uuid}/attachments");
     $second->assertOk()
