@@ -37,12 +37,12 @@ services:
             - selenium
     dusk:
         build:
-            context: './docker/8.4'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-                NODE_VERSION: '24'
-        image: 'sail-8.4/lumasachi'
+          context: './vendor/laravel/sail/runtimes/8.5'
+          dockerfile: Dockerfile
+          args:
+            WWWGROUP: '${WWWGROUP}'
+            NODE_VERSION: '24'
+        image: 'sail-8.5/lumasachi'
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         environment:
