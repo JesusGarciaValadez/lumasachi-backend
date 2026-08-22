@@ -1,16 +1,18 @@
 {
-    "agents": ["junie", "cursor", "claude_code", "codex", "copilot", "opencode", "amp", "antigravity"],
+    "agents": ["junie", "cursor", "claude_code", "codex", "copilot", "opencode", "amp", "antigravity", "grok_build"],
     "cloud": true,
     "guidelines": true,
     "mcp": true,
     "nightwatch": true,
     "sail": true,
     "skills": [
+        "infer-conventions",
         "laravel-best-practices",
         "configuring-horizon",
         "configure-nightwatch",
         "octane-development",
         "pennant-development",
+        "pest-testing",
         "inertia-vue-development",
         "tailwindcss-development",
         "deploying-laravel-cloud"

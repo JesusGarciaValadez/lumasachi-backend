@@ -88,7 +88,7 @@ Relevant existing coverage is concentrated in:
 - `tests/Frontend/Track.spec.ts`
 
 There are currently no files under `tests/Browser`, `laravel/dusk` is not a direct Composer dependency, the Dusk Artisan
-commands are unavailable, and `docker-compose.yml` has no Selenium service.
+commands are unavailable, and `../compose.yaml` has no Selenium service.
 
 ### Baseline verification performed during planning
 

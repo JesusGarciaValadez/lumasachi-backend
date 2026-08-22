@@ -41,7 +41,7 @@ final class AttachmentController extends Controller
 
             return [
                 'order_id' => $order->id,
-                'attachments' => AttachmentResource::collection($attachments),
+                'attachments' => AttachmentResource::collection($attachments)->resolve(),
                 'total_size' => $order->getTotalAttachmentsSize(),
                 'total_size_formatted' => $order->getTotalAttachmentsSizeFormatted(),
             ];

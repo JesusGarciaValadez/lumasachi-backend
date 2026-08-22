@@ -5,7 +5,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 12.66.0.
+ * Generated for Laravel 13.26.1.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -1201,6 +1201,57 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @param-closure-this static  $macro
+         * @return void
+         * @static
+         */
+        public static function macro($name, $macro)
+        {
+            \Illuminate\Foundation\Application::macro($name, $macro);
+        }
+
+        /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void
+         * @throws \ReflectionException
+         * @static
+         */
+        public static function mixin($mixin, $replace = true)
+        {
+            \Illuminate\Foundation\Application::mixin($mixin, $replace);
+        }
+
+        /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool
+         * @static
+         */
+        public static function hasMacro($name)
+        {
+            return \Illuminate\Foundation\Application::hasMacro($name);
+        }
+
+        /**
+         * Flush the existing macros.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushMacros()
+        {
+            \Illuminate\Foundation\Application::flushMacros();
+        }
+
+        /**
          * Define a contextual binding.
          *
          * @param array|string $concrete
@@ -1615,6 +1666,8 @@ namespace Illuminate\Support\Facades {
          * @template TClass of object
          * @param string|class-string<TClass> $id
          * @return ($id is class-string<TClass> ? TClass : mixed)
+         * @throws \Illuminate\Contracts\Container\CircularDependencyException
+         * @throws \Illuminate\Container\EntryNotFoundException
          * @static
          */
         public static function get($id)
@@ -1645,13 +1698,14 @@ namespace Illuminate\Support\Facades {
          * Resolve a dependency based on an attribute.
          *
          * @return mixed
+         * @throws \Illuminate\Contracts\Container\BindingResolutionException
          * @static
          */
-        public static function resolveFromAttribute($attribute)
+        public static function resolveFromAttribute($attribute, $parameter)
         {
             //Method inherited from \Illuminate\Container\Container 
             /** @var \Illuminate\Foundation\Application $instance */
-            return $instance->resolveFromAttribute($attribute);
+            return $instance->resolveFromAttribute($attribute, $parameter);
         }
 
         /**
@@ -1755,6 +1809,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $abstract
          * @return string
+         * @throws \LogicException
          * @static
          */
         public static function getAlias($abstract)
@@ -1873,105 +1928,54 @@ namespace Illuminate\Support\Facades {
         /**
          * Determine if a given offset exists.
          *
-         * @param string $key
+         * @param string $offset
          * @static
          */
-        public static function offsetExists($key)
+        public static function offsetExists($offset)
         {
             //Method inherited from \Illuminate\Container\Container 
             /** @var \Illuminate\Foundation\Application $instance */
-            return $instance->offsetExists($key);
+            return $instance->offsetExists($offset);
         }
 
         /**
          * Get the value at a given offset.
          *
-         * @param string $key
+         * @param string $offset
          * @static
          */
-        public static function offsetGet($key)
+        public static function offsetGet($offset)
         {
             //Method inherited from \Illuminate\Container\Container 
             /** @var \Illuminate\Foundation\Application $instance */
-            return $instance->offsetGet($key);
+            return $instance->offsetGet($offset);
         }
 
         /**
          * Set the value at a given offset.
          *
-         * @param string $key
+         * @param string $offset
          * @param mixed $value
          * @static
          */
-        public static function offsetSet($key, $value)
+        public static function offsetSet($offset, $value)
         {
             //Method inherited from \Illuminate\Container\Container 
             /** @var \Illuminate\Foundation\Application $instance */
-            return $instance->offsetSet($key, $value);
+            return $instance->offsetSet($offset, $value);
         }
 
         /**
          * Unset the value at a given offset.
          *
-         * @param string $key
+         * @param string $offset
          * @static
          */
-        public static function offsetUnset($key)
+        public static function offsetUnset($offset)
         {
             //Method inherited from \Illuminate\Container\Container 
             /** @var \Illuminate\Foundation\Application $instance */
-            return $instance->offsetUnset($key);
-        }
-
-        /**
-         * Register a custom macro.
-         *
-         * @param string $name
-         * @param object|callable $macro
-         * @param-closure-this static  $macro
-         * @return void
-         * @static
-         */
-        public static function macro($name, $macro)
-        {
-            \Illuminate\Foundation\Application::macro($name, $macro);
-        }
-
-        /**
-         * Mix another object into the class.
-         *
-         * @param object $mixin
-         * @param bool $replace
-         * @return void
-         * @throws \ReflectionException
-         * @static
-         */
-        public static function mixin($mixin, $replace = true)
-        {
-            \Illuminate\Foundation\Application::mixin($mixin, $replace);
-        }
-
-        /**
-         * Checks if macro is registered.
-         *
-         * @param string $name
-         * @return bool
-         * @static
-         */
-        public static function hasMacro($name)
-        {
-            return \Illuminate\Foundation\Application::hasMacro($name);
-        }
-
-        /**
-         * Flush the existing macros.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushMacros()
-        {
-            \Illuminate\Foundation\Application::flushMacros();
+            return $instance->offsetUnset($offset);
         }
 
             }
@@ -2224,7 +2228,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Attempt to get the guard from the local cache.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard
          * @static
          */
@@ -2277,7 +2281,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default guard driver the factory should serve.
          *
-         * @param string $name
+         * @param \UnitEnum|string|null $name
          * @return void
          * @static
          */
@@ -2290,7 +2294,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default authentication driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -2344,6 +2348,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $driver
          * @param \Closure $callback
+         * @param-closure-this $this  $callback
          * @return \Illuminate\Auth\AuthManager
          * @static
          */
@@ -3413,35 +3418,6 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Get the path to the compiled version of a view.
-         *
-         * @param string $path
-         * @return string
-         * @static
-         */
-        public static function getCompiledPath($path)
-        {
-            //Method inherited from \Illuminate\View\Compilers\Compiler 
-            /** @var \Illuminate\View\Compilers\BladeCompiler $instance */
-            return $instance->getCompiledPath($path);
-        }
-
-        /**
-         * Determine if the view at the given path is expired.
-         *
-         * @param string $path
-         * @return bool
-         * @throws \ErrorException
-         * @static
-         */
-        public static function isExpired($path)
-        {
-            //Method inherited from \Illuminate\View\Compilers\Compiler 
-            /** @var \Illuminate\View\Compilers\BladeCompiler $instance */
-            return $instance->isExpired($path);
-        }
-
-        /**
          * Get a new component hash for a component name.
          *
          * @param string $component
@@ -3542,6 +3518,35 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\View\Compilers\BladeCompiler $instance */
             return $instance->applyEchoHandler($value);
+        }
+
+        /**
+         * Get the path to the compiled version of a view.
+         *
+         * @param string $path
+         * @return string
+         * @static
+         */
+        public static function getCompiledPath($path)
+        {
+            //Method inherited from \Illuminate\View\Compilers\Compiler 
+            /** @var \Illuminate\View\Compilers\BladeCompiler $instance */
+            return $instance->getCompiledPath($path);
+        }
+
+        /**
+         * Determine if the view at the given path is expired.
+         *
+         * @param string $path
+         * @return bool
+         * @throws \ErrorException
+         * @static
+         */
+        public static function isExpired($path)
+        {
+            //Method inherited from \Illuminate\View\Compilers\Compiler 
+            /** @var \Illuminate\View\Compilers\BladeCompiler $instance */
+            return $instance->isExpired($path);
         }
 
             }
@@ -3671,22 +3676,22 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Get a driver instance.
+         * Get a broadcaster instance by name.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $name
          * @return mixed
          * @static
          */
-        public static function connection($driver = null)
+        public static function connection($name = null)
         {
             /** @var \Illuminate\Broadcasting\BroadcastManager $instance */
-            return $instance->connection($driver);
+            return $instance->connection($name);
         }
 
         /**
          * Get a driver instance.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return mixed
          * @static
          */
@@ -3737,7 +3742,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -3750,7 +3755,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Disconnect the given driver / connection and remove it from local cache.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return void
          * @static
          */
@@ -3765,6 +3770,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $driver
          * @param \Closure $callback
+         * @param-closure-this $this  $callback
          * @return \Illuminate\Broadcasting\BroadcastManager
          * @static
          */
@@ -3809,6 +3815,32 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Broadcasting\BroadcastManager $instance */
             return $instance->forgetDrivers();
+        }
+
+        /**
+         * Resolve the default connection name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveConnectionFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Broadcasting\BroadcastManager $instance */
+            return $instance->resolveConnectionFromQueueRoute($queueable);
+        }
+
+        /**
+         * Resolve the default queue name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveQueueFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Broadcasting\BroadcastManager $instance */
+            return $instance->resolveQueueFromQueueRoute($queueable);
         }
 
             }
@@ -3858,6 +3890,19 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Bus\Dispatcher $instance */
             return $instance->dispatchNow($command, $handler);
+        }
+
+        /**
+         * Dispatch multiple commands in bulk to their appropriate handlers on the queue.
+         *
+         * @param iterable $jobs
+         * @return void
+         * @static
+         */
+        public static function bulk($jobs)
+        {
+            /** @var \Illuminate\Bus\Dispatcher $instance */
+            $instance->bulk($jobs);
         }
 
         /**
@@ -3998,6 +4043,32 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Bus\Dispatcher $instance */
             return $instance->withoutDispatchingAfterResponses();
+        }
+
+        /**
+         * Resolve the default connection name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveConnectionFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Bus\Dispatcher $instance */
+            return $instance->resolveConnectionFromQueueRoute($queueable);
+        }
+
+        /**
+         * Resolve the default queue name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveQueueFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Bus\Dispatcher $instance */
+            return $instance->resolveQueueFromQueueRoute($queueable);
         }
 
         /**
@@ -4420,7 +4491,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a cache store instance by name, wrapped in a repository.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Contracts\Cache\Repository
          * @static
          */
@@ -4433,7 +4504,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a cache driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return \Illuminate\Contracts\Cache\Repository
          * @static
          */
@@ -4446,7 +4517,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a memoized cache driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return \Illuminate\Contracts\Cache\Repository
          * @static
          */
@@ -4525,7 +4596,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default cache driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -4538,7 +4609,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Unset the given driver instances.
          *
-         * @param array|string|null $name
+         * @param array|\UnitEnum|string|null $name
          * @return \Illuminate\Cache\CacheManager
          * @static
          */
@@ -4551,7 +4622,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Disconnect the given driver and remove from local cache.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return void
          * @static
          */
@@ -4590,10 +4661,22 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Register a callback to be invoked when an unserializable class is encountered.
+         *
+         * @param callable|null $callback
+         * @return void
+         * @static
+         */
+        public static function handleUnserializableClassUsing($callback)
+        {
+            /** @var \Illuminate\Cache\CacheManager $instance */
+            $instance->handleUnserializableClassUsing($callback);
+        }
+
+        /**
          * Determine if an item exists in the cache.
          *
          * @param \UnitEnum|array|string $key
-         * @return bool
          * @static
          */
         public static function has($key)
@@ -4620,7 +4703,6 @@ namespace Illuminate\Support\Facades {
          *
          * @param \UnitEnum|array|string $key
          * @param mixed $default
-         * @return mixed
          * @static
          */
         public static function get($key, $default = null)
@@ -4634,7 +4716,6 @@ namespace Illuminate\Support\Facades {
          *
          * Items not found in the cache will have a null value.
          *
-         * @param array $keys
          * @return array
          * @static
          */
@@ -4647,7 +4728,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Obtains multiple cache items by their unique keys.
          *
-         * @return iterable
          * @param iterable<string> $keys A list of keys that can be obtained in a single operation.
          * @param mixed $default Default value to return for keys that do not exist.
          * @return iterable<string, mixed> A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
@@ -4681,7 +4761,6 @@ namespace Illuminate\Support\Facades {
          *
          * @param \UnitEnum|string $key
          * @param (\Closure():(string|null))|string|null $default
-         * @return string
          * @throws \InvalidArgumentException
          * @static
          */
@@ -4696,7 +4775,6 @@ namespace Illuminate\Support\Facades {
          *
          * @param \UnitEnum|string $key
          * @param (\Closure():(int|null))|int|null $default
-         * @return int
          * @throws \InvalidArgumentException
          * @static
          */
@@ -4711,7 +4789,6 @@ namespace Illuminate\Support\Facades {
          *
          * @param \UnitEnum|string $key
          * @param (\Closure():(float|null))|float|null $default
-         * @return float
          * @throws \InvalidArgumentException
          * @static
          */
@@ -4726,7 +4803,6 @@ namespace Illuminate\Support\Facades {
          *
          * @param \UnitEnum|string $key
          * @param (\Closure():(bool|null))|bool|null $default
-         * @return bool
          * @throws \InvalidArgumentException
          * @static
          */
@@ -4772,7 +4848,6 @@ namespace Illuminate\Support\Facades {
          * @param \UnitEnum|array|string $key
          * @param mixed $value
          * @param \DateTimeInterface|\DateInterval|int|null $ttl
-         * @return bool
          * @static
          */
         public static function set($key, $value, $ttl = null)
@@ -4784,7 +4859,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Store multiple items in the cache for a given number of seconds.
          *
-         * @param array $values
          * @param \DateTimeInterface|\DateInterval|int|null $ttl
          * @return bool
          * @static
@@ -4798,7 +4872,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Persists a set of key => value pairs in the cache, with an optional TTL.
          *
-         * @return bool
          * @param iterable $values A list of key => value pairs for a multiple-set operation.
          * @param null|int|\DateInterval $ttl Optional. The TTL value of this item. If no value is sent and
          *                                       the driver supports TTL then the library may set a default value
@@ -4889,6 +4962,22 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Get an item from the cache, or execute the given Closure and store the result.
+         *
+         * @template TCacheValue
+         * @param \UnitEnum|string $key
+         * @param \Closure|\DateTimeInterface|\DateInterval|int|null $ttl
+         * @param \Closure():  TCacheValue  $callback
+         * @return array{TCacheValue, bool} The cached value and whether it was warm.
+         * @static
+         */
+        public static function rememberWithWarmth($key, $ttl, $callback)
+        {
+            /** @var \Illuminate\Cache\Repository $instance */
+            return $instance->rememberWithWarmth($key, $ttl, $callback);
+        }
+
+        /**
          * Get an item from the cache, or execute the given Closure and store the result forever.
          *
          * @template TCacheValue
@@ -4934,6 +5023,20 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Cache\Repository $instance */
             return $instance->flexible($key, $ttl, $callback, $lock, $alwaysDefer);
+        }
+
+        /**
+         * Set the expiration of a cached item.
+         *
+         * @param \UnitEnum|string $key
+         * @param \DateTimeInterface|\DateInterval|int $ttl
+         * @return bool
+         * @static
+         */
+        public static function touch($key, $ttl)
+        {
+            /** @var \Illuminate\Cache\Repository $instance */
+            return $instance->touch($key, $ttl);
         }
 
         /**
@@ -4985,7 +5088,6 @@ namespace Illuminate\Support\Facades {
          * Remove an item from the cache.
          *
          * @param \UnitEnum|array|string $key
-         * @return bool
          * @static
          */
         public static function delete($key)
@@ -4997,7 +5099,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Deletes multiple cache items in a single operation.
          *
-         * @return bool
          * @param iterable<string> $keys A list of string-based keys to be deleted.
          * @return bool True if the items were successfully removed. False if there was an error.
          * @throws \Psr\SimpleCache\InvalidArgumentException
@@ -5014,7 +5115,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Wipes clean the entire cache's keys.
          *
-         * @return bool
          * @return bool True on success and false on failure.
          * @static
          */
@@ -5022,6 +5122,18 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Cache\Repository $instance */
             return $instance->clear();
+        }
+
+        /**
+         * Flush all locks from the cache store.
+         *
+         * @throws \BadMethodCallException
+         * @static
+         */
+        public static function flushLocks()
+        {
+            /** @var \Illuminate\Cache\Repository $instance */
+            return $instance->flushLocks();
         }
 
         /**
@@ -5060,6 +5172,17 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Cache\Repository $instance */
             return $instance->supportsTags();
+        }
+
+        /**
+         * Determine if the current store supports flushing locks.
+         *
+         * @static
+         */
+        public static function supportsFlushingLocks()
+        {
+            /** @var \Illuminate\Cache\Repository $instance */
+            return $instance->supportsFlushingLocks();
         }
 
         /**
@@ -5103,7 +5226,7 @@ namespace Illuminate\Support\Facades {
          * Set the cache store implementation.
          *
          * @param \Illuminate\Contracts\Cache\Store $store
-         * @return static
+         * @return \Illuminate\Cache\Repository
          * @static
          */
         public static function setStore($store)
@@ -5127,7 +5250,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the event dispatcher instance.
          *
-         * @param \Illuminate\Contracts\Events\Dispatcher $events
          * @return void
          * @static
          */
@@ -5140,54 +5262,50 @@ namespace Illuminate\Support\Facades {
         /**
          * Determine if a cached value exists.
          *
-         * @param \UnitEnum|string $key
-         * @return bool
+         * @param \UnitEnum|string $offset
          * @static
          */
-        public static function offsetExists($key)
+        public static function offsetExists($offset)
         {
             /** @var \Illuminate\Cache\Repository $instance */
-            return $instance->offsetExists($key);
+            return $instance->offsetExists($offset);
         }
 
         /**
          * Retrieve an item from the cache by key.
          *
-         * @param \UnitEnum|string $key
-         * @return mixed
+         * @param \UnitEnum|string $offset
          * @static
          */
-        public static function offsetGet($key)
+        public static function offsetGet($offset)
         {
             /** @var \Illuminate\Cache\Repository $instance */
-            return $instance->offsetGet($key);
+            return $instance->offsetGet($offset);
         }
 
         /**
          * Store an item in the cache for the default time.
          *
-         * @param \UnitEnum|string $key
+         * @param \UnitEnum|string $offset
          * @param mixed $value
-         * @return void
          * @static
          */
-        public static function offsetSet($key, $value)
+        public static function offsetSet($offset, $value)
         {
             /** @var \Illuminate\Cache\Repository $instance */
-            $instance->offsetSet($key, $value);
+            return $instance->offsetSet($offset, $value);
         }
 
         /**
          * Remove an item from the cache.
          *
-         * @param \UnitEnum|string $key
-         * @return void
+         * @param \UnitEnum|string $offset
          * @static
          */
-        public static function offsetUnset($key)
+        public static function offsetUnset($offset)
         {
             /** @var \Illuminate\Cache\Repository $instance */
-            $instance->offsetUnset($key);
+            return $instance->offsetUnset($offset);
         }
 
         /**
@@ -5385,9 +5503,21 @@ namespace Illuminate\Support\Facades {
             $instance->setPrefix($prefix);
         }
 
+        /**
+         * Determine if the lock store is separate from the cache store.
+         *
+         * @return bool
+         * @static
+         */
+        public static function hasSeparateLockStore()
+        {
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->hasSeparateLockStore();
+        }
+
             }
     /**
-     * @method static array run(\Closure|array $tasks)
+     * @method static array run(\Closure|array $tasks, \Carbon\CarbonInterval|int|null $timeout = null)
      * @method static \Illuminate\Support\Defer\DeferredCallback defer(\Closure|array $tasks)
      * @see \Illuminate\Concurrency\ConcurrencyManager
      */
@@ -5395,7 +5525,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a driver instance by name.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return mixed
          * @static
          */
@@ -5731,7 +5861,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get all of the configuration items for the application.
          *
-         * @return array
+         * @return array<string, mixed>
          * @static
          */
         public static function all()
@@ -5743,54 +5873,54 @@ namespace Illuminate\Support\Facades {
         /**
          * Determine if the given configuration option exists.
          *
-         * @param string $key
+         * @param string $offset
          * @return bool
          * @static
          */
-        public static function offsetExists($key)
+        public static function offsetExists($offset)
         {
             /** @var \Illuminate\Config\Repository $instance */
-            return $instance->offsetExists($key);
+            return $instance->offsetExists($offset);
         }
 
         /**
          * Get a configuration option.
          *
-         * @param string $key
+         * @param string $offset
          * @return mixed
          * @static
          */
-        public static function offsetGet($key)
+        public static function offsetGet($offset)
         {
             /** @var \Illuminate\Config\Repository $instance */
-            return $instance->offsetGet($key);
+            return $instance->offsetGet($offset);
         }
 
         /**
          * Set a configuration option.
          *
-         * @param string $key
+         * @param string $offset
          * @param mixed $value
          * @return void
          * @static
          */
-        public static function offsetSet($key, $value)
+        public static function offsetSet($offset, $value)
         {
             /** @var \Illuminate\Config\Repository $instance */
-            $instance->offsetSet($key, $value);
+            $instance->offsetSet($offset, $value);
         }
 
         /**
          * Unset a configuration option.
          *
-         * @param string $key
+         * @param string $offset
          * @return void
          * @static
          */
-        public static function offsetUnset($key)
+        public static function offsetUnset($offset)
         {
             /** @var \Illuminate\Config\Repository $instance */
-            $instance->offsetUnset($key);
+            $instance->offsetUnset($offset);
         }
 
         /**
@@ -6320,7 +6450,7 @@ namespace Illuminate\Support\Facades {
          * Handle unserialize exceptions using the given callback.
          *
          * @param callable|null $callback
-         * @return static
+         * @return \Illuminate\Log\Context\Repository
          * @static
          */
         public static function handleUnserializeExceptionsUsing($callback)
@@ -6545,10 +6675,11 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a queued cookie instance.
          *
+         * @template TQueuedDefault
          * @param string $key
-         * @param mixed $default
+         * @param TQueuedDefault|(\Closure(): TQueuedDefault) $default
          * @param string|null $path
-         * @return \Symfony\Component\HttpFoundation\Cookie|null
+         * @return \Symfony\Component\HttpFoundation\Cookie|TQueuedDefault
          * @static
          */
         public static function queued($key, $default = null, $path = null)
@@ -7047,6 +7178,7 @@ namespace Illuminate\Support\Facades {
          * @param array $config
          * @param bool $force
          * @return \Illuminate\Database\PostgresConnection
+         * @throws \RuntimeException
          * @static
          */
         public static function connectUsing($name, $config, $force = false)
@@ -7097,9 +7229,10 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default database connection for the callback execution.
          *
+         * @template TReturn
          * @param \UnitEnum|string $name
-         * @param callable $callback
-         * @return mixed
+         * @param (callable(): TReturn) $callback
+         * @return TReturn
          * @static
          */
         public static function usingConnection($name, $callback)
@@ -7301,6 +7434,19 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Prepare the query bindings for execution.
+         *
+         * @param array $bindings
+         * @return array
+         * @static
+         */
+        public static function prepareBindings($bindings)
+        {
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->prepareBindings($bindings);
+        }
+
+        /**
          * Get a schema builder instance for the connection.
          *
          * @return \Illuminate\Database\Schema\PostgresBuilder
@@ -7447,14 +7593,15 @@ namespace Illuminate\Support\Facades {
          * @param string $query
          * @param array $bindings
          * @param bool $useReadPdo
+         * @param array $fetchUsing
          * @return array
          * @static
          */
-        public static function select($query, $bindings = [], $useReadPdo = true)
+        public static function select($query, $bindings = [], $useReadPdo = true, $fetchUsing = [])
         {
             //Method inherited from \Illuminate\Database\Connection 
             /** @var \Illuminate\Database\PostgresConnection $instance */
-            return $instance->select($query, $bindings, $useReadPdo);
+            return $instance->select($query, $bindings, $useReadPdo, $fetchUsing);
         }
 
         /**
@@ -7463,14 +7610,15 @@ namespace Illuminate\Support\Facades {
          * @param string $query
          * @param array $bindings
          * @param bool $useReadPdo
+         * @param array $fetchUsing
          * @return array
          * @static
          */
-        public static function selectResultSets($query, $bindings = [], $useReadPdo = true)
+        public static function selectResultSets($query, $bindings = [], $useReadPdo = true, $fetchUsing = [])
         {
             //Method inherited from \Illuminate\Database\Connection 
             /** @var \Illuminate\Database\PostgresConnection $instance */
-            return $instance->selectResultSets($query, $bindings, $useReadPdo);
+            return $instance->selectResultSets($query, $bindings, $useReadPdo, $fetchUsing);
         }
 
         /**
@@ -7479,14 +7627,15 @@ namespace Illuminate\Support\Facades {
          * @param string $query
          * @param array $bindings
          * @param bool $useReadPdo
+         * @param array $fetchUsing
          * @return \Generator<int, \stdClass>
          * @static
          */
-        public static function cursor($query, $bindings = [], $useReadPdo = true)
+        public static function cursor($query, $bindings = [], $useReadPdo = true, $fetchUsing = [])
         {
             //Method inherited from \Illuminate\Database\Connection 
             /** @var \Illuminate\Database\PostgresConnection $instance */
-            return $instance->cursor($query, $bindings, $useReadPdo);
+            return $instance->cursor($query, $bindings, $useReadPdo, $fetchUsing);
         }
 
         /**
@@ -7567,7 +7716,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Run a raw, unprepared query against the PDO connection.
          *
-         * @param string $query
+         * @param literal-string $query
          * @return bool
          * @static
          */
@@ -7608,8 +7757,9 @@ namespace Illuminate\Support\Facades {
         /**
          * Execute the given callback without "pretending".
          *
-         * @param \Closure $callback
-         * @return mixed
+         * @template TReturn
+         * @param \Closure():  TReturn  $callback
+         * @return TReturn
          * @static
          */
         public static function withoutPretending($callback)
@@ -7632,20 +7782,6 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Illuminate\Database\Connection 
             /** @var \Illuminate\Database\PostgresConnection $instance */
             $instance->bindValues($statement, $bindings);
-        }
-
-        /**
-         * Prepare the query bindings for execution.
-         *
-         * @param array $bindings
-         * @return array
-         * @static
-         */
-        public static function prepareBindings($bindings)
-        {
-            //Method inherited from \Illuminate\Database\Connection 
-            /** @var \Illuminate\Database\PostgresConnection $instance */
-            return $instance->prepareBindings($bindings);
         }
 
         /**
@@ -7776,7 +7912,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a new raw query expression.
          *
-         * @param mixed $value
+         * @param literal-string|int|float $value
          * @return \Illuminate\Contracts\Database\Query\Expression
          * @static
          */
@@ -7924,6 +8060,32 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Get the current PDO connection used for direct connections.
+         *
+         * @return \PDO
+         * @static
+         */
+        public static function getDirectPdo()
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->getDirectPdo();
+        }
+
+        /**
+         * Get the current direct PDO connection parameter without executing any reconnect logic.
+         *
+         * @return \PDO|\Closure|null
+         * @static
+         */
+        public static function getRawDirectPdo()
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->getRawDirectPdo();
+        }
+
+        /**
          * Set the PDO connection.
          *
          * @param \PDO|\Closure|null $pdo
@@ -7963,6 +8125,60 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Illuminate\Database\Connection 
             /** @var \Illuminate\Database\PostgresConnection $instance */
             return $instance->setReadPdoConfig($config);
+        }
+
+        /**
+         * Set the PDO connection used for direct connections.
+         *
+         * @param \PDO|\Closure|null $pdo
+         * @return \Illuminate\Database\PostgresConnection
+         * @static
+         */
+        public static function setDirectPdo($pdo)
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->setDirectPdo($pdo);
+        }
+
+        /**
+         * Set the direct PDO connection configuration.
+         *
+         * @param array $config
+         * @return \Illuminate\Database\PostgresConnection
+         * @static
+         */
+        public static function setDirectPdoConfig($config)
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->setDirectPdoConfig($config);
+        }
+
+        /**
+         * Get the direct PDO connection configuration.
+         *
+         * @return array
+         * @static
+         */
+        public static function getDirectPdoConfig()
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->getDirectPdoConfig();
+        }
+
+        /**
+         * Determine if this connection has a direct PDO connection configured.
+         *
+         * @return bool
+         * @static
+         */
+        public static function hasDirectConnection()
+        {
+            //Method inherited from \Illuminate\Database\Connection 
+            /** @var \Illuminate\Database\PostgresConnection $instance */
+            return $instance->hasDirectConnection();
         }
 
         /**
@@ -8328,8 +8544,9 @@ namespace Illuminate\Support\Facades {
         /**
          * Execute the given callback without table prefix.
          *
-         * @param \Closure $callback
-         * @return mixed
+         * @template TReturn
+         * @param (\Closure($this): TReturn) $callback
+         * @return TReturn
          * @static
          */
         public static function withoutTablePrefix($callback)
@@ -8707,7 +8924,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Gets the raw, unprepared listeners.
          *
-         * @return array
+         * @return array<string, callable|array|class-string|null>
          * @static
          */
         public static function getRawListeners()
@@ -8765,6 +8982,32 @@ namespace Illuminate\Support\Facades {
         public static function flushMacros()
         {
             \Illuminate\Events\Dispatcher::flushMacros();
+        }
+
+        /**
+         * Resolve the default connection name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveConnectionFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Events\Dispatcher $instance */
+            return $instance->resolveConnectionFromQueueRoute($queueable);
+        }
+
+        /**
+         * Resolve the default queue name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveQueueFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Events\Dispatcher $instance */
+            return $instance->resolveQueueFromQueueRoute($queueable);
         }
 
         /**
@@ -10150,7 +10393,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return mixed
          * @throws \InvalidArgumentException
          * @static
@@ -10166,7 +10409,7 @@ namespace Illuminate\Support\Facades {
          * Register a custom driver creator Closure.
          *
          * @param string $driver
-         * @param \Closure $callback
+         * @param-closure-this $this  $callback
          * @return \Illuminate\Hashing\HashManager
          * @static
          */
@@ -10180,7 +10423,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get all of the created "drivers".
          *
-         * @return array
+         * @return array<string, mixed>
          * @static
          */
         public static function getDrivers()
@@ -10266,7 +10509,7 @@ namespace Illuminate\Support\Facades {
      * @method static \Illuminate\Http\Client\PendingRequest withResponseMiddleware(callable $middleware)
      * @method static \Illuminate\Http\Client\PendingRequest withAttributes(array $attributes)
      * @method static \Illuminate\Http\Client\PendingRequest beforeSending(callable $callback)
-     * @method static \Illuminate\Http\Client\PendingRequest afterResponse(callable|null $callback)
+     * @method static \Illuminate\Http\Client\PendingRequest afterResponse(callable $callback)
      * @method static \Illuminate\Http\Client\PendingRequest throw(callable|null $callback = null)
      * @method static \Illuminate\Http\Client\PendingRequest throwIf(callable|bool $condition)
      * @method static \Illuminate\Http\Client\PendingRequest throwUnless(callable|bool $condition)
@@ -10274,11 +10517,12 @@ namespace Illuminate\Support\Facades {
      * @method static \Illuminate\Http\Client\PendingRequest dd()
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface get(string $url, array|string|null $query = null)
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface head(string $url, array|string|null $query = null)
+     * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface query(string $url, array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable $data = [])
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface post(string $url, array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable $data = [])
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface patch(string $url, array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable $data = [])
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface put(string $url, array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable $data = [])
      * @method static \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface delete(string $url, array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable $data = [])
-     * @method static array pool(callable $callback, int|null $concurrency = null)
+     * @method static array pool(callable $callback, int|null $concurrency = 0)
      * @method static \Illuminate\Http\Client\Batch batch(callable $callback)
      * @method static \Illuminate\Http\Client\Response|\Illuminate\Http\Client\Promises\LazyPromise send(string $method, string $url, array $options = [])
      * @method static \GuzzleHttp\Client buildClient()
@@ -10373,7 +10617,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Create a new response instance for use during stubbing.
          *
-         * @param array|string|null $body
+         * @param \Psr\Http\Message\StreamInterface|array|string|resource|null $body
          * @param int $status
          * @param array $headers
          * @return \GuzzleHttp\Promise\PromiseInterface
@@ -10387,10 +10631,11 @@ namespace Illuminate\Support\Facades {
         /**
          * Create a new PSR-7 response instance for use during stubbing.
          *
-         * @param array|string|null $body
+         * @param \Psr\Http\Message\StreamInterface|array|string|resource|null $body
          * @param int $status
-         * @param array<string, mixed> $headers
+         * @param array $headers
          * @return \GuzzleHttp\Psr7\Response
+         * @throws \InvalidArgumentException
          * @static
          */
         public static function psr7Response($body = null, $status = 200, $headers = [])
@@ -10401,9 +10646,9 @@ namespace Illuminate\Support\Facades {
         /**
          * Create a new RequestException instance for use during stubbing.
          *
-         * @param array|string|null $body
+         * @param \Psr\Http\Message\StreamInterface|array|string|resource|null $body
          * @param int $status
-         * @param array<string, mixed> $headers
+         * @param array $headers
          * @return \Illuminate\Http\Client\RequestException
          * @static
          */
@@ -10469,6 +10714,7 @@ namespace Illuminate\Support\Facades {
          * @param string $url
          * @param \Illuminate\Http\Client\Response|\GuzzleHttp\Promise\PromiseInterface|callable|int|string|array|\Illuminate\Http\Client\ResponseSequence $callback
          * @return \Illuminate\Http\Client\Factory
+         * @throws \InvalidArgumentException
          * @static
          */
         public static function stubUrl($url, $callback)
@@ -10734,6 +10980,195 @@ namespace Illuminate\Support\Facades {
 
             }
     /**
+     * @see \Illuminate\Image\ImageManager
+     */
+    class Image {
+        /**
+         * Create an image instance from raw bytes.
+         *
+         * @static
+         */
+        public static function fromBytes($contents)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromBytes($contents);
+        }
+
+        /**
+         * Create an image instance from a stream.
+         *
+         * @param resource $stream
+         * @static
+         */
+        public static function fromStream($stream)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromStream($stream);
+        }
+
+        /**
+         * Create an image instance from a base64 encoded string.
+         *
+         * @static
+         */
+        public static function fromBase64($base64)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromBase64($base64);
+        }
+
+        /**
+         * Create an image instance from a file path.
+         *
+         * @static
+         */
+        public static function fromPath($path)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromPath($path);
+        }
+
+        /**
+         * Create an image instance from a storage disk path.
+         *
+         * @static
+         */
+        public static function fromStorage($path, $disk = null)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromStorage($path, $disk);
+        }
+
+        /**
+         * Create an image instance from an uploaded file.
+         *
+         * @static
+         */
+        public static function fromUpload($file)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromUpload($file);
+        }
+
+        /**
+         * Create an image instance from a URL.
+         *
+         * @static
+         */
+        public static function fromUrl($url)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->fromUrl($url);
+        }
+
+        /**
+         * Register a transformation handler for the given driver.
+         *
+         * @param class-string<\Illuminate\Contracts\Image\Transformation> $transformation
+         * @static
+         */
+        public static function transformUsing($driver, $transformation, $callback)
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->transformUsing($driver, $transformation, $callback);
+        }
+
+        /**
+         * Get the default image driver name.
+         *
+         * @static
+         */
+        public static function getDefaultDriver()
+        {
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->getDefaultDriver();
+        }
+
+        /**
+         * Get a driver instance.
+         *
+         * @param \UnitEnum|string|null $driver
+         * @return mixed
+         * @throws \InvalidArgumentException
+         * @static
+         */
+        public static function driver($driver = null)
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->driver($driver);
+        }
+
+        /**
+         * Register a custom driver creator Closure.
+         *
+         * @param string $driver
+         * @param-closure-this $this  $callback
+         * @return \Illuminate\Image\ImageManager
+         * @static
+         */
+        public static function extend($driver, $callback)
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->extend($driver, $callback);
+        }
+
+        /**
+         * Get all of the created "drivers".
+         *
+         * @return array<string, mixed>
+         * @static
+         */
+        public static function getDrivers()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->getDrivers();
+        }
+
+        /**
+         * Get the container instance used by the manager.
+         *
+         * @return \Illuminate\Contracts\Container\Container
+         * @static
+         */
+        public static function getContainer()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->getContainer();
+        }
+
+        /**
+         * Set the container instance used by the manager.
+         *
+         * @param \Illuminate\Contracts\Container\Container $container
+         * @return \Illuminate\Image\ImageManager
+         * @static
+         */
+        public static function setContainer($container)
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->setContainer($container);
+        }
+
+        /**
+         * Forget all of the resolved driver instances.
+         *
+         * @return \Illuminate\Image\ImageManager
+         * @static
+         */
+        public static function forgetDrivers()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Image\ImageManager $instance */
+            return $instance->forgetDrivers();
+        }
+
+            }
+    /**
      * @see \Illuminate\Translation\Translator
      */
     class Lang {
@@ -10780,6 +11215,31 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Translation\Translator $instance */
             return $instance->get($key, $replace, $locale, $fallback);
+        }
+
+        /**
+         * Get the specified string translation value.
+         *
+         * @throws \InvalidArgumentException
+         * @static
+         */
+        public static function string($key, $replace = [], $locale = null, $fallback = true)
+        {
+            /** @var \Illuminate\Translation\Translator $instance */
+            return $instance->string($key, $replace, $locale, $fallback);
+        }
+
+        /**
+         * Get the specified array translation value.
+         *
+         * @return array<array-key, mixed>
+         * @throws \InvalidArgumentException
+         * @static
+         */
+        public static function array($key, $replace = [], $locale = null, $fallback = true)
+        {
+            /** @var \Illuminate\Translation\Translator $instance */
+            return $instance->array($key, $replace, $locale, $fallback);
         }
 
         /**
@@ -10832,7 +11292,7 @@ namespace Illuminate\Support\Facades {
          * Register a callback that is responsible for handling missing translation keys.
          *
          * @param callable|null $callback
-         * @return static
+         * @return \Illuminate\Translation\Translator
          * @static
          */
         public static function handleMissingKeysUsing($callback)
@@ -11035,34 +11495,6 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Set the parsed value of a key.
-         *
-         * @param string $key
-         * @param array $parsed
-         * @return void
-         * @static
-         */
-        public static function setParsedKey($key, $parsed)
-        {
-            //Method inherited from \Illuminate\Support\NamespacedItemResolver 
-            /** @var \Illuminate\Translation\Translator $instance */
-            $instance->setParsedKey($key, $parsed);
-        }
-
-        /**
-         * Flush the cache of parsed keys.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushParsedKeys()
-        {
-            //Method inherited from \Illuminate\Support\NamespacedItemResolver 
-            /** @var \Illuminate\Translation\Translator $instance */
-            $instance->flushParsedKeys();
-        }
-
-        /**
          * Register a custom macro.
          *
          * @param string $name
@@ -11113,6 +11545,34 @@ namespace Illuminate\Support\Facades {
             \Illuminate\Translation\Translator::flushMacros();
         }
 
+        /**
+         * Set the parsed value of a key.
+         *
+         * @param string $key
+         * @param array $parsed
+         * @return void
+         * @static
+         */
+        public static function setParsedKey($key, $parsed)
+        {
+            //Method inherited from \Illuminate\Support\NamespacedItemResolver 
+            /** @var \Illuminate\Translation\Translator $instance */
+            $instance->setParsedKey($key, $parsed);
+        }
+
+        /**
+         * Flush the cache of parsed keys.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushParsedKeys()
+        {
+            //Method inherited from \Illuminate\Support\NamespacedItemResolver 
+            /** @var \Illuminate\Translation\Translator $instance */
+            $instance->flushParsedKeys();
+        }
+
             }
     /**
      * @method static void write(string $level, \Illuminate\Contracts\Support\Arrayable|\Illuminate\Contracts\Support\Jsonable|\Illuminate\Support\Stringable|array|string $message, array $context = [])
@@ -11156,7 +11616,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a log channel instance.
          *
-         * @param string|null $channel
+         * @param \UnitEnum|string|null $channel
          * @return \Psr\Log\LoggerInterface
          * @static
          */
@@ -11169,7 +11629,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a log driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return \Psr\Log\LoggerInterface
          * @static
          */
@@ -11244,7 +11704,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default log driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -11272,7 +11732,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Unset the given channel instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return void
          * @static
          */
@@ -11454,9 +11914,6 @@ namespace Illuminate\Support\Facades {
      * @method static \Illuminate\Mail\SentMessage|null html(string $html, mixed $callback)
      * @method static \Illuminate\Mail\SentMessage|null plain(string $view, array $data, mixed $callback)
      * @method static string render(string|array $view, array $data = [])
-     * @method static mixed onQueue(\BackedEnum|string|null $queue, \Illuminate\Contracts\Mail\Mailable $view)
-     * @method static mixed queueOn(string $queue, \Illuminate\Contracts\Mail\Mailable $view)
-     * @method static mixed laterOn(string $queue, \DateTimeInterface|\DateInterval|int $delay, \Illuminate\Contracts\Mail\Mailable $view)
      * @method static \Symfony\Component\Mailer\Transport\TransportInterface getSymfonyTransport()
      * @method static \Illuminate\Contracts\View\Factory getViewFactory()
      * @method static void setSymfonyTransport(\Symfony\Component\Mailer\Transport\TransportInterface $transport)
@@ -11472,7 +11929,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a mailer instance by name.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Contracts\Mail\Mailer
          * @static
          */
@@ -11485,7 +11942,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a mailer driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return \Illuminate\Mail\Mailer
          * @static
          */
@@ -11537,7 +11994,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default mail driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -11550,7 +12007,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Disconnect the given mailer and remove from local cache.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return void
          * @static
          */
@@ -11703,6 +12160,20 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
             $instance->assertQueued($mailable, $callback);
+        }
+
+        /**
+         * Assert if a mailable was queued a number of times.
+         *
+         * @param string $mailable
+         * @param int $times
+         * @return void
+         * @static
+         */
+        public static function assertQueuedTimes($mailable, $times = 1)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
+            $instance->assertQueuedTimes($mailable, $times);
         }
 
         /**
@@ -11911,7 +12382,7 @@ namespace Illuminate\Support\Facades {
          * Queue a new message for sending.
          *
          * @param \Illuminate\Contracts\Mail\Mailable|string|array $view
-         * @param string|null $queue
+         * @param \BackedEnum|string|null $queue
          * @return mixed
          * @static
          */
@@ -11919,6 +12390,34 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
             return $instance->queue($view, $queue);
+        }
+
+        /**
+         * Queue a new mail message for sending on the given queue.
+         *
+         * @param \BackedEnum|string|null $queue
+         * @param \Illuminate\Contracts\Mail\Mailable $view
+         * @return mixed
+         * @static
+         */
+        public static function onQueue($queue, $view)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
+            return $instance->onQueue($queue, $view);
+        }
+
+        /**
+         * Queue a new mail message for sending on the given queue.
+         *
+         * @param \BackedEnum|string|null $queue
+         * @param \Illuminate\Contracts\Mail\Mailable $view
+         * @return mixed
+         * @static
+         */
+        public static function queueOn($queue, $view)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
+            return $instance->queueOn($queue, $view);
         }
 
         /**
@@ -11934,6 +12433,21 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
             return $instance->later($delay, $view, $queue);
+        }
+
+        /**
+         * Queue a new e-mail message for sending after (n) seconds on the given queue.
+         *
+         * @param string|null $queue
+         * @param \DateTimeInterface|\DateInterval|int $delay
+         * @param \Illuminate\Contracts\Mail\Mailable $view
+         * @return mixed
+         * @static
+         */
+        public static function laterOn($queue, $delay, $view)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\MailFake $instance */
+            return $instance->laterOn($queue, $delay, $view);
         }
 
             }
@@ -11974,7 +12488,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a channel instance.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return mixed
          * @static
          */
@@ -11982,6 +12496,19 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Notifications\ChannelManager $instance */
             return $instance->channel($name);
+        }
+
+        /**
+         * Get a driver instance.
+         *
+         * @param \UnitEnum|string|null $driver
+         * @return mixed
+         * @static
+         */
+        public static function driver($driver = null)
+        {
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->driver($driver);
         }
 
         /**
@@ -12035,89 +12562,6 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Get a driver instance.
-         *
-         * @param string|null $driver
-         * @return mixed
-         * @throws \InvalidArgumentException
-         * @static
-         */
-        public static function driver($driver = null)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->driver($driver);
-        }
-
-        /**
-         * Register a custom driver creator Closure.
-         *
-         * @param string $driver
-         * @param \Closure $callback
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function extend($driver, $callback)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->extend($driver, $callback);
-        }
-
-        /**
-         * Get all of the created "drivers".
-         *
-         * @return array
-         * @static
-         */
-        public static function getDrivers()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->getDrivers();
-        }
-
-        /**
-         * Get the container instance used by the manager.
-         *
-         * @return \Illuminate\Contracts\Container\Container
-         * @static
-         */
-        public static function getContainer()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->getContainer();
-        }
-
-        /**
-         * Set the container instance used by the manager.
-         *
-         * @param \Illuminate\Contracts\Container\Container $container
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function setContainer($container)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->setContainer($container);
-        }
-
-        /**
-         * Forget all of the resolved driver instances.
-         *
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function forgetDrivers()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->forgetDrivers();
-        }
-
-        /**
          * Register a custom macro.
          *
          * @param string $name
@@ -12166,6 +12610,100 @@ namespace Illuminate\Support\Facades {
         public static function flushMacros()
         {
             \Illuminate\Notifications\ChannelManager::flushMacros();
+        }
+
+        /**
+         * Resolve the default connection name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveConnectionFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->resolveConnectionFromQueueRoute($queueable);
+        }
+
+        /**
+         * Resolve the default queue name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveQueueFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->resolveQueueFromQueueRoute($queueable);
+        }
+
+        /**
+         * Register a custom driver creator Closure.
+         *
+         * @param string $driver
+         * @param-closure-this $this  $callback
+         * @return \Illuminate\Notifications\ChannelManager
+         * @static
+         */
+        public static function extend($driver, $callback)
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->extend($driver, $callback);
+        }
+
+        /**
+         * Get all of the created "drivers".
+         *
+         * @return array<string, mixed>
+         * @static
+         */
+        public static function getDrivers()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->getDrivers();
+        }
+
+        /**
+         * Get the container instance used by the manager.
+         *
+         * @return \Illuminate\Contracts\Container\Container
+         * @static
+         */
+        public static function getContainer()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->getContainer();
+        }
+
+        /**
+         * Set the container instance used by the manager.
+         *
+         * @param \Illuminate\Contracts\Container\Container $container
+         * @return \Illuminate\Notifications\ChannelManager
+         * @static
+         */
+        public static function setContainer($container)
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->setContainer($container);
+        }
+
+        /**
+         * Forget all of the resolved driver instances.
+         *
+         * @return \Illuminate\Notifications\ChannelManager
+         * @static
+         */
+        public static function forgetDrivers()
+        {
+            //Method inherited from \Illuminate\Support\Manager 
+            /** @var \Illuminate\Notifications\ChannelManager $instance */
+            return $instance->forgetDrivers();
         }
 
         /**
@@ -12368,7 +12906,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Attempt to get the broker from the local cache.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Contracts\Auth\PasswordBroker
          * @static
          */
@@ -12393,7 +12931,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default password broker name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -12407,8 +12945,8 @@ namespace Illuminate\Support\Facades {
     /**
      * @method static \Illuminate\Process\PendingProcess command(array|string $command)
      * @method static \Illuminate\Process\PendingProcess path(string $path)
-     * @method static \Illuminate\Process\PendingProcess timeout(int $timeout)
-     * @method static \Illuminate\Process\PendingProcess idleTimeout(int $timeout)
+     * @method static \Illuminate\Process\PendingProcess timeout(\Carbon\CarbonInterval|int $timeout)
+     * @method static \Illuminate\Process\PendingProcess idleTimeout(\Carbon\CarbonInterval|int $timeout)
      * @method static \Illuminate\Process\PendingProcess forever()
      * @method static \Illuminate\Process\PendingProcess env(array $environment)
      * @method static \Illuminate\Process\PendingProcess input(\Traversable|resource|string|int|float|bool|null $input)
@@ -12546,7 +13084,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Assert that a process was recorded matching a given truth test.
          *
-         * @param \Closure|string $callback
+         * @param \Closure|array<array-key, string>|string $callback
          * @return \Illuminate\Process\Factory
          * @static
          */
@@ -12559,7 +13097,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Assert that a process was recorded a given number of times matching a given truth test.
          *
-         * @param \Closure|string $callback
+         * @param \Closure|array<array-key, string>|string $callback
          * @param int $times
          * @return \Illuminate\Process\Factory
          * @static
@@ -12571,9 +13109,22 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Assert that the given processes were run in the given order.
+         *
+         * @param list<\Closure|array<array-key, string>|string> $callbacks
+         * @return \Illuminate\Process\Factory
+         * @static
+         */
+        public static function assertRanInOrder($callbacks)
+        {
+            /** @var \Illuminate\Process\Factory $instance */
+            return $instance->assertRanInOrder($callbacks);
+        }
+
+        /**
          * Assert that a process was not recorded matching a given truth test.
          *
-         * @param \Closure|string $callback
+         * @param \Closure|array<array-key, string>|string $callback
          * @return \Illuminate\Process\Factory
          * @static
          */
@@ -12586,7 +13137,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Assert that a process was not recorded matching a given truth test.
          *
-         * @param \Closure|string $callback
+         * @param \Closure|array<array-key, string>|string $callback
          * @return \Illuminate\Process\Factory
          * @static
          */
@@ -12825,9 +13376,39 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Set the queue route for the given class.
+         *
+         * @param array|class-string $class
+         * @param \UnitEnum|string|null $queue
+         * @param \UnitEnum|string|null $connection
+         * @return void
+         * @static
+         */
+        public static function route($class, $queue = null, $connection = null)
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            $instance->route($class, $queue, $connection);
+        }
+
+        /**
+         * Forward the given queue to another queue and/or connection.
+         *
+         * @param array<string, \UnitEnum|string>|\UnitEnum|string $queue
+         * @param \UnitEnum|string|null $to
+         * @param \UnitEnum|string|null $connection
+         * @return void
+         * @static
+         */
+        public static function forward($queue, $to = null, $connection = null)
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            $instance->forward($queue, $to, $connection);
+        }
+
+        /**
          * Determine if the driver is connected.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return bool
          * @static
          */
@@ -12840,7 +13421,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Resolve a queue connection instance.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Contracts\Queue\Queue
          * @static
          */
@@ -12880,6 +13461,18 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Pause job processing for all queues on all connections.
+         *
+         * @return void
+         * @static
+         */
+        public static function pauseAll()
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            $instance->pauseAll();
+        }
+
+        /**
          * Resume a paused queue by its connection and name.
          *
          * @param string $connection
@@ -12894,6 +13487,20 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Resume job processing for all queues on all connections.
+         *
+         * Queues paused individually are not affected.
+         *
+         * @return void
+         * @static
+         */
+        public static function resumeAll()
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            $instance->resumeAll();
+        }
+
+        /**
          * Determine if a queue is paused.
          *
          * @param string $connection
@@ -12905,6 +13512,20 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Queue\QueueManager $instance */
             return $instance->isPaused($connection, $queue);
+        }
+
+        /**
+         * Determine which of the given queues are currently paused.
+         *
+         * @param string $connection
+         * @param array $queues
+         * @return array
+         * @static
+         */
+        public static function getPausedQueues($connection, $queues)
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            return $instance->getPausedQueues($connection, $queues);
         }
 
         /**
@@ -12964,7 +13585,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the name of the default queue connection.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -13013,6 +13634,32 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Resolve the default connection name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveConnectionFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            return $instance->resolveConnectionFromQueueRoute($queueable);
+        }
+
+        /**
+         * Resolve the default queue name for a given queueable instance.
+         *
+         * @param object $queueable
+         * @return string|null
+         * @static
+         */
+        public static function resolveQueueFromQueueRoute($queueable)
+        {
+            /** @var \Illuminate\Queue\QueueManager $instance */
+            return $instance->resolveQueueFromQueueRoute($queueable);
+        }
+
+        /**
          * Specify the jobs that should be queued instead of faked.
          *
          * @param array|string $jobsToBeQueued
@@ -13054,9 +13701,22 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Assert if a job was pushed exactly once.
+         *
+         * @param string $job
+         * @return void
+         * @static
+         */
+        public static function assertPushedOnce($job)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            $instance->assertPushedOnce($job);
+        }
+
+        /**
          * Assert if a job was pushed based on a truth-test callback.
          *
-         * @param string $queue
+         * @param \UnitEnum|string $queue
          * @param string|\Closure $job
          * @param callable|null $callback
          * @return void
@@ -13219,7 +13879,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get the size of the queue.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return int
          * @static
          */
@@ -13232,7 +13892,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get the number of pending jobs.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return int
          * @static
          */
@@ -13245,7 +13905,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get the number of delayed jobs.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return int
          * @static
          */
@@ -13258,7 +13918,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get the number of reserved jobs.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return int
          * @static
          */
@@ -13269,9 +13929,84 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Get the pending jobs for the given queue.
+         *
+         * @param \UnitEnum|string|null $queue
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function pendingJobs($queue = null)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->pendingJobs($queue);
+        }
+
+        /**
+         * Get the delayed jobs for the given queue.
+         *
+         * @param \UnitEnum|string|null $queue
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function delayedJobs($queue = null)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->delayedJobs($queue);
+        }
+
+        /**
+         * Get the reserved jobs for the given queue.
+         *
+         * @param \UnitEnum|string|null $queue
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function reservedJobs($queue = null)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->reservedJobs($queue);
+        }
+
+        /**
+         * Get all pending jobs across every queue.
+         *
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function allPendingJobs()
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->allPendingJobs();
+        }
+
+        /**
+         * Get all delayed jobs across every queue.
+         *
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function allDelayedJobs()
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->allDelayedJobs();
+        }
+
+        /**
+         * Get all reserved jobs across every queue.
+         *
+         * @return \Illuminate\Support\Collection<int, \Illuminate\Queue\Jobs\InspectedJob>
+         * @static
+         */
+        public static function allReservedJobs()
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->allReservedJobs();
+        }
+
+        /**
          * Get the creation timestamp of the oldest pending job, excluding delayed jobs.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return int|null
          * @static
          */
@@ -13286,7 +14021,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string|object $job
          * @param mixed $data
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return mixed
          * @static
          */
@@ -13313,7 +14048,7 @@ namespace Illuminate\Support\Facades {
          * Push a raw payload onto the queue.
          *
          * @param string $payload
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @param array $options
          * @return mixed
          * @static
@@ -13330,7 +14065,7 @@ namespace Illuminate\Support\Facades {
          * @param \DateTimeInterface|\DateInterval|int $delay
          * @param string|object $job
          * @param mixed $data
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return mixed
          * @static
          */
@@ -13343,7 +14078,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Push a new job onto the queue.
          *
-         * @param string $queue
+         * @param \UnitEnum|string $queue
          * @param string|object $job
          * @param mixed $data
          * @return mixed
@@ -13358,7 +14093,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Push a new job onto a specific queue after (n) seconds.
          *
-         * @param string $queue
+         * @param \UnitEnum|string $queue
          * @param \DateTimeInterface|\DateInterval|int $delay
          * @param string|object $job
          * @param mixed $data
@@ -13372,9 +14107,23 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Mark the given job as reserved.
+         *
+         * @param \Closure|string|object $job
+         * @param \UnitEnum|string|null $queue
+         * @return void
+         * @static
+         */
+        public static function reserve($job, $queue = null)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            $instance->reserve($job, $queue);
+        }
+
+        /**
          * Pop the next job off of the queue.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return \Illuminate\Contracts\Queue\Job|null
          * @static
          */
@@ -13389,7 +14138,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param array $jobs
          * @param mixed $data
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return mixed
          * @static
          */
@@ -13446,6 +14195,44 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
             $instance->releaseUniqueJobLocks();
+        }
+
+        /**
+         * Clear all of the reserved jobs.
+         *
+         * @return void
+         * @static
+         */
+        public static function clearReserved()
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            $instance->clearReserved();
+        }
+
+        /**
+         * Register a callback to be invoked before pushing a job.
+         *
+         * @param callable $callback
+         * @return \Illuminate\Support\Testing\Fakes\QueueFake
+         * @static
+         */
+        public static function beforePushing($callback)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->beforePushing($callback);
+        }
+
+        /**
+         * Register a callback to be invoked after pushing a job.
+         *
+         * @param callable $callback
+         * @return \Illuminate\Support\Testing\Fakes\QueueFake
+         * @static
+         */
+        public static function afterPushing($callback)
+        {
+            /** @var \Illuminate\Support\Testing\Fakes\QueueFake $instance */
+            return $instance->afterPushing($callback);
         }
 
         /**
@@ -13521,11 +14308,11 @@ namespace Illuminate\Support\Facades {
         /**
          * Delete all of the jobs from the queue.
          *
-         * @param string $queue
+         * @param \UnitEnum|string|null $queue
          * @return int
          * @static
          */
-        public static function clear($queue)
+        public static function clear($queue = null)
         {
             /** @var \Illuminate\Queue\DatabaseQueue $instance */
             return $instance->clear($queue);
@@ -13534,7 +14321,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get the queue or return the default.
          *
-         * @param string|null $queue
+         * @param \UnitEnum|string|null $queue
          * @return string
          * @static
          */
@@ -13627,7 +14414,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the queue configuration array.
          *
-         * @param array $config
          * @return \Illuminate\Queue\DatabaseQueue
          * @static
          */
@@ -13654,7 +14440,6 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the IoC container instance.
          *
-         * @param \Illuminate\Container\Container $container
          * @return void
          * @static
          */
@@ -13862,6 +14647,57 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Cache\RateLimiter $instance */
             return $instance->cleanRateLimiterKey($key);
+        }
+
+        /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @param-closure-this static  $macro
+         * @return void
+         * @static
+         */
+        public static function macro($name, $macro)
+        {
+            \Illuminate\Cache\RateLimiter::macro($name, $macro);
+        }
+
+        /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void
+         * @throws \ReflectionException
+         * @static
+         */
+        public static function mixin($mixin, $replace = true)
+        {
+            \Illuminate\Cache\RateLimiter::mixin($mixin, $replace);
+        }
+
+        /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool
+         * @static
+         */
+        public static function hasMacro($name)
+        {
+            return \Illuminate\Cache\RateLimiter::hasMacro($name);
+        }
+
+        /**
+         * Flush the existing macros.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushMacros()
+        {
+            \Illuminate\Cache\RateLimiter::flushMacros();
         }
 
             }
@@ -14841,6 +15677,940 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Filter the given array of rules into an array of rules that are included in precognitive headers.
+         *
+         * @param array $rules
+         * @return array
+         * @static
+         */
+        public static function filterPrecognitiveRules($rules)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->filterPrecognitiveRules($rules);
+        }
+
+        /**
+         * Determine if the request is attempting to be precognitive.
+         *
+         * @return bool
+         * @static
+         */
+        public static function isAttemptingPrecognition()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->isAttemptingPrecognition();
+        }
+
+        /**
+         * Determine if the request is precognitive.
+         *
+         * @return bool
+         * @static
+         */
+        public static function isPrecognitive()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->isPrecognitive();
+        }
+
+        /**
+         * Determine if the request is sending JSON.
+         *
+         * @return bool
+         * @static
+         */
+        public static function isJson()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->isJson();
+        }
+
+        /**
+         * Determine if the current request probably expects a JSON response.
+         *
+         * @return bool
+         * @static
+         */
+        public static function expectsJson()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->expectsJson();
+        }
+
+        /**
+         * Determine if the current request is asking for JSON.
+         *
+         * @return bool
+         * @static
+         */
+        public static function wantsJson()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->wantsJson();
+        }
+
+        /**
+         * Determine if the current request is asking for Markdown.
+         *
+         * @return bool
+         * @static
+         */
+        public static function wantsMarkdown()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->wantsMarkdown();
+        }
+
+        /**
+         * Determines whether the current requests accepts a given content type.
+         *
+         * @param string|array $contentTypes
+         * @return bool
+         * @static
+         */
+        public static function accepts($contentTypes)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->accepts($contentTypes);
+        }
+
+        /**
+         * Return the most suitable content type from the given array based on content negotiation.
+         *
+         * @param string|array $contentTypes
+         * @return string|null
+         * @static
+         */
+        public static function prefers($contentTypes)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->prefers($contentTypes);
+        }
+
+        /**
+         * Determine if the current request accepts any content type.
+         *
+         * @return bool
+         * @static
+         */
+        public static function acceptsAnyContentType()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->acceptsAnyContentType();
+        }
+
+        /**
+         * Determines whether a request accepts JSON.
+         *
+         * @return bool
+         * @static
+         */
+        public static function acceptsJson()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->acceptsJson();
+        }
+
+        /**
+         * Determines whether a request accepts Markdown.
+         *
+         * @return bool
+         * @static
+         */
+        public static function acceptsMarkdown()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->acceptsMarkdown();
+        }
+
+        /**
+         * Determines whether a request accepts HTML.
+         *
+         * @return bool
+         * @static
+         */
+        public static function acceptsHtml()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->acceptsHtml();
+        }
+
+        /**
+         * Determine if the given content types match.
+         *
+         * @param string $actual
+         * @param string $type
+         * @return bool
+         * @static
+         */
+        public static function matchesType($actual, $type)
+        {
+            return \Illuminate\Http\Request::matchesType($actual, $type);
+        }
+
+        /**
+         * Get the data format expected in the response.
+         *
+         * @param string $default
+         * @return string
+         * @static
+         */
+        public static function format($default = 'html')
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->format($default);
+        }
+
+        /**
+         * Retrieve an old input item.
+         *
+         * @param string|null $key
+         * @param \Illuminate\Database\Eloquent\Model|string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function old($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->old($key, $default);
+        }
+
+        /**
+         * Flash the input for the current request to the session.
+         *
+         * @return void
+         * @static
+         */
+        public static function flash()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            $instance->flash();
+        }
+
+        /**
+         * Flash only some of the input to the session.
+         *
+         * @param mixed $keys
+         * @return void
+         * @static
+         */
+        public static function flashOnly($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            $instance->flashOnly($keys);
+        }
+
+        /**
+         * Flash only some of the input to the session.
+         *
+         * @param mixed $keys
+         * @return void
+         * @static
+         */
+        public static function flashExcept($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            $instance->flashExcept($keys);
+        }
+
+        /**
+         * Flush all of the old input from the session.
+         *
+         * @return void
+         * @static
+         */
+        public static function flush()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            $instance->flush();
+        }
+
+        /**
+         * Retrieve a server variable from the request.
+         *
+         * @param string|null $key
+         * @param string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function server($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->server($key, $default);
+        }
+
+        /**
+         * Determine if a header is set on the request.
+         *
+         * @param string $key
+         * @return bool
+         * @static
+         */
+        public static function hasHeader($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->hasHeader($key);
+        }
+
+        /**
+         * Retrieve a header from the request.
+         *
+         * @param string|null $key
+         * @param string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function header($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->header($key, $default);
+        }
+
+        /**
+         * Get the bearer token from the request headers.
+         *
+         * @return string|null
+         * @static
+         */
+        public static function bearerToken()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->bearerToken();
+        }
+
+        /**
+         * Get the keys for all of the input and files.
+         *
+         * @return array
+         * @static
+         */
+        public static function keys()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->keys();
+        }
+
+        /**
+         * Get all of the input and files for the request.
+         *
+         * @param mixed $keys
+         * @return array
+         * @static
+         */
+        public static function all($keys = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->all($keys);
+        }
+
+        /**
+         * Retrieve an input item from the request.
+         *
+         * @param string|null $key
+         * @param mixed $default
+         * @return mixed
+         * @static
+         */
+        public static function input($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->input($key, $default);
+        }
+
+        /**
+         * Retrieve input from the request as a Fluent object instance.
+         *
+         * @param array|string|null $key
+         * @param array $default
+         * @return \Illuminate\Support\Fluent
+         * @static
+         */
+        public static function fluent($key = null, $default = [])
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->fluent($key, $default);
+        }
+
+        /**
+         * Retrieve a query string item from the request.
+         *
+         * @param string|null $key
+         * @param string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function query($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->query($key, $default);
+        }
+
+        /**
+         * Retrieve a request payload item from the request.
+         *
+         * @param string|null $key
+         * @param string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function post($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->post($key, $default);
+        }
+
+        /**
+         * Determine if a cookie is set on the request.
+         *
+         * @param string $key
+         * @return bool
+         * @static
+         */
+        public static function hasCookie($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->hasCookie($key);
+        }
+
+        /**
+         * Retrieve a cookie from the request.
+         *
+         * @param string|null $key
+         * @param string|array|null $default
+         * @return string|array|null
+         * @static
+         */
+        public static function cookie($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->cookie($key, $default);
+        }
+
+        /**
+         * Get an array of all of the files on the request.
+         *
+         * @return array<string, \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]>
+         * @static
+         */
+        public static function allFiles()
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->allFiles();
+        }
+
+        /**
+         * Determine if the uploaded data contains a file.
+         *
+         * @param string $key
+         * @return bool
+         * @static
+         */
+        public static function hasFile($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->hasFile($key);
+        }
+
+        /**
+         * Retrieve a file from the request.
+         *
+         * @param string|null $key
+         * @param mixed $default
+         * @return ($key is null ? array<string, \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]> : \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]|null)
+         * @static
+         */
+        public static function file($key = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->file($key, $default);
+        }
+
+        /**
+         * Retrieve a file from the request as an image instance.
+         *
+         * @static
+         */
+        public static function image($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->image($key);
+        }
+
+        /**
+         * Dump the items.
+         *
+         * @param mixed $keys
+         * @return \Illuminate\Http\Request
+         * @static
+         */
+        public static function dump($keys = [])
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->dump($keys);
+        }
+
+        /**
+         * Dump the given arguments and terminate execution.
+         *
+         * @param mixed $args
+         * @return never
+         * @static
+         */
+        public static function dd(...$args)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->dd(...$args);
+        }
+
+        /**
+         * Determine if the data contains a given key.
+         *
+         * @param string|array $key
+         * @return bool
+         * @static
+         */
+        public static function exists($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->exists($key);
+        }
+
+        /**
+         * Determine if the data contains a given key.
+         *
+         * @param string|array $key
+         * @return bool
+         * @static
+         */
+        public static function has($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->has($key);
+        }
+
+        /**
+         * Determine if the instance contains any of the given keys.
+         *
+         * @param string|array $keys
+         * @return bool
+         * @static
+         */
+        public static function hasAny($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->hasAny($keys);
+        }
+
+        /**
+         * Apply the callback if the instance contains the given key.
+         *
+         * @template TReturn
+         * @template TReturnDefault = never
+         * @param string $key
+         * @param callable(mixed):  TReturn  $callback
+         * @param (callable(): TReturnDefault)|null $default
+         * @return $this|TReturn|\Illuminate\Http\TReturnDefault
+         * @static
+         */
+        public static function whenHas($key, $callback, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->whenHas($key, $callback, $default);
+        }
+
+        /**
+         * Determine if the instance contains a non-empty value for the given key.
+         *
+         * @param string|array $key
+         * @return bool
+         * @static
+         */
+        public static function filled($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->filled($key);
+        }
+
+        /**
+         * Determine if the instance contains an empty value for the given key.
+         *
+         * @param string|array $key
+         * @return bool
+         * @static
+         */
+        public static function isNotFilled($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->isNotFilled($key);
+        }
+
+        /**
+         * Determine if the instance contains a non-empty value for any of the given keys.
+         *
+         * @param string|array $keys
+         * @return bool
+         * @static
+         */
+        public static function anyFilled($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->anyFilled($keys);
+        }
+
+        /**
+         * Apply the callback if the instance contains a non-empty value for the given key.
+         *
+         * @template TReturn
+         * @template TReturnDefault = never
+         * @param string $key
+         * @param callable(mixed):  TReturn  $callback
+         * @param (callable(): TReturnDefault)|null $default
+         * @return $this|TReturn|\Illuminate\Http\TReturnDefault
+         * @static
+         */
+        public static function whenFilled($key, $callback, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->whenFilled($key, $callback, $default);
+        }
+
+        /**
+         * Apply the callback if the instance contains a valid enum value for the given key.
+         *
+         * @template TEnum of \BackedEnum
+         * @template TReturn
+         * @template TReturnDefault = never
+         * @param string $key
+         * @param class-string<TEnum> $enumClass
+         * @param callable(TEnum):TReturn $callback
+         * @param (callable(): TReturnDefault)|null $default
+         * @return $this|TReturn|\Illuminate\Http\TReturnDefault
+         * @static
+         */
+        public static function whenEnum($key, $enumClass, $callback, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->whenEnum($key, $enumClass, $callback, $default);
+        }
+
+        /**
+         * Determine if the instance is missing a given key.
+         *
+         * @param string|array $key
+         * @return bool
+         * @static
+         */
+        public static function missing($key)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->missing($key);
+        }
+
+        /**
+         * Apply the callback if the instance is missing the given key.
+         *
+         * @template TReturn
+         * @template TReturnDefault = never
+         * @param string $key
+         * @param callable(mixed):  TReturn  $callback
+         * @param (callable(): TReturnDefault)|null $default
+         * @return $this|TReturn|\Illuminate\Http\TReturnDefault
+         * @static
+         */
+        public static function whenMissing($key, $callback, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->whenMissing($key, $callback, $default);
+        }
+
+        /**
+         * Retrieve data from the instance as a Stringable instance.
+         *
+         * @param string $key
+         * @param mixed $default
+         * @return \Illuminate\Support\Stringable
+         * @static
+         */
+        public static function str($key, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->str($key, $default);
+        }
+
+        /**
+         * Retrieve data from the instance as a Stringable instance.
+         *
+         * @param string $key
+         * @param mixed $default
+         * @return \Illuminate\Support\Stringable
+         * @static
+         */
+        public static function string($key, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->string($key, $default);
+        }
+
+        /**
+         * Retrieve data as a boolean value.
+         *
+         * Returns true when value is "1", "true", "on", and "yes". Otherwise, returns false.
+         *
+         * @param string|null $key
+         * @param bool $default
+         * @return bool
+         * @static
+         */
+        public static function boolean($key = null, $default = false)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->boolean($key, $default);
+        }
+
+        /**
+         * Retrieve data as an integer value.
+         *
+         * @param string $key
+         * @param int $default
+         * @return int
+         * @static
+         */
+        public static function integer($key, $default = 0)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->integer($key, $default);
+        }
+
+        /**
+         * Retrieve data as a float value.
+         *
+         * @param string $key
+         * @param float $default
+         * @return float
+         * @static
+         */
+        public static function float($key, $default = 0.0)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->float($key, $default);
+        }
+
+        /**
+         * Retrieve data clamped between min and max values.
+         *
+         * @param string $key
+         * @param int|float $min
+         * @param int|float $max
+         * @param int|float $default
+         * @return float|int
+         * @static
+         */
+        public static function clamp($key, $min, $max, $default = 0)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->clamp($key, $min, $max, $default);
+        }
+
+        /**
+         * Retrieve data from the instance as a Carbon instance.
+         *
+         * @param string $key
+         * @param string|null $format
+         * @param \UnitEnum|string|null $tz
+         * @return \Illuminate\Support\Carbon|null
+         * @throws \Carbon\Exceptions\InvalidFormatException
+         * @static
+         */
+        public static function date($key, $format = null, $tz = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->date($key, $format, $tz);
+        }
+
+        /**
+         * Retrieve data from the instance as a CarbonInterval instance.
+         *
+         * @param string $key
+         * @param \Carbon\Unit|string|null $unit
+         * @return \Carbon\CarbonInterval|null
+         * @static
+         */
+        public static function interval($key, $unit = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->interval($key, $unit);
+        }
+
+        /**
+         * Retrieve data from the instance as an enum.
+         *
+         * @template TEnum of \BackedEnum
+         * @template TDefault of TEnum|null
+         * @param string $key
+         * @param class-string<TEnum> $enumClass
+         * @param TDefault $default
+         * @return TEnum|TDefault
+         * @static
+         */
+        public static function enum($key, $enumClass, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->enum($key, $enumClass, $default);
+        }
+
+        /**
+         * Retrieve data from the instance as an array of enums.
+         *
+         * @template TEnum of \BackedEnum
+         * @param string $key
+         * @param class-string<TEnum> $enumClass
+         * @return TEnum[]
+         * @static
+         */
+        public static function enums($key, $enumClass)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->enums($key, $enumClass);
+        }
+
+        /**
+         * Retrieve data from the instance as an array.
+         *
+         * @param array|string|null $key
+         * @return array
+         * @static
+         */
+        public static function array($key = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->array($key);
+        }
+
+        /**
+         * Retrieve data from the instance as a collection.
+         *
+         * @param array|string|null $key
+         * @return \Illuminate\Support\Collection
+         * @static
+         */
+        public static function collect($key = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->collect($key);
+        }
+
+        /**
+         * Get a subset containing the provided keys with values from the instance data.
+         *
+         * @param mixed $keys
+         * @return array
+         * @static
+         */
+        public static function only($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->only($keys);
+        }
+
+        /**
+         * Get all of the data except for a specified array of items.
+         *
+         * @param mixed $keys
+         * @return array
+         * @static
+         */
+        public static function except($keys)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->except($keys);
+        }
+
+        /**
+         * Apply the callback if the given "value" is (or resolves to) truthy.
+         *
+         * @template TWhenParameter
+         * @template TWhenReturnType
+         * @param (\Closure($this): TWhenParameter)|TWhenParameter|null $value
+         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $callback
+         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $default
+         * @return $this|TWhenReturnType
+         * @static
+         */
+        public static function when($value = null, $callback = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->when($value, $callback, $default);
+        }
+
+        /**
+         * Apply the callback if the given "value" is (or resolves to) falsy.
+         *
+         * @template TUnlessParameter
+         * @template TUnlessReturnType
+         * @param (\Closure($this): TUnlessParameter)|TUnlessParameter|null $value
+         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $callback
+         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $default
+         * @return $this|TUnlessReturnType
+         * @static
+         */
+        public static function unless($value = null, $callback = null, $default = null)
+        {
+            /** @var \Illuminate\Http\Request $instance */
+            return $instance->unless($value, $callback, $default);
+        }
+
+        /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @param-closure-this static  $macro
+         * @return void
+         * @static
+         */
+        public static function macro($name, $macro)
+        {
+            \Illuminate\Http\Request::macro($name, $macro);
+        }
+
+        /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void
+         * @throws \ReflectionException
+         * @static
+         */
+        public static function mixin($mixin, $replace = true)
+        {
+            \Illuminate\Http\Request::mixin($mixin, $replace);
+        }
+
+        /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool
+         * @static
+         */
+        public static function hasMacro($name)
+        {
+            return \Illuminate\Http\Request::hasMacro($name);
+        }
+
+        /**
+         * Flush the existing macros.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushMacros()
+        {
+            \Illuminate\Http\Request::flushMacros();
+        }
+
+        /**
          * Sets the parameters for this request.
          *
          * This method also re-initializes all properties.
@@ -15502,17 +17272,16 @@ namespace Illuminate\Support\Facades {
          * @param bool $subtypeFallback Whether to fall back to the subtype if no exact match is found
          * @static
          */
-        public static function getFormat($mimeType)
+        public static function getFormat($mimeType, $subtypeFallback = false)
         {
             //Method inherited from \Symfony\Component\HttpFoundation\Request 
             /** @var \Illuminate\Http\Request $instance */
-            return $instance->getFormat($mimeType);
+            return $instance->getFormat($mimeType, $subtypeFallback);
         }
 
         /**
          * Associates a format with mime types.
          *
-         * @param string $format The format to set
          * @param string|string[] $mimeTypes The associated mime types (the preferred one must be the first as it will be used as the content type)
          * @static
          */
@@ -15845,904 +17614,6 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Symfony\Component\HttpFoundation\Request 
             /** @var \Illuminate\Http\Request $instance */
             return $instance->isFromTrustedProxy();
-        }
-
-        /**
-         * Filter the given array of rules into an array of rules that are included in precognitive headers.
-         *
-         * @param array $rules
-         * @return array
-         * @static
-         */
-        public static function filterPrecognitiveRules($rules)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->filterPrecognitiveRules($rules);
-        }
-
-        /**
-         * Determine if the request is attempting to be precognitive.
-         *
-         * @return bool
-         * @static
-         */
-        public static function isAttemptingPrecognition()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->isAttemptingPrecognition();
-        }
-
-        /**
-         * Determine if the request is precognitive.
-         *
-         * @return bool
-         * @static
-         */
-        public static function isPrecognitive()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->isPrecognitive();
-        }
-
-        /**
-         * Determine if the request is sending JSON.
-         *
-         * @return bool
-         * @static
-         */
-        public static function isJson()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->isJson();
-        }
-
-        /**
-         * Determine if the current request probably expects a JSON response.
-         *
-         * @return bool
-         * @static
-         */
-        public static function expectsJson()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->expectsJson();
-        }
-
-        /**
-         * Determine if the current request is asking for JSON.
-         *
-         * @return bool
-         * @static
-         */
-        public static function wantsJson()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->wantsJson();
-        }
-
-        /**
-         * Determine if the current request is asking for Markdown.
-         *
-         * @return bool
-         * @static
-         */
-        public static function wantsMarkdown()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->wantsMarkdown();
-        }
-
-        /**
-         * Determines whether the current requests accepts a given content type.
-         *
-         * @param string|array $contentTypes
-         * @return bool
-         * @static
-         */
-        public static function accepts($contentTypes)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->accepts($contentTypes);
-        }
-
-        /**
-         * Return the most suitable content type from the given array based on content negotiation.
-         *
-         * @param string|array $contentTypes
-         * @return string|null
-         * @static
-         */
-        public static function prefers($contentTypes)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->prefers($contentTypes);
-        }
-
-        /**
-         * Determine if the current request accepts any content type.
-         *
-         * @return bool
-         * @static
-         */
-        public static function acceptsAnyContentType()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->acceptsAnyContentType();
-        }
-
-        /**
-         * Determines whether a request accepts JSON.
-         *
-         * @return bool
-         * @static
-         */
-        public static function acceptsJson()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->acceptsJson();
-        }
-
-        /**
-         * Determines whether a request accepts Markdown.
-         *
-         * @return bool
-         * @static
-         */
-        public static function acceptsMarkdown()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->acceptsMarkdown();
-        }
-
-        /**
-         * Determines whether a request accepts HTML.
-         *
-         * @return bool
-         * @static
-         */
-        public static function acceptsHtml()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->acceptsHtml();
-        }
-
-        /**
-         * Determine if the given content types match.
-         *
-         * @param string $actual
-         * @param string $type
-         * @return bool
-         * @static
-         */
-        public static function matchesType($actual, $type)
-        {
-            return \Illuminate\Http\Request::matchesType($actual, $type);
-        }
-
-        /**
-         * Get the data format expected in the response.
-         *
-         * @param string $default
-         * @return string
-         * @static
-         */
-        public static function format($default = 'html')
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->format($default);
-        }
-
-        /**
-         * Retrieve an old input item.
-         *
-         * @param string|null $key
-         * @param \Illuminate\Database\Eloquent\Model|string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function old($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->old($key, $default);
-        }
-
-        /**
-         * Flash the input for the current request to the session.
-         *
-         * @return void
-         * @static
-         */
-        public static function flash()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            $instance->flash();
-        }
-
-        /**
-         * Flash only some of the input to the session.
-         *
-         * @param mixed $keys
-         * @return void
-         * @static
-         */
-        public static function flashOnly($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            $instance->flashOnly($keys);
-        }
-
-        /**
-         * Flash only some of the input to the session.
-         *
-         * @param mixed $keys
-         * @return void
-         * @static
-         */
-        public static function flashExcept($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            $instance->flashExcept($keys);
-        }
-
-        /**
-         * Flush all of the old input from the session.
-         *
-         * @return void
-         * @static
-         */
-        public static function flush()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            $instance->flush();
-        }
-
-        /**
-         * Retrieve a server variable from the request.
-         *
-         * @param string|null $key
-         * @param string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function server($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->server($key, $default);
-        }
-
-        /**
-         * Determine if a header is set on the request.
-         *
-         * @param string $key
-         * @return bool
-         * @static
-         */
-        public static function hasHeader($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->hasHeader($key);
-        }
-
-        /**
-         * Retrieve a header from the request.
-         *
-         * @param string|null $key
-         * @param string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function header($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->header($key, $default);
-        }
-
-        /**
-         * Get the bearer token from the request headers.
-         *
-         * @return string|null
-         * @static
-         */
-        public static function bearerToken()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->bearerToken();
-        }
-
-        /**
-         * Get the keys for all of the input and files.
-         *
-         * @return array
-         * @static
-         */
-        public static function keys()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->keys();
-        }
-
-        /**
-         * Get all of the input and files for the request.
-         *
-         * @param mixed $keys
-         * @return array
-         * @static
-         */
-        public static function all($keys = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->all($keys);
-        }
-
-        /**
-         * Retrieve an input item from the request.
-         *
-         * @param string|null $key
-         * @param mixed $default
-         * @return mixed
-         * @static
-         */
-        public static function input($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->input($key, $default);
-        }
-
-        /**
-         * Retrieve input from the request as a Fluent object instance.
-         *
-         * @param array|string|null $key
-         * @param array $default
-         * @return \Illuminate\Support\Fluent
-         * @static
-         */
-        public static function fluent($key = null, $default = [])
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->fluent($key, $default);
-        }
-
-        /**
-         * Retrieve a query string item from the request.
-         *
-         * @param string|null $key
-         * @param string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function query($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->query($key, $default);
-        }
-
-        /**
-         * Retrieve a request payload item from the request.
-         *
-         * @param string|null $key
-         * @param string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function post($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->post($key, $default);
-        }
-
-        /**
-         * Determine if a cookie is set on the request.
-         *
-         * @param string $key
-         * @return bool
-         * @static
-         */
-        public static function hasCookie($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->hasCookie($key);
-        }
-
-        /**
-         * Retrieve a cookie from the request.
-         *
-         * @param string|null $key
-         * @param string|array|null $default
-         * @return string|array|null
-         * @static
-         */
-        public static function cookie($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->cookie($key, $default);
-        }
-
-        /**
-         * Get an array of all of the files on the request.
-         *
-         * @return array<string, \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]>
-         * @static
-         */
-        public static function allFiles()
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->allFiles();
-        }
-
-        /**
-         * Determine if the uploaded data contains a file.
-         *
-         * @param string $key
-         * @return bool
-         * @static
-         */
-        public static function hasFile($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->hasFile($key);
-        }
-
-        /**
-         * Retrieve a file from the request.
-         *
-         * @param string|null $key
-         * @param mixed $default
-         * @return ($key is null ? array<string, \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]> : \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]|null)
-         * @static
-         */
-        public static function file($key = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->file($key, $default);
-        }
-
-        /**
-         * Dump the items.
-         *
-         * @param mixed $keys
-         * @return \Illuminate\Http\Request
-         * @static
-         */
-        public static function dump($keys = [])
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->dump($keys);
-        }
-
-        /**
-         * Dump the given arguments and terminate execution.
-         *
-         * @param mixed $args
-         * @return never
-         * @static
-         */
-        public static function dd(...$args)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->dd(...$args);
-        }
-
-        /**
-         * Determine if the data contains a given key.
-         *
-         * @param string|array $key
-         * @return bool
-         * @static
-         */
-        public static function exists($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->exists($key);
-        }
-
-        /**
-         * Determine if the data contains a given key.
-         *
-         * @param string|array $key
-         * @return bool
-         * @static
-         */
-        public static function has($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->has($key);
-        }
-
-        /**
-         * Determine if the instance contains any of the given keys.
-         *
-         * @param string|array $keys
-         * @return bool
-         * @static
-         */
-        public static function hasAny($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->hasAny($keys);
-        }
-
-        /**
-         * Apply the callback if the instance contains the given key.
-         *
-         * @param string $key
-         * @param callable $callback
-         * @param callable|null $default
-         * @return $this|mixed
-         * @static
-         */
-        public static function whenHas($key, $callback, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->whenHas($key, $callback, $default);
-        }
-
-        /**
-         * Determine if the instance contains a non-empty value for the given key.
-         *
-         * @param string|array $key
-         * @return bool
-         * @static
-         */
-        public static function filled($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->filled($key);
-        }
-
-        /**
-         * Determine if the instance contains an empty value for the given key.
-         *
-         * @param string|array $key
-         * @return bool
-         * @static
-         */
-        public static function isNotFilled($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->isNotFilled($key);
-        }
-
-        /**
-         * Determine if the instance contains a non-empty value for any of the given keys.
-         *
-         * @param string|array $keys
-         * @return bool
-         * @static
-         */
-        public static function anyFilled($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->anyFilled($keys);
-        }
-
-        /**
-         * Apply the callback if the instance contains a non-empty value for the given key.
-         *
-         * @param string $key
-         * @param callable $callback
-         * @param callable|null $default
-         * @return $this|mixed
-         * @static
-         */
-        public static function whenFilled($key, $callback, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->whenFilled($key, $callback, $default);
-        }
-
-        /**
-         * Determine if the instance is missing a given key.
-         *
-         * @param string|array $key
-         * @return bool
-         * @static
-         */
-        public static function missing($key)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->missing($key);
-        }
-
-        /**
-         * Apply the callback if the instance is missing the given key.
-         *
-         * @param string $key
-         * @param callable $callback
-         * @param callable|null $default
-         * @return $this|mixed
-         * @static
-         */
-        public static function whenMissing($key, $callback, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->whenMissing($key, $callback, $default);
-        }
-
-        /**
-         * Retrieve data from the instance as a Stringable instance.
-         *
-         * @param string $key
-         * @param mixed $default
-         * @return \Illuminate\Support\Stringable
-         * @static
-         */
-        public static function str($key, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->str($key, $default);
-        }
-
-        /**
-         * Retrieve data from the instance as a Stringable instance.
-         *
-         * @param string $key
-         * @param mixed $default
-         * @return \Illuminate\Support\Stringable
-         * @static
-         */
-        public static function string($key, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->string($key, $default);
-        }
-
-        /**
-         * Retrieve data as a boolean value.
-         *
-         * Returns true when value is "1", "true", "on", and "yes". Otherwise, returns false.
-         *
-         * @param string|null $key
-         * @param bool $default
-         * @return bool
-         * @static
-         */
-        public static function boolean($key = null, $default = false)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->boolean($key, $default);
-        }
-
-        /**
-         * Retrieve data as an integer value.
-         *
-         * @param string $key
-         * @param int $default
-         * @return int
-         * @static
-         */
-        public static function integer($key, $default = 0)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->integer($key, $default);
-        }
-
-        /**
-         * Retrieve data as a float value.
-         *
-         * @param string $key
-         * @param float $default
-         * @return float
-         * @static
-         */
-        public static function float($key, $default = 0.0)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->float($key, $default);
-        }
-
-        /**
-         * Retrieve data clamped between min and max values.
-         *
-         * @param string $key
-         * @param int|float $min
-         * @param int|float $max
-         * @param int|float $default
-         * @return float|int
-         * @static
-         */
-        public static function clamp($key, $min, $max, $default = 0)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->clamp($key, $min, $max, $default);
-        }
-
-        /**
-         * Retrieve data from the instance as a Carbon instance.
-         *
-         * @param string $key
-         * @param string|null $format
-         * @param \UnitEnum|string|null $tz
-         * @return \Illuminate\Support\Carbon|null
-         * @throws \Carbon\Exceptions\InvalidFormatException
-         * @static
-         */
-        public static function date($key, $format = null, $tz = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->date($key, $format, $tz);
-        }
-
-        /**
-         * Retrieve data from the instance as a CarbonInterval instance.
-         *
-         * @param string $key
-         * @param \Carbon\Unit|string|null $unit
-         * @return \Carbon\CarbonInterval|null
-         * @static
-         */
-        public static function interval($key, $unit = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->interval($key, $unit);
-        }
-
-        /**
-         * Retrieve data from the instance as an enum.
-         *
-         * @template TEnum of \BackedEnum
-         * @template TDefault of TEnum|null
-         * @param string $key
-         * @param class-string<TEnum> $enumClass
-         * @param TDefault $default
-         * @return TEnum|TDefault
-         * @static
-         */
-        public static function enum($key, $enumClass, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->enum($key, $enumClass, $default);
-        }
-
-        /**
-         * Retrieve data from the instance as an array of enums.
-         *
-         * @template TEnum of \BackedEnum
-         * @param string $key
-         * @param class-string<TEnum> $enumClass
-         * @return TEnum[]
-         * @static
-         */
-        public static function enums($key, $enumClass)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->enums($key, $enumClass);
-        }
-
-        /**
-         * Retrieve data from the instance as an array.
-         *
-         * @param array|string|null $key
-         * @return array
-         * @static
-         */
-        public static function array($key = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->array($key);
-        }
-
-        /**
-         * Retrieve data from the instance as a collection.
-         *
-         * @param array|string|null $key
-         * @return \Illuminate\Support\Collection
-         * @static
-         */
-        public static function collect($key = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->collect($key);
-        }
-
-        /**
-         * Get a subset containing the provided keys with values from the instance data.
-         *
-         * @param mixed $keys
-         * @return array
-         * @static
-         */
-        public static function only($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->only($keys);
-        }
-
-        /**
-         * Get all of the data except for a specified array of items.
-         *
-         * @param mixed $keys
-         * @return array
-         * @static
-         */
-        public static function except($keys)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->except($keys);
-        }
-
-        /**
-         * Apply the callback if the given "value" is (or resolves to) truthy.
-         *
-         * @template TWhenParameter
-         * @template TWhenReturnType
-         * @param (\Closure($this): TWhenParameter)|TWhenParameter|null $value
-         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $callback
-         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $default
-         * @return $this|TWhenReturnType
-         * @static
-         */
-        public static function when($value = null, $callback = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->when($value, $callback, $default);
-        }
-
-        /**
-         * Apply the callback if the given "value" is (or resolves to) falsy.
-         *
-         * @template TUnlessParameter
-         * @template TUnlessReturnType
-         * @param (\Closure($this): TUnlessParameter)|TUnlessParameter|null $value
-         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $callback
-         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $default
-         * @return $this|TUnlessReturnType
-         * @static
-         */
-        public static function unless($value = null, $callback = null, $default = null)
-        {
-            /** @var \Illuminate\Http\Request $instance */
-            return $instance->unless($value, $callback, $default);
-        }
-
-        /**
-         * Register a custom macro.
-         *
-         * @param string $name
-         * @param object|callable $macro
-         * @param-closure-this static  $macro
-         * @return void
-         * @static
-         */
-        public static function macro($name, $macro)
-        {
-            \Illuminate\Http\Request::macro($name, $macro);
-        }
-
-        /**
-         * Mix another object into the class.
-         *
-         * @param object $mixin
-         * @param bool $replace
-         * @return void
-         * @throws \ReflectionException
-         * @static
-         */
-        public static function mixin($mixin, $replace = true)
-        {
-            \Illuminate\Http\Request::mixin($mixin, $replace);
-        }
-
-        /**
-         * Checks if macro is registered.
-         *
-         * @param string $name
-         * @return bool
-         * @static
-         */
-        public static function hasMacro($name)
-        {
-            return \Illuminate\Http\Request::hasMacro($name);
-        }
-
-        /**
-         * Flush the existing macros.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushMacros()
-        {
-            \Illuminate\Http\Request::flushMacros();
         }
 
         /**
@@ -17127,6 +17998,7 @@ namespace Illuminate\Support\Facades {
             }
     /**
      * @method static \Illuminate\Routing\RouteRegistrar attribute(string $key, mixed $value)
+     * @method static \Illuminate\Routing\RouteRegistrar metadata(array $metadata)
      * @method static \Illuminate\Routing\RouteRegistrar whereAlpha(array|string $parameters)
      * @method static \Illuminate\Routing\RouteRegistrar whereAlphaNumeric(array|string $parameters)
      * @method static \Illuminate\Routing\RouteRegistrar whereNumber(array|string $parameters)
@@ -18230,17 +19102,19 @@ namespace Illuminate\Support\Facades {
 
             }
     /**
-     * @method static \Illuminate\Console\Scheduling\PendingEventAttributes withoutOverlapping(int $expiresAt = 1440)
+     * @method static \Illuminate\Console\Scheduling\PendingEventAttributes withoutOverlapping(int $expiresAt = 1440, bool $releaseOnTerminationSignals = true)
      * @method static void mergeAttributes(\Illuminate\Console\Scheduling\Event $event)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes user(string $user)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes environments(mixed $environments)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes evenInMaintenanceMode()
+     * @method static \Illuminate\Console\Scheduling\PendingEventAttributes evenWhenPaused()
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes onOneServer()
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes runInBackground()
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes when(\Closure|bool $callback)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes skip(\Closure|bool $callback)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes name(string $description)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes description(string $description)
+     * @method static \Illuminate\Console\Scheduling\PendingEventAttributes withAttributes(array $attributes)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes cron(string $expression)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes between(string $startTime, string $endTime)
      * @method static \Illuminate\Console\Scheduling\PendingEventAttributes unlessBetween(string $startTime, string $endTime)
@@ -18421,6 +19295,19 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Get all of the events on the schedule which run on any of the provided environments.
+         *
+         * @param list<string> $environments
+         * @return \Illuminate\Console\Scheduling\Event[]
+         * @static
+         */
+        public static function eventsForEnvironments($environments)
+        {
+            /** @var \Illuminate\Console\Scheduling\Schedule $instance */
+            return $instance->eventsForEnvironments($environments);
+        }
+
+        /**
          * Specify the cache store that should be used to store mutexes.
          *
          * @param \UnitEnum|string $store
@@ -18431,6 +19318,19 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Console\Scheduling\Schedule $instance */
             return $instance->useCache($store);
+        }
+
+        /**
+         * Indicate that the scheduler should not poll for pause or interrupt signals.
+         *
+         * This prevents the scheduler from hitting the application cache to determine if it needs to pause or interrupt.
+         *
+         * @return void
+         * @static
+         */
+        public static function withoutInterruptionPolling()
+        {
+            \Illuminate\Console\Scheduling\Schedule::withoutInterruptionPolling();
         }
 
         /**
@@ -18730,7 +19630,7 @@ namespace Illuminate\Support\Facades {
          * Get the user-defined types that belong to the connection.
          *
          * @param string|string[]|null $schema
-         * @return \Illuminate\Database\Schema\list<array{name: string, schema: string, type: string, type: string, category: string, implicit: bool}>
+         * @return \Illuminate\Database\Schema\list<array{name: string, schema: string, schema_qualified_name: string, type: string, category: string, implicit: bool}>
          * @static
          */
         public static function getTypes($schema = null)
@@ -18843,6 +19743,7 @@ namespace Illuminate\Support\Facades {
          * @param string $column
          * @param bool $fullDefinition
          * @return string
+         * @throws \InvalidArgumentException
          * @static
          */
         public static function getColumnType($table, $column, $fullDefinition = false)
@@ -18870,7 +19771,7 @@ namespace Illuminate\Support\Facades {
          * Get the columns for a given table.
          *
          * @param string $table
-         * @return \Illuminate\Database\Schema\list<array{name: string, type: string, type_name: string, nullable: bool, default: mixed, auto_increment: bool, comment: string|null, generation: array{type: string, expression: string|null}|null}>
+         * @return \Illuminate\Database\Schema\list<array{name: string, type: string, type_name: string, collation: string|null, nullable: bool, default: mixed, auto_increment: bool, comment: string|null, generation: array{type: string, expression: string|null}|null}>
          * @static
          */
         public static function getColumns($table)
@@ -18925,10 +19826,25 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Determine if the table has a given foreign key.
+         *
+         * @param string $table
+         * @param array|string $foreignKey
+         * @return bool
+         * @static
+         */
+        public static function hasForeignKey($table, $foreignKey)
+        {
+            //Method inherited from \Illuminate\Database\Schema\Builder 
+            /** @var \Illuminate\Database\Schema\PostgresBuilder $instance */
+            return $instance->hasForeignKey($table, $foreignKey);
+        }
+
+        /**
          * Get the foreign keys for a given table.
          *
          * @param string $table
-         * @return array
+         * @return \Illuminate\Database\Schema\list<array{name: string|null, columns: list<string>, foreign_schema: string|null, foreign_table: string, foreign_columns: list<string>, on_update: string|null, on_delete: string|null}>
          * @static
          */
         public static function getForeignKeys($table)
@@ -19087,6 +20003,7 @@ namespace Illuminate\Support\Facades {
          * @param string $name
          * @param string|null $schema
          * @return void
+         * @throws \RuntimeException
          * @static
          */
         public static function ensureExtensionExists($name, $schema = null)
@@ -19115,6 +20032,7 @@ namespace Illuminate\Support\Facades {
          * @param string $reference
          * @param string|bool|null $withDefaultSchema
          * @return array{string|null, string}
+         * @throws \InvalidArgumentException
          * @static
          */
         public static function parseSchemaAndTable($reference, $withDefaultSchema = null)
@@ -19286,7 +20204,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Set the default session driver name.
          *
-         * @param string $name
+         * @param \UnitEnum|string $name
          * @return void
          * @static
          */
@@ -19299,7 +20217,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a driver instance.
          *
-         * @param string|null $driver
+         * @param \UnitEnum|string|null $driver
          * @return mixed
          * @throws \InvalidArgumentException
          * @static
@@ -19315,7 +20233,7 @@ namespace Illuminate\Support\Facades {
          * Register a custom driver creator Closure.
          *
          * @param string $driver
-         * @param \Closure $callback
+         * @param-closure-this $this  $callback
          * @return \Illuminate\Session\SessionManager
          * @static
          */
@@ -19329,7 +20247,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get all of the created "drivers".
          *
-         * @return array
+         * @return array<string, mixed>
          * @static
          */
         public static function getDrivers()
@@ -20124,7 +21042,7 @@ namespace Illuminate\Support\Facades {
         /**
          * Get a filesystem instance.
          *
-         * @param string|null $name
+         * @param \UnitEnum|string|null $name
          * @return \Illuminate\Filesystem\AwsS3V3Adapter
          * @static
          */
@@ -20226,6 +21144,20 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Create a read-through filesystem driver.
+         *
+         * @param array $config
+         * @param string $name
+         * @return \Illuminate\Filesystem\AwsS3V3Adapter
+         * @static
+         */
+        public static function createReadThroughDriver($config, $name = 'read-through')
+        {
+            /** @var \Illuminate\Filesystem\FilesystemManager $instance */
+            return $instance->createReadThroughDriver($config, $name);
+        }
+
+        /**
          * Create a scoped driver.
          *
          * @param array $config
@@ -20308,6 +21240,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $driver
          * @param \Closure $callback
+         * @param-closure-this $this  $callback
          * @return \Illuminate\Filesystem\FilesystemManager
          * @static
          */
@@ -20357,6 +21290,18 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Determine if temporary upload URLs can be generated.
+         *
+         * @return bool
+         * @static
+         */
+        public static function providesTemporaryUploadUrls()
+        {
+            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
+            return $instance->providesTemporaryUploadUrls();
+        }
+
+        /**
          * Get a temporary URL for the file at the given path.
          *
          * @param string $path
@@ -20396,6 +21341,40 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
             return $instance->getClient();
+        }
+
+        /**
+         * Apply the callback if the given "value" is (or resolves to) truthy.
+         *
+         * @template TWhenParameter
+         * @template TWhenReturnType
+         * @param (\Closure($this): TWhenParameter)|TWhenParameter|null $value
+         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $callback
+         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $default
+         * @return $this|TWhenReturnType
+         * @static
+         */
+        public static function when($value = null, $callback = null, $default = null)
+        {
+            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
+            return $instance->when($value, $callback, $default);
+        }
+
+        /**
+         * Apply the callback if the given "value" is (or resolves to) falsy.
+         *
+         * @template TUnlessParameter
+         * @template TUnlessReturnType
+         * @param (\Closure($this): TUnlessParameter)|TUnlessParameter|null $value
+         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $callback
+         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $default
+         * @return $this|TUnlessReturnType
+         * @static
+         */
+        public static function unless($value = null, $callback = null, $default = null)
+        {
+            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
+            return $instance->unless($value, $callback, $default);
         }
 
         /**
@@ -20455,6 +21434,19 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
             /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
             return $instance->assertDirectoryEmpty($path);
+        }
+
+        /**
+         * Assert that the disk contains no files.
+         *
+         * @return \Illuminate\Filesystem\AwsS3V3Adapter
+         * @static
+         */
+        public static function assertEmpty()
+        {
+            //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
+            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
+            return $instance->assertEmpty();
         }
 
         /**
@@ -20635,6 +21627,18 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
             /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
             return $instance->download($path, $name, $headers);
+        }
+
+        /**
+         * Create an image instance from a file in storage.
+         *
+         * @static
+         */
+        public static function image($path)
+        {
+            //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
+            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
+            return $instance->image($path);
         }
 
         /**
@@ -20881,24 +21885,11 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Determine if temporary upload URLs can be generated.
-         *
-         * @return bool
-         * @static
-         */
-        public static function providesTemporaryUploadUrls()
-        {
-            //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
-            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
-            return $instance->providesTemporaryUploadUrls();
-        }
-
-        /**
          * Get an array of all files in a directory.
          *
          * @param string|null $directory
          * @param bool $recursive
-         * @return array
+         * @return array<string>
          * @static
          */
         public static function files($directory = null, $recursive = false)
@@ -20912,7 +21903,7 @@ namespace Illuminate\Support\Facades {
          * Get all of the files from the given directory (recursive).
          *
          * @param string|null $directory
-         * @return array
+         * @return array<string>
          * @static
          */
         public static function allFiles($directory = null)
@@ -20927,7 +21918,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string|null $directory
          * @param bool $recursive
-         * @return array
+         * @return array<string>
          * @static
          */
         public static function directories($directory = null, $recursive = false)
@@ -20941,7 +21932,7 @@ namespace Illuminate\Support\Facades {
          * Get all the directories within a given directory (recursive).
          *
          * @param string|null $directory
-         * @return array
+         * @return array<string>
          * @static
          */
         public static function allDirectories($directory = null)
@@ -21058,40 +22049,6 @@ namespace Illuminate\Support\Facades {
             //Method inherited from \Illuminate\Filesystem\FilesystemAdapter 
             /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
             $instance->buildTemporaryUploadUrlsUsing($callback);
-        }
-
-        /**
-         * Apply the callback if the given "value" is (or resolves to) truthy.
-         *
-         * @template TWhenParameter
-         * @template TWhenReturnType
-         * @param (\Closure($this): TWhenParameter)|TWhenParameter|null $value
-         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $callback
-         * @param (callable($this, TWhenParameter): TWhenReturnType)|null $default
-         * @return $this|TWhenReturnType
-         * @static
-         */
-        public static function when($value = null, $callback = null, $default = null)
-        {
-            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
-            return $instance->when($value, $callback, $default);
-        }
-
-        /**
-         * Apply the callback if the given "value" is (or resolves to) falsy.
-         *
-         * @template TUnlessParameter
-         * @template TUnlessReturnType
-         * @param (\Closure($this): TUnlessParameter)|TUnlessParameter|null $value
-         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $callback
-         * @param (callable($this, TUnlessParameter): TUnlessReturnType)|null $default
-         * @return $this|TUnlessReturnType
-         * @static
-         */
-        public static function unless($value = null, $callback = null, $default = null)
-        {
-            /** @var \Illuminate\Filesystem\AwsS3V3Adapter $instance */
-            return $instance->unless($value, $callback, $default);
         }
 
         /**
@@ -21927,6 +22884,19 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Validation\Factory $instance */
             $instance->excludeUnvalidatedArrayKeys();
+        }
+
+        /**
+         * Fake the DNS lookups performed by validation rules so they always succeed.
+         *
+         * @param bool $value
+         * @return void
+         * @static
+         */
+        public static function fakeDnsLookups($value = true)
+        {
+            /** @var \Illuminate\Validation\Factory $instance */
+            $instance->fakeDnsLookups($value);
         }
 
         /**
@@ -23338,6 +24308,33 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
+         * Render font preload links and inline styles.
+         *
+         * @param list<string>|string|null $aliases
+         * @return \Illuminate\Support\HtmlString
+         * @throws \Illuminate\Foundation\ViteException
+         * @static
+         */
+        public static function fonts($aliases = null)
+        {
+            /** @var \Illuminate\Foundation\Vite $instance */
+            return $instance->fonts($aliases);
+        }
+
+        /**
+         * Set the font manifest filename.
+         *
+         * @param string $filename
+         * @return \Illuminate\Foundation\Vite
+         * @static
+         */
+        public static function useFontsManifestFilename($filename)
+        {
+            /** @var \Illuminate\Foundation\Vite $instance */
+            return $instance->useFontsManifestFilename($filename);
+        }
+
+        /**
          * Determine if the HMR server is running.
          *
          * @return bool
@@ -23427,32 +24424,108 @@ namespace Illuminate\Support\Facades {
             }
     }
 
-namespace Barryvdh\Debugbar\Facades {
+namespace Fruitcake\LaravelDebugbar\Facades {
     /**
-     * @method static void alert(mixed $message)
-     * @method static void critical(mixed $message)
-     * @method static void debug(mixed $message)
-     * @method static void emergency(mixed $message)
-     * @method static void error(mixed $message)
-     * @method static void info(mixed $message)
-     * @method static void log(mixed $message)
-     * @method static void notice(mixed $message)
-     * @method static void warning(mixed $message)
-     * @see \Barryvdh\Debugbar\LaravelDebugbar
+     * @method static void            alert(mixed $message)
+     * @method static void            critical(mixed $message)
+     * @method static void            debug(mixed $message)
+     * @method static void            emergency(mixed $message)
+     * @method static void            error(mixed $message)
+     * @method static void            info(mixed $message)
+     * @method static void            log(mixed $message)
+     * @method static void            notice(mixed $message)
+     * @method static void            warning(mixed $message)
+     * @see \Fruitcake\LaravelDebugbar\LaravelDebugbar
      */
     class Debugbar {
         /**
-         * Returns the HTTP driver
-         *
-         * If no http driver where defined, a PhpHttpDriver is automatically created
-         *
-         * @return \DebugBar\HttpDriverInterface
+         * @static
+         */
+        public static function setApplication($app)
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setApplication($app);
+        }
+
+        /**
+         * @static
+         */
+        public static function setRequest($request)
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setRequest($request);
+        }
+
+        /**
+         * @static
+         */
+        public static function setProcessingJob($job)
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setProcessingJob($job);
+        }
+
+        /**
+         * @static
+         */
+        public static function getProcessingJob()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getProcessingJob();
+        }
+
+        /**
          * @static
          */
         public static function getHttpDriver()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getHttpDriver();
+        }
+
+        /**
+         * @static
+         */
+        public static function getRequestIdGenerator()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getRequestIdGenerator();
+        }
+
+        /**
+         * @static
+         */
+        public static function getTimeCollector()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getTimeCollector();
+        }
+
+        /**
+         * @static
+         */
+        public static function getMessagesCollector()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getMessagesCollector();
+        }
+
+        /**
+         * @static
+         */
+        public static function getExceptionsCollector()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getExceptionsCollector();
+        }
+
+        /**
+         * @static
+         */
+        public static function isCollecting()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->isCollecting();
         }
 
         /**
@@ -23462,7 +24535,7 @@ namespace Barryvdh\Debugbar\Facades {
          */
         public static function enable()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->enable();
         }
 
@@ -23473,47 +24546,45 @@ namespace Barryvdh\Debugbar\Facades {
          */
         public static function boot()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->boot();
         }
 
         /**
          * @static
          */
-        public static function shouldCollect($name, $default = false)
+        public static function booted()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->shouldCollect($name, $default);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->booted();
         }
 
         /**
-         * Adds a data collector
-         *
-         * @param \DebugBar\DataCollector\DataCollectorInterface $collector
-         * @throws DebugBarException
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
          * @static
          */
-        public static function addCollector($collector)
+        public static function getJavascriptRenderer($baseUrl = null, $basePath = null)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->addCollector($collector);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getJavascriptRenderer($baseUrl, $basePath);
+        }
+
+        /**
+         * @static
+         */
+        public static function shouldCollect($name, $default = true)
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->shouldCollect($name, $default);
         }
 
         /**
          * Handle silenced errors
          *
-         * @param $level
-         * @param $message
-         * @param string $file
-         * @param int $line
-         * @param array $context
-         * @throws \ErrorException
          * @static
          */
         public static function handleError($level, $message, $file = '', $line = 0, $context = [])
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->handleError($level, $message, $file, $line, $context);
         }
 
@@ -23521,142 +24592,127 @@ namespace Barryvdh\Debugbar\Facades {
          * Starts a measure
          *
          * @param string $name Internal name, used to stop the measure
-         * @param string $label Public name
-         * @param string|null $collector
-         * @param string|null $group
+         * @param string|null $label Public name
          * @static
          */
         public static function startMeasure($name, $label = null, $collector = null, $group = null)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->startMeasure($name, $label, $collector, $group);
         }
 
         /**
          * Stops a measure
          *
-         * @param string $name
          * @static
          */
         public static function stopMeasure($name)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->stopMeasure($name);
         }
 
         /**
-         * Adds an exception to be profiled in the debug bar
+         * Alias for addThrowable
          *
-         * @param \Exception $e
-         * @deprecated in favor of addThrowable
          * @static
          */
         public static function addException($e)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->addException($e);
         }
 
         /**
          * Adds an exception to be profiled in the debug bar
          *
-         * @param \Throwable $e
          * @static
          */
         public static function addThrowable($e)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->addThrowable($e);
-        }
-
-        /**
-         * Returns a JavascriptRenderer for this instance
-         *
-         * @param string $baseUrl
-         * @param string $basePath
-         * @return \Barryvdh\Debugbar\JavascriptRenderer
-         * @static
-         */
-        public static function getJavascriptRenderer($baseUrl = null, $basePath = null)
-        {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->getJavascriptRenderer($baseUrl, $basePath);
         }
 
         /**
          * Modify the response and inject the debugbar (or data in headers)
          *
-         * @param \Symfony\Component\HttpFoundation\Request $request
-         * @param \Symfony\Component\HttpFoundation\Response $response
-         * @return \Symfony\Component\HttpFoundation\Response
          * @static
          */
-        public static function modifyResponse($request, $response)
+        public static function handleResponse($request, $response)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->modifyResponse($request, $response);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->handleResponse($request, $response);
+        }
+
+        /**
+         * @static
+         */
+        public static function canBeEnabled()
+        {
+            return \Fruitcake\LaravelDebugbar\LaravelDebugbar::canBeEnabled();
         }
 
         /**
          * Check if the Debugbar is enabled
          *
-         * @return boolean
          * @static
          */
         public static function isEnabled()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->isEnabled();
         }
 
         /**
-         * Collects the data from the collectors
-         *
-         * @return array
          * @static
          */
-        public static function collect()
+        public static function isStorageOpen($request)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->collect();
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->isStorageOpen($request);
+        }
+
+        /**
+         * @static
+         */
+        public static function requestIsExcluded($request)
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->requestIsExcluded($request);
+        }
+
+        /**
+         * Collects meta data about the current request
+         *
+         * @static
+         */
+        public static function collectMetaData()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->collectMetaData();
+        }
+
+        /**
+         * @static
+         */
+        public static function terminate()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->terminate();
         }
 
         /**
          * Injects the web debug toolbar into the given Response.
          *
-         * @param \Symfony\Component\HttpFoundation\Response $response A Response instance
          * Based on https://github.com/symfony/WebProfilerBundle/blob/master/EventListener/WebDebugToolbarListener.php
+         *
          * @static
          */
         public static function injectDebugbar($response)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->injectDebugbar($response);
-        }
-
-        /**
-         * Checks if there is stacked data in the session
-         *
-         * @return boolean
-         * @static
-         */
-        public static function hasStackedData()
-        {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->hasStackedData();
-        }
-
-        /**
-         * Returns the data stacked in the session
-         *
-         * @param boolean $delete Whether to delete the data in the session
-         * @return array
-         * @static
-         */
-        public static function getStackedData($delete = true)
-        {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->getStackedData($delete);
         }
 
         /**
@@ -23666,53 +24722,39 @@ namespace Barryvdh\Debugbar\Facades {
          */
         public static function disable()
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->disable();
+        }
+
+        /**
+         * @static
+         */
+        public static function reset()
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->reset();
         }
 
         /**
          * Adds a measure
          *
-         * @param string $label
-         * @param float $start
-         * @param float $end
-         * @param array|null $params
-         * @param string|null $collector
-         * @param string|null $group
          * @static
          */
-        public static function addMeasure($label, $start, $end, $params = [], $collector = null, $group = null)
+        public static function addMeasure($label, $start, $end = null, $params = [], $collector = null, $group = null)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->addMeasure($label, $start, $end, $params, $collector, $group);
         }
 
         /**
          * Utility function to measure the execution of a Closure
          *
-         * @param string $label
-         * @param \Closure $closure
-         * @param string|null $collector
-         * @param string|null $group
-         * @return mixed
          * @static
          */
         public static function measure($label, $closure, $collector = null, $group = null)
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->measure($label, $closure, $collector, $group);
-        }
-
-        /**
-         * Collect data in a CLI request
-         *
-         * @return array
-         * @static
-         */
-        public static function collectConsole()
-        {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->collectConsole();
         }
 
         /**
@@ -23720,118 +24762,130 @@ namespace Barryvdh\Debugbar\Facades {
          *
          * A message can be anything from an object to a string
          *
-         * @param mixed $message
-         * @param string $label
          * @static
          */
-        public static function addMessage($message, $label = 'info')
+        public static function addMessage($message, $label = 'info', $context = [])
         {
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->addMessage($message, $label);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->addMessage($message, $label, $context);
+        }
+
+        /**
+         * Check the version of Laravel
+         *
+         * @static
+         */
+        public static function checkVersion($version, $operator = '>=')
+        {
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->checkVersion($version, $operator);
+        }
+
+        /**
+         * Adds a data collector
+         *
+         * @throws DebugBarException
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
+         * @static
+         */
+        public static function addCollector($collector)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->addCollector($collector);
         }
 
         /**
          * Checks if a data collector has been added
          *
-         * @param string $name
          * @return boolean
          * @static
          */
         public static function hasCollector($name)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->hasCollector($name);
         }
 
         /**
-         * Returns a data collector
-         *
-         * @param string $name
-         * @return \DebugBar\DataCollector\DataCollectorInterface
-         * @throws DebugBarException
          * @static
          */
         public static function getCollector($name)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getCollector($name);
+        }
+
+        /**
+         * @static
+         */
+        public static function removeCollector($name)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->removeCollector($name);
         }
 
         /**
          * Returns an array of all data collectors
          *
-         * @return array[DataCollectorInterface]
+         * @return array|\DebugBar\DataCollector\DataCollectorInterface[]
          * @static
          */
         public static function getCollectors()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getCollectors();
         }
 
         /**
          * Sets the request id generator
          *
-         * @param \DebugBar\RequestIdGeneratorInterface $generator
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function setRequestIdGenerator($generator)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->setRequestIdGenerator($generator);
-        }
-
-        /**
-         * @return \DebugBar\RequestIdGeneratorInterface
-         * @static
-         */
-        public static function getRequestIdGenerator()
-        {
-            //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->getRequestIdGenerator();
         }
 
         /**
          * Returns the id of the current request
          *
-         * @return string
          * @static
          */
         public static function getCurrentRequestId()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getCurrentRequestId();
         }
 
         /**
          * Sets the storage backend to use to store the collected data
          *
-         * @param \DebugBar\StorageInterface $storage
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function setStorage($storage = null)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->setStorage($storage);
         }
 
         /**
-         * @return \DebugBar\StorageInterface
          * @static
          */
         public static function getStorage()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getStorage();
         }
 
@@ -23844,22 +24898,33 @@ namespace Barryvdh\Debugbar\Facades {
         public static function isDataPersisted()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->isDataPersisted();
         }
 
         /**
          * Sets the HTTP driver
          *
-         * @param \DebugBar\HttpDriverInterface $driver
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function setHttpDriver($driver)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->setHttpDriver($driver);
+        }
+
+        /**
+         * Collects the data from the collectors
+         *
+         * @static
+         */
+        public static function collect()
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->collect();
         }
 
         /**
@@ -23867,44 +24932,40 @@ namespace Barryvdh\Debugbar\Facades {
          *
          * Will collect the data if none have been collected yet
          *
-         * @return array
          * @static
          */
         public static function getData()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getData();
         }
 
         /**
          * Returns an array of HTTP headers containing the data
          *
-         * @param string $headerName
          * @param integer $maxHeaderLength
-         * @return array
+         * @return array<string, string>
          * @static
          */
         public static function getDataAsHeaders($headerName = 'phpdebugbar', $maxHeaderLength = 4096, $maxTotalHeaderLength = 250000)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getDataAsHeaders($headerName, $maxHeaderLength, $maxTotalHeaderLength);
         }
 
         /**
          * Sends the data through the HTTP headers
          *
-         * @param bool $useOpenHandler
-         * @param string $headerName
          * @param integer $maxHeaderLength
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function sendDataInHeaders($useOpenHandler = null, $headerName = 'phpdebugbar', $maxHeaderLength = 4096)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->sendDataInHeaders($useOpenHandler, $headerName, $maxHeaderLength);
         }
 
@@ -23916,34 +24977,69 @@ namespace Barryvdh\Debugbar\Facades {
         public static function stackData()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->stackData();
+        }
+
+        /**
+         * Checks if there is stacked data in the session
+         *
+         * @return boolean
+         * @static
+         */
+        public static function hasStackedData()
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->hasStackedData();
+        }
+
+        /**
+         * Returns the data stacked in the session
+         *
+         * @param boolean $delete Whether to delete the data in the session
+         * @return array[]
+         * @static
+         */
+        public static function getStackedData($delete = true)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getStackedData($delete);
+        }
+
+        /**
+         * @static
+         */
+        public static function getStackedIds($delete = true)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->getStackedIds($delete);
         }
 
         /**
          * Sets the key to use in the $_SESSION array
          *
-         * @param string $ns
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function setStackDataSessionNamespace($ns)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->setStackDataSessionNamespace($ns);
         }
 
         /**
          * Returns the key used in the $_SESSION array
          *
-         * @return string
          * @static
          */
         public static function getStackDataSessionNamespace()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->getStackDataSessionNamespace();
         }
 
@@ -23952,13 +25048,13 @@ namespace Barryvdh\Debugbar\Facades {
          * if a storage is enabled
          *
          * @param boolean $enabled
-         * @return \Barryvdh\Debugbar\LaravelDebugbar
+         * @return \Fruitcake\LaravelDebugbar\LaravelDebugbar
          * @static
          */
         public static function setStackAlwaysUseSessionStorage($enabled = true)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->setStackAlwaysUseSessionStorage($enabled);
         }
 
@@ -23972,48 +25068,87 @@ namespace Barryvdh\Debugbar\Facades {
         public static function isStackAlwaysUseSessionStorage()
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
             return $instance->isStackAlwaysUseSessionStorage();
         }
 
         /**
+         * Set the editor globally, e.g., `vscode`
+         *
          * @static
          */
-        public static function offsetSet($key, $value)
+        public static function setEditor($editor)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->offsetSet($key, $value);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setEditor($editor);
+        }
+
+        /**
+         * Set the editor link template globally,
+         * `%f` = file, `%l` = line, e.g., `vscode://file/%f:%l`
+         *
+         * @static
+         */
+        public static function setEditorTemplate($editorLinkTemplate, $shouldUseAjax = false)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setEditorTemplate($editorLinkTemplate, $shouldUseAjax);
+        }
+
+        /**
+         * Set server path replacements, server paths will be mapped to local paths
+         * e.g., `['/var/www/remote/' => '/home/local/']`,
+         * '/var/www/remote/app/path' will become to '/home/local/app/path'
+         *
+         * @static
+         */
+        public static function setRemoteReplacements($remotePathReplacements)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->setRemoteReplacements($remotePathReplacements);
         }
 
         /**
          * @static
          */
-        public static function offsetGet($key)
+        public static function offsetSet($offset, $value)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->offsetGet($key);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->offsetSet($offset, $value);
         }
 
         /**
          * @static
          */
-        public static function offsetExists($key)
+        public static function offsetGet($offset)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->offsetExists($key);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->offsetGet($offset);
         }
 
         /**
          * @static
          */
-        public static function offsetUnset($key)
+        public static function offsetExists($offset)
         {
             //Method inherited from \DebugBar\DebugBar 
-            /** @var \Barryvdh\Debugbar\LaravelDebugbar $instance */
-            return $instance->offsetUnset($key);
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->offsetExists($offset);
+        }
+
+        /**
+         * @static
+         */
+        public static function offsetUnset($offset)
+        {
+            //Method inherited from \DebugBar\DebugBar 
+            /** @var \Fruitcake\LaravelDebugbar\LaravelDebugbar $instance */
+            return $instance->offsetUnset($offset);
         }
 
             }
@@ -25613,7 +26748,8 @@ namespace Illuminate\Support {
      */
     class Collection {
         /**
-         * @see \Barryvdh\Debugbar\ServiceProvider::register()
+         * @see \Fruitcake\LaravelDebugbar\ServiceProvider::register()
+         * @return \Illuminate\Support\Collection
          * @static
          */
         public static function debug()
@@ -26188,7 +27324,7 @@ namespace  {
          * Get the first record matching the attributes or instantiate it.
          *
          * @param array $attributes
-         * @param array $values
+         * @param (\Closure(): array)|array $values
          * @return TModel
          * @static
          */
@@ -26218,6 +27354,7 @@ namespace  {
          * @param array $attributes
          * @param (\Closure(): array)|array $values
          * @return TModel
+         * @throws \Illuminate\Database\UniqueConstraintViolationException
          * @static
          */
         public static function createOrFirst($attributes = [], $values = [])
@@ -26230,7 +27367,7 @@ namespace  {
          * Create or update a record matching the attributes, and fill it with values.
          *
          * @param array $attributes
-         * @param array $values
+         * @param (\Closure(): array)|array $values
          * @return TModel
          * @static
          */
@@ -26435,6 +27572,18 @@ namespace  {
         }
 
         /**
+         * Get an array of primary keys from the query result.
+         *
+         * @return array<int, array-key>
+         * @static
+         */
+        public static function modelKeys()
+        {
+            /** @var \Illuminate\Database\Eloquent\Builder $instance */
+            return $instance->modelKeys();
+        }
+
+        /**
          * Paginate the given query.
          *
          * @param int|null|\Closure $perPage
@@ -26549,6 +27698,34 @@ namespace  {
         {
             /** @var \Illuminate\Database\Eloquent\Builder $instance */
             return $instance->upsert($values, $uniqueBy, $update);
+        }
+
+        /**
+         * Increment the given column's values by the given amounts.
+         *
+         * @param array<string, float|int|numeric-string> $columns
+         * @param array<string, mixed> $extra
+         * @return int
+         * @static
+         */
+        public static function incrementEach($columns, $extra = [])
+        {
+            /** @var \Illuminate\Database\Eloquent\Builder $instance */
+            return $instance->incrementEach($columns, $extra);
+        }
+
+        /**
+         * Decrement the given column's values by the given amounts.
+         *
+         * @param array<string, float|int|numeric-string> $columns
+         * @param array<string, mixed> $extra
+         * @return int
+         * @static
+         */
+        public static function decrementEach($columns, $extra = [])
+        {
+            /** @var \Illuminate\Database\Eloquent\Builder $instance */
+            return $instance->decrementEach($columns, $extra);
         }
 
         /**
@@ -26967,7 +28144,7 @@ namespace  {
          * @param callable(\Illuminate\Support\Collection<int, TValue>, int):  mixed  $callback
          * @param string|null $column
          * @param string|null $alias
-         * @param bool $descending
+         * @param \SortDirection|bool $descending
          * @return bool
          * @throws \RuntimeException
          * @static
@@ -27629,6 +28806,7 @@ namespace  {
          * @param string|null $relationshipName
          * @param string $boolean
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \InvalidArgumentException
          * @throws \Illuminate\Database\Eloquent\RelationNotFoundException
          * @static
          */
@@ -27644,7 +28822,6 @@ namespace  {
          * @param \Illuminate\Database\Eloquent\Model $related
          * @param string|null $relationshipName
          * @return \Illuminate\Database\Eloquent\Builder<static>
-         * @throws \RuntimeException
          * @static
          */
         public static function orWhereBelongsTo($related, $relationshipName = null)
@@ -27660,6 +28837,7 @@ namespace  {
          * @param string|null $relationshipName
          * @param string $boolean
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \InvalidArgumentException
          * @throws \Illuminate\Database\Eloquent\RelationNotFoundException
          * @static
          */
@@ -27825,7 +29003,7 @@ namespace  {
         /**
          * Add a select expression to the query.
          *
-         * @param \Illuminate\Contracts\Database\Query\Expression|string $expression
+         * @param \Illuminate\Contracts\Database\Query\Expression|literal-string $expression
          * @param string $as
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -27839,7 +29017,7 @@ namespace  {
         /**
          * Add a new "raw" select expression to the query.
          *
-         * @param string $expression
+         * @param literal-string $expression
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
          */
@@ -27867,7 +29045,7 @@ namespace  {
         /**
          * Add a raw "from" clause to the query.
          *
-         * @param string $expression
+         * @param literal-string $expression
          * @param mixed $bindings
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -27898,6 +29076,7 @@ namespace  {
          * @param \Illuminate\Support\Collection<int, float>|\Illuminate\Contracts\Support\Arrayable|array<int, float>|string $vector
          * @param string|null $as
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \JsonException
          * @static
          */
         public static function selectVectorDistance($column, $vector, $as = null)
@@ -28181,6 +29360,55 @@ namespace  {
         }
 
         /**
+         * Add a straight join to the query.
+         *
+         * @param \Illuminate\Contracts\Database\Query\Expression|string $table
+         * @param \Closure|string $first
+         * @param string|null $operator
+         * @param \Illuminate\Contracts\Database\Query\Expression|string|null $second
+         * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @static
+         */
+        public static function straightJoin($table, $first, $operator = null, $second = null)
+        {
+            /** @var \Illuminate\Database\Query\Builder $instance */
+            return $instance->straightJoin($table, $first, $operator, $second);
+        }
+
+        /**
+         * Add a "straight join where" clause to the query.
+         *
+         * @param \Illuminate\Contracts\Database\Query\Expression|string $table
+         * @param \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first
+         * @param string $operator
+         * @param \Illuminate\Contracts\Database\Query\Expression|string $second
+         * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @static
+         */
+        public static function straightJoinWhere($table, $first, $operator, $second)
+        {
+            /** @var \Illuminate\Database\Query\Builder $instance */
+            return $instance->straightJoinWhere($table, $first, $operator, $second);
+        }
+
+        /**
+         * Add a subquery straight join to the query.
+         *
+         * @param \Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<*>|string $query
+         * @param string $as
+         * @param \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first
+         * @param string|null $operator
+         * @param \Illuminate\Contracts\Database\Query\Expression|string|null $second
+         * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @static
+         */
+        public static function straightJoinSub($query, $as, $first, $operator = null, $second = null)
+        {
+            /** @var \Illuminate\Database\Query\Builder $instance */
+            return $instance->straightJoinSub($query, $as, $first, $operator, $second);
+        }
+
+        /**
          * Merge an array of "where" clauses and bindings.
          *
          * @param array $wheres
@@ -28265,6 +29493,7 @@ namespace  {
          * @param float $maxDistance
          * @param string $boolean
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \JsonException
          * @static
          */
         public static function whereVectorDistanceLessThan($column, $vector, $maxDistance, $boolean = 'and')
@@ -28291,7 +29520,7 @@ namespace  {
         /**
          * Add a raw "where" clause to the query.
          *
-         * @param \Illuminate\Contracts\Database\Query\Expression|string $sql
+         * @param \Illuminate\Contracts\Database\Query\Expression|literal-string $sql
          * @param mixed $bindings
          * @param string $boolean
          * @return \Illuminate\Database\Eloquent\Builder<static>
@@ -28306,7 +29535,7 @@ namespace  {
         /**
          * Add a raw "or where" clause to the query.
          *
-         * @param string $sql
+         * @param literal-string $sql
          * @param mixed $bindings
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -28417,6 +29646,7 @@ namespace  {
          * @param string $boolean
          * @param bool $not
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \InvalidArgumentException
          * @static
          */
         public static function whereIn($column, $values, $boolean = 'and', $not = false)
@@ -29403,7 +30633,7 @@ namespace  {
         /**
          * Add a raw "groupBy" clause to the query.
          *
-         * @param string $sql
+         * @param literal-string $sql
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
          */
@@ -29587,7 +30817,7 @@ namespace  {
         /**
          * Add a raw "having" clause to the query.
          *
-         * @param string $sql
+         * @param literal-string $sql
          * @param string $boolean
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -29601,7 +30831,7 @@ namespace  {
         /**
          * Add a raw "or having" clause to the query.
          *
-         * @param string $sql
+         * @param literal-string $sql
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
          */
@@ -29615,12 +30845,12 @@ namespace  {
          * Add an "order by" clause to the query.
          *
          * @param \Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<*>|\Illuminate\Contracts\Database\Query\Expression|string $column
-         * @param string $direction
+         * @param \SortDirection|'asc'|'desc' $direction
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @throws \InvalidArgumentException
          * @static
          */
-        public static function orderBy($column, $direction = 'asc')
+        public static function orderBy($column, $direction = \SortDirection::Ascending)
         {
             /** @var \Illuminate\Database\Query\Builder $instance */
             return $instance->orderBy($column, $direction);
@@ -29645,6 +30875,7 @@ namespace  {
          * @param \Illuminate\Contracts\Database\Query\Expression|string $column
          * @param \Illuminate\Support\Collection<int, float>|\Illuminate\Contracts\Support\Arrayable|array<int, float> $vector
          * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @throws \JsonException
          * @static
          */
         public static function orderByVectorDistance($column, $vector)
@@ -29670,7 +30901,7 @@ namespace  {
          * Add an "order by" clause to order results by a given sequence of values.
          *
          * @param \Illuminate\Contracts\Database\Query\Expression|string $column
-         * @param \Illuminate\Contracts\Support\Arrayable|array $values
+         * @param \Illuminate\Contracts\Support\Arrayable|array<\UnitEnum|string|int|float|bool> $values
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
          */
@@ -29683,7 +30914,7 @@ namespace  {
         /**
          * Add a raw "order by" clause to the query.
          *
-         * @param string $sql
+         * @param literal-string $sql
          * @param array $bindings
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -29808,11 +31039,11 @@ namespace  {
          * Remove all existing orders and optionally add a new order.
          *
          * @param \Closure|\Illuminate\Database\Query\Builder|\Illuminate\Contracts\Database\Query\Expression|string|null $column
-         * @param string $direction
+         * @param \SortDirection|'asc'|'desc' $direction
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
          */
-        public static function reorder($column = null, $direction = 'asc')
+        public static function reorder($column = null, $direction = \SortDirection::Ascending)
         {
             /** @var \Illuminate\Database\Query\Builder $instance */
             return $instance->reorder($column, $direction);
@@ -29960,6 +31191,7 @@ namespace  {
         /**
          * Get a single expression value from the first result of a query.
          *
+         * @param literal-string $expression
          * @return mixed
          * @static
          */
@@ -30175,6 +31407,20 @@ namespace  {
         }
 
         /**
+         * Insert new records into the database and returning specified columns with optional ignoring specific conflicts.
+         *
+         * @param non-empty-array<non-empty-string> $returning
+         * @param non-empty-string|non-empty-array<non-empty-string>|null $uniqueBy
+         * @return \Illuminate\Support\Collection
+         * @static
+         */
+        public static function insertOrIgnoreReturning($values, $returning = [], $uniqueBy = null)
+        {
+            /** @var \Illuminate\Database\Query\Builder $instance */
+            return $instance->insertOrIgnoreReturning($values, $returning, $uniqueBy);
+        }
+
+        /**
          * Insert a new record and get the value of the primary key.
          *
          * @param string|null $sequence
@@ -30217,6 +31463,7 @@ namespace  {
          * Update records in a PostgreSQL database using the update from syntax.
          *
          * @return int
+         * @throws \LogicException
          * @static
          */
         public static function updateFrom($values)
@@ -30235,36 +31482,6 @@ namespace  {
         {
             /** @var \Illuminate\Database\Query\Builder $instance */
             return $instance->updateOrInsert($attributes, $values);
-        }
-
-        /**
-         * Increment the given column's values by the given amounts.
-         *
-         * @param array<string, float|int|numeric-string> $columns
-         * @param array<string, mixed> $extra
-         * @return int<0, max>
-         * @throws \InvalidArgumentException
-         * @static
-         */
-        public static function incrementEach($columns, $extra = [])
-        {
-            /** @var \Illuminate\Database\Query\Builder $instance */
-            return $instance->incrementEach($columns, $extra);
-        }
-
-        /**
-         * Decrement the given column's values by the given amounts.
-         *
-         * @param array<string, float|int|numeric-string> $columns
-         * @param array<string, mixed> $extra
-         * @return int<0, max>
-         * @throws \InvalidArgumentException
-         * @static
-         */
-        public static function decrementEach($columns, $extra = [])
-        {
-            /** @var \Illuminate\Database\Query\Builder $instance */
-            return $instance->decrementEach($columns, $extra);
         }
 
         /**
@@ -30294,7 +31511,7 @@ namespace  {
         /**
          * Create a raw database expression.
          *
-         * @param mixed $value
+         * @param literal-string|int|float $value
          * @return \Illuminate\Contracts\Database\Query\Expression
          * @static
          */
@@ -30440,6 +31657,19 @@ namespace  {
         {
             /** @var \Illuminate\Database\Query\Builder $instance */
             return $instance->useWritePdo();
+        }
+
+        /**
+         * Specify arguments for the PDOStatement::fetchAll / fetch functions.
+         *
+         * @param mixed $fetchUsing
+         * @return \Illuminate\Database\Eloquent\Builder<static>
+         * @static
+         */
+        public static function fetchUsing(...$fetchUsing)
+        {
+            /** @var \Illuminate\Database\Query\Builder $instance */
+            return $instance->fetchUsing(...$fetchUsing);
         }
 
         /**
@@ -30822,6 +32052,7 @@ namespace  {
     class Gate extends \Illuminate\Support\Facades\Gate {}
     class Hash extends \Illuminate\Support\Facades\Hash {}
     class Http extends \Illuminate\Support\Facades\Http {}
+    class Image extends \Illuminate\Support\Facades\Image {}
     class Js extends \Illuminate\Support\Js {}
     class Lang extends \Illuminate\Support\Facades\Lang {}
     class Log extends \Illuminate\Support\Facades\Log {}
@@ -30846,7 +32077,7 @@ namespace  {
     class Validator extends \Illuminate\Support\Facades\Validator {}
     class View extends \Illuminate\Support\Facades\View {}
     class Vite extends \Illuminate\Support\Facades\Vite {}
-    class Debugbar extends \Barryvdh\Debugbar\Facades\Debugbar {}
+    class Debugbar extends \Fruitcake\LaravelDebugbar\Facades\Debugbar {}
     class PDF extends \Barryvdh\DomPDF\Facade\Pdf {}
     class Pdf extends \Barryvdh\DomPDF\Facade\Pdf {}
     class Horizon extends \Laravel\Horizon\Horizon {}
