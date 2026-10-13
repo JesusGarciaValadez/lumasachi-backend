@@ -204,26 +204,41 @@ final class HealthController extends Controller
     private function checkQueue(): array
     {
         try {
-            // This is a basic check. In production, you might want to
-            // dispatch a test job and verify it processes
-            $queueSize = DB::table('jobs')->count();
-            $failedJobs = DB::table('failed_jobs')->count();
+            $queueName = (string)config('queue.default');
+            $queueConfiguration = config('queue.connections.' . $queueName, []);
+            $queueConfiguration = is_array($queueConfiguration) ? $queueConfiguration : [];
+            $queueDriver = $queueConfiguration['driver'] ?? null;
+
+            if ($queueDriver !== 'database') {
+                return [
+                    'healthy' => true,
+                    'message' => 'Queue is configured',
+                ];
+            }
+
+            $centralConnection = (string)config('tenancy.database.central_connection', config('database.default'));
+            $queueConnection = $queueConfiguration['connection'] ?? $centralConnection;
+            $queueConnection = is_string($queueConnection) && $queueConnection !== '' ? $queueConnection : $centralConnection;
+            $queueTable = $queueConfiguration['table'] ?? 'jobs';
+            $failedConnection = config('queue.failed.database', $centralConnection);
+            $failedConnection = is_string($failedConnection) && $failedConnection !== '' ? $failedConnection : $centralConnection;
+            $failedTable = config('queue.failed.table', 'failed_jobs');
+            $failedTable = is_string($failedTable) && $failedTable !== '' ? $failedTable : 'failed_jobs';
+
+            $pendingJobs = DB::connection($queueConnection)->table($queueTable)->count();
+            $failedJobs = DB::connection($failedConnection)->table($failedTable)->count();
 
             $healthy = $failedJobs < 100; // Arbitrary threshold
 
             return [
                 'healthy' => $healthy,
                 'message' => $healthy ? 'Queue is operational' : 'Too many failed jobs',
-                'pending_jobs' => $queueSize,
-                'failed_jobs' => $failedJobs,
-                'driver' => config('queue.default'),
             ];
         } catch (Exception $e) {
             // Queue tables might not exist
             return [
                 'healthy' => true,
                 'message' => 'Queue not configured',
-                'driver' => config('queue.default'),
             ];
         }
     }

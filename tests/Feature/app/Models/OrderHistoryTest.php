@@ -99,7 +99,7 @@ it('checks if nullable fields', function () {
     expect($orderHistory->comment)->toBeNull();
 });
 it('checks if order history with attachments', function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 
     $orderHistory = OrderHistory::factory()->create([
         'order_id' => $this->order->id,

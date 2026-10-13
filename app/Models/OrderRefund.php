@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\RefundStatus;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderRefundFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class OrderRefund extends Model
 {
     /** @use HasFactory<OrderRefundFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     /** @var list<string> */
     protected $fillable = [

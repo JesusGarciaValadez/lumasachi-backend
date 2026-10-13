@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Tenant;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -86,6 +87,9 @@ final class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')->toString()) . '|' . $this->ip());
+        $tenant = tenancy()->tenant;
+        $tenantId = $tenant instanceof Tenant ? (string)$tenant->getTenantKey() : 'legacy';
+
+        return Str::transliterate('tenant|' . $tenantId . '|' . Str::lower($this->string('email')->toString()) . '|' . $this->ip());
     }
 }

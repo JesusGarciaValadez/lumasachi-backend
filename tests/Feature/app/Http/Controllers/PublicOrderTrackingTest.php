@@ -20,7 +20,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
     Notification::fake();
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 
     $company = Company::factory()->create();
     $employee = User::factory()->create([
@@ -136,7 +136,7 @@ it('returns populated public collections with stable shapes', function () {
         ->assertJsonPath('order.items.0.components.0.component_key', 'camshaft')
         ->assertJsonPath('order.items.0.components.0.component_label', 'Árbol de levas')
         ->assertJsonPath('order.items.0.item_type_label', 'Block')
-        ->assertJsonPath('order.services.0.service_name', __('service_catalog.wash_block'))
+        ->assertJsonPath('order.services.0.service_name', __('service_catalog.wash_block', [], 'es'))
         ->assertJsonPath('order.financials.completed', '116.00')
         ->assertJsonMissingPath('order.items.0.id')
         ->assertJsonMissingPath('order.items.0.uuid')
@@ -175,7 +175,7 @@ it('returns the order history and attachments', function () {
             'created_by' => $this->order->created_by,
         ],
     ]);
-    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 public attachment');
+    Storage::disk('tenant-private')->put($attachment->file_path, '%PDF-1.4 public attachment');
 
     $response = $this->postJson('/api/v1/orders/track', [
         'uuid' => $this->order->uuid,
@@ -356,7 +356,7 @@ it('allows anonymous download and preview of an attachment with a matching order
         'mime_type' => 'application/pdf',
         'uploaded_by' => $this->order->created_by,
     ]);
-    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 inspection');
+    Storage::disk('tenant-private')->put($attachment->file_path, '%PDF-1.4 inspection');
 
     $download = $this->get(route('api.orders.public.attachments.download', [
         'order' => $this->order->uuid,
@@ -388,7 +388,7 @@ it('does not expose an attachment when the order date does not match', function 
         'mime_type' => 'application/pdf',
         'uploaded_by' => $this->order->created_by,
     ]);
-    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 inspection');
+    Storage::disk('tenant-private')->put($attachment->file_path, '%PDF-1.4 inspection');
 
     $response = $this->get(route('api.orders.public.attachments.download', [
         'order' => $this->order->uuid,
@@ -409,7 +409,7 @@ it('does not offer a preview URL for non-previewable attachments', function () {
         'mime_type' => 'text/plain',
         'uploaded_by' => $this->order->created_by,
     ]);
-    Storage::disk('public')->put($attachment->file_path, 'plain notes');
+    Storage::disk('tenant-private')->put($attachment->file_path, 'plain notes');
 
     $tracking = $this->postJson('/api/v1/orders/track', [
         'uuid' => $this->order->uuid,

@@ -152,6 +152,7 @@ final class OrderController extends Controller
             $request->validated('completed_service_ids'),
             $this->authenticatedUser($request)
         );
+        self::bumpVersion();
 
         return response()->json([
             'code' => 'orders.work_completed',

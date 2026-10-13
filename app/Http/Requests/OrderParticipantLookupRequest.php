@@ -24,7 +24,8 @@ final class OrderParticipantLookupRequest extends FormRequest
             return false;
         }
 
-        return !$this->routeIs('api.users.companies') || $actor->isSuperAdministrator();
+        return !$this->routeIs('api.users.companies')
+            || (!tenancy()->initialized && $actor->isSuperAdministrator());
     }
 
     /**
@@ -37,9 +38,11 @@ final class OrderParticipantLookupRequest extends FormRequest
         $actor = $this->user();
 
         return [
-            'company_id' => $actor instanceof User && $actor->isSuperAdministrator()
+            'company_id' => tenancy()->initialized
+                ? ['prohibited']
+                : ($actor instanceof User && $actor->isSuperAdministrator()
                 ? ['nullable', 'integer', Rule::exists(Company::class, 'id')->where('is_active', true)]
-                : ['prohibited'],
+                    : ['prohibited']),
         ];
     }
 

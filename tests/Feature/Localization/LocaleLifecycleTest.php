@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\SetLocale;
 use App\Models\User;
+use App\Services\LocaleResolver;
+use Illuminate\Http\Request;
 use Inertia\Testing\AssertableInertia as InertiaAssert;
+use Symfony\Component\HttpFoundation\Response;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -97,9 +101,44 @@ test('unsupported locale changes are rejected without persisting', function () {
     expect($freshUser->locale)->toBeNull();
 });
 test('api requests resolve the locale from accept language', function () {
+    $previousLocale = app()->getLocale();
+
     $this->withHeaders(['Accept-Language' => 'es-MX'])
-        ->getJson('/api/v1/up')
+        ->getJson('http://' . config('tenancy.central_hosts.0') . '/api/v1/up')
         ->assertOk();
 
-    expect(app()->getLocale())->toBe('es');
+    expect(app()->getLocale())->toBe($previousLocale);
+});
+
+it('restores the application locale after consecutive requests and downstream exceptions', function () {
+    app()->setLocale('en');
+    $middleware = new SetLocale(new LocaleResolver());
+
+    $spanishRequest = Request::create('/', 'GET', server: ['HTTP_ACCEPT_LANGUAGE' => 'es']);
+    $middleware->handle($spanishRequest, function (Request $request): Response {
+        expect(app()->getLocale())->toBe('es');
+
+        return response('handled');
+    });
+
+    expect(app()->getLocale())->toBe('en');
+
+    $englishRequest = Request::create('/', 'GET', server: ['HTTP_ACCEPT_LANGUAGE' => 'en']);
+    $middleware->handle($englishRequest, function (Request $request): Response {
+        expect(app()->getLocale())->toBe('en');
+
+        return response('handled');
+    });
+
+    expect(app()->getLocale())->toBe('en');
+
+    $failingRequest = Request::create('/', 'GET', server: ['HTTP_ACCEPT_LANGUAGE' => 'es']);
+
+    expect(fn() => $middleware->handle($failingRequest, function (Request $request): Response {
+        expect(app()->getLocale())->toBe('es');
+
+        throw new RuntimeException('Downstream request failed.');
+    }))->toThrow(RuntimeException::class, 'Downstream request failed.');
+
+    expect(app()->getLocale())->toBe('en');
 });

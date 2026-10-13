@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 });
 it('checks if file type detection', function () {
     $testCases = [
@@ -163,7 +163,7 @@ it('checks if file name handling', function () {
         expect($attachment->file_name)->toEqual($filename);
 
         // File should be stored successfully
-        Storage::disk('public')->assertExists($attachment->file_path);
+        Storage::disk('tenant-private')->assertExists($attachment->file_path);
     }
 });
 it('checks if empty file handling', function () {

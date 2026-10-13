@@ -55,6 +55,12 @@ return [
 
     'https' => env('OCTANE_HTTPS', false),
 
+    'caddy' => [
+        'env' => array_filter([
+            'CADDY_SERVER_SERVER_NAME' => env('OCTANE_CADDY_SERVER_NAME'),
+        ]),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Octane Listeners

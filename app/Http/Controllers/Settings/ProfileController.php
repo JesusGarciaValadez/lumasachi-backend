@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -70,7 +71,9 @@ final class ProfileController extends Controller
         $user->delete();
 
         if ($request->expectsJson()) {
-            $user->tokens()->delete();
+            if ($user instanceof User) {
+                $user->tokens()->delete();
+            }
 
             return response()->json(['code' => 'auth.profile_deleted', 'message' => __('auth.profile_deleted')], 200);
         }

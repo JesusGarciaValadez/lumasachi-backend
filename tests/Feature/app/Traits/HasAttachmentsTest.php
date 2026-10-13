@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 
     // Create a test user
     $this->user = User::factory()->create();
@@ -51,16 +51,16 @@ it('checks if attach method', function () {
     $this->assertStringContainsString('attachments/Order/' . $this->order->id, $attachment->file_path);
 
     // Verify file was stored
-    Storage::disk('public')->assertExists($attachment->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment->file_path);
 });
-it('checks if attach method with custom disk', function () {
-    Storage::fake('local');
+it('stores attachment files on the private tenant disk', function () {
+    Storage::fake('tenant-private');
 
     $file = UploadedFile::fake()->create('document.pdf', 500, 'application/pdf');
 
-    $attachment = $this->order->attach($file, $this->user->id, 'local');
+    $attachment = $this->order->attach($file, $this->user->id);
 
-    Storage::disk('local')->assertExists($attachment->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment->file_path);
 });
 it('checks if detach method', function () {
     $file = UploadedFile::fake()->image('photo.jpg');
@@ -68,14 +68,14 @@ it('checks if detach method', function () {
 
     // Verify attachment exists
     expect($this->order->attachments)->toHaveCount(1);
-    Storage::disk('public')->assertExists($attachment->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment->file_path);
 
     // Detach the attachment
     $result = $this->order->detach($attachment->id);
 
     expect($result)->toBeTrue();
     expect($this->order->fresh()->attachments)->toHaveCount(0);
-    Storage::disk('public')->assertMissing($attachment->file_path);
+    Storage::disk('tenant-private')->assertMissing($attachment->file_path);
     $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
 });
 it('checks if detach method with non existent attachment', function () {
@@ -226,7 +226,7 @@ it('checks if detach all method', function () {
     // Verify attachments exist
     expect($this->order->attachments)->toHaveCount(3);
     foreach ($filePaths as $path) {
-        Storage::disk('public')->assertExists($path);
+        Storage::disk('tenant-private')->assertExists($path);
     }
 
     // Detach all
@@ -237,7 +237,7 @@ it('checks if detach all method', function () {
 
     // Verify files are deleted
     foreach ($filePaths as $path) {
-        Storage::disk('public')->assertMissing($path);
+        Storage::disk('tenant-private')->assertMissing($path);
     }
 });
 it('checks if attachment file name uniqueness', function () {
@@ -255,8 +255,8 @@ it('checks if attachment file name uniqueness', function () {
     $this->assertNotEquals($attachment1->file_path, $attachment2->file_path);
 
     // Both files should exist
-    Storage::disk('public')->assertExists($attachment1->file_path);
-    Storage::disk('public')->assertExists($attachment2->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment1->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment2->file_path);
 });
 it('checks if trait with order model', function () {
     $order = Order::factory()->createQuietly();

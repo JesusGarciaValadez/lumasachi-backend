@@ -44,6 +44,7 @@ export const messages = {
             first_name: 'Nombre',
             last_name: 'Apellidos',
             phone_number: 'Teléfono',
+            exit_platform_support: 'Salir del acceso de soporte',
         },
         welcome: {
             title: 'Bienvenido',
@@ -440,6 +441,7 @@ export const messages = {
             first_name: 'First name',
             last_name: 'Last name',
             phone_number: 'Phone number',
+            exit_platform_support: 'Exit support access',
         },
         welcome: {
             title: 'Welcome',

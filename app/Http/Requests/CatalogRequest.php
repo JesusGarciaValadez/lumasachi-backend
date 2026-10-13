@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderItemType;
 use App\Enums\UserRole;
+use App\Models\User;
 use App\Services\LocaleResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ final class CatalogRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user && $user->role !== UserRole::CUSTOMER;
+        return $user instanceof User && $user->role !== UserRole::CUSTOMER;
     }
 
     /**

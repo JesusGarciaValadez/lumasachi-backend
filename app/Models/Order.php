@@ -12,6 +12,7 @@ use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Observers\OrderObserver;
 use App\Traits\HasAttachments;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use UnexpectedValueException;
 
 /**
  * @mixin IdeHelperOrder
@@ -30,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 final class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
-    use HasAttachments, HasFactory, HasUuids;
+    use HasAttachments, HasFactory, HasUuids, UsesTenantConnection;
 
     /**
      * The primary key associated with the table.
@@ -135,13 +137,19 @@ final class Order extends Model
      */
     public function getStatusAttribute(): ?OrderStatus
     {
-        if ($this->disposition_status !== null) {
-            return OrderStatus::tryFrom($this->disposition_status->value);
+        $dispositionStatus = $this->getAttribute('disposition_status');
+
+        if ($dispositionStatus instanceof OrderDispositionStatus) {
+            return OrderStatus::from($dispositionStatus->value);
         }
 
-        return $this->lifecycle_status instanceof OrderLifecycleStatus
-            ? OrderStatus::tryFrom($this->lifecycle_status->value)
-            : null;
+        $lifecycleStatus = $this->getAttribute('lifecycle_status');
+
+        if (!$lifecycleStatus instanceof OrderLifecycleStatus) {
+            return null;
+        }
+
+        return OrderStatus::from($lifecycleStatus->value);
     }
 
     /**
@@ -217,34 +225,38 @@ final class Order extends Model
         return $this->hasManyThrough(OrderService::class, OrderItem::class, 'order_id', 'order_item_id');
     }
 
+    /** @return numeric-string */
     public function completedTotal(): string
     {
         $services = $this->relationLoaded('services')
             ? $this->services
             : $this->services()->get(['net_price', 'is_completed']);
 
-        return $services
-            ->where('is_completed', true)
-            ->reduce(
-                fn(string $total, OrderService $service): string => bcadd($total, (string)$service->net_price, 2),
-                '0.00'
-            );
+        $total = $this->decimalAmount('0.00');
+
+        foreach ($services->where('is_completed', true) as $service) {
+            if ($service->net_price !== null) {
+                $total = bcadd($total, $this->decimalAmount($service->net_price), 2);
+            }
+        }
+
+        return $total;
     }
 
+    /** @return numeric-string */
     public function totalPaid(): string
     {
         $payments = $this->relationLoaded('payments')
             ? $this->payments
             : $this->payments()->get(['amount']);
 
-        if ($payments->isNotEmpty()) {
-            return $payments->reduce(
-                fn(string $total, OrderPayment $payment): string => bcadd($total, (string)$payment->amount, 2),
-                '0.00'
-            );
+        $total = $this->decimalAmount('0.00');
+
+        foreach ($payments as $payment) {
+            $total = bcadd($total, $this->decimalAmount($payment->amount), 2);
         }
 
-        return '0.00';
+        return $total;
     }
 
     public function paymentStatus(): string
@@ -266,7 +278,9 @@ final class Order extends Model
 
     public function lifecycleStatus(): ?OrderLifecycleStatus
     {
-        return $this->lifecycle_status;
+        $lifecycleStatus = $this->getAttribute('lifecycle_status');
+
+        return $lifecycleStatus instanceof OrderLifecycleStatus ? $lifecycleStatus : null;
     }
 
     public function dispositionStatus(): ?OrderDispositionStatus
@@ -325,5 +339,15 @@ final class Order extends Model
     protected static function newFactory(): Factory
     {
         return OrderFactory::new();
+    }
+
+    /** @return numeric-string */
+    private function decimalAmount(mixed $amount): string
+    {
+        if (!is_string($amount) || !is_numeric($amount)) {
+            throw new UnexpectedValueException('Persisted monetary amounts must be numeric decimal strings.');
+        }
+
+        return $amount;
     }
 }

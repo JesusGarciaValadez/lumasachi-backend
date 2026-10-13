@@ -26,6 +26,8 @@ final class PublicAttachmentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $publicOrderCreatedDate = $this->publicOrder?->created_at?->toDateString();
+
         return [
             'uuid' => $this->uuid,
             'file_name' => $this->file_name,
@@ -36,18 +38,18 @@ final class PublicAttachmentResource extends JsonResource
             'is_document' => $this->isDocument(),
             'is_pdf' => $this->isPdf(),
             'extension' => $this->getExtension(),
-            'preview_url' => $this->publicOrder !== null && ($this->isImage() || $this->isPdf())
+            'preview_url' => $this->publicOrder !== null && $publicOrderCreatedDate !== null && ($this->isImage() || $this->isPdf())
                 ? route('api.orders.public.attachments.preview', [
                     'order' => $this->publicOrder->uuid,
                     'attachment' => $this->uuid,
-                    'created_date' => $this->publicOrder->created_at->toDateString(),
+                    'created_date' => $publicOrderCreatedDate,
                 ])
                 : null,
-            'download_url' => $this->publicOrder !== null
+            'download_url' => $this->publicOrder !== null && $publicOrderCreatedDate !== null
                 ? route('api.orders.public.attachments.download', [
                     'order' => $this->publicOrder->uuid,
                     'attachment' => $this->uuid,
-                    'created_date' => $this->publicOrder->created_at->toDateString(),
+                    'created_date' => $publicOrderCreatedDate,
                 ])
                 : null,
             'created_at' => $this->created_at,

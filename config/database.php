@@ -20,6 +20,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'tenant_test_database_allowed_host' => env('TENANCY_TEST_DATABASE_ALLOWED_HOST'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
@@ -60,7 +62,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -80,7 +82,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -95,8 +97,38 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
+            'search_path' => env('DB_SEARCH_PATH', 'public'),
             'sslmode' => 'prefer',
+        ],
+
+        'tenant_template' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => env('TENANCY_TENANT_SEARCH_PATH', 'public'),
+            'sslmode' => 'prefer',
+        ],
+
+        'tenant_provisioner' => [
+            'driver' => 'pgsql',
+            'url' => env('TENANCY_DB_PROVISIONER_URL'),
+            'host' => env('TENANCY_DB_PROVISIONER_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('TENANCY_DB_PROVISIONER_PORT', env('DB_PORT', '5432')),
+            'database' => env('TENANCY_DB_PROVISIONER_DATABASE', 'postgres'),
+            'username' => env('TENANCY_DB_PROVISIONER_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('TENANCY_DB_PROVISIONER_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('TENANCY_DB_PROVISIONER_SSLMODE', 'prefer'),
         ],
 
         'sqlsrv' => [
@@ -149,7 +181,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string)env('APP_NAME', 'laravel'), '_') . '_database_'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

@@ -34,8 +34,8 @@ test('user uuid is unique at the database boundary', function (): void {
 });
 
 test('activation and uuid migrations can be rolled back and reapplied', function (): void {
-    $activationMigration = require database_path('migrations/2026_08_01_220705_add_activated_at_to_users_table.php');
-    $uuidMigration = require database_path('migrations/2026_08_01_220708_make_users_uuid_unique.php');
+    $activationMigration = require database_path('migrations/legacy/2026_08_01_220705_add_activated_at_to_users_table.php');
+    $uuidMigration = require database_path('migrations/legacy/2026_08_01_220708_make_users_uuid_unique.php');
 
     $uuidMigration->down();
     $activationMigration->down();

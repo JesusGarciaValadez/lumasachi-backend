@@ -28,6 +28,7 @@ const props = defineProps<{
 
 const { t, tm } = useI18n();
 const page = usePage<AppPageProps>();
+const isTenantContext = computed(() => page.props.is_tenant_context === true);
 const filters = ref<OrderIndexFilters>({ ...props.filters });
 const filtersOpen = ref(false);
 const debounceTimer = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -111,9 +112,12 @@ function queryParams(): Record<string, string | number> {
         per_page: filters.value.per_page || 10,
     };
 
+    if (!isTenantContext.value && filters.value.company_id !== '') {
+        params.company_id = filters.value.company_id;
+    }
+
     for (const key of [
         'title',
-        'company_id',
         'assigned_to',
         'priority',
         'lifecycle_status',
@@ -235,7 +239,7 @@ onBeforeUnmount(() => {
                                     @input="scheduleTitleFilter"
                                 />
                             </div>
-                            <div class="grid gap-2">
+                            <div v-if="!isTenantContext" class="grid gap-2">
                                 <label class="text-sm font-medium" for="orders-company">{{ t('orders.company') }}</label>
                                 <select
                                     id="orders-company"

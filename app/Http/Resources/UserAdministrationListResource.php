@@ -27,11 +27,6 @@ final class UserAdministrationListResource extends JsonResource
             'type' => $this->type?->value,
             'is_active' => (bool)$this->is_active,
             'activated_at' => $this->activated_at?->toIso8601String(),
-            'company' => $this->whenLoaded('company', fn(): array => [
-                'id' => $this->company->id,
-                'uuid' => $this->company->uuid,
-                'name' => $this->company->name,
-            ]),
         ];
     }
 }

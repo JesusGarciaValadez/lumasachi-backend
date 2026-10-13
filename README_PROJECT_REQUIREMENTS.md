@@ -1,5 +1,9 @@
 # Lumasachi Control - Laravel Backend Specifications
 
+> **Status:** This is a historical requirements document. Its Laravel, PHP, database, and Docker examples may not match
+> the current repository. Use the [current README](README.md) for local installation, and verify this document against the
+> application before using it as implementation guidance.
+
 ## Project Overview
 
 Lumasachi Control is a multi-role user order/task management and control system. The React Native mobile application requires a robust Laravel 12 backend that handles authentication, user management, orders, reports, and data export.

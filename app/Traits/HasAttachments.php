@@ -26,9 +26,8 @@ trait HasAttachments
      * Attach a file to the model.
      *
      * @param  int  $uploadedBy  User ID who uploaded the file
-     * @param  string|null  $disk  Storage disk to use (default: 'public')
      */
-    public function attach(UploadedFile $file, int $uploadedBy, ?string $disk = 'public'): Attachment
+    public function attach(UploadedFile $file, int $uploadedBy): Attachment
     {
         // Generate a unique file name to avoid conflicts
         $fileName = $file->getClientOriginalName();
@@ -40,7 +39,7 @@ trait HasAttachments
         $storagePath = "attachments/{$modelType}/{$modelId}";
 
         // Store the file
-        $filePath = $file->storeAs($storagePath, $uniqueFileName, $disk ?? 'public');
+        $filePath = $file->storeAs($storagePath, $uniqueFileName, 'tenant-private');
 
         // Create the attachment record
         return $this->attachments()->create([

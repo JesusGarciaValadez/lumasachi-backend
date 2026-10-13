@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 });
 it('checks if can create attachment', function () {
     $user = User::factory()->create();
@@ -75,7 +75,7 @@ it('checks if get url method', function () {
         'uploaded_by' => $user->id,
     ]));
 
-    $expectedUrl = Storage::disk('public')->url('attachments/Order/' . $order->id . '/test.pdf');
+    $expectedUrl = route('api.attachments.download', ['attachment' => $attachment->uuid]);
     expect($attachment->getUrl())->toEqual($expectedUrl);
 });
 it('checks if get human readable size method', function () {
@@ -239,7 +239,7 @@ it('checks if delete removes file and record', function () {
 
     // Create a real file in the fake storage
     $file = UploadedFile::fake()->image('photo.jpg');
-    $filePath = $file->store('attachments/Order/' . $order->id, 'public');
+    $filePath = $file->store('attachments/Order/' . $order->id, 'tenant-private');
 
     $attachment = $order->attachments()->create(Attachment::factory()->raw([
         'file_path' => $filePath,
@@ -249,13 +249,13 @@ it('checks if delete removes file and record', function () {
     ]));
 
     // Verify file exists
-    Storage::disk('public')->assertExists($filePath);
+    Storage::disk('tenant-private')->assertExists($filePath);
 
     // Delete attachment
     $attachment->delete();
 
     // Verify file is deleted
-    Storage::disk('public')->assertMissing($filePath);
+    Storage::disk('tenant-private')->assertMissing($filePath);
 
     // Verify record is deleted
     $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
@@ -270,7 +270,7 @@ it('checks if delete handles missing physical file', function () {
     ]));
 
     // The file does not exist in the storage
-    Storage::disk('public')->assertMissing($attachment->file_path);
+    Storage::disk('tenant-private')->assertMissing($attachment->file_path);
 
     // Delete should not throw an exception
     $result = $attachment->delete();

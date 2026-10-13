@@ -35,7 +35,7 @@ const { t } = useI18n();
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
-        <Link class="block w-full" method="post" :href="route('logout')" @click="handleLogout" as="button">
+        <Link :href="route('logout')" as="button" class="block w-full" dusk="user-logout" method="post" @click="handleLogout">
             <LogOut class="mr-2 h-4 w-4" />
             {{ t('auth.logout') }}
         </Link>

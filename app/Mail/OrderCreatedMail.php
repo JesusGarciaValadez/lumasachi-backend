@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Jobs\Middleware\TenantNotificationContext;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -48,6 +49,12 @@ final class OrderCreatedMail extends Mailable implements ShouldQueue, ShouldQueu
                 'order' => $this->order,
             ],
         );
+    }
+
+    /** @return list<class-string<TenantNotificationContext>> */
+    public function middleware(): array
+    {
+        return [TenantNotificationContext::class];
     }
 
     /**

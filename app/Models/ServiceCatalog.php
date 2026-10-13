@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\ServiceCatalogObserver;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\ServiceCatalogFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 final class ServiceCatalog extends Model
 {
     /** @use HasFactory<ServiceCatalogFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     protected $table = 'service_catalog';
 

@@ -75,7 +75,7 @@ return [
     |
     */
 
-    'connection' => env('SESSION_CONNECTION'),
+    'connection' => env('TENANCY_CENTRAL_CONNECTION', env('DB_CONNECTION')),
 
     /*
     |--------------------------------------------------------------------------
@@ -158,7 +158,7 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => null,
 
     /*
     |--------------------------------------------------------------------------
@@ -171,7 +171,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('APP_ENV') === 'production' ? true : env('SESSION_SECURE_COOKIE', false),
 
     /*
     |--------------------------------------------------------------------------

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\User;
+use App\Models\CentralSuperAdministrator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
@@ -32,14 +33,7 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
                    $entry->hasMonitoredTag();
         });
 
-        Telescope::avatar(function (?string $id, ?string $email) {
-            $user = $id === null ? null : User::find($id);
-            $avatarPath = $user?->getAttribute('avatar_path');
-
-            return is_string($avatarPath) && $avatarPath !== ''
-                ? '/avatars/' . $avatarPath
-                : '/generic-avatar.jpg';
-        });
+        Telescope::avatar(static fn(?string $id, ?string $email): string => '/generic-avatar.jpg');
     }
 
     /**
@@ -67,10 +61,10 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function ($user) {
-            return in_array($user->email, [
-                'jesus.garciav@me.com',
-            ]);
+        Gate::define('viewTelescope', static function (mixed $user = null): bool {
+            $administrator = Auth::guard('central')->user();
+
+            return $administrator instanceof CentralSuperAdministrator && $administrator->is_active;
         });
     }
 }

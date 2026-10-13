@@ -22,6 +22,7 @@ services:
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
             #SUPERVISOR_PHP_COMMAND: "/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --watch --server=frankenphp --host=0.0.0.0 --admin-port=2019 --port='${APP_PORT:-80}'"
             SUPERVISOR_PHP_COMMAND: "/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --host=localhost --port=443 --admin-port=2019 --https" # to be able to use HTTPS / HTTP2 / HTTP3
+            OCTANE_CADDY_SERVER_NAME: 'https://localhost:443, https://*.localhost:443'
             XDG_CONFIG_HOME:  /var/www/html/config
             XDG_DATA_HOME:  /var/www/html/data
 
@@ -56,15 +57,24 @@ services:
             APP_KEY: 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
             APP_DEBUG: 'false'
             APP_URL: http://dusk
+            TENANCY_CENTRAL_DOMAINS: dusk
+            TENANCY_CENTRAL_HOSTS: dusk
+            TENANCY_ALLOW_LEGACY_MODEL_CONNECTION: 'false'
+            TENANCY_ALLOW_LEGACY_TEST_ROUTES: 'false'
             DB_CONNECTION: pgsql
             DB_HOST: pgsql
             DB_PORT: 5432
             DB_DATABASE: testing
+            DB_SEARCH_PATH: lumasachi_dusk
             DB_USERNAME: sail
             DB_PASSWORD: password
+            REDIS_HOST: redis
+            TENANCY_CENTRAL_CONNECTION: pgsql
+            TENANCY_TENANT_TEMPLATE_CONNECTION: tenant_template
             SESSION_DRIVER: database
             SESSION_SECURE_COOKIE: 'false'
             CACHE_STORE: array
+            SANCTUM_STATEFUL_DOMAINS: tenant.dusk,other.dusk
             QUEUE_CONNECTION: sync
             MAIL_MAILER: array
             FILESYSTEM_DISK: public
@@ -74,7 +84,10 @@ services:
         volumes:
             - '.:/var/www/html'
         networks:
-            - sail
+          sail:
+            aliases:
+              - tenant.dusk
+              - other.dusk
         depends_on:
             - pgsql
             - redis

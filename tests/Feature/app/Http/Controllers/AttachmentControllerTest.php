@@ -18,7 +18,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function () {
     config(['cache.default' => 'array']);
     Cache::flush();
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 
     // Create users with different roles
     $this->superAdmin = User::factory()->create(['role' => UserRole::SUPER_ADMINISTRATOR->value]);
@@ -46,7 +46,7 @@ beforeEach(function () {
 });
 afterEach(function () {
     // Clean up any test files created during tests
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 });
 it('checks view order attachments', function () {
     $this->actingAs($this->employee);
@@ -68,7 +68,6 @@ it('checks view order attachments', function () {
                 '*' => [
                     'id',
                     'file_name',
-                    'file_path',
                     'mime_type',
                     'file_size',
                     'human_file_size',
@@ -87,6 +86,7 @@ it('checks view order attachments', function () {
             'total_size',
             'total_size_formatted',
         ])
+        ->assertJsonMissingPath('attachments.0.file_path')
         ->assertJsonCount(2, 'attachments');
 
     $v = (int)Cache::get('attachments:version', 1);
@@ -132,7 +132,7 @@ it('checks cache invalidation on attachment deletion', function () {
         'file_path' => 'orders/test-file.pdf',
     ]);
 
-    Storage::disk('public')->put('orders/test-file.pdf', 'test content');
+    Storage::disk('tenant-private')->put('orders/test-file.pdf', 'test content');
 
     $v1 = (int)Cache::get('attachments:version', 0);
 
@@ -178,7 +178,7 @@ it('checks upload attachment to order', function () {
         ]);
 
     // Check file was stored
-    Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file->hashName());
+    Storage::disk('tenant-private')->assertExists("orders/{$this->order->uuid}/" . $file->hashName());
 
     // Check database record
     $this->assertDatabaseHas('attachments', [
@@ -213,8 +213,8 @@ it('checks upload multiple attachments to order', function () {
         ->assertJsonCount(2, 'attachments');
 
     // Check files stored
-    Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file1->hashName());
-    Storage::disk('public')->assertExists("orders/{$this->order->uuid}/" . $file2->hashName());
+    Storage::disk('tenant-private')->assertExists("orders/{$this->order->uuid}/" . $file1->hashName());
+    Storage::disk('tenant-private')->assertExists("orders/{$this->order->uuid}/" . $file2->hashName());
 
     // Check DB records exist
     $this->assertDatabaseHas('attachments', [
@@ -278,7 +278,7 @@ it('checks download attachment', function () {
 
     // Create an attachment with a real file
     $filePath = 'orders/test-file.pdf';
-    Storage::disk('public')->put($filePath, 'test content');
+    Storage::disk('tenant-private')->put($filePath, 'test content');
 
     $attachment = Attachment::factory()->create([
         'attachable_type' => 'order',
@@ -331,7 +331,7 @@ it('checks preview image attachment', function () {
 
     // Create an image attachment
     $filePath = 'orders/test-image.jpg';
-    Storage::disk('public')->put($filePath, 'fake image content');
+    Storage::disk('tenant-private')->put($filePath, 'fake image content');
 
     $attachment = Attachment::factory()->create([
         'attachable_type' => 'order',
@@ -352,7 +352,7 @@ it('checks preview pdf attachment', function () {
 
     // Create a PDF attachment
     $filePath = 'orders/test-document.pdf';
-    Storage::disk('public')->put($filePath, 'fake pdf content');
+    Storage::disk('tenant-private')->put($filePath, 'fake pdf content');
 
     $attachment = Attachment::factory()->create([
         'attachable_type' => 'order',
@@ -413,7 +413,7 @@ it('checks delete attachment', function () {
     ]);
 
     // Put a fake file in storage
-    Storage::disk('public')->put('orders/test-file.pdf', 'test content');
+    Storage::disk('tenant-private')->put('orders/test-file.pdf', 'test content');
 
     $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
 
@@ -423,7 +423,7 @@ it('checks delete attachment', function () {
         ]);
 
     // Check file was deleted
-    Storage::disk('public')->assertMissing('orders/test-file.pdf');
+    Storage::disk('tenant-private')->assertMissing('orders/test-file.pdf');
 
     // Check database record was deleted
     $this->assertDatabaseMissing('attachments', [
@@ -491,7 +491,7 @@ it('checks admin can delete any attachment', function () {
         'file_path' => 'orders/test-file.pdf',
     ]);
 
-    Storage::disk('public')->put('orders/test-file.pdf', 'test content');
+    Storage::disk('tenant-private')->put('orders/test-file.pdf', 'test content');
 
     $response = $this->deleteJson("/api/v1/attachments/{$attachment->uuid}");
 

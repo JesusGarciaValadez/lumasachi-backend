@@ -32,7 +32,9 @@ final class IndexOrderRequest extends FormRequest
     {
         return [
             'title' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_id' => ['sometimes', 'nullable', 'integer', 'exists:companies,id'],
+            'company_id' => tenancy()->initialized
+                ? ['prohibited']
+                : ['sometimes', 'nullable', 'integer', 'exists:companies,id'],
             'assigned_to' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'priority' => ['sometimes', 'nullable', Rule::enum(OrderPriority::class)],
             'lifecycle_status' => ['sometimes', 'nullable', Rule::enum(OrderLifecycleStatus::class)],

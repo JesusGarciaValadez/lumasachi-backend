@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'central' => [
+            'driver' => 'session',
+            'provider' => 'central_super_administrators',
+        ],
     ],
 
     /*
@@ -65,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'central_super_administrators' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\CentralSuperAdministrator::class,
         ],
 
         // 'users' => [
@@ -96,6 +106,15 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'connection' => env('AUTH_USERS_PASSWORD_RESET_CONNECTION', 'tenant'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        'central_super_administrators' => [
+            'provider' => 'central_super_administrators',
+            'table' => 'central_password_reset_tokens',
+            'connection' => env('TENANCY_CENTRAL_CONNECTION', env('DB_CONNECTION', 'sqlite')),
             'expire' => 60,
             'throttle' => 60,
         ],

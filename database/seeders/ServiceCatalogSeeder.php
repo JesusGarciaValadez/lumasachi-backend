@@ -99,7 +99,7 @@ final class ServiceCatalogSeeder extends Seeder
         ];
 
         foreach ($rows as $row) {
-            ServiceCatalog::query()->firstOrCreate(
+            ServiceCatalog::query()->updateOrCreate(
                 ['service_key' => $row['service_key']],
                 $row
             );

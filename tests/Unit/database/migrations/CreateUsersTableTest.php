@@ -225,7 +225,7 @@ it('checks if migration can be rolled back and rerun', function () {
     Schema::dropIfExists('orders');
 
     // Run down method
-    $migration = include database_path('migrations/0001_01_01_000000_create_users_table.php');
+    $migration = include database_path('migrations/legacy/0001_01_01_000000_create_users_table.php');
     $migration->down();
 
     // Tables should not exist

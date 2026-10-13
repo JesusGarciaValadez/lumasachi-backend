@@ -57,8 +57,6 @@ final class UserAdministrationController extends Controller
         $actor = $this->actor($request);
         abort_unless($actor->can('viewAdministration', $user), 403);
 
-        $user->load('company:id,uuid,name');
-
         return Inertia::render('Users/Show', [
             'user' => (new UserAdministrationResource($user))->resolve($request),
             'capabilities' => $this->capabilities($actor, $user),
@@ -67,8 +65,8 @@ final class UserAdministrationController extends Controller
     }
 
     public function store(
-        StoreUserRequest                   $request,
-        UserService                        $service,
+        StoreUserRequest $request,
+        UserService      $service,
         UserAdministrationIncidentReporter $reporter,
     ): RedirectResponse
     {
@@ -84,9 +82,9 @@ final class UserAdministrationController extends Controller
     }
 
     public function update(
-        UpdateUserRequest                  $request,
-        User                               $user,
-        UserService                        $service,
+        UpdateUserRequest $request,
+        User              $user,
+        UserService       $service,
         UserAdministrationIncidentReporter $reporter,
     ): RedirectResponse
     {
@@ -102,9 +100,9 @@ final class UserAdministrationController extends Controller
     }
 
     public function destroy(
-        Request                            $request,
-        User                               $user,
-        UserService                        $service,
+        Request     $request,
+        User        $user,
+        UserService $service,
         UserAdministrationIncidentReporter $reporter,
     ): RedirectResponse
     {
@@ -128,6 +126,7 @@ final class UserAdministrationController extends Controller
     }
 
     /**
+     * @param LengthAwarePaginator<int, User> $paginator
      * @return array<string, mixed>
      */
     private function paginatedUsers(LengthAwarePaginator $paginator, Request $request): array
@@ -175,8 +174,27 @@ final class UserAdministrationController extends Controller
      */
     private function capabilities(User $actor, ?User $target = null): array
     {
-        $isSuperAdministrator = $actor->isSuperAdministrator();
+        $isTenantSupportManager = tenancy()->initialized && $actor->isPlatformSupport();
+        $isSuperAdministrator = $actor->isSuperAdministrator() || $isTenantSupportManager;
         $isAdministrator = $actor->isAdministrator();
+        $canChangeCompany = $actor->isSuperAdministrator() && !tenancy()->initialized;
+
+        $superAdministratorFields = [
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'role',
+            'phone_number',
+            'is_active',
+            'notes',
+            'type',
+            'locale',
+        ];
+
+        if ($canChangeCompany) {
+            $superAdministratorFields[] = 'company_id';
+        }
 
         return [
             'can_view_users' => $actor->can('viewAny', User::class),
@@ -186,22 +204,10 @@ final class UserAdministrationController extends Controller
             'can_update' => $target === null || $actor->can('updateAdministration', $target),
             'can_update_active' => $isSuperAdministrator,
             'can_delete' => $target === null ? $isSuperAdministrator : $actor->can('delete', $target),
-            'can_change_company' => $isSuperAdministrator,
+            'can_change_company' => $canChangeCompany,
             'can_change_password' => $isSuperAdministrator,
             'allowed_fields' => $isSuperAdministrator
-                ? [
-                    'first_name',
-                    'last_name',
-                    'email',
-                    'password',
-                    'role',
-                    'phone_number',
-                    'is_active',
-                    'notes',
-                    'type',
-                    'locale',
-                    'company_id',
-                ]
+                ? $superAdministratorFields
                 : ($isAdministrator ? [
                     'first_name',
                     'last_name',
@@ -221,7 +227,9 @@ final class UserAdministrationController extends Controller
     private function options(User $actor, UserAdministrationQuery $query): array
     {
         return [
-            'roles' => UserRole::administrationValues($actor->role),
+            'roles' => tenancy()->initialized
+                ? UserRole::administrationValues(UserRole::ADMINISTRATOR)
+                : UserRole::administrationValues($actor->role),
             'types' => UserType::getTypes(),
             'locales' => Locale::values(),
             'active' => ['1', '0', 'all'],
@@ -237,10 +245,10 @@ final class UserAdministrationController extends Controller
     }
 
     private function failureRedirect(
-        Request                            $request,
+        Request   $request,
         UserAdministrationIncidentReporter $reporter,
-        Throwable                          $exception,
-        string                             $operation,
+        Throwable $exception,
+        string    $operation,
     ): RedirectResponse
     {
         $incident = $reporter->capture($exception, $request, $operation);

@@ -118,7 +118,7 @@ it('checks if migration can be rolled back and rerun', function () {
     Schema::dropIfExists('order_motor_info');
 
     // Run down method
-    $migration = include base_path('database/migrations/2025_07_27_164818_create_orders_table.php');
+    $migration = include base_path('database/migrations/legacy/2025_07_27_164818_create_orders_table.php');
     $migration->down();
 
     // Table should not exist

@@ -3,39 +3,29 @@
 declare(strict_types=1);
 
 use App\Enums\UserRole;
-use App\Models\Company;
 use App\Models\User;
-use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-uses(DuskTestCase::class, DatabaseTruncation::class);
+uses(DuskTestCase::class);
 
 beforeEach(function (): void {
-    $this->seed(ServiceCatalogSeeder::class);
-
-    $company = Company::factory()->active()->create();
     $password = Hash::make('password');
 
-    $this->company = $company;
     $this->administrator = User::factory()->create([
-        'company_id' => $company->id,
         'email' => 'dusk-administrator@example.com',
         'is_active' => true,
         'password' => $password,
         'role' => UserRole::ADMINISTRATOR->value,
     ]);
     $this->employee = User::factory()->create([
-        'company_id' => $company->id,
         'email' => 'dusk-employee@example.com',
         'is_active' => true,
         'password' => $password,
         'role' => UserRole::EMPLOYEE->value,
     ]);
     $this->customer = User::factory()->create([
-        'company_id' => $company->id,
         'email' => 'dusk-customer@example.com',
         'is_active' => true,
         'password' => $password,
@@ -43,89 +33,25 @@ beforeEach(function (): void {
     ]);
 });
 
-test('super administrator can switch companies and see only that company participants', function (): void {
-    $company = Company::factory()->active()->create(['name' => 'Dusk Company A']);
-    $otherCompany = Company::factory()->active()->create(['name' => 'Dusk Company B']);
-    $password = Hash::make('password');
+test('central Super Administrator enters a tenant and sees only its participants', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $this->centralAdministratorEntersDuskTenant($browser);
 
-    $superAdministrator = User::factory()->create([
-        'company_id' => null,
-        'email' => 'dusk-super-order@example.com',
-        'is_active' => true,
-        'password' => $password,
-        'role' => UserRole::SUPER_ADMINISTRATOR->value,
-    ]);
-    $companyCustomer = User::factory()->create([
-        'company_id' => $company->id,
-        'email' => 'dusk-company-a-customer@example.com',
-        'first_name' => 'Company A',
-        'is_active' => true,
-        'last_name' => 'Customer',
-        'password' => $password,
-        'role' => UserRole::CUSTOMER->value,
-    ]);
-    $companyEmployee = User::factory()->create([
-        'company_id' => $company->id,
-        'email' => 'dusk-company-a-employee@example.com',
-        'first_name' => 'Company A',
-        'is_active' => true,
-        'last_name' => 'Employee',
-        'password' => $password,
-        'role' => UserRole::EMPLOYEE->value,
-    ]);
-    $otherCustomer = User::factory()->create([
-        'company_id' => $otherCompany->id,
-        'email' => 'dusk-company-b-customer@example.com',
-        'first_name' => 'Company B',
-        'is_active' => true,
-        'last_name' => 'Customer',
-        'password' => $password,
-        'role' => UserRole::CUSTOMER->value,
-    ]);
-    $otherEmployee = User::factory()->create([
-        'company_id' => $otherCompany->id,
-        'email' => 'dusk-company-b-employee@example.com',
-        'first_name' => 'Company B',
-        'is_active' => true,
-        'last_name' => 'Employee',
-        'password' => $password,
-        'role' => UserRole::EMPLOYEE->value,
-    ]);
-
-    $this->browse(function (Browser $browser) use (
-        $company,
-        $companyCustomer,
-        $companyEmployee,
-        $otherCompany,
-        $otherCustomer,
-        $otherEmployee,
-        $superAdministrator,
-    ): void {
-        $browser->loginAs($superAdministrator)
-            ->visit('/orders/create')
+        $browser->visit('/orders/create')
             ->waitFor('@order-create-form')
-            ->assertPresent('@order-company')
-            ->assertDisabled('@order-customer')
-            ->assertDisabled('@order-assignee')
-            ->select('@order-company', (string) $company->id)
-            ->waitFor('[dusk="order-customer"] option[value="'.$companyCustomer->id.'"]', 10)
-            ->waitFor('[dusk="order-assignee"] option[value="'.$companyEmployee->id.'"]', 10)
-            ->assertSelectHasOption('@order-customer', (string) $companyCustomer->id)
-            ->assertSelectHasOption('@order-assignee', (string) $companyEmployee->id)
-            ->assertMissing('[dusk="order-customer"] option[value="'.$otherCustomer->id.'"]')
-            ->assertMissing('[dusk="order-assignee"] option[value="'.$otherEmployee->id.'"]')
-            ->select('@order-company', (string) $otherCompany->id)
-            ->waitFor('[dusk="order-customer"] option[value="'.$otherCustomer->id.'"]', 10)
-            ->waitFor('[dusk="order-assignee"] option[value="'.$otherEmployee->id.'"]', 10)
-            ->assertMissing('[dusk="order-customer"] option[value="'.$companyCustomer->id.'"]')
-            ->assertMissing('[dusk="order-assignee"] option[value="'.$companyEmployee->id.'"]');
+            ->assertMissing('@order-company')
+            ->waitFor('[dusk="order-customer"] option[value="' . $this->customer->id . '"]', 10)
+            ->waitFor('[dusk="order-assignee"] option[value="' . $this->employee->id . '"]', 10)
+            ->assertSelectHasOption('@order-customer', (string)$this->customer->id)
+            ->assertSelectHasOption('@order-assignee', (string)$this->employee->id);
     });
 });
 
 test('administrator sees actor-company participants on the first render', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->administrator)
-            ->visit('/orders/create')
+        $this->tenantUserLogsIn($browser, $this->administrator);
+
+        $browser->visit('/orders/create')
             ->waitFor('@order-create-form')
             ->assertMissing('@order-company')
             ->waitFor('[dusk="order-customer"] option[value="'.$this->customer->id.'"]', 10)

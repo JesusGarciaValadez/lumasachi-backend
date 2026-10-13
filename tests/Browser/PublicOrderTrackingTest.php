@@ -8,82 +8,86 @@ use App\Enums\OrderLifecycleStatus;
 use App\Models\Order;
 use App\Models\OrderMotorInfo;
 use App\Models\ServiceCatalog;
-use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-uses(DuskTestCase::class, DatabaseTruncation::class);
+uses(DuskTestCase::class);
 
 beforeEach(function (): void {
-    $this->seed(ServiceCatalogSeeder::class);
+    $this->prepareDuskTenantFixture();
 
-    $this->order = Order::factory()->createQuietly([
-        'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
-        'title' => 'Dusk public order',
-    ]);
-
-    OrderMotorInfo::factory()->createQuietly([
-        'brand' => 'Honda',
-        'cylinder_count' => '4',
-        'liters' => '2.0',
-        'model' => 'Civic',
-        'order_id' => $this->order->id,
-        'year' => '2020',
-    ]);
-
-    $item = $this->order->items()->createQuietly([
-        'is_received' => true,
-        'item_type' => OrderItemType::EngineBlock->value,
-    ]);
-    $item->components()->createQuietly([
-        'component_name' => 'bearing_caps',
-        'is_received' => true,
-    ]);
-    $item->components()->createQuietly([
-        'component_name' => 'camshaft',
-        'is_received' => true,
-    ]);
-
-    foreach (['wash_block', 'replace_cam_bearings'] as $serviceKey) {
-        $catalogItem = ServiceCatalog::query()
-            ->where('service_key', $serviceKey)
-            ->firstOrFail();
-
-        $item->services()->createQuietly([
-            'base_price' => $catalogItem->base_price,
-            'is_authorized' => true,
-            'is_budgeted' => true,
-            'is_completed' => true,
-            'net_price' => $catalogItem->net_price,
-            'service_key' => $catalogItem->service_key,
+    $this->runInDuskTenantContext(function (): void {
+        $this->order = Order::factory()->createQuietly([
+            'lifecycle_status' => OrderLifecycleStatus::Delivered->value,
+            'title' => 'Dusk public order',
         ]);
-    }
 
-    $this->order->orderHistories()->createQuietly([
-        'created_by' => $this->order->created_by,
-        'event_type' => OrderHistoryEventType::Lifecycle->value,
-        'field_changed' => 'lifecycle_status',
-        'new_value' => OrderLifecycleStatus::Delivered,
-        'old_value' => OrderLifecycleStatus::ReadyForDelivery,
-    ]);
+        OrderMotorInfo::factory()->createQuietly([
+            'brand' => 'Honda',
+            'cylinder_count' => '4',
+            'liters' => '2.0',
+            'model' => 'Civic',
+            'order_id' => $this->order->id,
+            'year' => '2020',
+        ]);
 
-    $this->attachmentPath = 'dusk/' . Str::uuid7() . '.pdf';
-    $attachment = $this->order->attachments()->create([
-        'uuid' => (string)Str::uuid7(),
-        'file_name' => 'dusk-inspection.pdf',
-        'file_path' => $this->attachmentPath,
-        'file_size' => 24,
-        'mime_type' => 'application/pdf',
-        'uploaded_by' => $this->order->created_by,
-    ]);
-    Storage::disk('public')->put($attachment->file_path, '%PDF-1.4 dusk attachment');
+        $item = $this->order->items()->createQuietly([
+            'is_received' => true,
+            'item_type' => OrderItemType::EngineBlock->value,
+        ]);
+        $item->components()->createQuietly([
+            'component_name' => 'bearing_caps',
+            'is_received' => true,
+        ]);
+        $item->components()->createQuietly([
+            'component_name' => 'camshaft',
+            'is_received' => true,
+        ]);
+
+        foreach (['wash_block', 'replace_cam_bearings'] as $serviceKey) {
+            $catalogItem = ServiceCatalog::query()
+                ->where('service_key', $serviceKey)
+                ->firstOrFail();
+
+            $item->services()->createQuietly([
+                'base_price' => $catalogItem->base_price,
+                'is_authorized' => true,
+                'is_budgeted' => true,
+                'is_completed' => true,
+                'net_price' => $catalogItem->net_price,
+                'service_key' => $catalogItem->service_key,
+            ]);
+        }
+
+        $this->order->orderHistories()->createQuietly([
+            'created_by' => $this->order->created_by,
+            'event_type' => OrderHistoryEventType::Lifecycle->value,
+            'field_changed' => 'lifecycle_status',
+            'new_value' => OrderLifecycleStatus::Delivered,
+            'old_value' => OrderLifecycleStatus::ReadyForDelivery,
+        ]);
+
+        $this->attachmentPath = 'dusk/' . Str::uuid7() . '.pdf';
+        $attachment = $this->order->attachments()->create([
+            'uuid' => (string)Str::uuid7(),
+            'file_name' => 'dusk-inspection.pdf',
+            'file_path' => $this->attachmentPath,
+            'file_size' => 24,
+            'mime_type' => 'application/pdf',
+            'uploaded_by' => $this->order->created_by,
+        ]);
+        Storage::disk('tenant-private')->put($attachment->file_path, '%PDF-1.4 dusk attachment');
+    });
 });
 
 afterEach(function (): void {
-    Storage::disk('public')->delete($this->attachmentPath);
+    if (isset($this->attachmentPath)) {
+        $this->runInDuskTenantContext(function (): void {
+            Storage::disk('tenant-private')->delete($this->attachmentPath);
+        });
+    }
 });
 
 test('guest can open the public tracking page', function (): void {
@@ -132,6 +136,25 @@ test('guest can look up an order and see attachment actions', function (): void 
             ->assertSeeIn('@track-result', 'dusk-inspection.pdf')
             ->assertPresent('@attachment-preview-0')
             ->assertPresent('@attachment-download-0');
+    });
+});
+
+test('tracking on another company host does not fall back to this tenant order', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $browser->visit('http://other.dusk/orders/track')
+            ->type('@track-uuid', $this->order->uuid);
+        publicOrderTrackingSetDate($browser, $this->order->created_at->toDateString());
+        $browser->click('@track-submit')
+            ->waitFor('@track-error', 10)
+            ->waitUntilMissing('@track-result', 5)
+            ->assertSeeIn('@track-error', 'No order was found with those details.');
+
+        $browser->visit('http://tenant.dusk/orders/track')
+            ->type('@track-uuid', $this->order->uuid);
+        publicOrderTrackingSetDate($browser, $this->order->created_at->toDateString());
+        $browser->click('@track-submit')
+            ->waitFor('@track-result', 10)
+            ->assertSeeIn('@track-result', 'Dusk public order');
     });
 });
 

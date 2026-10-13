@@ -17,7 +17,8 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    // Stancl tenant cache isolation uses tags, so the default must be taggable (Redis outside tests).
+    'default' => env('TENANCY_CACHE_STORE', env('APP_ENV') === 'testing' ? env('CACHE_STORE', 'array') : 'redis'),
 
     /*
     |--------------------------------------------------------------------------

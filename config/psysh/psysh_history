@@ -1,0 +1,3 @@
+_HiStOrY_V2_
+$superAdmin1\040=\040App\134Models\134CentralSuperAdministrator::factory()->create([\012\040\040"first_name"\040=>\040"Jesús",\012\040\040"last_name"\040=>\040"Garcia",\012\040\040"email"\040=>\040"jesus.garciav@me.com",\012\040\040"password"\040=>\040\134Hash::make("_Asukal01_")\012]);
+exit

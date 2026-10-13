@@ -35,6 +35,11 @@ final class UserService
                 'type',
                 'locale',
             ]);
+
+            if (tenancy()->initialized) {
+                unset($attributes['company_id']);
+            }
+
             $attributes['uuid'] ??= Str::uuid7()->toString();
             $attributes['activated_at'] = (bool)($attributes['is_active'] ?? false) ? now() : null;
             $attributes['email_verified_at'] = null;
@@ -77,6 +82,10 @@ final class UserService
                 'type',
                 'locale',
             ]);
+
+            if (tenancy()->initialized) {
+                unset($attributes['company_id']);
+            }
 
             if (array_key_exists('password', $attributes) && blank($attributes['password'])) {
                 unset($attributes['password']);

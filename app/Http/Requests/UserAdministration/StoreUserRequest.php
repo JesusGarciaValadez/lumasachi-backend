@@ -31,14 +31,20 @@ final class StoreUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isTenantContext = tenancy()->initialized;
+
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'password_confirmation' => ['required', 'string'],
-            'company_id' => ['nullable', 'integer', 'exists:companies,id'],
-            'role' => ['required', Rule::enum(UserRole::class)],
+            'company_id' => $isTenantContext
+                ? ['prohibited']
+                : ['nullable', 'integer', 'exists:companies,id'],
+            'role' => $isTenantContext
+                ? ['required', Rule::in(UserRole::administrationValues(UserRole::ADMINISTRATOR))]
+                : ['required', Rule::enum(UserRole::class)],
             'phone_number' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'notes' => ['nullable', 'string', 'max:10000'],
@@ -49,6 +55,8 @@ final class StoreUserRequest extends FormRequest
             'preferences' => ['prohibited'],
             'email_verified_at' => ['prohibited'],
             'remember_token' => ['prohibited'],
+            'is_platform_support' => ['prohibited'],
+            'central_actor_uuid' => ['prohibited'],
         ];
     }
 

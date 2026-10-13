@@ -10,8 +10,6 @@ import {
     type Order,
     type OrderAttachmentsResponse,
     type OrderAttachmentsResponsePayload,
-    type OrderCreateCompanyCollectionPayload,
-    type OrderCreateCompanyOption,
     type OrderHistoryPage,
     type OrderHistoryPagePayload,
     type OrderMutationResponse,
@@ -60,9 +58,8 @@ export interface OrderApi {
     history(orderUuid: string, url?: string): Promise<OrderHistoryPage>;
     attachments(orderUuid: string): Promise<OrderAttachmentsResponse>;
     catalog(): Promise<CatalogPayload>;
-    companies(): Promise<OrderCreateCompanyOption[]>;
-    employees(companyId?: number): Promise<OrderParticipantPayload[]>;
-    customers(companyId?: number): Promise<OrderParticipantPayload[]>;
+    employees(): Promise<OrderParticipantPayload[]>;
+    customers(): Promise<OrderParticipantPayload[]>;
     track(payload: TrackOrderPayload, signal?: AbortSignal): Promise<PublicOrder>;
 }
 
@@ -154,12 +151,30 @@ function apiUrl(name: string, orderUuid?: string, query?: Record<string, string 
     return `${url}?${queryString}`;
 }
 
+function csrfToken(): string | undefined {
+    if (typeof document === 'undefined') {
+        return undefined;
+    }
+
+    const xsrfCookie = document.cookie
+        .split(';')
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith('XSRF-TOKEN='));
+
+    return xsrfCookie ? decodeURIComponent(xsrfCookie.slice('XSRF-TOKEN='.length)) : undefined;
+}
+
 async function request<T>(url: string, method: 'GET' | 'POST', body?: unknown, signal?: AbortSignal): Promise<T> {
     const headers: HeadersInit = {
         Accept: 'application/json',
         'Accept-Language': currentLocale(),
         'X-Requested-With': 'XMLHttpRequest',
     };
+    const token = csrfToken();
+
+    if (token) {
+        headers['X-XSRF-TOKEN'] = token;
+    }
 
     const options: RequestInit = {
         method,
@@ -279,26 +294,12 @@ export function useOrderApi(): OrderApi {
             return request<CatalogPayload>(apiUrl('api.catalog.engine-options'), 'GET');
         },
 
-        async companies() {
-            return unwrapCollection(await request<OrderCreateCompanyCollectionPayload>(apiUrl('api.users.companies'), 'GET'));
+        async employees() {
+            return unwrapCollection(await request<OrderParticipantCollectionPayload>(apiUrl('api.users.employees'), 'GET'));
         },
 
-        async employees(companyId) {
-            return unwrapCollection(
-                await request<OrderParticipantCollectionPayload>(
-                    apiUrl('api.users.employees', undefined, companyId === undefined ? undefined : { company_id: companyId }),
-                    'GET',
-                ),
-            );
-        },
-
-        async customers(companyId) {
-            return unwrapCollection(
-                await request<OrderParticipantCollectionPayload>(
-                    apiUrl('api.users.customers', undefined, companyId === undefined ? undefined : { company_id: companyId }),
-                    'GET',
-                ),
-            );
+        async customers() {
+            return unwrapCollection(await request<OrderParticipantCollectionPayload>(apiUrl('api.users.customers'), 'GET'));
         },
 
         async track(payload, signal) {

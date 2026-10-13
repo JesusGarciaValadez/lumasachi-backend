@@ -10,9 +10,11 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 
-defineProps<{
+const props = defineProps<{
     status?: string;
     canResetPassword: boolean;
+    loginUrl?: string;
+    passwordResetUrl?: string;
 }>();
 
 const { t } = useI18n();
@@ -24,7 +26,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('login'), {
+    form.post(props.loginUrl ?? route('login'), {
         onFinish: () => form.reset('password'),
     });
 };
@@ -59,7 +61,12 @@ const submit = () => {
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
                         <Label for="password">{{ t('auth.password') }}</Label>
-                        <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm" :tabindex="5">
+                        <TextLink
+                            v-if="props.canResetPassword"
+                            :href="props.passwordResetUrl ?? route('password.request')"
+                            :tabindex="5"
+                            class="text-sm"
+                        >
                             {{ t('auth.forgot_password') }}
                         </TextLink>
                     </div>

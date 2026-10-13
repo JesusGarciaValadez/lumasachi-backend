@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import type { BreadcrumbItemType } from '@/types';
+import type { AppPageProps, BreadcrumbItemType } from '@/types';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const page = usePage<AppPageProps>();
+const isPlatformSupport = computed(() => page.props.is_platform_support === true);
+const { t } = useI18n();
 
 withDefaults(
     defineProps<{
@@ -23,5 +30,15 @@ withDefaults(
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
         </div>
+        <Link
+            v-if="isPlatformSupport"
+            :href="route('tenant.central-entry.exit')"
+            as="button"
+            class="ml-auto rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+            dusk="central-support-exit"
+            method="post"
+        >
+            {{ t('common.exit_platform_support') }}
+        </Link>
     </header>
 </template>
