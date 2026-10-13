@@ -24,8 +24,16 @@ final class LocaleResolver
 
     public function resolve(Request $request): string
     {
+        $centralHosts = array_map(
+            static fn(string $host): string => mb_strtolower(mb_trim($host)),
+            config('tenancy.central_hosts', []),
+        );
+        $userGuard = in_array(mb_strtolower($request->getHost()), $centralHosts, true)
+            ? 'central'
+            : null;
+
         $candidates = [
-            $request->user()?->getRawOriginal('locale'),
+            $request->user($userGuard)?->getRawOriginal('locale'),
             $request->hasSession() ? $request->session()->get(self::SESSION_KEY) : null,
             $request->cookie(self::COOKIE_NAME),
             $this->acceptLanguage($request->header('Accept-Language')),

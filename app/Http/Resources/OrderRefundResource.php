@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\OrderRefund;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin OrderRefund */
 final class OrderRefundResource extends JsonResource
 {
     /** @return array<string, mixed> */

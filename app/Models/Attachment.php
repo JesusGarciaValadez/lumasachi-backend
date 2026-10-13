@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Observers\AttachmentObserver;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\AttachmentFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
 final class Attachment extends Model
 {
     /** @use HasFactory<AttachmentFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     // File type constants
     public const TYPE_IMAGE = 'image';
@@ -240,11 +241,11 @@ final class Attachment extends Model
     // Helper methods
 
     /**
-     * Get the public URL of the file
+     * Get the authenticated tenant download URL of the file.
      */
     public function getUrl(): string
     {
-        return Storage::disk('public')->url($this->file_path);
+        return route('api.attachments.download', ['attachment' => $this->uuid]);
     }
 
     /**
@@ -313,8 +314,8 @@ final class Attachment extends Model
     public function delete(): bool
     {
         // Delete the physical file
-        if (Storage::disk('public')->exists($this->file_path)) {
-            Storage::disk('public')->delete($this->file_path);
+        if (Storage::disk('tenant-private')->exists($this->file_path)) {
+            Storage::disk('tenant-private')->delete($this->file_path);
         }
 
         // Delete the database record

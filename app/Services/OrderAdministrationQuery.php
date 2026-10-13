@@ -59,6 +59,24 @@ final class OrderAdministrationQuery
     public function paginate(User $actor, array $filters): LengthAwarePaginator
     {
         $orderTable = (new Order)->getTable();
+        $userColumns = tenancy()->initialized
+            ? 'id,uuid,first_name,last_name,role'
+            : 'id,uuid,company_id,first_name,last_name,role';
+        $relations = [
+            "customer:{$userColumns}",
+            'assignedTo:id,uuid,first_name,last_name',
+            'payments:id,order_id,amount',
+            'refunds:id,uuid,order_id,amount,status',
+            'services' => function (Relation $services): void {
+                $services->getQuery()->select([
+                    'order_services.id',
+                    'order_services.order_item_id',
+                    'order_services.net_price',
+                    'order_services.is_completed',
+                ]);
+            },
+        ];
+
         $query = $this->scoped($actor)
             ->select([
                 "{$orderTable}.id",
@@ -71,21 +89,7 @@ final class OrderAdministrationQuery
                 "{$orderTable}.priority",
                 "{$orderTable}.created_at",
             ])
-            ->with([
-                'customer:id,uuid,company_id,first_name,last_name,role',
-                'customer.company:id,uuid,name',
-                'assignedTo:id,uuid,first_name,last_name',
-                'payments:id,order_id,amount',
-                'refunds:id,uuid,order_id,amount,status',
-                'services' => function (Relation $services): void {
-                    $services->getQuery()->select([
-                        'order_services.id',
-                        'order_services.order_item_id',
-                        'order_services.net_price',
-                        'order_services.is_completed',
-                    ]);
-                },
-            ]);
+            ->with($relations);
 
         $this->applyFilters($query, $filters);
 
@@ -103,6 +107,10 @@ final class OrderAdministrationQuery
      */
     public function companies(User $actor): Collection
     {
+        if (tenancy()->initialized) {
+            return collect();
+        }
+
         $customerIds = $this->scoped($actor)
             ->whereNotNull('customer_id')
             ->select('customer_id');
@@ -150,17 +158,17 @@ final class OrderAdministrationQuery
         $title = mb_trim((string)($filters['title'] ?? ''));
 
         if ($title !== '') {
-            $column = $query->getQuery()->getGrammar()->wrap($query->qualifyColumn('title'));
             $normalizedTitle = Str::transliterate(mb_strtolower($title));
             $driver = config('database.connections.' . config('database.default') . '.driver');
-            $expression = $driver === 'pgsql'
-                ? "unaccent(lower({$column}))"
-                : "lower({$column})";
 
-            $query->whereRaw("{$expression} LIKE ?", ["%{$normalizedTitle}%"]);
+            if ($driver === 'pgsql') {
+                $query->whereRaw('unaccent(lower(orders.title)) LIKE ?', ["%{$normalizedTitle}%"]);
+            } else {
+                $query->whereRaw('lower(orders.title) LIKE ?', ["%{$normalizedTitle}%"]);
+            }
         }
 
-        if (($companyId = $filters['company_id'] ?? null) !== null && $companyId !== '') {
+        if (!tenancy()->initialized && ($companyId = $filters['company_id'] ?? null) !== null && $companyId !== '') {
             $customerIds = User::query()
                 ->where('company_id', $companyId)
                 ->where('role', UserRole::CUSTOMER->value)
@@ -204,13 +212,13 @@ final class OrderAdministrationQuery
 
         $paymentTotals = OrderPayment::query()
             ->select("{$paymentTable}.order_id")
-            ->selectRaw("COALESCE(SUM({$paymentTable}.amount), 0) AS total_paid")
+            ->selectRaw('COALESCE(SUM(order_payments.amount), 0) AS total_paid')
             ->groupBy("{$paymentTable}.order_id");
         $completedTotals = OrderService::query()
             ->join($itemTable, "{$itemTable}.id", '=', "{$serviceTable}.order_item_id")
             ->where("{$serviceTable}.is_completed", true)
             ->select("{$itemTable}.order_id")
-            ->selectRaw("COALESCE(SUM({$serviceTable}.net_price), 0) AS completed_total")
+            ->selectRaw('COALESCE(SUM(order_services.net_price), 0) AS completed_total')
             ->groupBy("{$itemTable}.order_id");
 
         $query

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 });
 it('checks complete attachment lifecycle with order', function () {
     // Create users
@@ -65,11 +65,11 @@ it('checks complete attachment lifecycle with order', function () {
     // Delete a specific file
     $pdfAttachment = $pdfFiles->first();
     $pdfPath = $pdfAttachment->file_path;
-    Storage::disk('public')->assertExists($pdfPath);
+    Storage::disk('tenant-private')->assertExists($pdfPath);
 
     $result = $order->detach($pdfAttachment->id);
     expect($result)->toBeTrue();
-    Storage::disk('public')->assertMissing($pdfPath);
+    Storage::disk('tenant-private')->assertMissing($pdfPath);
 
     // Verify that there are 3 files left
     $order->refresh();
@@ -84,7 +84,7 @@ it('checks complete attachment lifecycle with order', function () {
 
     // Verify that all files were deleted
     foreach ($remainingPaths as $path) {
-        Storage::disk('public')->assertMissing($path);
+        Storage::disk('tenant-private')->assertMissing($path);
     }
 });
 it('checks attachments with order history', function () {
@@ -113,7 +113,7 @@ it('checks attachments with order history', function () {
     // Verify that the file is correctly stored
     $expectedPath = 'attachments/OrderHistory/' . $history->id;
     $this->assertStringContainsString($expectedPath, $attachment->file_path);
-    Storage::disk('public')->assertExists($attachment->file_path);
+    Storage::disk('tenant-private')->assertExists($attachment->file_path);
 
     // Verify polymorphic relationship
     expect($attachment->attachable)->toBeInstanceOf(OrderHistory::class);

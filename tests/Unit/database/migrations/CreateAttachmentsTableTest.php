@@ -57,7 +57,7 @@ it('checks if migration can be rolled back and rerun', function () {
     expect(Schema::hasTable('attachments'))->toBeFalse();
 
     // Recreate the table
-    $migration = include base_path('database/migrations/2025_07_27_172006_create_attachments_table.php');
+    $migration = include base_path('database/migrations/legacy/2025_07_27_172006_create_attachments_table.php');
     $migration->up();
 
     // Table should exist again

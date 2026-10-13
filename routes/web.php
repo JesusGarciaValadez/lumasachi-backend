@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Central\CentralTenantAccessController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OrderPageController;
 use App\Http\Controllers\PublicOrderPageController;
@@ -12,6 +13,16 @@ use App\Services\UserAdministrationQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::get('/central/entry', [CentralTenantAccessController::class, 'prompt'])
+    ->name('tenant.central-entry.prompt');
+
+Route::post('/central/entry', [CentralTenantAccessController::class, 'enter'])
+    ->name('tenant.central-entry.enter');
+
+Route::post('/central/exit', [CentralTenantAccessController::class, 'exit'])
+    ->middleware('auth:web')
+    ->name('tenant.central-entry.exit');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');

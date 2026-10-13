@@ -13,7 +13,7 @@ use Laravel\Sanctum\Sanctum;
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 it('shows attachments only for attachment related history entries', function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
 
     // Create admin user
     $admin = User::factory()->create(['role' => UserRole::ADMINISTRATOR->value]);

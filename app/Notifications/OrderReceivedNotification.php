@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Jobs\Middleware\TenantNotificationContext;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,6 +26,12 @@ final class OrderReceivedNotification extends Notification implements ShouldQueu
     public function via(object $notifiable): array
     {
         return ['mail'];
+    }
+
+    /** @return list<class-string<TenantNotificationContext>> */
+    public function middleware(object $notifiable, string $channel): array
+    {
+        return [TenantNotificationContext::class];
     }
 
     public function toMail(object $notifiable): MailMessage

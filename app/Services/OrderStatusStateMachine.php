@@ -101,9 +101,9 @@ final class OrderStatusStateMachine
      * @throws InvalidArgumentException
      */
     public function setDisposition(
-        Order   $order,
+        Order $order,
         OrderDispositionStatus $disposition,
-        User    $actor,
+        User  $actor,
         ?string $note = null,
     ): Order
     {
@@ -148,7 +148,7 @@ final class OrderStatusStateMachine
             return;
         }
 
-        $currentValue = $currentStatus?->value ?? 'Unknown';
+        $currentValue = $currentStatus === null ? 'Unknown' : $currentStatus->value;
 
         throw new InvalidArgumentException(
             "Invalid lifecycle transition from [{$currentValue}] to [{$newStatus->value}]."

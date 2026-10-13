@@ -17,8 +17,14 @@ final class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        $this->localeResolver->apply($request);
+        $previousLocale = app()->getLocale();
 
-        return $next($request);
+        try {
+            $this->localeResolver->apply($request);
+
+            return $next($request);
+        } finally {
+            app()->setLocale($previousLocale);
+        }
     }
 }

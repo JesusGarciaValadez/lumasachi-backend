@@ -14,15 +14,16 @@ use App\Models\OrderRefund;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use UnexpectedValueException;
 
 final class OrderRefundService
 {
     public function requestRefund(
-        Order  $order,
+        Order $order,
         string|int|float $amount,
         string $reason,
         ?OrderPayment $sourcePayment,
-        User   $requester,
+        User  $requester,
     ): OrderRefund
     {
         if ($order->dispositionStatus() === null) {
@@ -108,10 +109,18 @@ final class OrderRefundService
             $order = Order::query()->lockForUpdate()->findOrFail($lockedRefund->order_id);
             $order->unsetRelation('payments');
             $received = $order->totalPaid();
-            $processed = (string)$order->refunds()
+            $processed = $order->refunds()
                 ->where('status', RefundStatus::Processed->value)
                 ->whereKeyNot($lockedRefund->id)
-                ->sum('amount');
+                ->get(['amount'])
+                ->reduce(
+                    fn(string $total, OrderRefund $processedRefund): string => bcadd(
+                        $total,
+                        $this->decimalAmount($processedRefund->amount),
+                        2,
+                    ),
+                    '0.00',
+                );
             $available = bcsub($received, $processed, 2);
 
             if (bccomp((string)$lockedRefund->amount, $available, 2) === 1) {
@@ -131,6 +140,7 @@ final class OrderRefundService
         });
     }
 
+    /** @return numeric-string */
     private function normalizeAmount(string|int|float $amount): string
     {
         if (!is_numeric((string)$amount)) {
@@ -146,11 +156,21 @@ final class OrderRefundService
         return $normalizedAmount;
     }
 
+    /** @return numeric-string */
+    private function decimalAmount(mixed $amount): string
+    {
+        if (!is_string($amount) || !is_numeric($amount)) {
+            throw new UnexpectedValueException('Persisted refund amounts must be numeric decimal strings.');
+        }
+
+        return $amount;
+    }
+
     private function recordHistory(
-        OrderRefund  $refund,
+        OrderRefund $refund,
         ?RefundStatus $oldStatus,
         RefundStatus $newStatus,
-        User         $actor,
+        User        $actor,
     ): void
     {
         OrderHistory::create([

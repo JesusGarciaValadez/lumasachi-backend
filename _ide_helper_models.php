@@ -13,40 +13,30 @@
 
 namespace App\Models{
 /**
- * @property int $id
- * @property string $uuid
- * @property string $attachable_type
- * @property int $attachable_id
- * @property string $file_name
- * @property string $file_path
- * @property int $file_size
- * @property string $mime_type
- * @property int $uploaded_by
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Model $attachable
- * @property-read \App\Models\User|null $uploadedBy
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment documents()
- * @method static \Database\Factories\AttachmentFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment images()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereAttachableId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereAttachableType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFileName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFilePath($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereFileSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereMimeType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUploadedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Attachment whereUuid($value)
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @method static \Database\Factories\CentralSuperAdministratorFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralSuperAdministrator withoutTrashed()
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	final class IdeHelperAttachment {}
+	final class IdeHelperCentralSuperAdministrator {}
+}
+
+namespace App\Models{
+/**
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralTenantAccessGrant newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralTenantAccessGrant newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CentralTenantAccessGrant query()
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	final class IdeHelperCentralTenantAccessGrant {}
 }
 
 namespace App\Models{
@@ -68,16 +58,12 @@ namespace App\Models{
  * @property string|null $contact_email
  * @property string|null $contact_phone
  * @property string|null $notes
- * @property array<array-key, mixed>|null $settings
+ * @property string|null $settings
  * @property string|null $description
  * @property bool $is_active
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $activeUsers
- * @property-read int|null $active_users_count
- * @property-read string $full_address
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
- * @property-read int|null $users_count
+ * @property-read \App\Models\Tenant|null $tenant
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company active()
  * @method static \Database\Factories\CompanyFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company inactive()
@@ -114,445 +100,18 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @property int $id
- * @property string $uuid
- * @property int $customer_id
- * @property int $assigned_to
- * @property string $title
- * @property string $description
- * @property \App\Enums\OrderPriority $priority
- * @property \Carbon\CarbonImmutable|null $estimated_completion
- * @property \Carbon\CarbonImmutable|null $actual_completion
- * @property string|null $notes
- * @property int $created_by
- * @property int|null $updated_by
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property \App\Enums\OrderLifecycleStatus $lifecycle_status
- * @property \App\Enums\OrderDispositionStatus|null $disposition_status
- * @property-read \App\Models\User|null $assignedTo
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attachment> $attachments
- * @property-read int|null $attachments_count
- * @property-read \App\Models\User|null $createdBy
- * @property-read \App\Models\User|null $customer
- * @property \App\Enums\OrderStatus|null $status
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItem> $items
- * @property-read int|null $items_count
- * @property-read \App\Models\OrderMotorInfo|null $motorInfo
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderHistory> $orderHistories
- * @property-read int|null $order_histories_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderPayment> $payments
- * @property-read int|null $payments_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderRefund> $refunds
- * @property-read int|null $refunds_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderService> $services
- * @property-read int|null $services_count
- * @property-read \App\Models\User|null $updatedBy
- * @method static \Database\Factories\OrderFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereActualCompletion($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereAssignedTo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCustomerId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereDispositionStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereEstimatedCompletion($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereLifecycleStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order wherePriority($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereTitle($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrder {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_id
- * @property string $field_changed
- * @property mixed|null $old_value
- * @property mixed|null $new_value
- * @property string|null $comment
- * @property int $created_by
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property \App\Enums\OrderHistoryEventType $event_type
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attachment> $attachments
- * @property-read int|null $attachments_count
- * @property-read \App\Models\User|null $createdBy
- * @property-read string $description
- * @property-read \App\Models\Order $order
- * @property-read \App\Models\Order $orders
- * @method static \Database\Factories\OrderHistoryFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereComment($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereCreatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereEventType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereFieldChanged($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereNewValue($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereOldValue($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHistory whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderHistory {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_id
- * @property \App\Enums\OrderItemType $item_type
- * @property bool $is_received
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderItemComponent> $components
- * @property-read int|null $components_count
- * @property-read \App\Models\Order $order
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderService> $services
- * @property-read int|null $services_count
- * @method static \Database\Factories\OrderItemFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereIsReceived($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereItemType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItem whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderItem {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_item_id
- * @property string $component_name
- * @property bool $is_received
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\OrderItem $orderItem
- * @method static \Database\Factories\OrderItemComponentFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereComponentName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereIsReceived($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereOrderItemId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderItemComponent whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderItemComponent {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_id
- * @property string|null $brand
- * @property string|null $liters
- * @property string|null $year
- * @property string|null $model
- * @property string|null $cylinder_count
- * @property string|null $center_torque
- * @property string|null $rod_torque
- * @property string|null $first_gap
- * @property string|null $second_gap
- * @property string|null $third_gap
- * @property string|null $center_clearance
- * @property string|null $rod_clearance
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\Order $order
- * @method static \Database\Factories\OrderMotorInfoFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereBrand($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCenterClearance($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCenterTorque($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereCylinderCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereFirstGap($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereLiters($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereModel($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereRodClearance($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereRodTorque($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereSecondGap($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereThirdGap($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereUuid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderMotorInfo whereYear($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderMotorInfo {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_id
- * @property numeric $amount
- * @property \Carbon\CarbonImmutable $received_at
- * @property int|null $created_by
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\User|null $createdBy
- * @property-read \App\Models\Order $order
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderRefund> $refunds
- * @property-read int|null $refunds_count
- * @method static \Database\Factories\OrderPaymentFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereCreatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereReceivedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPayment whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderPayment {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_id
- * @property int|null $source_payment_id
- * @property numeric $amount
- * @property \App\Enums\RefundStatus $status
- * @property string $reason
- * @property int|null $requested_by
- * @property \Carbon\CarbonImmutable $requested_at
- * @property int|null $approved_by
- * @property \Carbon\CarbonImmutable|null $approved_at
- * @property int|null $rejected_by
- * @property \Carbon\CarbonImmutable|null $rejected_at
- * @property int|null $processed_by
- * @property \Carbon\CarbonImmutable|null $processed_at
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\User|null $approvedBy
- * @property-read \App\Models\Order $order
- * @property-read \App\Models\User|null $processedBy
- * @property-read \App\Models\User|null $rejectedBy
- * @property-read \App\Models\User|null $requestedBy
- * @property-read \App\Models\OrderPayment|null $sourcePayment
- * @method static \Database\Factories\OrderRefundFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereApprovedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereApprovedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereProcessedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereProcessedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereReason($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereRejectedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereRejectedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereRequestedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereRequestedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereSourcePaymentId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderRefund whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderRefund {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int $order_item_id
- * @property string $service_key
- * @property string|null $measurement
- * @property bool $is_budgeted
- * @property bool $is_authorized
- * @property bool $is_completed
- * @property string|null $notes
- * @property numeric|null $base_price
- * @property numeric|null $net_price
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property int|null $updated_by
- * @property-read \App\Models\ServiceCatalog|null $catalogItem
- * @property-read \App\Models\OrderItem $orderItem
- * @method static \Database\Factories\OrderServiceFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereBasePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsAuthorized($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsBudgeted($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereIsCompleted($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereMeasurement($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereNetPrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereOrderItemId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereServiceKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUpdatedBy($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderService whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperOrderService {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property string $service_key
- * @property string $service_name_key
- * @property \App\Enums\OrderItemType $item_type
- * @property numeric $base_price
- * @property numeric $tax_percentage
- * @property bool $requires_measurement
- * @property bool $is_active
- * @property int $display_order
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read float $net_price
- * @property-read string $service_name
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog active()
- * @method static \Database\Factories\ServiceCatalogFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog forItemType(\App\Enums\OrderItemType $type)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereBasePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereDisplayOrder($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereItemType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereRequiresMeasurement($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereServiceKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereServiceNameKey($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereTaxPercentage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ServiceCatalog whereUuid($value)
- * @mixin \Eloquent
- */
-	#[\AllowDynamicProperties]
-	final class IdeHelperServiceCatalog {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property string $uuid
- * @property int|null $company_id
- * @property string $first_name
- * @property string $last_name
- * @property string $email
- * @property \Carbon\CarbonImmutable|null $email_verified_at
- * @property string $password
- * @property \App\Enums\UserRole $role
- * @property string|null $phone_number
- * @property bool $is_active
- * @property string|null $notes
- * @property \App\Enums\UserType|null $type
- * @property string|null $preferences
- * @property string|null $remember_token
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property string|null $locale
- * @property \Carbon\CarbonImmutable|null $activated_at
- * @property \Carbon\CarbonImmutable|null $deleted_at
- * @property bool $must_change_password
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $assignedOrders
- * @property-read int|null $assigned_orders_count
  * @property-read \App\Models\Company|null $company
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $createdOrders
- * @property-read int|null $created_orders_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $customerOrders
- * @property-read int|null $customer_orders_count
- * @property-read string $full_name
- * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
- * @property-read int|null $notifications_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read int|null $tokens_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User customers()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User employees()
- * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereActivatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCompanyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerifiedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereFirstName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereLastName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereLocale($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereMustChangePassword($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereNotes($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePassword($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePhoneNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePreferences($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRole($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUuid($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Stancl\Tenancy\Database\Models\Domain> $domains
+ * @property-read int|null $domains_count
+ * @method static \Stancl\Tenancy\Database\TenantCollection<int, static> all($columns = ['*'])
+ * @method static \Database\Factories\TenantFactory factory($count = null, $state = [])
+ * @method static \Stancl\Tenancy\Database\TenantCollection<int, static> get($columns = ['*'])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tenant newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tenant newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tenant query()
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	final class IdeHelperUser {}
+	final class IdeHelperTenant {}
 }
 

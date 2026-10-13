@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Observers\OrderServiceObserver;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderServiceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class OrderService extends Model
 {
     /** @use HasFactory<OrderServiceFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     protected $fillable = [
         'order_item_id',

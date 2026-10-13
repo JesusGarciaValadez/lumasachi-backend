@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderPaymentFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class OrderPayment extends Model
 {
     /** @use HasFactory<OrderPaymentFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     /** @var list<string> */
     protected $fillable = [

@@ -35,6 +35,9 @@ export type AppPageProps<T extends Record<string, unknown> = Record<string, unkn
     can_view_users?: boolean;
     can_create_user?: boolean;
     can_create_order?: boolean;
+    is_tenant_context?: boolean;
+    current_company_name?: string | null;
+    is_platform_support?: boolean;
     flash?: {
         success?: string | null;
         error?: string | null;

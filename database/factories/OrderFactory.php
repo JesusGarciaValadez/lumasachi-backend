@@ -21,7 +21,7 @@ final class OrderFactory extends Factory
 
     public function definition(): array
     {
-        $staff = User::factory();
+        $staff = User::factory()->state(['role' => UserRole::EMPLOYEE]);
 
         return [
             'uuid' => (string) Str::uuid7(),

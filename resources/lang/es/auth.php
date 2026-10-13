@@ -23,5 +23,5 @@ return [
     'registration_verification_email' => 'Este registro se creó con el correo electrónico :email.',
     'registration_verification_intro' => 'Confirma tu correo electrónico para activar tu cuenta de Lumasachi.',
     'registration_verification_action' => 'Confirmar registro',
-    'registration_verification_password' => 'Después de confirmar, se te pedirá cambiar la contraseña temporal proporcionada por el administrador.',
+    'registration_verification_password' => 'Después de confirmar, se te pedirá que elijas tu contraseña.',
 ];

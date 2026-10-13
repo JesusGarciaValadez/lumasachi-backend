@@ -6,8 +6,8 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -22,12 +22,22 @@ final class UserAdministrationQuery
     {
         $query = User::query();
 
+        if (tenancy()->initialized) {
+            if (!$actor->isPlatformSupport()) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where('is_platform_support', false);
+        }
+
         if ($actor->isSuperAdministrator()) {
             return $query;
         }
 
-        if ($actor->isAdministrator() && $actor->company_id !== null) {
-            return $query->where('company_id', $actor->company_id);
+        $companyId = $actor->getRawOriginal('company_id');
+
+        if ($actor->isAdministrator() && $companyId !== null) {
+            return $query->where('company_id', $companyId);
         }
 
         return $query->whereRaw('1 = 0');
@@ -41,20 +51,16 @@ final class UserAdministrationQuery
      */
     public function paginate(User $actor, array $filters): LengthAwarePaginator
     {
-        $query = $this->scoped($actor)
-            ->select([
-                'id',
-                'uuid',
-                'company_id',
-                'first_name',
-                'last_name',
-                'role',
-                'type',
-                'is_active',
-                'activated_at',
-            ])
-            ->with('company:id,uuid,name');
-
+        $query = $this->scoped($actor)->select([
+            'id',
+            'uuid',
+            'first_name',
+            'last_name',
+            'role',
+            'type',
+            'is_active',
+            'activated_at',
+        ]);
         $this->applyFilters($query, $filters, $actor);
 
         return $query
@@ -76,7 +82,6 @@ final class UserAdministrationQuery
             ->select([
                 'id',
                 'uuid',
-                'company_id',
                 'first_name',
                 'last_name',
                 'role',
@@ -84,7 +89,6 @@ final class UserAdministrationQuery
                 'is_active',
                 'activated_at',
             ])
-            ->with('company:id,uuid,name')
             ->where('is_active', true)
             ->latest('created_at')
             ->latest('id')
@@ -99,7 +103,7 @@ final class UserAdministrationQuery
      */
     public function companies(User $actor): Collection
     {
-        if (!$actor->isSuperAdministrator()) {
+        if (tenancy()->initialized || !$actor->isSuperAdministrator()) {
             return collect();
         }
 
@@ -124,13 +128,13 @@ final class UserAdministrationQuery
             $value = mb_trim((string)($filters[$field] ?? ''));
 
             if ($value !== '') {
-                $column = $query->getQuery()->getGrammar()->wrap($field);
                 $normalizedValue = Str::transliterate(mb_strtolower($value));
-                $expression = $query->getConnection()->getDriverName() === 'pgsql'
-                    ? "unaccent(lower({$column}))"
-                    : "lower({$column})";
 
-                $query->whereRaw("{$expression} LIKE ?", ["%{$normalizedValue}%"]);
+                if (config('database.connections.' . config('database.default') . '.driver') === 'pgsql') {
+                    $query->whereRaw("unaccent(lower(users.{$field})) LIKE ?", ["%{$normalizedValue}%"]);
+                } else {
+                    $query->whereRaw("lower(users.{$field}) LIKE ?", ["%{$normalizedValue}%"]);
+                }
             }
         }
 
@@ -148,7 +152,7 @@ final class UserAdministrationQuery
             default => $query->where('is_active', true),
         };
 
-        if ($actor->isSuperAdministrator() && array_key_exists('company_id', $filters)) {
+        if (!tenancy()->initialized && $actor->isSuperAdministrator() && array_key_exists('company_id', $filters)) {
             $query->where('company_id', $filters['company_id']);
         }
     }

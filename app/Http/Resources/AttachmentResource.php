@@ -24,7 +24,6 @@ final class AttachmentResource extends JsonResource
             'attachable_type' => $this->attachable_type,
             'attachable_id' => $this->attachable_id,
             'file_name' => $this->file_name,
-            'file_path' => $this->file_path,
             'mime_type' => $this->mime_type,
             'file_size' => $this->file_size,
             'human_file_size' => $this->getHumanReadableSize(),

@@ -13,6 +13,7 @@ use App\Enums\OrderStatus;
 use App\Enums\RefundStatus;
 use App\Observers\OrderHistoryObserver;
 use App\Traits\HasAttachments;
+use App\Traits\UsesTenantConnection;
 use BackedEnum;
 use Carbon\Carbon;
 use Database\Factories\OrderHistoryFactory;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @mixin IdeHelperOrderHistory
@@ -29,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class OrderHistory extends Model
 {
     /** @use HasFactory<OrderHistoryFactory> */
-    use HasAttachments, HasFactory, HasUuids;
+    use HasAttachments, HasFactory, HasUuids, UsesTenantConnection;
 
     /**
      * Available fields that can be tracked
@@ -121,8 +123,14 @@ final class OrderHistory extends Model
      */
     protected $casts = [
         'uuid' => 'string',
+        'central_actor_uuid' => 'string',
         'event_type' => OrderHistoryEventType::class,
         // Dynamic casting will be handled by accessors/mutators
+    ];
+
+    /** @var list<string> */
+    protected $hidden = [
+        'central_actor_uuid',
     ];
 
     public static function eventTypeFor(string $field, mixed $newValue = null): OrderHistoryEventType
@@ -240,6 +248,13 @@ final class OrderHistory extends Model
     protected static function booted(): void
     {
         self::creating(function (OrderHistory $history): void {
+            $actor = Auth::guard('web')->user();
+
+            if ($actor instanceof User && $actor->isPlatformSupport()) {
+                $history->setAttribute('created_by', $actor->id);
+                $history->setAttribute('central_actor_uuid', $actor->central_actor_uuid);
+            }
+
             if ($history->event_type !== null) {
                 return;
             }

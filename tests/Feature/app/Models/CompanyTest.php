@@ -3,82 +3,61 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use Illuminate\Support\ConfigurationUrlParser;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Tests\Support\Tenancy\DisposablePostgresDatabases;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+require_once __DIR__ . '/../../../Support/Tenancy/DisposablePostgresDatabases.php';
 
-it('checks if create company', function () {
-    $companyData = [
-        'name' => 'Test Company',
-        'email' => 'test@example.com',
-        'phone' => '1234567890',
-        'address' => '123 Test Street',
-        'city' => 'Test City',
-        'state' => 'Test State',
-        'postal_code' => '12345',
-        'country' => 'Test Country',
-        'website' => 'http://www.test.com',
-        'description' => 'A test company',
-        'is_active' => true,
-        'contact_person' => 'John Doe',
-        'contact_email' => 'john@example.com',
-        'contact_phone' => '9876543210',
-    ];
+it('creates and manages companies in an isolated central registry database', function (): void {
+    $disposableDatabases = new DisposablePostgresDatabases();
+    $centralConnectionName = 'central_company_model_test';
+    $originalCentralConnectionName = config('tenancy.database.central_connection');
+    $originalCentralConnectionConfiguration = config('database.connections.' . $centralConnectionName);
 
-    $company = Company::create($companyData);
+    try {
+        $disposableDatabases->assertCanProvisionTestTenantDatabases();
+        [$centralDatabaseName] = $disposableDatabases->createPair();
+        $centralConfiguration = (new ConfigurationUrlParser())->parseConfiguration(DB::connection()->getConfig());
+        unset($centralConfiguration['url']);
+        $centralConfiguration['database'] = $centralDatabaseName;
+        $centralConfiguration['name'] = $centralConnectionName;
+        config([
+            'database.connections.' . $centralConnectionName => $centralConfiguration,
+            'tenancy.database.central_connection' => $centralConnectionName,
+        ]);
 
-    expect($company)->toBeInstanceOf(Company::class);
-    expect($company->name)->toEqual('Test Company');
-    expect($company->email)->toEqual('test@example.com');
-    expect($company->is_active)->toBeTrue();
-    $this->assertDatabaseHas('companies', [
-        'name' => 'Test Company',
-        'email' => 'test@example.com',
-    ]);
-});
-it('checks if read company', function () {
-    $company = Company::factory()->create();
+        $migrationExitCode = Artisan::call('tenancy:migrate-central');
 
-    // Test finding by UUID
-    $foundCompany = Company::find($company->id);
+        if ($migrationExitCode !== 0) {
+            throw new RuntimeException('The central migration command failed: ' . Artisan::output());
+        }
 
-    expect($foundCompany)->toBeInstanceOf(Company::class);
-    expect($foundCompany->id)->toEqual($company->id);
-    expect($foundCompany->uuid)->toEqual($company->uuid);
-    expect($foundCompany->name)->toEqual($company->name);
-    expect($foundCompany->email)->toEqual($company->email);
-});
-it('checks if update company', function () {
-    $company = Company::factory()->create([
-        'name' => 'Original Name',
-    ]);
+        $activeCompany = Company::factory()->active()->create(['name' => 'Central Active Company']);
+        Company::factory()->inactive()->create(['name' => 'Central Inactive Company']);
+        $originalCompanyUuid = $activeCompany->uuid;
 
-    // Update the company
-    $company->update([
-        'name' => 'Updated Name',
-        'description' => 'Updated description',
-    ]);
+        expect(Company::active()->pluck('id')->all())->toBe([$activeCompany->id])
+            ->and(Company::inactive()->count())->toBe(1);
 
-    // Refresh the model to get the latest data
-    $company->refresh();
+        $activeCompany->uuid = (string)Str::uuid7();
+        expect(fn(): bool => $activeCompany->save())
+            ->toThrow(LogicException::class, 'A company UUID cannot be changed after creation.');
+        $activeCompany->refresh();
 
-    expect($company->name)->toEqual('Updated Name');
-    expect($company->description)->toEqual('Updated description');
-    $this->assertDatabaseHas('companies', [
-        'uuid' => $company->uuid,
-        'name' => 'Updated Name',
-    ]);
-});
-it('checks if delete company', function () {
-    $company = Company::factory()->create();
-    $companyId = $company->id;
+        $activeCompany->update(['name' => 'Updated Central Company']);
+        expect(Company::query()->findOrFail($activeCompany->id)->name)->toBe('Updated Central Company');
 
-    // Delete the company
-    $company->delete();
-
-    // Verify it's deleted from database
-    $this->assertDatabaseMissing('companies', ['id' => $companyId]);
-
-    // Try to find the deleted company
-    $deletedCompany = Company::find($companyId);
-    expect($deletedCompany)->toBeNull();
+        $activeCompany->delete();
+        expect(Company::query()->find($activeCompany->id))->toBeNull();
+    } finally {
+        DB::purge($centralConnectionName);
+        config([
+            'database.connections.' . $centralConnectionName => $originalCentralConnectionConfiguration,
+            'tenancy.database.central_connection' => $originalCentralConnectionName,
+        ]);
+        $disposableDatabases->cleanup();
+    }
 });

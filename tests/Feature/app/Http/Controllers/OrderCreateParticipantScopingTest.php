@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\App\Http\Controllers;
+namespace Tests\Feature\app\Http\Controllers;
 
 use App\Enums\OrderItemType;
 use App\Enums\OrderLifecycleStatus;
@@ -37,70 +37,6 @@ final class OrderCreateParticipantScopingTest extends TestCase
             ->postJson('/api/v1/orders', $this->orderPayload($customer, $employee, $company));
 
         $this->assertSuccessfulOrderLifecycle($response, $superAdministrator, $customer, $employee);
-    }
-
-    private function createParticipant(UserRole $role, Company $company, bool $active = true): User
-    {
-        $factory = User::factory();
-
-        if ($active) {
-            $factory = $factory->active();
-        } else {
-            $factory = $factory->inactive();
-        }
-
-        return $factory->create([
-            'role' => $role->value,
-            'company_id' => $company->id,
-        ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function orderPayload(User $customer, User $employee, ?Company $company = null): array
-    {
-        return $this->orderPayloadWithIds($customer->id, $employee->id, $company?->id);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function orderPayloadWithIds(int|string $customerId, int|string $employeeId, ?int $companyId = null): array
-    {
-        return array_filter([
-            'company_id' => $companyId,
-            'customer_id' => $customerId,
-            'title' => 'Scoped order',
-            'description' => 'Order used to verify company participant scoping.',
-            'priority' => OrderPriority::NORMAL->value,
-            'assigned_to' => $employeeId,
-            'items' => [
-                ['item_type' => OrderItemType::CylinderHead->value],
-            ],
-        ], static fn(mixed $value): bool => $value !== null);
-    }
-
-    private function assertSuccessfulOrderLifecycle(
-        TestResponse $response,
-        User         $creator,
-        User         $customer,
-        User         $employee,
-    ): void
-    {
-        $response->assertCreated()
-            ->assertJsonPath('order.customer.id', $customer->id)
-            ->assertJsonPath('order.assigned_to.id', $employee->id)
-            ->assertJsonPath('order.created_by.id', $creator->id)
-            ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
-
-        $order = Order::query()->latest('id')->firstOrFail();
-        $history = $order->orderHistories()
-            ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
-            ->sole();
-
-        self::assertSame(OrderLifecycleStatus::Received->value, $history->getRawOriginal('old_value'));
-        self::assertSame(OrderLifecycleStatus::AwaitingReview->value, $history->getRawOriginal('new_value'));
     }
 
     public function test_administrator_can_create_an_order_for_their_company(): void
@@ -259,5 +195,69 @@ final class OrderCreateParticipantScopingTest extends TestCase
 
         $response->assertUnprocessable();
         self::assertSame(0, Order::query()->count());
+    }
+
+    private function createParticipant(UserRole $role, Company $company, bool $active = true): User
+    {
+        $factory = User::factory();
+
+        if ($active) {
+            $factory = $factory->active();
+        } else {
+            $factory = $factory->inactive();
+        }
+
+        return $factory->create([
+            'role' => $role->value,
+            'company_id' => $company->id,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function orderPayload(User $customer, User $employee, ?Company $company = null): array
+    {
+        return $this->orderPayloadWithIds($customer->id, $employee->id, $company?->id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function orderPayloadWithIds(int|string $customerId, int|string $employeeId, ?int $companyId = null): array
+    {
+        return array_filter([
+            'company_id' => $companyId,
+            'customer_id' => $customerId,
+            'title' => 'Scoped order',
+            'description' => 'Order used to verify company participant scoping.',
+            'priority' => OrderPriority::NORMAL->value,
+            'assigned_to' => $employeeId,
+            'items' => [
+                ['item_type' => OrderItemType::CylinderHead->value],
+            ],
+        ], static fn(mixed $value): bool => $value !== null);
+    }
+
+    private function assertSuccessfulOrderLifecycle(
+        TestResponse $response,
+        User         $creator,
+        User         $customer,
+        User         $employee,
+    ): void
+    {
+        $response->assertCreated()
+            ->assertJsonPath('order.customer.id', $customer->id)
+            ->assertJsonPath('order.assigned_to.id', $employee->id)
+            ->assertJsonPath('order.created_by.id', $creator->id)
+            ->assertJsonPath('order.lifecycle_status', OrderLifecycleStatus::AwaitingReview->value);
+
+        $order = Order::query()->latest('id')->firstOrFail();
+        $history = $order->orderHistories()
+            ->where('field_changed', OrderHistory::FIELD_LIFECYCLE_STATUS)
+            ->sole();
+
+        self::assertSame(OrderLifecycleStatus::Received->value, $history->getRawOriginal('old_value'));
+        self::assertSame(OrderLifecycleStatus::AwaitingReview->value, $history->getRawOriginal('new_value'));
     }
 }

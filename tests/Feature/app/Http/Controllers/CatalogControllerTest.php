@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Features\MotorItems;
+use App\Http\Requests\CatalogRequest;
+use App\Models\CentralSuperAdministrator;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -149,4 +151,11 @@ test('customer cannot access catalog endpoint', function () {
         ->getJson('/api/v1/catalog/engine-options?item_type=engine_block');
 
     $response->assertStatus(403);
+});
+
+test('central super administrators are not authorized for tenant catalog requests', function () {
+    $request = CatalogRequest::create('/api/v1/catalog/engine-options');
+    $request->setUserResolver(fn(): CentralSuperAdministrator => new CentralSuperAdministrator);
+
+    expect($request->authorize())->toBeFalse();
 });

@@ -34,17 +34,21 @@ final class StoreOrderWithItemsRequest extends FormRequest
     {
         $actor = $this->user();
         $isSuperAdministrator = $actor instanceof User && $actor->isSuperAdministrator();
-        $requestedCompanyId = $isSuperAdministrator && $this->has('company_id')
+        $tenantInitialized = tenancy()->initialized;
+        $requestedCompanyId = !$tenantInitialized && $isSuperAdministrator && $this->has('company_id')
             ? (int) $this->input('company_id')
             : null;
         $companyId = $actor instanceof User
             ? $participantQuery->effectiveCompanyId($actor, $requestedCompanyId)
             : null;
+        $companyRules = ['prohibited'];
+
+        if (!$tenantInitialized && $isSuperAdministrator) {
+            $companyRules = ['required', 'integer', Rule::exists(Company::class, 'id')->where('is_active', true)];
+        }
 
         return [
-            'company_id' => $isSuperAdministrator
-                ? ['required', 'integer', Rule::exists(Company::class, 'id')->where('is_active', true)]
-                : ['prohibited'],
+            'company_id' => $companyRules,
             'customer_id' => $this->participantRules($companyId, UserRole::CUSTOMER),
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -194,13 +198,14 @@ final class StoreOrderWithItemsRequest extends FormRequest
             return ['required', 'integer', Rule::in([])];
         }
 
-        return [
-            'required',
-            'integer',
-            Rule::exists(User::class, 'id')
-                ->where('company_id', $companyId)
-                ->where('role', $role->value)
-                ->where('is_active', true),
-        ];
+        $participantRule = Rule::exists(User::class, 'id')
+            ->where('role', $role->value)
+            ->where('is_active', true);
+
+        if (!tenancy()->initialized) {
+            $participantRule->where('company_id', $companyId);
+        }
+
+        return ['required', 'integer', $participantRule];
     }
 }

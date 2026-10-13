@@ -16,10 +16,12 @@ final class RegistrationVerificationRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->verificationUser();
+        $hash = $this->route('hash');
 
         return $user instanceof User
             && $user->is_active
-            && hash_equals(sha1($user->getEmailForVerification()), (string)$this->route('hash'));
+            && is_string($hash)
+            && hash_equals(sha1($user->getEmailForVerification()), $hash);
     }
 
     /**
@@ -29,15 +31,11 @@ final class RegistrationVerificationRequest extends FormRequest
     {
         $id = $this->route('id');
 
-        if (is_int($id)) {
-            return User::query()->find($id);
-        }
-
-        if (!is_string($id) || !ctype_digit($id)) {
+        if (!is_int($id) && (!is_string($id) || !ctype_digit($id))) {
             return null;
         }
 
-        return User::query()->find((int)$id);
+        return User::query()->whereKey($id)->first();
     }
 
     /**

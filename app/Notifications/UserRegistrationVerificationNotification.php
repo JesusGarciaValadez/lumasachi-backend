@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\User;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use LogicException;
 
 final class UserRegistrationVerificationNotification extends Notification
 {
@@ -26,7 +27,10 @@ final class UserRegistrationVerificationNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        /** @var MustVerifyEmail $notifiable */
+        if (!$notifiable instanceof User) {
+            throw new LogicException('Registration verification notifications require a tenant user.');
+        }
+
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes((int)config('auth.verification.expire', 60)),
@@ -38,12 +42,12 @@ final class UserRegistrationVerificationNotification extends Notification
 
         return (new MailMessage)
             ->subject(__('auth.registration_verification_subject'))
-            ->greeting(__('auth.registration_verification_greeting', ['name' => $notifiable->getAttribute('first_name')]))
+            ->greeting(__('auth.registration_verification_greeting', ['name' => $notifiable->first_name]))
             ->line(__('auth.registration_verification_email', ['email' => $notifiable->getEmailForVerification()]))
             ->line(__('auth.registration_verification_intro'))
             ->action(__('auth.registration_verification_action'), $verificationUrl)
             ->lineIf(
-                (bool)$notifiable->getAttribute('must_change_password'),
+                $notifiable->must_change_password,
                 __('auth.registration_verification_password'),
             );
     }

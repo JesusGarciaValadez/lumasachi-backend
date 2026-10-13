@@ -53,12 +53,6 @@ export interface UserPayload {
     updated_at?: string;
 }
 
-export interface OrderCreateCompanyOption {
-    id: number;
-    uuid: string;
-    name: string;
-}
-
 export interface OrderParticipantPayload {
     id: number;
     uuid?: string;
@@ -182,7 +176,6 @@ export interface OrderAttachmentPayload {
     attachable_type?: string;
     attachable_id?: number;
     file_name: string;
-    file_path?: string;
     mime_type?: string | null;
     file_size?: number | null;
     human_file_size?: string;
@@ -339,7 +332,6 @@ export interface CreateOrderItemPayload {
 }
 
 export interface CreateOrderPayload {
-    company_id?: number | null;
     customer_id: number;
     title: string;
     description: string;
@@ -401,7 +393,6 @@ export interface CatalogPayload {
 
 export type UserCollectionPayload = ResourcePayload<UserPayload[]>;
 export type OrderParticipantCollectionPayload = ResourcePayload<OrderParticipantPayload[]>;
-export type OrderCreateCompanyCollectionPayload = ResourcePayload<OrderCreateCompanyOption[]>;
 
 export interface PublicOrderItemComponentPayload {
     component_name: string;

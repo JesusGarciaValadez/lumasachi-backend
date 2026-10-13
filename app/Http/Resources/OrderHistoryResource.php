@@ -25,8 +25,6 @@ final class OrderHistoryResource extends JsonResource
             'field_changed' => $this->field_changed,
             'event_type' => $this->event_type?->value,
             'event_type_label' => $this->event_type?->getLabel(),
-            'event_type' => $this->event_type?->value,
-            'event_type_label' => $this->event_type?->getLabel(),
             'old_value' => $this->old_value,
             'new_value' => $this->new_value,
             'comment' => $this->comment,

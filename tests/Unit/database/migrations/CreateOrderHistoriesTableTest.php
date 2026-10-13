@@ -124,7 +124,7 @@ it('checks if migration rollback', function () {
 
     // Run the specific migration down
     $this->artisan('migrate:rollback', [
-        '--path' => 'database/migrations/2025_07_27_165842_create_order_histories_table.php',
+        '--path' => 'database/migrations/legacy/2025_07_27_165842_create_order_histories_table.php',
     ]);
 
     // Check the table no longer exists

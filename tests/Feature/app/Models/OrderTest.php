@@ -10,12 +10,14 @@ use App\Models\OrderHistory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('tenant-private');
+    Notification::fake();
 });
 it('checks order creation with relationships', function () {
     $customer = User::factory()->create(['role' => UserRole::CUSTOMER]);

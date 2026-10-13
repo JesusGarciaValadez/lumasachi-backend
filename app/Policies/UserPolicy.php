@@ -14,7 +14,11 @@ final class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [
+        if (tenancy()->initialized) {
+            return $user->isPlatformSupport();
+        }
+
+        return !$user->isPlatformSupport() && in_array($user->role, [
             UserRole::SUPER_ADMINISTRATOR,
             UserRole::ADMINISTRATOR,
         ]);
@@ -25,6 +29,10 @@ final class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
+        if ($user->isPlatformSupport()) {
+            return $this->isTenantSupportManager($user) && !$model->isPlatformSupport();
+        }
+
         if ($user->id === $model->id) {
             return true;
         }
@@ -45,7 +53,10 @@ final class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === UserRole::SUPER_ADMINISTRATOR;
+        return $this->isTenantSupportManager($user)
+            || (!tenancy()->initialized
+                && !$user->isPlatformSupport()
+                && $user->role === UserRole::SUPER_ADMINISTRATOR);
     }
 
     /**
@@ -53,6 +64,10 @@ final class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
+        if ($user->isPlatformSupport()) {
+            return $this->canManageTarget($user, $model);
+        }
+
         if ($user->id === $model->id) {
             return true;
         }
@@ -90,6 +105,14 @@ final class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
+        if ($this->isTenantSupportManager($user)) {
+            return $user->id !== $model->id && !$model->isPlatformSupport();
+        }
+
+        if (tenancy()->initialized) {
+            return false;
+        }
+
         if ($user->id === $model->id || $user->role !== UserRole::SUPER_ADMINISTRATOR) {
             return false;
         }
@@ -107,6 +130,14 @@ final class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
+        if (tenancy()->initialized) {
+            return $this->isTenantSupportManager($user) && !$model->isPlatformSupport();
+        }
+
+        if ($user->isPlatformSupport()) {
+            return false;
+        }
+
         // Users can restore profiles
         if ($user->id === $model->id) {
             return true;
@@ -124,6 +155,14 @@ final class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
+        if (tenancy()->initialized) {
+            return $this->isTenantSupportManager($user) && !$model->isPlatformSupport();
+        }
+
+        if ($user->isPlatformSupport()) {
+            return false;
+        }
+
         // Users can delete their own profile
         if ($user->id === $model->id) {
             return true;
@@ -138,6 +177,22 @@ final class UserPolicy
 
     private function canManageTarget(User $user, User $model): bool
     {
+        if ($model->isPlatformSupport()) {
+            return false;
+        }
+
+        if ($this->isTenantSupportManager($user)) {
+            return true;
+        }
+
+        if (tenancy()->initialized) {
+            return false;
+        }
+
+        if ($user->isPlatformSupport()) {
+            return false;
+        }
+
         if ($user->role === UserRole::SUPER_ADMINISTRATOR) {
             return true;
         }
@@ -146,5 +201,10 @@ final class UserPolicy
             && $user->company_id !== null
             && $model->company_id === $user->company_id
             && $model->is_active;
+    }
+
+    private function isTenantSupportManager(User $user): bool
+    {
+        return tenancy()->initialized && $user->isPlatformSupport();
     }
 }

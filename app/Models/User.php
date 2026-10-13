@@ -8,13 +8,13 @@ use App\Enums\Locale;
 use App\Enums\UserRole;
 use App\Enums\UserType;
 use App\Notifications\UserRegistrationVerificationNotification;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -27,7 +27,7 @@ use Laravel\Sanctum\HasApiTokens;
 final class User extends Authenticatable implements HasLocalePreference, MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes, UsesTenantConnection;
 
     /**
      * The primary key associated with the table.
@@ -71,7 +71,6 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
         'must_change_password',
         'role',
         'phone_number',
-        'company_id',
         'is_active',
         'activated_at',
         'notes',
@@ -90,7 +89,6 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
         'is_active' => false,
         'activated_at' => null,
         'type' => UserType::INDIVIDUAL->value,
-        'company_id' => null,
     ];
 
     /**
@@ -101,6 +99,8 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
     protected $hidden = [
         'password',
         'remember_token',
+        'is_platform_support',
+        'central_actor_uuid',
     ];
 
     /**
@@ -155,6 +155,11 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
         return $this->role === UserRole::SUPER_ADMINISTRATOR;
     }
 
+    public function isPlatformSupport(): bool
+    {
+        return (bool)($this->attributes['is_platform_support'] ?? false);
+    }
+
     // Accessors
     public function getFullNameAttribute(): string
     {
@@ -197,12 +202,6 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
         return $this->hasMany(Order::class, 'customer_id');
     }
 
-    /** @return BelongsTo<Company, $this> */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class, 'company_id');
-    }
-
     /**
      * Get the attributes that should be cast.
      *
@@ -217,6 +216,8 @@ final class User extends Authenticatable implements HasLocalePreference, MustVer
             'must_change_password' => 'boolean',
             'is_active' => 'boolean',
             'activated_at' => 'datetime',
+            'is_platform_support' => 'boolean',
+            'central_actor_uuid' => 'string',
             'role' => UserRole::class,
             'type' => UserType::class,
         ];

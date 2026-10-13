@@ -3,36 +3,31 @@
 declare(strict_types=1);
 
 use App\Enums\UserRole;
-use App\Models\Company;
 use App\Models\User;
-use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-uses(DuskTestCase::class, DatabaseTruncation::class);
+uses(DuskTestCase::class);
 
 beforeEach(function (): void {
-    $this->seed(ServiceCatalogSeeder::class);
-
-    $company = Company::factory()->active()->create();
+    $this->prepareDuskTenantFixture();
     $password = Hash::make('password');
 
-    $this->employee = User::factory()->create([
-        'company_id' => $company->id,
-        'email' => 'dusk-review-employee@example.com',
-        'is_active' => true,
-        'password' => $password,
-        'role' => UserRole::EMPLOYEE->value,
-    ]);
-    $this->customer = User::factory()->create([
-        'company_id' => $company->id,
-        'email' => 'dusk-review-customer@example.com',
-        'is_active' => true,
-        'password' => $password,
-        'role' => UserRole::CUSTOMER->value,
-    ]);
+    $this->runInDuskTenantContext(function () use ($password): void {
+        $this->employee = User::factory()->create([
+            'email' => 'dusk-review-employee@example.com',
+            'is_active' => true,
+            'password' => $password,
+            'role' => UserRole::EMPLOYEE->value,
+        ]);
+        $this->customer = User::factory()->create([
+            'email' => 'dusk-review-customer@example.com',
+            'is_active' => true,
+            'password' => $password,
+            'role' => UserRole::CUSTOMER->value,
+        ]);
+    });
 });
 
 test('staff can create and review a block order', function (): void {
@@ -75,7 +70,7 @@ test('staff can create and review a block order', function (): void {
             ->waitUntilMissing('@order-review-panel', 10)
             ->waitFor('@order-history-feed', 10)
             ->assertSeeIn('@order-status', 'Awaiting Customer Approval')
-            ->assertSeeIn('@order-financial-summary', '3,760.00')
+            ->assertDontSeeIn('@order-financial-summary', '3,760.00')
             ->assertSeeIn('@order-financial-summary', '4,361.60')
             ->assertSeeIn('@order-history-feed', 'Reviewed')
             ->assertSeeIn('@order-history-feed', 'Awaiting Customer Approval');

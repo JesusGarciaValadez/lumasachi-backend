@@ -23,5 +23,5 @@ return [
     'registration_verification_email' => 'This registration was created with the email address :email.',
     'registration_verification_intro' => 'Confirm your email address to activate your Lumasachi account.',
     'registration_verification_action' => 'Confirm registration',
-    'registration_verification_password' => 'After confirmation, you will be asked to change the temporary password provided by the administrator.',
+    'registration_verification_password' => 'After confirmation, you will be asked to set your own password.',
 ];

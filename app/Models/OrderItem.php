@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\OrderItemType;
 use App\Observers\OrderItemObserver;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class OrderItem extends Model
 {
     /** @use HasFactory<OrderItemFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     protected $fillable = [
         'order_id',

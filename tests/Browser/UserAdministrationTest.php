@@ -5,31 +5,17 @@ declare(strict_types=1);
 use App\Enums\Locale;
 use App\Enums\UserRole;
 use App\Enums\UserType;
-use App\Models\Company;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-uses(DuskTestCase::class, DatabaseTruncation::class);
+uses(DuskTestCase::class);
 
 beforeEach(function (): void {
-    $this->administratorCompany = Company::factory()->create();
-    $this->otherCompany = Company::factory()->create();
-
     $password = Hash::make('password');
 
-    $this->superAdministrator = User::factory()->create([
-        'email' => 'dusk-user-admin-super@example.com',
-        'email_verified_at' => now(),
-        'is_active' => true,
-        'password' => $password,
-        'role' => UserRole::SUPER_ADMINISTRATOR->value,
-    ]);
-
     $this->administrator = User::factory()->create([
-        'company_id' => $this->administratorCompany->id,
         'email' => 'dusk-user-admin@example.com',
         'email_verified_at' => now(),
         'is_active' => true,
@@ -38,7 +24,6 @@ beforeEach(function (): void {
     ]);
 
     $this->sameCompanyUser = User::factory()->create([
-        'company_id' => $this->administratorCompany->id,
         'email' => 'dusk-user-same-company@example.com',
         'first_name' => 'Same Company',
         'is_active' => true,
@@ -48,20 +33,9 @@ beforeEach(function (): void {
     ]);
 
     $this->inactiveSameCompanyUser = User::factory()->create([
-        'company_id' => $this->administratorCompany->id,
         'email' => 'dusk-user-inactive@example.com',
         'first_name' => 'Inactive',
         'is_active' => false,
-        'last_name' => 'User',
-        'password' => $password,
-        'role' => UserRole::EMPLOYEE->value,
-    ]);
-
-    $this->otherCompanyUser = User::factory()->create([
-        'company_id' => $this->otherCompany->id,
-        'email' => 'dusk-user-other-company@example.com',
-        'first_name' => 'Other Company',
-        'is_active' => true,
         'last_name' => 'User',
         'password' => $password,
         'role' => UserRole::EMPLOYEE->value,
@@ -88,12 +62,10 @@ test('super administrator can create and edit a user from users', function (): v
     $createdEmail = 'dusk-created-user@example.com';
 
     $this->browse(function (Browser $browser) use ($createdEmail): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/users')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/users')
             ->waitFor('@users-page')
-            ->assertPresent('[data-sidebar="sidebar"]')
-            ->assertPresent('[data-sidebar="trigger"]')
-            ->assertCount('[data-sidebar="content"] [data-sidebar="menu-item"]', 3)
             ->assertPresent('@users-nav')
             ->assertAttribute('@users-filters-trigger', 'aria-expanded', 'false')
             ->assertMissing('@users-filters-panel')
@@ -110,7 +82,6 @@ test('super administrator can create and edit a user from users', function (): v
             ->type('@user-email', $createdEmail)
             ->type('@user-password', 'password')
             ->type('@user-password-confirmation', 'password')
-            ->select('@user-company', (string)$this->administratorCompany->id)
             ->select('@user-role', UserRole::EMPLOYEE->value)
             ->select('@user-type', UserType::INDIVIDUAL->value)
             ->select('@user-locale', Locale::ENGLISH->value)
@@ -138,11 +109,12 @@ test('super administrator can create and edit a user from users', function (): v
 });
 
 test('user pagination uses readable navigation labels', function (): void {
-    User::factory()->active()->count(5)->create();
+    User::factory()->active()->count(12)->create(['role' => UserRole::EMPLOYEE->value]);
 
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/users')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/users')
             ->waitFor('@users-page')
             ->waitFor('@users-pagination')
             ->assertSeeIn('@users-pagination', '« Previous')
@@ -158,8 +130,9 @@ test('super administrator can open a recent user from the dashboard card', funct
     ]);
 
     $this->browse(function (Browser $browser) use ($target): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/dashboard')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/dashboard')
             ->waitFor('@dashboard-summary')
             ->click('@dashboard-user-' . $target->uuid)
             ->waitForLocation('/user/' . $target->uuid)
@@ -169,23 +142,16 @@ test('super administrator can open a recent user from the dashboard card', funct
     });
 });
 
-test('administrator can open a same-company recent user from the dashboard card', function (): void {
-    $target = User::factory()->active()->create([
-        'company_id' => $this->administratorCompany->id,
-        'first_name' => 'Dashboard',
-        'last_name' => 'Administrator',
-        'role' => UserRole::EMPLOYEE->value,
-    ]);
+test('tenant administrator cannot open another user from the dashboard', function (): void {
+    $this->browse(function (Browser $browser): void {
+        $this->tenantUserLogsIn($browser, $this->administrator);
 
-    $this->browse(function (Browser $browser) use ($target): void {
-        $browser->loginAs($this->administrator)
-            ->visit('/dashboard')
-            ->waitFor('@dashboard-summary')
-            ->click('@dashboard-user-' . $target->uuid)
-            ->waitForLocation('/user/' . $target->uuid)
-            ->waitFor('@user-form')
-            ->assertInputValue('@user-first-name', 'Dashboard')
-            ->assertInputValue('@user-last-name', 'Administrator');
+        $browser->visit('/dashboard')
+            ->assertMissing('@users-nav')
+            ->visit('/users')
+            ->assertMissing('@users-page')
+            ->visit('/user/' . $this->sameCompanyUser->uuid)
+            ->assertMissing('@user-form');
     });
 });
 
@@ -197,8 +163,9 @@ test('super administrator can find accented names without accents', function ():
     ]);
 
     $this->browse(function (Browser $browser) use ($target): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/users')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/users')
             ->waitFor('@users-page')
             ->click('@users-filters-trigger')
             ->waitFor('@users-filters-panel')
@@ -210,15 +177,15 @@ test('super administrator can find accented names without accents', function ():
 
 test('invalid user submission stays on form with field error and safe values', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/user/create')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/user/create')
             ->waitFor('@user-create-form')
             ->type('@user-first-name', 'Preserved')
             ->type('@user-last-name', 'Browser Value')
             ->type('@user-email', 'not-an-email')
             ->type('@user-password', 'password')
             ->type('@user-password-confirmation', 'password')
-            ->select('@user-company', (string)$this->administratorCompany->id)
             ->select('@user-role', UserRole::EMPLOYEE->value)
             ->select('@user-type', UserType::INDIVIDUAL->value)
             ->select('@user-locale', Locale::ENGLISH->value)
@@ -246,8 +213,9 @@ test('super administrator can archive a user from the list and profile', functio
     ]);
 
     $this->browse(function (Browser $browser) use ($listTarget, $profileTarget): void {
-        $browser->loginAs($this->superAdministrator)
-            ->visit('/users')
+        $this->centralAdministratorEntersDuskTenant($browser);
+
+        $browser->visit('/users')
             ->waitFor('@users-page')
             ->click('@user-delete-trigger-' . $listTarget->uuid)
             ->waitFor('@user-delete-dialog-' . $listTarget->uuid)
@@ -271,20 +239,12 @@ test('super administrator can archive a user from the list and profile', functio
     $this->assertSoftDeleted($profileTarget);
 });
 
-test('administrator sees only same company users and cannot open an inactive row', function (): void {
+test('tenant administrators cannot list or manage users', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->administrator)
-            ->visit('/users')
-            ->waitFor('@users-page')
-            ->assertPresent('[data-sidebar="sidebar"]')
-            ->assertPresent('[data-sidebar="trigger"]')
-            ->assertCount('[data-sidebar="content"] [data-sidebar="menu-item"]', 3)
-            ->assertPresent('@user-row-link-' . $this->sameCompanyUser->uuid)
-            ->assertMissing('@user-row-' . $this->otherCompanyUser->uuid)
-            ->uncheck('@users-active-only')
-            ->waitFor('@user-row-' . $this->inactiveSameCompanyUser->uuid)
-            ->assertPresent('@user-row-' . $this->inactiveSameCompanyUser->uuid)
-            ->assertMissing('@user-row-link-' . $this->inactiveSameCompanyUser->uuid)
+        $this->tenantUserLogsIn($browser, $this->administrator);
+
+        $browser->visit('/users')
+            ->assertMissing('@users-page')
             ->visit('/user/' . $this->inactiveSameCompanyUser->uuid)
             ->assertMissing('@user-form');
     });
@@ -292,8 +252,9 @@ test('administrator sees only same company users and cannot open an inactive row
 
 test('administrator cannot reach user creation by direct url', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->administrator)
-            ->visit('/user/create')
+        $this->tenantUserLogsIn($browser, $this->administrator);
+
+        $browser->visit('/user/create')
             ->assertMissing('@user-create-form')
             ->assertMissing('@user-form-submit');
     });
@@ -301,8 +262,9 @@ test('administrator cannot reach user creation by direct url', function (): void
 
 test('employee sees sidebar but customer does not see sidebar or users administration', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->employee)
-            ->visit('/dashboard')
+        $this->tenantUserLogsIn($browser, $this->employee);
+
+        $browser->visit('/dashboard')
             ->assertPresent('[data-sidebar="sidebar"]')
             ->assertPresent('[data-sidebar="trigger"]')
             ->assertCount('[data-sidebar="content"] [data-sidebar="menu-item"]', 2)
@@ -310,8 +272,9 @@ test('employee sees sidebar but customer does not see sidebar or users administr
             ->visit('/users')
             ->assertMissing('@users-page');
 
-        $browser->loginAs($this->customer)
-            ->visit('/dashboard')
+        $this->tenantUserLogsIn($browser, $this->customer);
+
+        $browser->visit('/dashboard')
             ->assertMissing('[data-sidebar="sidebar"]')
             ->assertMissing('[data-sidebar="trigger"]')
             ->assertMissing('@users-nav')

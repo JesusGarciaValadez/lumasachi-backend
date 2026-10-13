@@ -73,6 +73,7 @@ final class OrderPaymentService
         }
     }
 
+    /** @return numeric-string */
     private function normalizeNonnegativeAmount(string|int|float $amount): string
     {
         if (!is_numeric((string)$amount)) {
@@ -88,6 +89,7 @@ final class OrderPaymentService
         return $normalizedAmount;
     }
 
+    /** @return numeric-string */
     private function normalizeAmount(string|int|float $amount): string
     {
         $normalizedAmount = $this->normalizeNonnegativeAmount($amount);

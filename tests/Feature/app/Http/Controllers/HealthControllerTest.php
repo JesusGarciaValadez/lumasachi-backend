@@ -7,9 +7,20 @@ use Illuminate\Support\Facades\Storage;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
+function centralHealthUrl(string $path): string
+{
+    $centralHost = config('tenancy.central_hosts.0');
+
+    if (!is_string($centralHost) || $centralHost === '') {
+        throw new RuntimeException('Health endpoint tests require a configured central host.');
+    }
+
+    return 'http://' . $centralHost . $path;
+}
+
 it('checks if up endpoint returns operational status', function () {
     // Act: Call the /up endpoint
-    $response = $this->getJson('/api/v1/up');
+    $response = $this->getJson(centralHealthUrl('/api/v1/up'));
 
     // Assert: Check response status and structure
     $response->assertStatus(200)
@@ -33,7 +44,7 @@ it('checks if up endpoint returns operational status', function () {
 });
 it('checks if health endpoint returns healthy status when all checks pass', function () {
     // Act: Call the /health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check response status and structure
     $response->assertStatus(200)
@@ -88,7 +99,7 @@ it('checks if health check database component', function () {
     DB::select('SELECT 1');
 
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check database component
     $response->assertOk();
@@ -101,7 +112,7 @@ it('checks if health check database component', function () {
 });
 it('checks if health check cache component', function () {
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check cache component
     $response->assertStatus(200);
@@ -118,7 +129,7 @@ it('checks if health check storage component', function () {
     Storage::fake('public');
 
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check storage component
     $response->assertStatus(200);
@@ -130,7 +141,7 @@ it('checks if health check storage component', function () {
 });
 it('checks if health check memory component', function () {
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check memory component
     $response->assertStatus(200);
@@ -144,7 +155,7 @@ it('checks if health check memory component', function () {
 });
 it('checks if health check disk space component', function () {
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check disk space component
     $response->assertStatus(200);
@@ -177,7 +188,7 @@ it('checks if health check returns unhealthy when component fails', function () 
     DB::purge($currentConnection);
 
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Restore the original database config
     config(["database.connections.{$currentConnection}" => $originalConfig]);
@@ -196,8 +207,11 @@ it('checks if queue check included when queue not sync', function () {
     config(['queue.default' => 'database']);
 
     // Create queue tables if they don't exist
-    if (!DB::getSchemaBuilder()->hasTable('jobs')) {
-        DB::getSchemaBuilder()->create('jobs', function ($table) {
+    $queueConnectionName = (string)config('queue.connections.database.connection');
+    $queueDatabase = DB::connection($queueConnectionName);
+
+    if (!$queueDatabase->getSchemaBuilder()->hasTable('jobs')) {
+        $queueDatabase->getSchemaBuilder()->create('jobs', function ($table) {
             $table->bigIncrements('id');
             $table->string('queue')->index();
             $table->longText('payload');
@@ -208,8 +222,8 @@ it('checks if queue check included when queue not sync', function () {
         });
     }
 
-    if (!DB::getSchemaBuilder()->hasTable('failed_jobs')) {
-        DB::getSchemaBuilder()->create('failed_jobs', function ($table) {
+    if (!$queueDatabase->getSchemaBuilder()->hasTable('failed_jobs')) {
+        $queueDatabase->getSchemaBuilder()->create('failed_jobs', function ($table) {
             $table->id();
             $table->string('uuid')->unique();
             $table->text('connection');
@@ -221,7 +235,7 @@ it('checks if queue check included when queue not sync', function () {
     }
 
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check queue component is included
     $response->assertStatus(200);
@@ -230,15 +244,15 @@ it('checks if queue check included when queue not sync', function () {
     expect($data['checks'])->toHaveKey('queue');
     expect($data['checks']['queue']['healthy'])->toBeTrue();
     expect($data['checks']['queue']['message'])->toEqual('Queue is operational');
-    expect($data['checks']['queue'])->toHaveKey('pending_jobs');
-    expect($data['checks']['queue'])->toHaveKey('failed_jobs');
+    expect($data['checks']['queue'])->not->toHaveKey('pending_jobs');
+    expect($data['checks']['queue'])->not->toHaveKey('failed_jobs');
 });
 it('checks if queue check not included when queue is sync', function () {
     // Arrange: Ensure queue driver is sync
     config(['queue.default' => 'sync']);
 
     // Act: Call the health endpoint
-    $response = $this->getJson('/api/v1/health');
+    $response = $this->getJson(centralHealthUrl('/api/v1/health'));
 
     // Assert: Check queue component is not included
     $response->assertStatus(200);

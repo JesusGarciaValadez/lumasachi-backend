@@ -133,7 +133,7 @@ final class OrderIndexTest extends TestCase
                 ->where('orders.total', 1)
                 ->where('orders.data.0.uuid', $matching->uuid)
                 ->where('orders.data.0.assigned_to.uuid', $assignee->uuid)
-                ->where('orders.data.0.company.name', $company->name)
+                ->missing('orders.data.0.company')
                 ->where('filters.title', 'arbol')
                 ->where('filters.created_from', $createdAt->toDateString())
                 ->where('filters.created_to', $createdAt->toDateString())

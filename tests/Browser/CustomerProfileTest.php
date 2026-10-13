@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-uses(DuskTestCase::class, DatabaseTruncation::class);
+uses(DuskTestCase::class);
 
 beforeEach(function (): void {
     $this->customer = User::factory()->create([
@@ -22,8 +21,9 @@ beforeEach(function (): void {
 
 test('customer can update their profile fields without password controls', function (): void {
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->customer)
-            ->visit('/settings/profile')
+        $this->tenantUserLogsIn($browser, $this->customer);
+
+        $browser->visit('/settings/profile')
             ->waitFor('@customer-profile-form')
             ->clear('@profile-first-name')
             ->type('@profile-first-name', 'Updated')
@@ -50,8 +50,9 @@ test('required password changes do not show the current password field', functio
     ]);
 
     $this->browse(function (Browser $browser): void {
-        $browser->loginAs($this->customer)
-            ->visit('/settings/password?required=1')
+        $this->tenantUserLogsIn($browser, $this->customer, true);
+
+        $browser->visit('/settings/password?required=1')
             ->waitFor('@password-form')
             ->waitFor('@password-required')
             ->assertMissing('@password-current-password');

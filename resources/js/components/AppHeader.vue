@@ -13,7 +13,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
+import { Folder, LayoutGrid, Menu, Search, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -33,6 +33,8 @@ const { t } = i18n;
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const isCustomer = computed(() => page.props.is_customer === true);
+const canViewUsers = computed(() => page.props.can_view_users === true);
+const isPlatformSupport = computed(() => page.props.is_platform_support === true);
 
 const isCurrentRoute = computed(() => (url: string) => page.url === url);
 
@@ -51,6 +53,16 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: '/orders',
         icon: Folder,
     },
+    ...(canViewUsers.value
+        ? [
+              {
+                  title: t('users.users'),
+                  href: route('users.index'),
+                  icon: Users,
+                  dusk: 'users-nav',
+              },
+          ]
+        : []),
 ]);
 
 const rightNavItems: NavItem[] = [];
@@ -79,6 +91,7 @@ const rightNavItems: NavItem[] = [];
                                         v-for="item in mainNavItems"
                                         :key="item.title"
                                         :href="item.href"
+                                        :dusk="item.dusk"
                                         class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                                         :class="activeItemStyles(item.href)"
                                     >
@@ -116,6 +129,7 @@ const rightNavItems: NavItem[] = [];
                                 <Link
                                     :class="[navigationMenuTriggerStyle(), activeItemStyles(item.href), 'h-9 cursor-pointer px-3']"
                                     :href="item.href"
+                                    :dusk="item.dusk"
                                 >
                                     <component v-if="item.icon" :is="item.icon" class="mr-2 h-4 w-4" />
                                     {{ item.title }}
@@ -130,6 +144,16 @@ const rightNavItems: NavItem[] = [];
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
+                    <Link
+                        v-if="isPlatformSupport"
+                        :href="route('tenant.central-entry.exit')"
+                        as="button"
+                        class="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+                        dusk="central-support-exit"
+                        method="post"
+                    >
+                        {{ t('common.exit_platform_support') }}
+                    </Link>
                     <LocaleSwitcher />
                     <div class="relative flex items-center space-x-1">
                         <Button
@@ -170,6 +194,7 @@ const rightNavItems: NavItem[] = [];
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                dusk="user-menu-trigger"
                                 class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
                             >
                                 <Avatar class="size-8 overflow-hidden rounded-full">

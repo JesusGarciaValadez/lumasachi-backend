@@ -10,6 +10,7 @@ const router = vi.hoisted(() => ({
 const page = vi.hoisted(() => ({
     props: {
         flash: {},
+        is_tenant_context: false,
     },
     flash: {},
 }));
@@ -118,6 +119,7 @@ describe('Orders/Index', () => {
     beforeEach(() => {
         router.get.mockReset();
         page.props.flash = {};
+        page.props.is_tenant_context = false;
         page.flash = {};
         vi.stubGlobal('route', route);
     });
@@ -187,6 +189,41 @@ describe('Orders/Index', () => {
             }),
             expect.objectContaining({ preserveScroll: true, preserveState: true, replace: true }),
         );
+    });
+
+    it('hides company filtering and drops stale company ids in tenant context', async () => {
+        page.props.is_tenant_context = true;
+        const wrapper = mountPage({
+            filters: {
+                title: '',
+                company_id: 'foreign-company-id',
+                assigned_to: '',
+                priority: '',
+                lifecycle_status: '',
+                payment_status: '',
+                disposition_status: '',
+                created_from: '',
+                created_to: '',
+                per_page: 10,
+            },
+            options: {
+                companies: [],
+                assignees: [{ id: 1, uuid: 'assignee-1', full_name: 'Ana Employee' }],
+                priorities: ['Low', 'Normal', 'High', 'Urgent'],
+                lifecycle_statuses: ['Received'],
+                payment_statuses: ['Unpaid', 'Partially Paid', 'Paid'],
+                disposition_statuses: ['Returned', 'Cancelled'],
+                per_page: [10, 20, 50],
+            },
+        });
+
+        await wrapper.get('[dusk="orders-filters-trigger"]').trigger('click');
+        expect(wrapper.find('#orders-company').exists()).toBe(false);
+
+        await wrapper.get('#orders-assignee').setValue('1');
+
+        expect(router.get).toHaveBeenCalledTimes(1);
+        expect(router.get.mock.calls[0][1]).not.toHaveProperty('company_id');
     });
 
     it('renders the success flash in an accessible stable status element', () => {

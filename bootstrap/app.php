@@ -11,22 +11,50 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
+        using: static function (): void {
+            Route::middleware(App\Http\Middleware\RequireCentralDomain::class)
+                ->group(base_path('routes/central.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustHosts(at: static function (): array {
+            $patterns = [];
+
+            foreach (config('tenancy.central_hosts', []) as $host) {
+                if (!is_string($host) || $host === '') {
+                    continue;
+                }
+
+                $patterns[] = '^' . preg_quote(mb_strtolower($host), '/') . '$';
+            }
+
+            foreach (config('tenancy.central_domains', []) as $domain) {
+                if (!is_string($domain) || $domain === '') {
+                    continue;
+                }
+
+                $escapedDomain = preg_quote(mb_strtolower($domain), '/');
+                $patterns[] = '^' . $escapedDomain . '$';
+
+                if (filter_var($domain, FILTER_VALIDATE_IP) === false) {
+                    $patterns[] = '^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.' . $escapedDomain . '$';
+                }
+            }
+
+            return $patterns;
+        }, subdomains: false);
+
         // Enable Sanctum's stateful API so session-authenticated SPA requests to /api work
         $middleware->statefulApi();
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->preventRequestForgery(except: [
-            'api/*',
             'sanctum/*',
         ]);
 

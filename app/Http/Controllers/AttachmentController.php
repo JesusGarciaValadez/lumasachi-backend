@@ -83,7 +83,7 @@ final class AttachmentController extends Controller
                 $fileName = $validated['names'][$index] ?? ($validated['name'] ?? $file->getClientOriginalName());
 
                 // Store the file
-                $path = $file->store('orders/'.$order->uuid.'/'.$file->hashName(), 'public');
+                $path = $file->store('orders/' . $order->uuid . '/' . $file->hashName(), 'tenant-private');
 
                 // Create attachment record
                 $attachment = $order->attachments()->create([
@@ -152,7 +152,7 @@ final class AttachmentController extends Controller
         }
 
         // Check if file exists
-        if (! Storage::disk('public')->exists($attachment->file_path)) {
+        if (!Storage::disk('tenant-private')->exists($attachment->file_path)) {
             return response()->json([
                 'code' => 'attachments.not_found',
                 'message' => __('attachments.not_found'),
@@ -160,7 +160,7 @@ final class AttachmentController extends Controller
         }
 
         // Get the file path
-        $filePath = Storage::disk('public')->path($attachment->file_path);
+        $filePath = Storage::disk('tenant-private')->path($attachment->file_path);
 
         // Return file download response
         return response()->download(
@@ -204,7 +204,7 @@ final class AttachmentController extends Controller
         }
 
         // Check if file exists
-        if (! Storage::disk('public')->exists($attachment->file_path)) {
+        if (!Storage::disk('tenant-private')->exists($attachment->file_path)) {
             return response()->json([
                 'code' => 'attachments.not_found',
                 'message' => __('attachments.not_found'),
@@ -212,7 +212,7 @@ final class AttachmentController extends Controller
         }
 
         // Get the file path
-        $filePath = Storage::disk('public')->path($attachment->file_path);
+        $filePath = Storage::disk('tenant-private')->path($attachment->file_path);
 
         return response()->file(
             $filePath,
@@ -232,12 +232,12 @@ final class AttachmentController extends Controller
             return $this->publicAttachmentNotFound();
         }
 
-        if (!Storage::disk('public')->exists($attachment->file_path)) {
+        if (!Storage::disk('tenant-private')->exists($attachment->file_path)) {
             return $this->publicAttachmentNotFound();
         }
 
         return response()->download(
-            Storage::disk('public')->path($attachment->file_path),
+            Storage::disk('tenant-private')->path($attachment->file_path),
             $attachment->file_name,
             [
                 'Content-Type' => $attachment->mime_type,
@@ -262,12 +262,12 @@ final class AttachmentController extends Controller
             ], 400);
         }
 
-        if (!Storage::disk('public')->exists($attachment->file_path)) {
+        if (!Storage::disk('tenant-private')->exists($attachment->file_path)) {
             return $this->publicAttachmentNotFound();
         }
 
         return response()->file(
-            Storage::disk('public')->path($attachment->file_path),
+            Storage::disk('tenant-private')->path($attachment->file_path),
             [
                 'Content-Type' => $attachment->mime_type,
                 'Content-Disposition' => 'inline; filename="' . $attachment->file_name . '"',
@@ -304,8 +304,8 @@ final class AttachmentController extends Controller
         DB::beginTransaction();
         try {
             // Delete the physical file
-            if (Storage::disk('public')->exists($attachment->file_path)) {
-                Storage::disk('public')->delete($attachment->file_path);
+            if (Storage::disk('tenant-private')->exists($attachment->file_path)) {
+                Storage::disk('tenant-private')->delete($attachment->file_path);
             }
 
             // Delete the attachment record

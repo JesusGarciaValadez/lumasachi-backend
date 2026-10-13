@@ -27,6 +27,12 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="TENANCY_CENTRAL_HOSTS" value="app.example.test"/>
+        <env name="AUTH_USERS_PASSWORD_RESET_CONNECTION" value="pgsql"/>
+        <env name="TENANCY_ALLOW_LEGACY_MODEL_CONNECTION" value="true"/>
+        <env name="TENANCY_ALLOW_LEGACY_TEST_ROUTES" value="true"/>
+        <env name="TENANCY_DB_PROVISIONER_DATABASE" value="testing"/>
+        <env name="TENANCY_TEST_DATABASE_ALLOWED_HOST" value="pgsql"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>

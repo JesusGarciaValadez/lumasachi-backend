@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderRefund;
 use App\Models\User;
@@ -26,10 +25,6 @@ final class OrderAdministrationListResource extends JsonResource
             'uuid' => $this->uuid,
             'title' => $this->title,
             'customer' => $this->whenLoaded('customer', fn(): ?array => $this->userSummary($this->customer)),
-            'company' => $this->when(
-                $this->relationLoaded('customer') && $this->customer?->relationLoaded('company'),
-                fn(): ?array => $this->companySummary($this->customer?->company),
-            ),
             'assigned_to' => $this->whenLoaded('assignedTo', fn(): ?array => $this->userSummary($this->assignedTo)),
             'lifecycle_status' => $this->lifecycleStatus()?->value,
             'lifecycle_status_label' => $this->lifecycleStatus()?->getLabel(),
@@ -72,22 +67,6 @@ final class OrderAdministrationListResource extends JsonResource
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'full_name' => $user->last_name . ', ' . $user->first_name,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function companySummary(?Company $company): ?array
-    {
-        if ($company === null) {
-            return null;
-        }
-
-        return [
-            'id' => $company->id,
-            'uuid' => $company->uuid,
-            'name' => $company->name,
         ];
     }
 }

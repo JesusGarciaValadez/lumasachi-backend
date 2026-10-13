@@ -141,7 +141,7 @@ it('creates an order after an imported order sequence is synchronized', function
 
     DB::statement("SELECT setval(pg_get_serial_sequence('orders', 'id'), 1, false)");
 
-    $migration = include base_path('database/migrations/2026_07_30_024320_synchronize_orders_primary_key_sequence.php');
+    $migration = include base_path('database/migrations/legacy/2026_07_30_024320_synchronize_orders_primary_key_sequence.php');
     $migration->up();
 
     $response = $this->actingAs($this->employee)->postJson('/api/v1/orders', [
@@ -172,7 +172,7 @@ it('repairs an imported order sequence without ownership metadata', function () 
     DB::statement('ALTER SEQUENCE public.orders_id_seq OWNED BY NONE');
     DB::statement("SELECT setval('public.orders_id_seq'::regclass, 1, false)");
 
-    $migration = include base_path('database/migrations/2026_07_30_031503_repair_orders_primary_key_sequence_ownership.php');
+    $migration = include base_path('database/migrations/legacy/2026_07_30_031503_repair_orders_primary_key_sequence_ownership.php');
     $migration->up();
 
     $sequence = DB::selectOne("SELECT pg_get_serial_sequence('public.orders', 'id') AS sequence_name");
@@ -212,7 +212,7 @@ it('repairs imported sequences for related order records', function () {
     DB::statement('ALTER SEQUENCE public.order_motor_info_id_seq OWNED BY NONE');
     DB::statement("SELECT setval('public.order_motor_info_id_seq'::regclass, 1, false)");
 
-    $migration = include base_path('database/migrations/2026_07_30_032452_synchronize_all_serial_primary_key_sequences.php');
+    $migration = include base_path('database/migrations/legacy/2026_07_30_032452_synchronize_all_serial_primary_key_sequences.php');
     $migration->up();
 
     $response = $this->actingAs($this->employee)->postJson('/api/v1/orders', [

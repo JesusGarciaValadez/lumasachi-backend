@@ -11,7 +11,6 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CatalogController;
-use App\Http\Controllers\HealthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderHistoryController;
 use App\Http\Controllers\PublicOrderController;
@@ -87,7 +86,7 @@ Route::group(['prefix' => 'v1'], function () {
         }
 
         return $user->createToken($request->device_name)->plainTextToken;
-    });
+    })->middleware('throttle:tenant-token');
 
     // Order History Routes
     Route::scopeBindings()->middleware('auth:sanctum')->prefix('history')->group(function () {
@@ -155,13 +154,12 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('/engine-options', [CatalogController::class, 'index'])->name('api.catalog.engine-options');
     });
 
-    // Health Check Routes
-    Route::get('/up', [HealthController::class, 'up'])->name('health.up');
-    Route::get('/health', [HealthController::class, 'health'])->name('health.check');
-
     // Users by company endpoints
     Route::scopeBindings()->middleware(['auth:sanctum', 'can:create,App\Models\Order'])->prefix('users')->group(function () {
-        Route::get('/companies', [App\Http\Controllers\UsersController::class, 'companies'])->name('api.users.companies');
+        if (app()->environment('testing') && config('tenancy.allow_legacy_test_routes')) {
+            Route::get('/companies', [App\Http\Controllers\UsersController::class, 'companies'])->name('api.users.companies');
+        }
+
         Route::get('/employees', [App\Http\Controllers\UsersController::class, 'employees'])->name('api.users.employees');
         Route::get('/customers', [App\Http\Controllers\UsersController::class, 'customers'])->name('api.users.customers');
     });

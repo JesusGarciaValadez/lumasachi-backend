@@ -35,7 +35,12 @@ final class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         $actor = $this->user();
-        $isSuperAdministrator = $actor instanceof User && $actor->isSuperAdministrator();
+        $isTenantContext = tenancy()->initialized;
+        $isSuperAdministrator = $actor instanceof User
+            && ($actor->isSuperAdministrator() || ($isTenantContext && $actor->isPlatformSupport()));
+        $allowedRoles = $isTenantContext
+            ? UserRole::administrationValues(UserRole::ADMINISTRATOR)
+            : UserRole::administrationValues($isSuperAdministrator ? UserRole::SUPER_ADMINISTRATOR : UserRole::ADMINISTRATOR);
 
         return [
             'first_name' => ['required', 'string', 'max:255'],
@@ -49,15 +54,17 @@ final class UpdateUserRequest extends FormRequest
             ],
             'role' => [
                 'required',
-                Rule::in(UserRole::administrationValues($isSuperAdministrator ? UserRole::SUPER_ADMINISTRATOR : UserRole::ADMINISTRATOR)),
+                Rule::in($allowedRoles),
             ],
             'phone_number' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'type' => ['required', Rule::enum(UserType::class)],
             'locale' => ['sometimes', 'nullable', 'string', Rule::in(Locale::values())],
-            'company_id' => $isSuperAdministrator
+            'company_id' => $isTenantContext
+                ? ['prohibited']
+                : ($isSuperAdministrator
                 ? ['sometimes', 'nullable', 'integer', 'exists:companies,id']
-                : ['prohibited'],
+                    : ['prohibited']),
             'is_active' => $isSuperAdministrator
                 ? ['required', 'boolean']
                 : ['prohibited'],
@@ -75,6 +82,8 @@ final class UpdateUserRequest extends FormRequest
             'id' => ['prohibited'],
             'created_at' => ['prohibited'],
             'updated_at' => ['prohibited'],
+            'is_platform_support' => ['prohibited'],
+            'central_actor_uuid' => ['prohibited'],
         ];
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Observers\OrderMotorInfoObserver;
+use App\Traits\UsesTenantConnection;
 use Database\Factories\OrderMotorInfoFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class OrderMotorInfo extends Model
 {
     /** @use HasFactory<OrderMotorInfoFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, UsesTenantConnection;
 
     protected $table = 'order_motor_info';
 

@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderRefund;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Policies\OrderHistoryPolicy;
 use App\Policies\OrderPolicy;
@@ -15,12 +16,15 @@ use App\Policies\OrderRefundPolicy;
 use App\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -61,6 +65,16 @@ final class AppServiceProvider extends ServiceProvider
         $this->registerPolicies();
         $this->registerRelations();
         $this->configureDocumentation();
+
+        RateLimiter::for('tenant-token', static function (Request $request): Limit {
+            $tenant = tenancy()->tenant;
+            $tenantId = $tenant instanceof Tenant ? (string)$tenant->getTenantKey() : 'legacy';
+            $email = Str::lower($request->string('email')->toString());
+
+            return Limit::perMinute(5)->by(
+                Str::transliterate('tenant-token|' . $tenantId . '|' . $email . '|' . $request->ip()),
+            );
+        });
 
         // Discover class-based features in app/Features
         Feature::discover();

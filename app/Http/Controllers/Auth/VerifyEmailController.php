@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegistrationVerificationRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +33,6 @@ final class VerifyEmailController extends Controller
         }
 
         if ($user->markEmailAsVerified()) {
-            /** @var MustVerifyEmail $user */
             event(new Verified($user));
         }
 

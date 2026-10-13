@@ -10,7 +10,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 /**
  * @mixin IdeHelperCompany
@@ -54,25 +55,8 @@ final class Company extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'uuid',
         'name',
-        'email',
-        'phone',
-        'address',
-        'city',
-        'state',
-        'postal_code',
-        'country',
-        'description',
-        'website',
-        'logo',
         'is_active',
-        'tax_id',
-        'contact_person',
-        'contact_email',
-        'contact_phone',
-        'notes',
-        'settings',
     ];
 
     /**
@@ -83,7 +67,6 @@ final class Company extends Model
     protected $casts = [
         'uuid' => 'string',
         'is_active' => 'boolean',
-        'settings' => 'json',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -97,22 +80,15 @@ final class Company extends Model
         'is_active' => true,
     ];
 
-    /**
-     * Get all users that belong to this company.
-     */
-    /** @return HasMany<User, $this> */
-    public function users(): HasMany
+    public function getConnectionName(): string
     {
-        return $this->hasMany(User::class, 'company_id', 'id');
+        return (string)config('tenancy.database.central_connection', config('database.default'));
     }
 
-    /**
-     * Get all active users that belong to this company.
-     */
-    /** @return HasMany<User, $this> */
-    public function activeUsers(): HasMany
+    /** @return BelongsTo<Tenant, $this> */
+    public function tenant(): BelongsTo
     {
-        return $this->hasMany(User::class, 'company_id', 'id')->where('is_active', true);
+        return $this->belongsTo(Tenant::class, 'uuid', 'id');
     }
 
     /**
@@ -138,22 +114,6 @@ final class Company extends Model
     }
 
     /**
-     * Get the full address of the company.
-     */
-    public function getFullAddressAttribute(): string
-    {
-        $parts = array_filter([
-            $this->address,
-            $this->city,
-            $this->state,
-            $this->postal_code,
-            $this->country,
-        ]);
-
-        return implode(', ', $parts);
-    }
-
-    /**
      * Get the columns that should receive a unique identifier.
      */
     /**
@@ -162,6 +122,15 @@ final class Company extends Model
     public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    protected static function booted(): void
+    {
+        self::updating(static function (Company $company): void {
+            if ($company->isDirty('uuid')) {
+                throw new LogicException('A company UUID cannot be changed after creation.');
+            }
+        });
     }
 
     /**

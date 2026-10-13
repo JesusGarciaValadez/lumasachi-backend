@@ -6,6 +6,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Tenant;
+use App\Models\User;
+use App\Services\Tenancy\CentralTenantAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,13 +45,45 @@ final class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse|JsonResponse
+    public function destroy(Request $request, CentralTenantAccessService $centralTenantAccess): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         abort_unless($user !== null, 401);
 
+        $centralOrigin = null;
+
+        if ($user instanceof User && $user->isPlatformSupport()) {
+            $grantId = $request->session()->pull('central_access_grant_id');
+            $tenant = tenancy()->tenant;
+            abort_unless($tenant instanceof Tenant, 403);
+
+            $centralOrigin = $centralTenantAccess->finishSupportSession(
+                (string)$tenant->getTenantKey(),
+                $user,
+                is_string($grantId) ? $grantId : null,
+            );
+            abort_unless(
+                $centralOrigin !== null && $centralTenantAccess->isAllowedCentralOrigin($centralOrigin),
+                403,
+            );
+        }
+
         if ($request->expectsJson()) {
-            $user->tokens()->delete();
+            if ($user instanceof User) {
+                $user->tokens()->delete();
+            }
+
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            if ($centralOrigin !== null) {
+                return response()->json([
+                    'code' => 'auth.logout',
+                    'message' => __('auth.logout'),
+                    'redirect' => mb_rtrim($centralOrigin, '/') . '/central',
+                ], 200);
+            }
 
             return response()->json(['code' => 'auth.logout', 'message' => __('auth.logout')], 200);
         }
@@ -57,6 +92,10 @@ final class AuthenticatedSessionController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($centralOrigin !== null) {
+            return redirect()->away(mb_rtrim($centralOrigin, '/') . '/central');
+        }
 
         return redirect('/');
     }

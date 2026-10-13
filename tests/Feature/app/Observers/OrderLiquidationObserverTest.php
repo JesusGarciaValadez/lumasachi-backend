@@ -8,10 +8,12 @@ use App\Models\OrderItem;
 use App\Models\OrderMotorInfo;
 use App\Models\OrderPayment;
 use App\Models\OrderService;
+use Illuminate\Support\Facades\Notification;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 it('keeps service completion and payment totals available from the order', function () {
+    Notification::fake();
     $order = Order::factory()->createQuietly();
     OrderMotorInfo::create(['order_id' => $order->id]);
 
@@ -30,6 +32,11 @@ it('keeps service completion and payment totals available from the order', funct
         'order_item_id' => $item->id,
         'is_completed' => false,
         'net_price' => 652.40,
+    ]);
+    OrderService::factory()->create([
+        'order_item_id' => $item->id,
+        'is_completed' => true,
+        'net_price' => null,
     ]);
 
     // Mark them completed → triggers recalc

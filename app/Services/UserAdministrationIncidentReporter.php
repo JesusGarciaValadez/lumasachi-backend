@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Exceptions\UserAdministrationException;
+use App\Models\CentralSuperAdministrator;
 use App\Models\User;
 use App\Notifications\UserAdministrationIncidentNotification;
 use Illuminate\Http\Request;
@@ -38,6 +39,17 @@ final class UserAdministrationIncidentReporter
         report($incident);
 
         $notification = new UserAdministrationIncidentNotification($context);
+
+        if (tenancy()->initialized) {
+            CentralSuperAdministrator::query()
+                ->where('is_active', true)
+                ->get()
+                ->each(function (CentralSuperAdministrator $recipient) use ($notification): void {
+                    $recipient->notify($notification);
+                });
+
+            return $incident;
+        }
 
         User::query()
             ->where('role', UserRole::SUPER_ADMINISTRATOR->value)

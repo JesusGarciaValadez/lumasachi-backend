@@ -25,7 +25,7 @@ final class UserAdministrationResource extends JsonResource
             'full_name' => $this->last_name . ', ' . $this->first_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
-            'company_id' => $this->company_id,
+            'company_id' => tenancy()->initialized ? null : $this->company_id,
             'company' => $this->whenLoaded('company', fn(): ?array => $this->company === null ? null : [
                 'id' => $this->company->id,
                 'uuid' => $this->company->uuid,
